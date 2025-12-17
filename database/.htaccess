@@ -1,0 +1,17 @@
+# Denegar acceso público a todos los archivos en este directorio
+# Deny public access to all files in this directory
+
+<IfModule mod_authz_core.c>
+    # Apache 2.4+
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    # Apache 2.2
+    Order deny,allow
+    Deny from all
+</IfModule>
+
+# Prevenir listado de directorios
+# Prevent directory listing
+Options -Indexes

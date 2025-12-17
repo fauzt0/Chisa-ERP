@@ -1,3 +1,5 @@
+.DS_Store
+
 */config/development
 */logs/log-*.php
 !*/logs/index.html
@@ -6,13 +8,49 @@
 !*/cache/index.html
 !*/cache/.htaccess
 
+application/cache/*
+!application/cache/index.html
+
+application/logs/*
+!application/logs/index.html
+!application/logs/.htaccess
+
+# Permitir archivos .htaccess de seguridad
+!application/*/.htaccess
+!.htaccess
+!database/.htaccess
+
+composer.lock
+tests/mocks/database/ci_test.sqlite
+
 user_guide_src/build/*
 user_guide_src/cilexer/build/*
 user_guide_src/cilexer/dist/*
 user_guide_src/cilexer/pycilexer.egg-info/*
-
-#codeigniter 3
-application/logs/*
-!application/logs/index.html
-!application/logs/.htaccess
 /vendor/
+
+# Archivos sensibles - NO VERSIONAR
+#-------------------------
+.env
+.env.*
+
+# Permitir archivos SQL de estructura en database/
+# pero bloquear backups y datos sensibles
+database/backups/*
+database/datos_*.sql
+database/*_backup*.sql
+database/*_dump*.sql
+
+# IDE Files
+#-------------------------
+/nbproject/
+.idea/*
+
+## Sublime Text cache files
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+/tests/tests/
+/tests/results/

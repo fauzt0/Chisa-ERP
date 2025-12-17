@@ -1,0 +1,92 @@
+# ============================================
+# PROTECCIÓN DE SEGURIDAD - ERP CHISA
+# ============================================
+
+# Denegar acceso a la carpeta .git
+# Deny access to .git directory
+<DirectoryMatch "^/.*/\.git/">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</DirectoryMatch>
+
+# Denegar acceso a archivos de configuración de Git
+# Deny access to Git configuration files
+<FilesMatch "^\.git">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Proteger archivos sensibles
+# Protect sensitive files
+<FilesMatch "^(\.gitignore|\.editorconfig|composer\.json|composer\.lock|\.env|\.htaccess)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Prevenir acceso directo a archivos PHP en ciertas carpetas
+# Prevent direct access to PHP files in certain folders
+<FilesMatch "\.php$">
+    <If "%{REQUEST_URI} =~ m#^/(application|system)/#">
+        <IfModule mod_authz_core.c>
+            Require all denied
+        </IfModule>
+        <IfModule !mod_authz_core.c>
+            Order deny,allow
+            Deny from all
+        </IfModule>
+    </If>
+</FilesMatch>
+
+# Prevenir listado de directorios
+# Prevent directory listing
+Options -Indexes
+
+# Habilitar seguimiento de enlaces simbólicos
+# Enable symbolic links following
+Options +FollowSymLinks
+
+# ============================================
+# CONFIGURACIÓN DE CODEIGNITER
+# ============================================
+
+# Reescritura de URLs (si usas mod_rewrite)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Redirigir solicitudes a index.php excepto archivos/directorios existentes
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php/$1 [L]
+</IfModule>
+
+# ============================================
+# SEGURIDAD ADICIONAL
+# ============================================
+
+# Deshabilitar firma del servidor
+# Disable server signature
+ServerSignature Off
+
+# Protección contra clickjacking
+# Clickjacking protection
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>

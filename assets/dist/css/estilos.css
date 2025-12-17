@@ -1,0 +1,210 @@
+/* ========================================
+   SIDEBAR STYLES - Color Theme: #32338E (Marca CHISA)
+   ======================================== */
+
+/* Sidebar background */
+.sidebar,
+.sidebar-content,
+.sidebar-cta,
+.sidebar-cta-content {
+    background: #32338E !important;
+}
+
+/* Sidebar navigation */
+.sidebar-nav {
+    background-color: #32338E !important;
+}
+
+/* Sidebar headers - Secciones principales */
+.sidebar-header {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    opacity: 0.9;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+/* Enlaces del sidebar - Estado normal */
+.sidebar-link {
+    color: #e8f0f7 !important;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Enlaces del sidebar - Hover */
+.sidebar-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    transform: translateX(3px);
+}
+
+/* Enlaces del sidebar - Estado activo */
+.sidebar-link.active,
+.sidebar-item.active>.sidebar-link {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    font-weight: 500;
+    border-left: 3px solid #ffc107;
+}
+
+/* Iconos del sidebar */
+.sidebar-link i,
+.sidebar-link svg {
+    color: #b8d4ea !important;
+    opacity: 0.9;
+}
+
+/* Iconos del sidebar - Hover */
+.sidebar-link:hover i,
+.sidebar-link:hover svg {
+    color: #ffffff !important;
+    opacity: 1;
+}
+
+/* Iconos del sidebar - Activo */
+.sidebar-link.active i,
+.sidebar-link.active svg,
+.sidebar-item.active>.sidebar-link i,
+.sidebar-item.active>.sidebar-link svg {
+    color: #ffc107 !important;
+    opacity: 1;
+}
+
+/* Badges del sidebar - Primary */
+.badge-sidebar-primary {
+    background-color: #ffc107 !important;
+    color: #14528B !important;
+    font-weight: 600;
+}
+
+/* Badges del sidebar - Secondary */
+.badge-sidebar-secondary {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+/* Dropdown items - Submenús */
+.sidebar-dropdown .sidebar-link {
+    color: #d1e3f0 !important;
+    padding-left: 3rem !important;
+    font-size: 0.9rem;
+}
+
+/* Dropdown items - Hover */
+.sidebar-dropdown .sidebar-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Dropdown items - Activo */
+.sidebar-dropdown .sidebar-item.active>.sidebar-link {
+    color: #ffc107 !important;
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    border-left: 3px solid #ffc107;
+}
+
+/* Separadores entre items */
+.sidebar-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Logo/Brand area */
+.sidebar-brand {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Scrollbar personalizado para el sidebar */
+.sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* ========================================
+   DATATABLES STYLES - Layout Fix
+   ======================================== */
+
+/* Contenedor principal debe permitir floats */
+.dt-container {
+    overflow: hidden;
+}
+
+/* Info a la izquierda */
+.dt-container .dt-info {
+    float: left !important;
+    width: auto !important;
+    margin-right: 20px !important;
+    margin-top: 10px !important;
+}
+
+/* Paginación a la derecha */
+.dt-container .dt-paging {
+    float: right !important;
+    width: auto !important;
+    margin: 0 !important;
+    margin-top: 10px !important;
+}
+
+/* Clearfix para el contenedor */
+.dt-container::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* También aplicar a dataTables_wrapper por compatibilidad */
+.dataTables_wrapper .dataTables_info {
+    float: left !important;
+    width: auto !important;
+    margin-right: 20px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    float: right !important;
+    width: auto !important;
+    margin: 0 !important;
+}
+
+.dataTables_wrapper::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Asegurar que el row contenedor no interfiera */
+.dataTables_wrapper>.row:last-child,
+.dt-container>.row:last-child {
+    display: block !important;
+    overflow: hidden;
+}
+
+/* Responsive - En pantallas pequeñas */
+@media (max-width: 768px) {
+
+    .dt-container .dt-info,
+    .dataTables_wrapper .dataTables_info {
+        float: none !important;
+        display: block !important;
+        margin-bottom: 10px !important;
+        text-align: center;
+    }
+
+    .dt-container .dt-paging,
+    .dataTables_wrapper .dataTables_paginate {
+        float: none !important;
+        display: block !important;
+        text-align: center;
+    }
+}
