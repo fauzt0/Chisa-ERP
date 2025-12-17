@@ -28,6 +28,34 @@
 
 	<!-- BEGIN SETTINGS -->
 	<!-- END SETTINGS -->
+
+<style>
+    .fondo-claro-translucido {
+        /* Blanco con 45% de opacidad para que se note sobre el fondo */
+        background-color: rgba(255, 255, 255, 0.28); 
+        
+        /* Efecto de desenfoque (indispensable para el look traslúcido) */
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        
+        /* Texto oscuro para contraste */
+        color: #1a1a1a; 
+        
+        /* Estilo del bloque */
+        padding: 25px;
+        border-radius: 12px;        
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Sombra muy ligera */
+        max-width: 500px;
+    }
+
+    .fondo-claro-translucido p {
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 600;
+		text-align: center;
+    }
+</style>
+
 </head>
 
 <body>  
@@ -35,33 +63,30 @@
 		<div class="row g-0">
 			<div class="col-xl-6 d-none d-xl-flex">
 				<div class="auth-full-page position-relative">
-					<img src="<?php echo base_url();?>assets/dist/img/photos/unsplash-1.jpg" class="auth-bg" alt="Unsplash">
+					<img src="<?php echo base_url();?>assets/dist/img/photos/chisa recubrimientos sistema ERP.jpg" class="auth-bg" alt="Unsplash">
 					<div class="auth-quote">
-						<i data-lucide="quote"></i>
+						
 						<figure>
-							<blockquote>
-								<p>Sistema ERP de Chisa Recubrimientos para la administracción y gestión de procesos, usuarios, ordenes y ventas.</p>
+							<blockquote class="fondo-claro-translucido">
+								<p>Sistema ERP para la Administración y Gestión de Procesos.</p>
 							</blockquote>
-							<figcaption>
-								— Chisa Recubrimientos ERP
-							</figcaption>
 						</figure>
 					</div>
 				</div>
 			</div>
 			<div class="col-xl-6">
-				<div class="auth-full-page d-flex p-4 p-xl-5">
+				<div class="auth-full-page d-flex p-1 p-xl-3">
 					<div class="d-flex flex-column w-100 h-100">
-						<div class="auth-form">
-
+						<div class="auth-form">											
 							<div class="text-center">
-								<h1 class="h2">Bienvenid@!</h1>
+								<img src="<?php echo base_url();?>assets/dist/img/photos/logo-chisa-portada.jpg"  alt="ERP" width="220px" >			
+								<h1 class="h2 mt-2">Bienvenid@!</h1>
 								<p class="lead">
 									Ingresa a tu cuenta para continuar.
 								</p>
 							</div>
 
-							<div class="mb-3">
+							<div>
 								
 								<div class="row">
 									<div class="col">
@@ -97,13 +122,11 @@
 								</form>
 							</div>
 
-							<div class="text-center">
-								Aún no tienes una cuenta? <a href="auth-sign-up-cover.html">Registrate</a>
-							</div>
+							
 						</div>
 						<div class="text-center">
-							<p class="mb-0">
-								&copy; <?php echo date('Y'); ?> - <a href="https://www.chisarecubrimientos.com.mx/" target= "_blank">Chisa Recubrimientos</a>
+							<p class="mb-1">
+								&copy; <?php echo date('Y'); ?> -  Todos los derechos reservados. <br>Desarrollado por <a href="https://especialistasweb.com.mx" target= "_blank">Especialistas Web</a>
 							</p>
 						</div>
 					</div>
