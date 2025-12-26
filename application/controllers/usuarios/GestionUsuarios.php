@@ -412,5 +412,60 @@ class GestionUsuarios extends CI_Controller {
     echo json_encode($this->outputData);        
   }
 
+  /**
+   * Vista de bitácora de usuarios
+   * Muestra todos los administradores con opción de ver su historial
+   */
+  public function bitacora() {
+    $this->viewData['pageTitle'] = 'Bitácora de Usuarios';
+    $this->viewData['headTitle'] = 'Bitácora de Usuarios';
+    $this->viewData['breadcrumb'] = 'Inicio > Gestión de usuarios > Bitácora';
+    
+    // Obtener todos los usuarios activos y suspendidos
+    $this->db->select('id, nombre, apellidos, username, estatus, fecha_alta');
+    $this->db->from('administradores');
+    $this->db->order_by('nombre', 'ASC');
+    $usuarios = $this->db->get()->result();
+    
+    $this->viewData['response'] = [
+      'usuarios' => $usuarios
+    ];
+    
+    $this->viewData['pageView'] = 'usuarios/bitacora';
+    
+    // Render view
+    $this->load->view('layouts/general_template', $this->viewData);
+  }
+  
+  /**
+   * Obtiene el historial de actividades de un usuario (AJAX)
+   */
+  public function get_user_logs_ajax() {
+    $user_id = $this->input->post('user_id');
+    $limit = $this->input->post('limit') ?: 50;
+    
+    if(!$user_id) {
+      echo json_encode(['success' => false, 'message' => 'ID de usuario no proporcionado']);
+      return;
+    }
+    
+    // Obtener username del usuario
+    $this->db->select('username');
+    $this->db->where('id', $user_id);
+    $user = $this->db->get('administradores')->row();
+    
+    if(!$user) {
+      echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);
+      return;
+    }
+    
+    // Obtener logs del usuario
+    $logs = $this->UserModel->last_logs($user->username, $limit);
+    
+    echo json_encode([
+      'success' => true,
+      'logs' => $logs->result()
+    ]);
+  }
 
 }

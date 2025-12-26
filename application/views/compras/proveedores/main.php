@@ -1,0 +1,689 @@
+<?php
+/**
+ * Vista principal de Proveedores
+ * Listado de proveedores con DataTables
+ */
+?>
+<div class="container-fluid p-0">
+
+  <!-- Breadcrumb -->
+  <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
+   
+  <!-- Titulo de la pagina -->
+  <h1 class="h3 mb-3"><?php echo $headTitle;?></h1>
+
+  <!-- Cards de estadísticas -->
+  <div class="row">
+    <!-- Total Proveedores Activos -->
+    <div class="col-lg-6 col-xl-4 d-flex">
+      <div class="card flex-fill">
+        <div class="card-header">
+          <h5 class="card-title mb-0 mt-2">Proveedores Activos</h5>
+        </div>
+        <div class="card-body my-0 pt-0">
+          <div class="row d-flex align-items-center mb-3">
+            <div class="col-8">
+              <h3 class="d-flex align-items-center mb-0 fw-light">
+                <?php echo $response['stats']['total_activos']; ?>
+              </h3>
+            </div>
+            <div class="col-4 text-end">
+              <i class="fas fa-truck text-primary" style="font-size: 1.5rem;"></i>
+            </div>
+          </div>
+          <small class="text-muted">Proveedores activos en sistema</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proveedores Inactivos -->
+    <div class="col-lg-6 col-xl-4 d-flex">
+      <div class="card flex-fill">
+        <div class="card-header">
+          <h5 class="card-title mb-0 mt-2">Proveedores Inactivos</h5>
+        </div>
+        <div class="card-body my-0 pt-0">
+          <div class="row d-flex align-items-center mb-3">
+            <div class="col-8">
+              <h3 class="d-flex align-items-center mb-0 fw-light">
+                <?php echo $response['stats']['total_inactivos']; ?>
+              </h3>
+            </div>
+            <div class="col-4 text-end">
+              <i class="fas fa-ban text-secondary" style="font-size: 1.5rem;"></i>
+            </div>
+          </div>
+          <small class="text-muted">Proveedores dados de baja</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relaciones Proveedor-Insumo -->
+    <div class="col-lg-6 col-xl-4 d-flex">
+      <div class="card flex-fill">
+        <div class="card-header">
+          <h5 class="card-title mb-0 mt-2">Relaciones</h5>
+        </div>
+        <div class="card-body my-0 pt-0">
+          <div class="row d-flex align-items-center mb-3">
+            <div class="col-12">
+              <h3 class="d-flex align-items-center mb-0 fw-light">
+                <?php echo $response['stats']['total_relaciones']; ?>
+              </h3>
+            </div>
+          </div>
+          <small class="text-muted">Insumos relacionados con proveedores</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de proveedores -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Catálogo de Proveedores</h5>
+            <button class="btn btn-primary btn-sm" onclick="mostrarModalNuevo()">
+              <i class="fas fa-plus"></i> Nuevo Proveedor
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Filtros -->
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">Estatus</label>
+              <select class="form-select form-select-sm" id="filtroEstatus">
+                <option value="">Todos</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- DataTable -->
+          <table id="tablaProveedores" class="table table-striped table-hover" style="width:100%">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Razón Social</th>
+                <th>RFC</th>
+                <th>Contacto</th>
+                <th>Ciudad</th>
+                <th>Estatus</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>              
+            </tbody>
+            <tfoot>
+              <tr>
+                <th>Código</th>
+                <th>Razón Social</th>
+                <th>RFC</th>
+                <th>Contacto</th>
+                <th>Ciudad</th>
+                <th>Estatus</th>
+                <th>Acciones</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo/Editar Proveedor -->
+<div class="modal fade" id="modalProveedor" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalProveedorTitle">Nuevo Proveedor</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formProveedor">
+          <input type="hidden" name="id" id="proveedor_id">
+          
+          <div class="row">
+            <!-- Columna Izquierda -->
+            <div class="col-md-6">
+              <h6 class="mb-3 text-primary">Información Básica</h6>
+              
+              <div class="mb-3">
+                <label class="form-label">Código</label>
+                <input type="text" class="form-control" name="codigo" id="proveedor_codigo" placeholder="Auto-generado si vacío">
+                <small class="text-muted">Dejar vacío para generar automáticamente</small>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Razón Social <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="razon_social" id="proveedor_razon_social" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Nombre Comercial</label>
+                <input type="text" class="form-control" name="nombre_comercial" id="proveedor_nombre_comercial">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">RFC <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="rfc" id="proveedor_rfc" maxlength="13" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Tipo de Proveedor</label>
+                <select class="form-select" name="tipo_proveedor" id="proveedor_tipo_proveedor">
+                  <option value="Mixto">Mixto</option>
+                  <option value="Materia Prima">Materia Prima</option>
+                  <option value="Servicios">Servicios</option>
+                  <option value="Materiales">Materiales</option>
+                </select>
+              </div>
+
+              <h6 class="mb-3 mt-4 text-primary">Contacto</h6>
+
+              <div class="mb-3">
+                <label class="form-label">Contacto Principal</label>
+                <input type="text" class="form-control" name="contacto_principal" id="proveedor_contacto_principal" placeholder="Nombre del contacto">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" name="telefono" id="proveedor_telefono" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Teléfono Alternativo</label>
+                <input type="tel" class="form-control" name="telefono_alternativo" id="proveedor_telefono_alternativo">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" name="email" id="proveedor_email" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Sitio Web</label>
+                <input type="url" class="form-control" name="sitio_web" id="proveedor_sitio_web" placeholder="https://">
+              </div>
+            </div>
+
+            <!-- Columna Derecha -->
+            <div class="col-md-6">
+              <h6 class="mb-3 text-primary">Dirección</h6>
+              
+              <div class="mb-3">
+                <label class="form-label">Dirección Completa <span class="text-danger">*</span></label>
+                <textarea class="form-control" name="direccion" id="proveedor_direccion" rows="3" required placeholder="Calle, número, colonia"></textarea>
+                <small class="text-muted">Incluir calle, número, colonia</small>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Ciudad <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="ciudad" id="proveedor_ciudad" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Estado <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="estado" id="proveedor_estado" required>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Código Postal <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="codigo_postal" id="proveedor_codigo_postal" maxlength="10" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">País</label>
+                  <input type="text" class="form-control" name="pais" id="proveedor_pais" value="México">
+                </div>
+              </div>
+
+              <h6 class="mb-3 mt-4 text-primary">Información Financiera</h6>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Días de Crédito</label>
+                  <input type="number" class="form-control" name="dias_credito" id="proveedor_dias_credito" value="0" min="0">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Límite de Crédito</label>
+                  <input type="number" class="form-control" name="limite_credito" id="proveedor_limite_credito" value="0" min="0" step="0.01">
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Banco</label>
+                <input type="text" class="form-control" name="banco" id="proveedor_banco">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Cuenta Bancaria</label>
+                <input type="text" class="form-control" name="cuenta_bancaria" id="proveedor_cuenta_bancaria">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Observaciones</label>
+                <textarea class="form-control" name="observaciones" id="proveedor_observaciones" rows="2"></textarea>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Estatus</label>
+                <select class="form-select" name="estatus" id="proveedor_estatus">
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                  <option value="Suspendido">Suspendido</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarProveedor()">
+          <i class="fas fa-save"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Gestión de Insumos del Proveedor -->
+<div class="modal fade" id="modalInsumos" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">Insumos del Proveedor: <span id="nombreProveedorInsumos"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="proveedor_insumos_id">
+        
+        <!-- Botón agregar insumo -->
+        <div class="mb-3">
+          <button class="btn btn-success btn-sm" onclick="mostrarFormAgregarInsumo()">
+            <i class="fas fa-plus"></i> Agregar Insumo
+          </button>
+        </div>
+
+        <!-- Formulario agregar/editar insumo (oculto por default) -->
+        <div id="formAgregarInsumo" style="display:none;">
+          <div class="card mb-3">
+            <div class="card-header bg-light">
+              <h6 class="mb-0" id="tituloFormInsumo">Agregar Insumo</h6>
+            </div>
+            <div class="card-body">
+              <form id="formInsumoProveedor">
+                <input type="hidden" id="insumo_editando_id">
+                
+                <div class="mb-3">
+                  <label class="form-label">Insumo <span class="text-danger">*</span></label>
+                  <select class="form-select" id="insumo_select" required>
+                    <option value="">-- Seleccionar --</option>
+                  </select>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Precio de Compra <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="insumo_precio_compra" step="0.01" min="0" required>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Tiempo de Entrega (días)</label>
+                    <input type="number" class="form-control" id="insumo_tiempo_entrega" value="0" min="0">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Cantidad Mínima</label>
+                    <input type="number" class="form-control" id="insumo_cantidad_minima" value="1" min="1" step="0.01">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Código del Proveedor</label>
+                    <input type="text" class="form-control" id="insumo_codigo_proveedor" placeholder="SKU del proveedor">
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Observaciones</label>
+                  <textarea class="form-control" id="insumo_observaciones" rows="2"></textarea>
+                </div>
+
+                <div class="text-end">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="cancelarFormInsumo()">Cancelar</button>
+                  <button type="button" class="btn btn-success btn-sm" onclick="guardarInsumoProveedor()">
+                    <i class="fas fa-save"></i> Guardar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de insumos del proveedor -->
+        <div class="table-responsive">
+          <table class="table table-sm table-hover" id="tablaInsumosProveedor">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Insumo</th>
+                <th>Precio</th>
+                <th>UM</th>
+                <th>Tiempo Entrega</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  
+  let tabla;
+  let proveedorEditando = null;
+  let proveedorInsumosActual = null;
+
+  function initProveedores() {
+    inicializarDataTable();
+    cargarInsumosSelect();
+    
+    // Filtros
+    $('#filtroEstatus').on('change', function() {
+      tabla.ajax.reload();
+    });
+  }
+
+  function inicializarDataTable() {
+    tabla = $('#tablaProveedores').DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: {
+        url: '<?=base_url();?>compras/Proveedores/lista_ajax',
+        type: 'POST',
+        data: function(d) {
+          d.peticion = 'ajax';
+          d['<?php echo $this->security->get_csrf_token_name();?>'] = '<?php echo $this->security->get_csrf_hash();?>';
+          d.filtro_estatus = $('#filtroEstatus').val();
+        }
+      },
+      columns: [
+        { data: 0 },  // Código
+        { data: 1 },  // Razón Social
+        { data: 2 },  // RFC
+        { data: 3 },  // Contacto
+        { data: 4 },  // Ciudad
+        { data: 5 },  // Estatus
+        { data: 6, orderable: false }  // Acciones
+      ],
+      language: {
+        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+      },
+      pageLength: 25,
+      order: [[1, 'asc']]
+    });
+  }
+
+  function cargarInsumosSelect() {
+    $.post('<?=base_url();?>compras/Proveedores/get_insumos_select_ajax', {
+      'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      result = JSON.parse(result);
+      if(result.success) {
+        let html = '<option value="">-- Seleccionar --</option>';
+        result.insumos.forEach(function(ins) {
+          html += `<option value="${ins.id}">${ins.text}</option>`;
+        });
+        $('#insumo_select').html(html);
+      }
+    });
+  }
+
+  window.mostrarModalNuevo = function() {
+    proveedorEditando = null;
+    $('#modalProveedorTitle').text('Nuevo Proveedor');
+    $('#formProveedor')[0].reset();
+    $('#proveedor_id').val('');
+    $('#proveedor_estatus').val('Activo');
+    $('#proveedor_pais').val('México');
+    $('#proveedor_tipo_proveedor').val('Mixto');
+    $('#modalProveedor').modal('show');
+  };
+
+  window.mostrarModalEditar = function(id) {
+    proveedorEditando = id;
+    $('#modalProveedorTitle').text('Editar Proveedor');
+    
+    $.post('<?=base_url();?>compras/Proveedores/get_proveedor_ajax', {
+      'id': id,
+      'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      result = JSON.parse(result);
+      if(result.success) {
+        const p = result.proveedor;
+        $('#proveedor_id').val(p.id);
+        $('#proveedor_codigo').val(p.codigo);
+        $('#proveedor_razon_social').val(p.razon_social);
+        $('#proveedor_nombre_comercial').val(p.nombre_comercial);
+        $('#proveedor_rfc').val(p.rfc);
+        $('#proveedor_tipo_proveedor').val(p.tipo_proveedor);
+        $('#proveedor_contacto_principal').val(p.contacto_principal);
+        $('#proveedor_telefono').val(p.telefono);
+        $('#proveedor_telefono_alternativo').val(p.telefono_alternativo);
+        $('#proveedor_email').val(p.email);
+        $('#proveedor_sitio_web').val(p.sitio_web);
+        $('#proveedor_direccion').val(p.direccion);
+        $('#proveedor_ciudad').val(p.ciudad);
+        $('#proveedor_estado').val(p.estado);
+        $('#proveedor_codigo_postal').val(p.codigo_postal);
+        $('#proveedor_pais').val(p.pais);
+        $('#proveedor_dias_credito').val(p.dias_credito);
+        $('#proveedor_limite_credito').val(p.limite_credito);
+        $('#proveedor_banco').val(p.banco);
+        $('#proveedor_cuenta_bancaria').val(p.cuenta_bancaria);
+        $('#proveedor_observaciones').val(p.observaciones);
+        $('#proveedor_estatus').val(p.estatus);
+        
+        $('#modalProveedor').modal('show');
+      }
+    });
+  };
+
+  window.guardarProveedor = function() {
+    const formData = $('#formProveedor').serialize();
+    const url = proveedorEditando ? 
+      '<?=base_url();?>compras/Proveedores/editar_ajax' : 
+      '<?=base_url();?>compras/Proveedores/crear_ajax';
+
+    $.post(url, 
+      formData + '&peticion=ajax&<?php echo $this->security->get_csrf_token_name();?>=<?php echo $this->security->get_csrf_hash();?>',
+      function(result) {
+        result = JSON.parse(result);
+        if(result.success) {
+          notifyShow(result.message, 'success');
+          $('#modalProveedor').modal('hide');
+          tabla.ajax.reload();
+        } else {
+          notifyShow('Error: ' + result.message, 'danger');
+        }
+      }
+    );
+  };
+
+  window.eliminarProveedor = function(id) {
+    if(!confirm('¿Estás seguro de eliminar este proveedor?')) return;
+
+    $.post('<?=base_url();?>compras/Proveedores/eliminar_ajax', {
+      'id': id,
+      'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      result = JSON.parse(result);
+      notifyShow(result.message, result.success ? 'success' : 'danger');
+      if(result.success) {
+        tabla.ajax.reload();
+      }
+    });
+  };
+
+  // ============ GESTIÓN DE INSUMOS ============
+
+  window.mostrarModalInsumos = function(proveedorId) {
+    proveedorInsumosActual = proveedorId;
+    $('#proveedor_insumos_id').val(proveedorId);
+    $('#formAgregarInsumo').hide();
+    
+    // Obtener nombre del proveedor
+    $.post('<?=base_url();?>compras/Proveedores/get_proveedor_ajax', {
+      'id': proveedorId,
+      'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      result = JSON.parse(result);
+      if(result.success) {
+        $('#nombreProveedorInsumos').text(result.proveedor.razon_social);
+      }
+    });
+    
+    cargarInsumosProveedor(proveedorId);
+    $('#modalInsumos').modal('show');
+  };
+
+  function cargarInsumosProveedor(proveedorId) {
+    $.post('<?=base_url();?>compras/Proveedores/get_insumos_proveedor_ajax', {
+      'proveedor_id': proveedorId,
+      'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      result = JSON.parse(result);
+      if(result.success) {
+        let html = '';
+        if(result.insumos.length === 0) {
+          html = '<tr><td colspan="6" class="text-center text-muted">No hay insumos relacionados</td></tr>';
+        } else {
+          result.insumos.forEach(function(ins) {
+            html += `
+              <tr>
+                <td>${ins.codigo}</td>
+                <td>${ins.nombre_tecnico}</td>
+                <td>$${parseFloat(ins.precio_compra).toFixed(2)}</td>
+                <td>${ins.unidad_medida}</td>
+                <td>${ins.tiempo_entrega_dias} días</td>
+                <td>
+                  <button class="btn btn-sm btn-primary" onclick="editarInsumoProveedor(${ins.insumo_id}, ${ins.precio_compra}, ${ins.tiempo_entrega_dias}, ${ins.cantidad_minima}, '${ins.codigo_proveedor || ''}', '${ins.observaciones || ''}')" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger" onclick="eliminarInsumoProveedor(${ins.insumo_id})" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `;
+          });
+        }
+        $('#tablaInsumosProveedor tbody').html(html);
+      }
+    });
+  }
+
+  window.mostrarFormAgregarInsumo = function() {
+    $('#tituloFormInsumo').text('Agregar Insumo');
+    $('#formInsumoProveedor')[0].reset();
+    $('#insumo_editando_id').val('');
+    $('#insumo_select').prop('disabled', false);
+    $('#formAgregarInsumo').slideDown();
+  };
+
+  window.cancelarFormInsumo = function() {
+    $('#formAgregarInsumo').slideUp();
+    $('#formInsumoProveedor')[0].reset();
+  };
+
+  window.editarInsumoProveedor = function(insumoId, precio, tiempoEntrega, cantidadMin, codigoProv, obs) {
+    $('#tituloFormInsumo').text('Editar Precio de Insumo');
+    $('#insumo_editando_id').val(insumoId);
+    $('#insumo_select').val(insumoId).prop('disabled', true);
+    $('#insumo_precio_compra').val(precio);
+    $('#insumo_tiempo_entrega').val(tiempoEntrega);
+    $('#insumo_cantidad_minima').val(cantidadMin);
+    $('#insumo_codigo_proveedor').val(codigoProv);
+    $('#insumo_observaciones').val(obs);
+    $('#formAgregarInsumo').slideDown();
+  };
+
+  window.guardarInsumoProveedor = function() {
+    const insumoEditandoId = $('#insumo_editando_id').val();
+    const url = insumoEditandoId ? 
+      '<?=base_url();?>compras/Proveedores/actualizar_precio_insumo_ajax' : 
+      '<?=base_url();?>compras/Proveedores/agregar_insumo_ajax';
+
+    const data = {
+      'proveedor_id': proveedorInsumosActual,
+      'insumo_id': insumoEditandoId || $('#insumo_select').val(),
+      'precio_compra': $('#insumo_precio_compra').val(),
+      'tiempo_entrega_dias': $('#insumo_tiempo_entrega').val(),
+      'cantidad_minima': $('#insumo_cantidad_minima').val(),
+      'codigo_proveedor': $('#insumo_codigo_proveedor').val(),
+      'observaciones': $('#insumo_observaciones').val(),
+      'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    };
+
+    $.post(url, data, function(result) {
+      result = JSON.parse(result);
+      notifyShow(result.message, result.success ? 'success' : 'danger');
+      if(result.success) {
+        cancelarFormInsumo();
+        cargarInsumosProveedor(proveedorInsumosActual);
+      }
+    });
+  };
+
+  window.eliminarInsumoProveedor = function(insumoId) {
+    if(!confirm('¿Eliminar este insumo del proveedor?')) return;
+
+    $.post('<?=base_url();?>compras/Proveedores/eliminar_insumo_ajax', {
+      'proveedor_id': proveedorInsumosActual,
+      'insumo_id': insumoId,
+      'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      result = JSON.parse(result);
+      notifyShow(result.message, result.success ? 'success' : 'danger');
+      if(result.success) {
+        cargarInsumosProveedor(proveedorInsumosActual);
+      }
+    });
+  };
+
+  // Inicializar cuando jQuery esté disponible
+  if (typeof jQuery !== 'undefined') {
+    $(document).ready(initProveedores);
+  } else {
+    window.addEventListener('load', function() {
+      if (typeof jQuery !== 'undefined') {
+        $(document).ready(initProveedores);
+      }
+    });
+  }
+})();
+</script>
