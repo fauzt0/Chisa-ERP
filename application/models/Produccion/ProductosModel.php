@@ -1,0 +1,528 @@
+<?php
+/**
+ * ProductosModel - Modelo de gestión de productos terminados
+ * 
+ * Gestiona productos fabricados y de reventa con formulaciones (BOM),
+ * control de inventario, códigos de barras/QR y alertas de stock
+ * 
+ * @extends MY_Model
+ */
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class ProductosModel extends MY_Model {
+    
+    protected $tableName = 'productos';
+    
+    // Configuración para DataTables
+    protected $datatableConfig = [
+        'table' => 'productos',
+        'column_order' => ['codigo', 'nombre', 'alias', 'categoria_nombre', 'tipo_producto', 'stock_actual', 'precio_venta', 'estatus', null],
+        'column_search' => ['codigo', 'nombre', 'alias', 'categoria_nombre'],
+        'order' => ['fecha_creacion' => 'DESC']
+    ];
+    
+    public function __construct() {
+        parent::__construct();
+    }
+    
+    /**
+     * Override de _get_datatables_query para agregar join con categorías
+     */
+    protected function _get_datatables_query() {
+        $this->db->select('productos.*, categorias_productos.nombre as categoria_nombre');
+        $this->db->from($this->tableName);
+        $this->db->join('categorias_productos', 'categorias_productos.id = productos.categoria_id', 'left');
+        
+        // Búsqueda
+        $i = 0;
+        if(isset($_POST['search']['value']) && $_POST['search']['value'] != '') {
+            foreach ($this->datatableConfig['column_search'] as $column) {
+                if($i === 0) {
+                    $this->db->group_start();
+                    $this->db->like($column, $_POST['search']['value']);
+                } else {
+                    $this->db->or_like($column, $_POST['search']['value']);
+                }
+                
+                if(count($this->datatableConfig['column_search']) - 1 == $i) {
+                    $this->db->group_end();
+                }
+                $i++;
+            }
+        }
+        
+        // Ordenamiento
+        if(isset($_POST['order']) && isset($_POST['order'][0])) {
+            $column_index = $_POST['order'][0]['column'];
+            $column_name = $this->datatableConfig['column_order'][$column_index];
+            $this->db->order_by($column_name, $_POST['order'][0]['dir']);
+        } elseif (isset($this->datatableConfig['order'])) {
+            $order = $this->datatableConfig['order'];
+            $this->db->order_by(key($order), $order[key($order)]);
+        }
+    }
+    
+    /**
+     * Override de get_datatables
+     */
+    public function get_datatables() {
+        $this->_get_datatables_query();
+        if(isset($_POST['length']) && $_POST['length'] != -1) {
+            $this->db->limit($_POST['length'], $_POST['start']);
+        }
+        $query = $this->db->get();
+        return $query->result();
+    }
+    
+    /**
+     * Override de count_filtered
+     */
+    public function count_filtered() {
+        $this->_get_datatables_query();
+        $query = $this->db->get();
+        return $query->num_rows();
+    }
+    
+    /**
+     * Override de count_all
+     */
+    public function count_all($where = []) {
+        $this->db->from($this->tableName);
+        return $this->db->count_all_results();
+    }
+    
+    /**
+     * Obtiene un producto completo con formulación activa
+     */
+    public function get_producto($id) {
+        $this->db->select('productos.*, categorias_productos.nombre as categoria_nombre');
+        $this->db->from($this->tableName);
+        $this->db->join('categorias_productos', 'categorias_productos.id = productos.categoria_id', 'left');
+        $this->db->where('productos.id', $id);
+        $producto = $this->db->get()->row();
+        
+        if($producto && $producto->tipo_producto == 'Fabricado') {
+            // Obtener formulación activa
+            $producto->formulacion = $this->get_formulacion_activa($id);
+        }
+        
+        return $producto;
+    }
+    
+    /**
+     * Crea un nuevo producto
+     */
+    public function crear_producto($data) {
+        // Generar código si no existe
+        if(empty($data['codigo'])) {
+            $data['codigo'] = $this->generar_codigo();
+        }
+        
+        // Generar código de barras EAN-13 si no existe
+        if(empty($data['codigo_barras'])) {
+            $data['codigo_barras'] = $this->generar_codigo_barras_ean13();
+        }
+        
+        $data['fecha_creacion'] = date('Y-m-d H:i:s');
+        
+        return $this->db->insert($this->tableName, $data);
+    }
+    
+    /**
+     * Actualiza un producto
+     */
+    public function actualizar_producto($id, $data) {
+        $this->db->where('id', $id);
+        return $this->db->update($this->tableName, $data);
+    }
+    
+    /**
+     * Elimina un producto
+     */
+    public function eliminar_producto($id) {
+        // Verificar si tiene movimientos
+        $this->db->where('producto_id', $id);
+        $tiene_movimientos = $this->db->count_all_results('movimientos_productos') > 0;
+        
+        if($tiene_movimientos) {
+            return ['success' => false, 'message' => 'No se puede eliminar: el producto tiene movimientos registrados'];
+        }
+        
+        $this->db->where('id', $id);
+        $result = $this->db->delete($this->tableName);
+        
+        return ['success' => $result, 'message' => $result ? 'Producto eliminado' : 'Error al eliminar'];
+    }
+    
+    /**
+     * Genera código único para producto
+     */
+    private function generar_codigo() {
+        $prefijo = 'PROD-';
+        
+        $this->db->select('codigo');
+        $this->db->from($this->tableName);
+        $this->db->like('codigo', $prefijo, 'after');
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit(1);
+        $ultimo = $this->db->get()->row();
+        
+        if($ultimo) {
+            $numero = intval(substr($ultimo->codigo, strlen($prefijo))) + 1;
+        } else {
+            $numero = 1;
+        }
+        
+        return $prefijo . str_pad($numero, 4, '0', STR_PAD_LEFT);
+    }
+    
+    /**
+     * Genera código de barras EAN-13 único
+     * Formato: 750 (México) + 4 dígitos empresa + 5 dígitos producto + 1 dígito verificador
+     */
+    private function generar_codigo_barras_ean13() {
+        $prefijo_pais = '750'; // México
+        $codigo_empresa = '0001'; // Código de empresa (puedes personalizarlo)
+        
+        // Obtener siguiente número de producto
+        $this->db->select('codigo_barras');
+        $this->db->from($this->tableName);
+        $this->db->where('codigo_barras IS NOT NULL');
+        $this->db->like('codigo_barras', $prefijo_pais . $codigo_empresa, 'after');
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit(1);
+        $ultimo = $this->db->get()->row();
+        
+        if($ultimo && strlen($ultimo->codigo_barras) == 13) {
+            // Extraer el número de producto (5 dígitos)
+            $numero_producto = intval(substr($ultimo->codigo_barras, 7, 5)) + 1;
+        } else {
+            $numero_producto = 1;
+        }
+        
+        // Formar los primeros 12 dígitos
+        $codigo_sin_verificador = $prefijo_pais . $codigo_empresa . str_pad($numero_producto, 5, '0', STR_PAD_LEFT);
+        
+        // Calcular dígito verificador
+        $digito_verificador = $this->calcular_digito_verificador_ean13($codigo_sin_verificador);
+        
+        return $codigo_sin_verificador . $digito_verificador;
+    }
+    
+    /**
+     * Calcula el dígito verificador para código EAN-13
+     */
+    private function calcular_digito_verificador_ean13($codigo) {
+        $suma = 0;
+        for($i = 0; $i < 12; $i++) {
+            $digito = intval($codigo[$i]);
+            // Posiciones impares (0, 2, 4...) se multiplican por 1
+            // Posiciones pares (1, 3, 5...) se multiplican por 3
+            $suma += ($i % 2 == 0) ? $digito : $digito * 3;
+        }
+        
+        $modulo = $suma % 10;
+        return ($modulo == 0) ? 0 : 10 - $modulo;
+    }
+    
+    // =====================================================
+    // GESTIÓN DE FORMULACIONES (BOM)
+    // =====================================================
+    
+    /**
+     * Obtiene la formulación activa de un producto
+     */
+    public function get_formulacion_activa($producto_id) {
+        $this->db->where('producto_id', $producto_id);
+        $this->db->where('es_activa', TRUE);
+        $formulacion = $this->db->get('formulaciones')->row();
+        
+        if($formulacion) {
+            $formulacion->componentes = $this->get_componentes_formulacion($formulacion->id);
+        }
+        
+        return $formulacion;
+    }
+    
+    /**
+     * Obtiene todas las formulaciones de un producto (historial)
+     */
+    public function get_formulaciones_producto($producto_id) {
+        $this->db->where('producto_id', $producto_id);
+        $this->db->order_by('version', 'DESC');
+        return $this->db->get('formulaciones')->result();
+    }
+    
+    /**
+     * Obtiene los componentes de una formulación
+     */
+    public function get_componentes_formulacion($formulacion_id) {
+        $this->db->select('
+            detalle_formulacion.*,
+            insumos.codigo as insumo_codigo,
+            insumos.nombre_tecnico as insumo_nombre,
+            insumos.stock_actual as insumo_stock,
+            productos.codigo as producto_codigo,
+            productos.nombre as producto_nombre
+        ');
+        $this->db->from('detalle_formulacion');
+        $this->db->join('insumos', 'insumos.id = detalle_formulacion.insumo_id', 'left');
+        $this->db->join('productos', 'productos.id = detalle_formulacion.producto_id', 'left');
+        $this->db->where('detalle_formulacion.formulacion_id', $formulacion_id);
+        $this->db->order_by('detalle_formulacion.orden', 'ASC');
+        
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Crea una nueva formulación
+     */
+    public function crear_formulacion($data) {
+        // Si es la primera formulación, es activa por defecto
+        $this->db->where('producto_id', $data['producto_id']);
+        $tiene_formulaciones = $this->db->count_all_results('formulaciones') > 0;
+        
+        if(!$tiene_formulaciones) {
+            $data['es_activa'] = TRUE;
+            $data['version'] = 1;
+        } else {
+            // Obtener siguiente versión
+            $this->db->select_max('version');
+            $this->db->where('producto_id', $data['producto_id']);
+            $result = $this->db->get('formulaciones')->row();
+            $data['version'] = ($result->version ?? 0) + 1;
+        }
+        
+        $data['fecha_creacion'] = date('Y-m-d H:i:s');
+        
+        return $this->db->insert('formulaciones', $data);
+    }
+    
+    /**
+     * Agrega un componente a la formulación
+     */
+    public function agregar_componente($formulacion_id, $data) {
+        $data['formulacion_id'] = $formulacion_id;
+        
+        // Obtener costo unitario del componente
+        if($data['tipo_componente'] == 'Insumo' && !empty($data['insumo_id'])) {
+            $insumo = $this->db->where('id', $data['insumo_id'])->get('insumos')->row();
+            $data['costo_unitario'] = $insumo->precio_promedio ?? 0;
+        } elseif($data['tipo_componente'] == 'Producto' && !empty($data['producto_id'])) {
+            $producto = $this->db->where('id', $data['producto_id'])->get('productos')->row();
+            $data['costo_unitario'] = $producto->costo_produccion ?? 0;
+        }
+        
+        // El trigger calculará el costo_total automáticamente
+        $result = $this->db->insert('detalle_formulacion', $data);
+        
+        return $result;
+    }
+    
+    /**
+     * Elimina un componente de la formulación
+     */
+    public function eliminar_componente($id) {
+        $this->db->where('id', $id);
+        return $this->db->delete('detalle_formulacion');
+    }
+    
+    /**
+     * Activa una formulación (desactiva las demás del mismo producto)
+     */
+    public function activar_formulacion($formulacion_id) {
+        $formulacion = $this->db->where('id', $formulacion_id)->get('formulaciones')->row();
+        
+        if(!$formulacion) {
+            return ['success' => false, 'message' => 'Formulación no encontrada'];
+        }
+        
+        $this->db->trans_start();
+        
+        // Desactivar todas las formulaciones del producto
+        $this->db->where('producto_id', $formulacion->producto_id);
+        $this->db->update('formulaciones', ['es_activa' => FALSE]);
+        
+        // Activar la seleccionada
+        $this->db->where('id', $formulacion_id);
+        $this->db->update('formulaciones', [
+            'es_activa' => TRUE,
+            'fecha_activacion' => date('Y-m-d H:i:s')
+        ]);
+        
+        $this->db->trans_complete();
+        
+        if ($this->db->trans_status() === FALSE) {
+            return ['success' => false, 'message' => 'Error al activar formulación'];
+        }
+        
+        return ['success' => true, 'message' => 'Formulación activada correctamente'];
+    }
+    
+    // =====================================================
+    // MOVIMIENTOS DE PRODUCTOS
+    // =====================================================
+    
+    /**
+     * Registra un movimiento de producto (entrada/salida)
+     */
+    public function registrar_movimiento($data) {
+        // Obtener stock actual
+        $producto = $this->db->where('id', $data['producto_id'])->get('productos')->row();
+        
+        if(!$producto) {
+            return ['success' => false, 'message' => 'Producto no encontrado'];
+        }
+        
+        $data['stock_anterior'] = $producto->stock_actual;
+        
+        // Calcular nuevo stock según tipo de movimiento
+        if(in_array($data['tipo_movimiento'], ['Entrada', 'Produccion', 'Devolucion'])) {
+            $data['stock_nuevo'] = $data['stock_anterior'] + $data['cantidad'];
+        } else { // Salida, Venta, Ajuste negativo
+            $data['stock_nuevo'] = $data['stock_anterior'] - $data['cantidad'];
+        }
+        
+        $data['fecha_movimiento'] = date('Y-m-d H:i:s');
+        
+        $result = $this->db->insert('movimientos_productos', $data);
+        
+        // El trigger actualiza el stock automáticamente
+        
+        return ['success' => $result, 'message' => $result ? 'Movimiento registrado' : 'Error al registrar'];
+    }
+    
+    /**
+     * Registra salida escaneando código de barras/QR
+     */
+    public function registrar_salida_escaneo($codigo, $cantidad, $user_id) {
+        // Buscar producto por código de barras, QR o SKU
+        $this->db->group_start();
+        $this->db->where('codigo_barras', $codigo);
+        $this->db->or_where('codigo_qr', $codigo);
+        $this->db->or_where('sku', $codigo);
+        $this->db->group_end();
+        $producto = $this->db->get('productos')->row();
+        
+        if(!$producto) {
+            return ['success' => false, 'message' => 'Producto no encontrado con ese código'];
+        }
+        
+        return $this->registrar_movimiento([
+            'producto_id' => $producto->id,
+            'tipo_movimiento' => 'Salida',
+            'cantidad' => $cantidad,
+            'motivo' => 'Salida por escaneo de código',
+            'escaneado_barras' => TRUE,
+            'codigo_escaneado' => $codigo,
+            'usuario_id' => $user_id
+        ]);
+    }
+    
+    // =====================================================
+    // ALERTAS Y ESTADÍSTICAS
+    // =====================================================
+    
+    /**
+     * Obtiene estadísticas de productos
+     */
+    public function get_estadisticas() {
+        $stats = [];
+        
+        // Total de productos
+        $stats['total_productos'] = $this->db->count_all_results($this->tableName);
+        
+        // Productos fabricados
+        $this->db->where('tipo_producto', 'Fabricado');
+        $stats['productos_fabricados'] = $this->db->count_all_results($this->tableName);
+        
+        // Productos de reventa
+        $this->db->where('tipo_producto', 'Reventa');
+        $stats['productos_reventa'] = $this->db->count_all_results($this->tableName);
+        
+        // Productos con stock bajo
+        $this->db->where('stock_actual <=', 'stock_minimo', FALSE);
+        $this->db->where('estatus', 'Activo');
+        $stats['stock_bajo'] = $this->db->count_all_results($this->tableName);
+        
+        // Valor total de inventario
+        $this->db->select('SUM(stock_actual * precio_venta) as valor_total', FALSE);
+        $this->db->where('estatus', 'Activo');
+        $result = $this->db->get($this->tableName)->row();
+        $stats['valor_inventario'] = $result->valor_total ?? 0;
+        
+        return $stats;
+    }
+    
+    /**
+     * Obtiene alertas activas de productos
+     */
+    public function get_alertas_productos() {
+        $this->db->select('alertas_stock.*, productos.nombre as producto_nombre');
+        $this->db->from('alertas_stock');
+        $this->db->join('productos', 'productos.id = alertas_stock.producto_id', 'left');
+        $this->db->where('alertas_stock.tipo_alerta', 'Producto');
+        $this->db->where('alertas_stock.resuelta', FALSE);
+        $this->db->order_by('alertas_stock.nivel_alerta', 'DESC');
+        $this->db->order_by('alertas_stock.fecha_creacion', 'DESC');
+        
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Verifica y crea alertas de stock bajo
+     */
+    public function verificar_alertas_stock() {
+        // Llamar al stored procedure
+        $this->db->query('CALL sp_verificar_stock_productos()');
+        $this->db->query('CALL sp_verificar_insumos_formulaciones()');
+    }
+    
+    /**
+     * Obtiene categorías para select
+     */
+    public function get_categorias_select() {
+        $this->db->select('id, nombre');
+        $this->db->where('estatus', 'Activa');
+        $this->db->order_by('nombre', 'ASC');
+        return $this->db->get('categorias_productos')->result();
+    }
+    
+    /**
+     * Obtiene historial de formulaciones de un producto con búsqueda opcional
+     */
+    public function get_historial_formulaciones($producto_id, $busqueda = null) {
+        $this->db->select('formulaciones.*');
+        $this->db->from('formulaciones');
+        $this->db->where('formulaciones.producto_id', $producto_id);
+        
+        // Búsqueda opcional por nombre de versión o descripción
+        if($busqueda && trim($busqueda) != '') {
+            $this->db->group_start();
+            $this->db->like('formulaciones.nombre_version', $busqueda);
+            $this->db->or_like('formulaciones.descripcion', $busqueda);
+            $this->db->group_end();
+        }
+        
+        $this->db->order_by('formulaciones.version', 'DESC');
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Obtiene una formulación completa con todos sus componentes
+     */
+    public function get_formulacion_completa($formulacion_id) {
+        // Obtener datos de la formulación
+        $this->db->select('formulaciones.*');
+        $this->db->from('formulaciones');
+        $this->db->where('formulaciones.id', $formulacion_id);
+        $formulacion = $this->db->get()->row();
+        
+        if($formulacion) {
+            // Obtener componentes con nombres completos
+            $formulacion->componentes = $this->get_componentes_formulacion($formulacion_id);
+        }
+        
+        return $formulacion;
+    }
+}

@@ -64,14 +64,14 @@
 			<div class="col-xl-6 d-none d-xl-flex">
 				<div class="auth-full-page position-relative">
 					<img src="<?php echo base_url();?>assets/dist/img/photos/chisa recubrimientos sistema ERP.jpg" class="auth-bg" alt="Unsplash">
-					<div class="auth-quote">
+					<!--<div class="auth-quote">
 						
 						<figure>
 							<blockquote class="fondo-claro-translucido">
 								<p>Sistema ERP para la Administración y Gestión de Procesos.</p>
 							</blockquote>
 						</figure>
-					</div>
+					</div>-->
 				</div>
 			</div>
 			<div class="col-xl-6">
@@ -80,9 +80,9 @@
 						<div class="auth-form">											
 							<div class="text-center">
 								<img src="<?php echo base_url();?>assets/dist/img/photos/logo-chisa-portada.jpg"  alt="ERP" width="220px" >			
-								<h1 class="h2 mt-2">Bienvenid@!</h1>
+								<h1 class="h2 mt-2">SISTEMA ERP</h1>
 								<p class="lead">
-									Ingresa a tu cuenta para continuar.
+									Administración y Gestión de Procesos.
 								</p>
 							</div>
 
@@ -115,7 +115,7 @@
 											<label class="form-check-label text-small" for="customControlInline">Recordar cuenta en el dispositivo</label>
 										</div>
 									</div>
-									<div class="d-grid gap-2 mt-3">
+									<div class="d-grid gap-2 mt-3 mb-3">
 										<?php if(isset($validate)){ echo $validate; }?>
 										<button type="submit" class="btn btn-primary btn-lg">Iniciar sesión</button>
 									</div>

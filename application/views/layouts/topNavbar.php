@@ -3,6 +3,7 @@
     <i class="hamburger align-self-center"></i>
   </a>
 
+  <!--
   <form class="d-none d-sm-inline-block">
     <div class="input-group input-group-navbar">
       <input type="text" class="form-control" placeholder="Buscar" aria-label="Search">
@@ -10,7 +11,7 @@
         <i class="align-middle" data-lucide="search"></i>
       </button>
     </div>
-  </form>
+  </form>-->
 
   <!--
   <ul class="navbar-nav">
@@ -58,135 +59,25 @@
 
   <div class="navbar-collapse collapse">
     <ul class="navbar-nav navbar-align">
-      <li class="nav-item dropdown">
-        <a class="nav-icon dropdown-toggle" href="#" id="messagesDropdown" data-bs-toggle="dropdown">
-          <div class="position-relative">
-            <i class="align-middle text-body" data-lucide="message-circle"></i>
-            <span class="indicator">4</span>
-          </div>
-        </a>
-        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end py-0" aria-labelledby="messagesDropdown">
-          <div class="dropdown-menu-header">
-            <div class="position-relative">
-              4 New Messages
-            </div>
-          </div>
-          <div class="list-group">
-            <a href="#" class="list-group-item">
-              <div class="row g-0 align-items-center">
-                <div class="col-2">
-                  <img src="img/avatars/avatar-5.jpg" class="img-fluid rounded-circle" alt="Ashley Briggs" width="40" height="40">
-                </div>
-                <div class="col-10 ps-2">
-                  <div>Ashley Briggs</div>
-                  <div class="text-muted small mt-1">Nam pretium turpis et arcu. Duis arcu tortor.</div>
-                  <div class="text-muted small mt-1">15m ago</div>
-                </div>
-              </div>
-            </a>
-            <a href="#" class="list-group-item">
-              <div class="row g-0 align-items-center">
-                <div class="col-2">
-                  <img src="img/avatars/avatar-2.jpg" class="img-fluid rounded-circle" alt="Carl Jenkins" width="40" height="40">
-                </div>
-                <div class="col-10 ps-2">
-                  <div>Carl Jenkins</div>
-                  <div class="text-muted small mt-1">Curabitur ligula sapien euismod vitae.</div>
-                  <div class="text-muted small mt-1">2h ago</div>
-                </div>
-              </div>
-            </a>
-            <a href="#" class="list-group-item">
-              <div class="row g-0 align-items-center">
-                <div class="col-2">
-                  <img src="img/avatars/avatar-4.jpg" class="img-fluid rounded-circle" alt="Stacie Hall" width="40" height="40">
-                </div>
-                <div class="col-10 ps-2">
-                  <div>Stacie Hall</div>
-                  <div class="text-muted small mt-1">Pellentesque auctor neque nec urna.</div>
-                  <div class="text-muted small mt-1">4h ago</div>
-                </div>
-              </div>
-            </a>
-            <a href="#" class="list-group-item">
-              <div class="row g-0 align-items-center">
-                <div class="col-2">
-                  <img src="img/avatars/avatar-3.jpg" class="img-fluid rounded-circle" alt="Bertha Martin" width="40" height="40">
-                </div>
-                <div class="col-10 ps-2">
-                  <div>Bertha Martin</div>
-                  <div class="text-muted small mt-1">Aenean tellus metus, bibendum sed, posuere ac, mattis non.</div>
-                  <div class="text-muted small mt-1">5h ago</div>
-                </div>
-              </div>
-            </a>
-          </div>
-          <div class="dropdown-menu-footer">
-            <a href="#" class="text-muted">Show all messages</a>
-          </div>
-        </div>
-      </li>
+      
+
+      
       <li class="nav-item dropdown">
         <a class="nav-icon dropdown-toggle" href="#" id="alertsDropdown" data-bs-toggle="dropdown">
           <div class="position-relative">
-            <i class="align-middle text-body" data-lucide="bell-off"></i>
+            <i class="align-middle text-body" data-lucide="bell"></i>
+            <span class="indicator" id="notifications-badge" style="display: none;"></span>
           </div>
         </a>
         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end py-0" aria-labelledby="alertsDropdown">
-          <div class="dropdown-menu-header">
-            4 New Notifications
+          <div class="dropdown-menu-header" id="notifications-header">
+            <span class="spinner-border spinner-border-sm me-2"></span> Cargando notificaciones...
           </div>
-          <div class="list-group">
-            <a href="#" class="list-group-item">
-              <div class="row g-0 align-items-center">
-                <div class="col-2">
-                  <i class="text-danger" data-lucide="alert-circle"></i>
-                </div>
-                <div class="col-10">
-                  <div>Update completed</div>
-                  <div class="text-muted small mt-1">Restart server 12 to complete the update.</div>
-                  <div class="text-muted small mt-1">2h ago</div>
-                </div>
-              </div>
-            </a>
-            <a href="#" class="list-group-item">
-              <div class="row g-0 align-items-center">
-                <div class="col-2">
-                  <i class="text-warning" data-lucide="bell"></i>
-                </div>
-                <div class="col-10">
-                  <div>Lorem ipsum</div>
-                  <div class="text-muted small mt-1">Aliquam ex eros, imperdiet vulputate hendrerit et.</div>
-                  <div class="text-muted small mt-1">6h ago</div>
-                </div>
-              </div>
-            </a>
-            <a href="#" class="list-group-item">
-              <div class="row g-0 align-items-center">
-                <div class="col-2">
-                  <i class="text-primary" data-lucide="home"></i>
-                </div>
-                <div class="col-10">
-                  <div>Login from 192.186.1.1</div>
-                  <div class="text-muted small mt-1">8h ago</div>
-                </div>
-              </div>
-            </a>
-            <a href="#" class="list-group-item">
-              <div class="row g-0 align-items-center">
-                <div class="col-2">
-                  <i class="text-success" data-lucide="user-plus"></i>
-                </div>
-                <div class="col-10">
-                  <div>New connection</div>
-                  <div class="text-muted small mt-1">Anna accepted your request.</div>
-                  <div class="text-muted small mt-1">12h ago</div>
-                </div>
-              </div>
-            </a>
+          <div class="list-group" id="notifications-list">
+            <!-- Las notificaciones se cargarán dinámicamente aquí -->
           </div>
           <div class="dropdown-menu-footer">
-            <a href="#" class="text-muted">Show all notifications</a>
+            <a href="#" class="text-muted" onclick="refreshNotifications(); return false;">Actualizar notificaciones</a>
           </div>
         </div>
       </li>
@@ -229,15 +120,11 @@
         </a>
 
         <a class="nav-link dropdown-toggle d-none d-sm-inline-block" href="#" data-bs-toggle="dropdown">
-          <img src="<?php echo base_url();?>assets/dist/img/avatars/avatar.jpg" class="img-fluid rounded-circle me-1 mt-n2 mb-n2" alt="Chris Wood" width="40" height="40"/> <span>Chris Wood</span>
+          <i class="align-middle fas fa-user-circle me-1" style="font-size: 2rem;"></i> 
+          <span><?= $this->session->userdata('name') ? $this->session->userdata('name') : 'Usuario' ?></span>
         </a>
-        <div class="dropdown-menu dropdown-menu-end">
-          <a class="dropdown-item" href="pages-profile.html"><i class="align-middle me-1" data-lucide="user"></i> Profile</a>
-          <a class="dropdown-item" href="#"><i class="align-middle me-1" data-lucide="pie-chart"></i> Analytics</a>
-          <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="pages-settings.html">Settings & Privacy</a>
-          <a class="dropdown-item" href="#">Help</a>
-          <a class="dropdown-item" href="#">Sign out</a>
+        <div class="dropdown-menu dropdown-menu-end">                    
+          <a class="dropdown-item" href="<?php echo base_url();?>Auth/logout">Cerrar Sesión</a>
         </div>
       </li>
     </ul>

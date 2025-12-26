@@ -6,8 +6,8 @@
 
     <ul class="sidebar-nav">
       
-      <li class="sidebar-item active">
-        <a class="sidebar-link active" href="<?php echo base_url();?>dashboard">
+      <li class="sidebar-item">
+        <a class="sidebar-link" href="<?php echo base_url();?>dashboard">
           <i class="align-middle" data-lucide="home"></i> <span class="align-middle">Inicio</span>
         </a>
       </li>
@@ -26,121 +26,115 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>usuarios/GestionUsuarios/bitacora">
             Bitácora
           </a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="ecommerce-customers.html">Configuración</a></li>
+          
           
         </ul>
       </li>
 
       <!-- Recursos Humanos -->
       <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Recursos Humanos</span>
+        <a data-bs-target="#rh-menu" data-bs-toggle="collapse" class="sidebar-link collapsed">
+          <i class="align-middle" data-lucide="users"></i> <span class="align-middle">Recursos Humanos</span>
         </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
+        <ul id="rh-menu" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/RecursosHumanos">
+            Gestión de Empleados
+          </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/RecursosHumanos/alta">
+            Alta de Empleado
+          </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/Departamentos">
+            Departamentos
+          </a></li>
         </ul>
       </li>
+      
+      <li class="sidebar-item">
+        <a data-bs-target="#proveedores" data-bs-toggle="collapse" class="sidebar-link collapsed">
+          <i class="align-middle" data-lucide="package"></i> <span class="align-middle">Proveedores</span>
+        </a>
+        <ul id="proveedores" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Categorias">Categorías</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Insumos">Insumos</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Proveedores">Proveedores</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/OrdenesCompra">Órdenes de Compra</a></li>
+        </ul>
+      </li>
+      
+      <li class="sidebar-item">
+        <a data-bs-target="#produccion" data-bs-toggle="collapse" class="sidebar-link collapsed">
+          <i class="align-middle" data-lucide="factory"></i> <span class="align-middle">Producción</span>
+        </a>
+        <ul id="produccion" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Dashboard">Dashboard Producción</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Productos">Productos</a></li>
+        </ul>
+      </li>
+      
+      <li class="sidebar-item">
+        <a data-bs-target="#ventas" data-bs-toggle="collapse" class="sidebar-link collapsed">
+          <i class="align-middle" data-lucide="shopping-cart"></i> <span class="align-middle">CRM Ventas</span>
+        </a>
+        <ul id="ventas" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Pos">Punto de Venta (POS)</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Ordenes">Órdenes de Venta</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/ObrasVentas">Obras</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Clientes">Clientes</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Descuentos">Descuentos</a></li>
+        </ul>
+      </li>
+      
+      <!-- Obras -->
+      <li class="sidebar-item">
+        <a class="sidebar-link" href="<?=base_url();?>obras/Obras">
+          <i class="align-middle fas fa-hard-hat"></i> <span class="align-middle">Obras</span>
+        </a>
+      </li>
+      
 
       <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Ordenes Compra</span>
+        <a data-bs-target="#contabilidad" data-bs-toggle="collapse" class="sidebar-link collapsed">
+            <i class="align-middle fas fa-calculator"></i> <span class="align-middle">Contabilidad</span>
         </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
+        <ul id="contabilidad" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Dashboard">
+                    Dashboard Contable
+                </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/CuentasContables">
+                    Catálogo de Cuentas
+                </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Polizas">
+                    Pólizas Contables
+                </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Bancos">
+                    Bancos
+                </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Nomina">
+                    Nómina
+                </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Reportes">
+                    Reportes Financieros
+                </a></li>
         </ul>
-      </li>
-
+    </li>
+      
+      <!-- Almacén -->
       <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Proveedores</span>
+        <a data-bs-target="#almacen" data-bs-toggle="collapse" class="sidebar-link collapsed">
+            <i class="align-middle fas fa-warehouse"></i> <span class="align-middle">Almacén</span>
         </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
+        <ul id="almacen" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>almacen/Dashboard">
+                    Dashboard
+                </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>almacen/Inventario">
+                    Inventario
+                </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>almacen/Entregas">
+                    Entregas
+                </a></li>
         </ul>
-      </li>
-
-      <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">CRM</span>
-        </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
-        </ul>
-      </li>
-
-      <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Ventas</span>
-        </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
-        </ul>
-      </li>
-
-      <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Cálculo Materiales</span>
-        </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
-        </ul>
-      </li>
-
-      <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Producción</span>
-        </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
-        </ul>
-      </li>
-
-      <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Almacén</span>
-        </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
-        </ul>
-      </li>
-
-      <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Facturación</span>
-        </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
-        </ul>
-      </li>
-
-      <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Contabilidad</span>
-        </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
-        </ul>
-      </li>
-
-      <li class="sidebar-item">
-        <a data-bs-target="#projects" data-bs-toggle="collapse" class="sidebar-link collapsed">
-          <i class="align-middle" data-lucide="layout"></i> <span class="align-middle">Reportes</span>
-        </a>
-        <ul id="projects" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-overview.html">Overview</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="projects-details.html">Details</a></li>
-        </ul>
-      </li>
+    </li>
       
       
 

@@ -4,6 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 /**
  * Permissions Configuration
  * Define all system permissions organized by module
+ * Updated to match current ERP modules
  */
 
 $config['permissions'] = array(
@@ -11,45 +12,95 @@ $config['permissions'] = array(
     'user_add'     => 'Agregar usuarios',
     'user_edit'    => 'Editar usuarios',
     'user_consult' => 'Consultar usuarios',
+    'user_delete'  => 'Eliminar usuarios',
+    'user_bitacora' => 'Ver bitácora',
   ),
-  'Clientes' => array(
-    'customer_add'     => 'Agregar clientes',
-    'customer_edit'    => 'Editar clientes',
-    'customer_consult' => 'Consultar clientes',
+  
+  'Recursos Humanos' => array(
+    'rh_empleados_add'     => 'Agregar empleados',
+    'rh_empleados_edit'    => 'Editar empleados',
+    'rh_empleados_consult' => 'Consultar empleados',
+    'rh_empleados_delete'  => 'Eliminar empleados',
+    'rh_departamentos'     => 'Gestionar departamentos',
   ),
+  
+  'Clientes (CRM)' => array(
+    'clientes_add'     => 'Agregar clientes',
+    'clientes_edit'    => 'Editar clientes',
+    'clientes_consult' => 'Consultar clientes',
+    'clientes_delete'  => 'Eliminar clientes',
+  ),
+  
   'Proveedores' => array(
     'proveedores_add'     => 'Agregar proveedores',
     'proveedores_edit'    => 'Editar proveedores',
     'proveedores_consult' => 'Consultar proveedores',
+    'proveedores_delete'  => 'Eliminar proveedores',
   ),
-  'MateriaPrima' => array(
-    'materia_prima_add'     => 'Agregar materia prima',
-    'materia_prima_edit'    => 'Editar materia prima',
-    'materia_prima_consult' => 'Consultar materia prima',
-  ),
-  'Cobranza' => array(
-    'cobranza_add'     => 'Agregar cobranza',
-    'cobranza_edit'    => 'Editar cobranza',
-    'cobranza_consult' => 'Consultar cobranza',
-  ),
-  'Compras' => array(
-    'compras_add'     => 'Agregar compras',
-    'compras_edit'    => 'Editar compras',
-    'compras_consult' => 'Consultar compras',
-  ),
+  
   'Ventas' => array(
-    'ventas_add'     => 'Agregar ventas',
-    'ventas_edit'    => 'Editar ventas',
-    'ventas_consult' => 'Consultar ventas',
+    'ventas_ordenes_add'     => 'Crear órdenes de venta',
+    'ventas_ordenes_edit'    => 'Editar órdenes de venta',
+    'ventas_ordenes_consult' => 'Consultar órdenes de venta',
+    'ventas_ordenes_delete'  => 'Cancelar órdenes de venta',
+    'ventas_cotizaciones'    => 'Gestionar cotizaciones',
   ),
+  
+  'Compras' => array(
+    'compras_ordenes_add'     => 'Crear órdenes de compra',
+    'compras_ordenes_edit'    => 'Editar órdenes de compra',
+    'compras_ordenes_consult' => 'Consultar órdenes de compra',
+    'compras_ordenes_delete'  => 'Cancelar órdenes de compra',
+    'compras_recepcion'       => 'Recibir mercancía',
+  ),
+  
+  'Producción' => array(
+    'produccion_productos_add'     => 'Agregar productos',
+    'produccion_productos_edit'    => 'Editar productos',
+    'produccion_productos_consult' => 'Consultar productos',
+    'produccion_formulaciones'     => 'Gestionar formulaciones',
+    'produccion_ordenes'           => 'Gestionar órdenes de producción',
+    'produccion_ver_costos'        => 'Ver costos y precios',
+  ),
+  
+  'Almacén' => array(
+    'almacen_inventario_consult' => 'Consultar inventario',
+    'almacen_ajustes'            => 'Realizar ajustes de inventario',
+    'almacen_entregas'           => 'Gestionar entregas',
+    'almacen_movimientos'        => 'Ver movimientos',
+    'almacen_insumos'            => 'Gestionar insumos',
+  ),
+  
+  'Obras' => array(
+    'obras_add'     => 'Crear obras',
+    'obras_edit'    => 'Editar obras',
+    'obras_consult' => 'Consultar obras',
+    'obras_delete'  => 'Eliminar obras',
+    'obras_pagos'   => 'Gestionar pagos de obras',
+  ),
+  
+  'Contabilidad' => array(
+    'contabilidad_cuentas'     => 'Gestionar catálogo de cuentas',
+    'contabilidad_polizas'     => 'Crear pólizas contables',
+    'contabilidad_nomina'      => 'Gestionar nómina',
+    'contabilidad_reportes'    => 'Ver reportes financieros',
+    'contabilidad_gastos'      => 'Registrar gastos',
+    'contabilidad_ingresos'    => 'Registrar ingresos',
+  ),
+  
   'Reportes' => array(
-    'reportes_add'     => 'Agregar reportes',
-    'reportes_edit'    => 'Editar reportes',
-    'reportes_consult' => 'Consultar reportes',
+    'reportes_ventas'      => 'Reportes de ventas',
+    'reportes_compras'     => 'Reportes de compras',
+    'reportes_inventario'  => 'Reportes de inventario',
+    'reportes_produccion'  => 'Reportes de producción',
+    'reportes_financieros' => 'Reportes financieros',
+    'reportes_obras'       => 'Reportes de obras',
   ),
-  'Mensajes' => array(
-    'mensajes_add'     => 'Agregar mensajes',
-    'mensajes_edit'    => 'Editar mensajes',
-    'mensajes_consult' => 'Consultar mensajes',
-  ),  
+  
+  'Dashboard' => array(
+    'dashboard_main'       => 'Ver dashboard principal',
+    'dashboard_ventas'     => 'Ver dashboard de ventas',
+    'dashboard_produccion' => 'Ver dashboard de producción',
+    'dashboard_almacen'    => 'Ver dashboard de almacén',
+  ),
 );

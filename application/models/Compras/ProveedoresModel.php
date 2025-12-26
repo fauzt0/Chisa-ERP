@@ -1,0 +1,249 @@
+<?php
+/**
+ * ProveedoresModel - Modelo de gestión de proveedores
+ * 
+ * Gestiona catálogo de proveedores y relación con insumos
+ * 
+ * @extends MY_Model
+ */
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class ProveedoresModel extends MY_Model {
+    
+    protected $tableName = 'proveedores';
+    
+    // Configuración para DataTables
+    protected $datatableConfig = [
+        'table' => 'proveedores',
+        'column_order' => ['codigo', 'razon_social', 'rfc', 'telefono_principal', 'ciudad', 'estatus', null],
+        'column_search' => ['codigo', 'razon_social', 'nombre_comercial', 'rfc', 'email_principal'],
+        'order' => ['razon_social' => 'ASC']
+    ];
+    
+    public function __construct() {
+        parent::__construct();
+    }
+    
+    /**
+     * Override de _get_datatables_query
+     */
+    protected function _get_datatables_query() {
+        $this->db->select('proveedores.*');
+        $this->db->from($this->tableName);
+        
+        // Búsqueda
+        $i = 0;
+        if(isset($_POST['search']['value']) && $_POST['search']['value'] != '') {
+            foreach ($this->datatableConfig['column_search'] as $column) {
+                if($i === 0) {
+                    $this->db->group_start();
+                    $this->db->like($column, $_POST['search']['value']);
+                } else {
+                    $this->db->or_like($column, $_POST['search']['value']);
+                }
+                
+                if(count($this->datatableConfig['column_search']) - 1 == $i) {
+                    $this->db->group_end();
+                }
+                $i++;
+            }
+        }
+        
+        // Ordenamiento
+        if(isset($_POST['order'])) {
+            $column_index = $_POST['order'][0]['column'];
+            $column_name = $this->datatableConfig['column_order'][$column_index];
+            $this->db->order_by($column_name, $_POST['order'][0]['dir']);
+        } elseif (isset($this->datatableConfig['order'])) {
+            $order = $this->datatableConfig['order'];
+            $this->db->order_by(key($order), $order[key($order)]);
+        }
+    }
+    
+    /**
+     * Override de get_datatables
+     */
+    public function get_datatables() {
+        $this->_get_datatables_query();
+        if(isset($_POST['length']) && $_POST['length'] != -1) {
+            $this->db->limit($_POST['length'], $_POST['start']);
+        }
+        $query = $this->db->get();
+        return $query->result();
+    }
+    
+    /**
+     * Override de count_filtered
+     */
+    public function count_filtered() {
+        $this->_get_datatables_query();
+        $query = $this->db->get();
+        return $query->num_rows();
+    }
+    
+    /**
+     * Override de count_all
+     */
+    public function count_all($where = []) {
+        $this->db->from($this->tableName);
+        return $this->db->count_all_results();
+    }
+    
+    /**
+     * Obtiene un proveedor por ID
+     */
+    public function get_proveedor($id) {
+        $this->db->where('id', $id);
+        return $this->db->get($this->tableName)->row();
+    }
+    
+    /**
+     * Crea un nuevo proveedor
+     */
+    public function crear_proveedor($data) {
+        // Generar código si no existe
+        if(empty($data['codigo'])) {
+            $data['codigo'] = $this->generar_codigo();
+        }
+        
+        return $this->db->insert($this->tableName, $data);
+    }
+    
+    /**
+     * Actualiza un proveedor
+     */
+    public function actualizar_proveedor($id, $data) {
+        $this->db->where('id', $id);
+        return $this->db->update($this->tableName, $data);
+    }
+    
+    /**
+     * Elimina un proveedor (validar dependencias)
+     */
+    public function eliminar_proveedor($id) {
+        // Verificar que no tenga órdenes de compra
+        $this->db->where('proveedor_id', $id);
+        if($this->db->count_all_results('ordenes_compra') > 0) {
+            return ['success' => false, 'message' => 'No se puede eliminar: tiene órdenes de compra asociadas'];
+        }
+        
+        // Verificar que no tenga insumos relacionados
+        $this->db->where('proveedor_id', $id);
+        $count = $this->db->count_all_results('proveedor_insumo');
+        
+        if($count > 0) {
+            return ['success' => false, 'message' => 'No se puede eliminar: tiene ' . $count . ' insumos relacionados. Elimine las relaciones primero.'];
+        }
+        
+        $this->db->where('id', $id);
+        $result = $this->db->delete($this->tableName);
+        
+        return ['success' => $result, 'message' => $result ? 'Proveedor eliminado' : 'Error al eliminar'];
+    }
+    
+    /**
+     * Obtiene insumos de un proveedor
+     */
+    public function get_insumos_proveedor($proveedor_id) {
+        $this->db->select('proveedor_insumo.*, insumos.codigo, insumos.nombre_tecnico, insumos.unidad_medida');
+        $this->db->from('proveedor_insumo');
+        $this->db->join('insumos', 'insumos.id = proveedor_insumo.insumo_id');
+        $this->db->where('proveedor_insumo.proveedor_id', $proveedor_id);
+        $this->db->order_by('insumos.nombre_tecnico', 'ASC');
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Obtiene proveedores de un insumo
+     */
+    public function get_proveedores_insumo($insumo_id) {
+        $this->db->select('proveedor_insumo.*, proveedores.codigo, proveedores.razon_social, proveedores.nombre_comercial');
+        $this->db->from('proveedor_insumo');
+        $this->db->join('proveedores', 'proveedores.id = proveedor_insumo.proveedor_id');
+        $this->db->where('proveedor_insumo.insumo_id', $insumo_id);
+        $this->db->where('proveedores.estatus', 'Activo');
+        $this->db->order_by('proveedor_insumo.precio_unitario', 'ASC');
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Agrega un insumo a un proveedor
+     */
+    public function agregar_insumo($proveedor_id, $insumo_id, $data) {
+        // Verificar que no exista ya la relación
+        $this->db->where('proveedor_id', $proveedor_id);
+        $this->db->where('insumo_id', $insumo_id);
+        if($this->db->count_all_results('proveedor_insumo') > 0) {
+            return ['success' => false, 'message' => 'Este insumo ya está relacionado con el proveedor'];
+        }
+        
+        $data['proveedor_id'] = $proveedor_id;
+        $data['insumo_id'] = $insumo_id;
+        
+        $result = $this->db->insert('proveedor_insumo', $data);
+        return ['success' => $result, 'message' => $result ? 'Insumo agregado' : 'Error al agregar'];
+    }
+    
+    /**
+     * Actualiza precio/datos de un insumo del proveedor
+     */
+    public function actualizar_precio_insumo($proveedor_id, $insumo_id, $data) {
+        $this->db->where('proveedor_id', $proveedor_id);
+        $this->db->where('insumo_id', $insumo_id);
+        $result = $this->db->update('proveedor_insumo', $data);
+        
+        return ['success' => $result, 'message' => $result ? 'Precio actualizado' : 'Error al actualizar'];
+    }
+    
+    /**
+     * Elimina un insumo de un proveedor
+     */
+    public function eliminar_insumo($proveedor_id, $insumo_id) {
+        $this->db->where('proveedor_id', $proveedor_id);
+        $this->db->where('insumo_id', $insumo_id);
+        $result = $this->db->delete('proveedor_insumo');
+        
+        return ['success' => $result, 'message' => $result ? 'Insumo eliminado de proveedor' : 'Error al eliminar'];
+    }
+    
+    /**
+     * Genera código único para proveedor
+     */
+    private function generar_codigo() {
+        $prefijo = 'PROV';
+        $this->db->select('codigo');
+        $this->db->from($this->tableName);
+        $this->db->like('codigo', $prefijo, 'after');
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit(1);
+        $ultimo = $this->db->get()->row();
+        
+        if($ultimo) {
+            $numero = intval(substr($ultimo->codigo, strlen($prefijo))) + 1;
+        } else {
+            $numero = 1;
+        }
+        
+        return $prefijo . str_pad($numero, 5, '0', STR_PAD_LEFT);
+    }
+    
+    /**
+     * Obtiene estadísticas de proveedores
+     */
+    public function get_estadisticas() {
+        $stats = [];
+        
+        // Total de proveedores activos
+        $this->db->where('estatus', 'Activo');
+        $stats['total_activos'] = $this->db->count_all_results($this->tableName);
+        
+        // Total de proveedores inactivos
+        $this->db->where('estatus', 'Inactivo');
+        $stats['total_inactivos'] = $this->db->count_all_results($this->tableName);
+        
+        // Total de relaciones proveedor-insumo
+        $stats['total_relaciones'] = $this->db->count_all_results('proveedor_insumo');
+        
+        return $stats;
+    }
+}

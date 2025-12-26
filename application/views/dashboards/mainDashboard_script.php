@@ -6,22 +6,13 @@
       data: {
         labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
         datasets: [{
-          label: "Last year",
+          label: "Nuevos Clientes",
           backgroundColor: window.cssVariables.primary,
           borderColor: window.cssVariables.primary,
           hoverBackgroundColor: window.cssVariables.primary,
           hoverBorderColor: window.cssVariables.primary,
-          data: [54, 67, 41, 55, 62, 45, 55, 73, 60, 76, 48, 79],
-          barPercentage: .325,
-          categoryPercentage: .5
-        }, {
-          label: "This year",
-          backgroundColor: window.cssVariables.primarySubtle,
-          borderColor: window.cssVariables.primarySubtle,
-          hoverBackgroundColor: window.cssVariables.primarySubtle,
-          hoverBorderColor: window.cssVariables.primarySubtle,
-          data: [69, 66, 24, 48, 52, 51, 44, 53, 62, 79, 51, 68],
-          barPercentage: .325,
+          data: <?=json_encode($response['datos_grafica'] ?? array_fill(0, 12, 0))?>,
+          barPercentage: .75,
           categoryPercentage: .5
         }]
       },
