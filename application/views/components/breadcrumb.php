@@ -68,6 +68,9 @@ $breadcrumb_urls = [
     'Gestion de usuarios' => base_url('usuarios/GestionUsuarios'),
     'Alta de usuarios' => base_url('usuarios/GestionUsuarios/alta'),
     'Editar usuario' => '#', // No tiene enlace, es la página actual
+    'Producción' => base_url('produccion/Productos'),
+    'Alta de productos' => base_url('produccion/Productos/alta'),
+    'Editar producto' => '#', // No tiene enlace, es la página actual
     // Agrega más rutas según necesites
 ];
 ?>

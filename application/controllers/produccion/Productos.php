@@ -7,6 +7,9 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Productos extends CI_Controller {
+
+    public $viewData = [];
+    public $outputData = [];
     
     public function __construct() {
         parent::__construct();
@@ -21,7 +24,7 @@ class Productos extends CI_Controller {
     public function index() {
         $this->viewData['pageTitle'] = 'Productos';
         $this->viewData['headTitle'] = 'Gestión de Productos';
-        $this->viewData['breadcrumb'] = 'Inicio > Producción > Productos';
+        $this->viewData['breadcrumb'] = 'Inicio > Producción';
         
         // Obtener estadísticas
         $stats = $this->ProductosModel->get_estadisticas();

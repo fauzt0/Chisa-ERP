@@ -10,8 +10,7 @@ class GestionUsuarios extends CI_Controller {
   {
     parent::__construct();
     //cargamos los procesos, librerias, helpers y variables de inicio
-    $this->load->library("Init_controller");//libreria de funciones generales
-    //$this->load->model("Users/UserModel"); //modelo de usuarios
+    $this->load->library("Init_controller");//libreria de funciones generales    
     $this->load->model("Users/UserModel"); //modelo de usuarios con el alias 
     $this->config->load('permissions'); // Load permissions configuration
     
