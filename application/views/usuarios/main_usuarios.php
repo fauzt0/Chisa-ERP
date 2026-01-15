@@ -153,6 +153,8 @@
                   <div class="dropdown-menu dropdown-menu-end" id="table_menu_actions">                    
                   </div>
                 </div>                
+                <a href="<?php echo base_url('usuarios/Roles'); ?>" class="btn btn-outline-info btn-lg me-1"><i data-lucide="shield"></i> Gestionar Roles</a>
+                <a href="<?php echo base_url('usuarios/GestionUsuarios/importar'); ?>" class="btn btn-outline-primary btn-lg me-1"><i data-lucide="upload"></i> Carga Masiva</a>
                 <a href="<?php echo base_url('usuarios/GestionUsuarios/alta'); ?>" class="btn btn-primary btn-lg"><i data-lucide="plus"></i> Alta Administrador</a>                
               </div>
             </div>

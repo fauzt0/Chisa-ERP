@@ -4,7 +4,9 @@
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Insumos extends CI_Controller {
+class Insumos extends MY_Controller {
+    
+    protected $modulo = 'Almacén';
     
     public function __construct() {
         parent::__construct();

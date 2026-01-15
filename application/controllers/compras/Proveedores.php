@@ -4,7 +4,9 @@
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Proveedores extends CI_Controller {
+class Proveedores extends MY_Controller {
+    
+    protected $modulo = 'Proveedores';
     
     public function __construct() {
         parent::__construct();

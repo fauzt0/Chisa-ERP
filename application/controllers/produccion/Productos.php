@@ -6,10 +6,9 @@
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Productos extends CI_Controller {
+class Productos extends MY_Controller {
 
-    public $viewData = [];
-    public $outputData = [];
+    protected $modulo = 'Producción';
     
     public function __construct() {
         parent::__construct();

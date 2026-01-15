@@ -4,7 +4,9 @@
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class HistorialVentas extends CI_Controller {
+class HistorialVentas extends MY_Controller {
+    
+    protected $modulo = 'Producción';
     
     public function __construct() {
         parent::__construct();

@@ -3,8 +3,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Auth extends CI_Controller {
 
-  protected $viewData    = [];
-  protected $outputData  = [];
+  public $viewData    = [];
+  public $outputData  = [];
 
   public function __construct() {
     parent::__construct();
@@ -73,13 +73,98 @@ class Auth extends CI_Controller {
     }
 
     //en caso de exito, cargamos los datos del usuario
+    $user_data = $this->UserModel->get_user_data_from_username($user_post);
+    $current_ip = $this->input->ip_address();
+
+    /** 
+     * SEGURIDAD 2FA:
+     * Si la IP actual no coincide con la última registrada, solicitamos 2FA
+     */
+    if ($user_data->last_ip !== $current_ip && !empty($user_data->last_ip)) {
+        $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $this->UserModel->mod_update_2fa($user_post, $code, $current_ip);
+        
+        // Enviamos el código por correo
+        $this->_send_2fa_email($user_post, $code);
+        
+        // Marcamos en sesión que este email está pendiente de 2FA
+        $this->session->set_userdata('pending_2fa_email', $user_post);
+        
+        redirect('Auth/verify_2fa');
+        return;
+    }
+
+    // Si la IP es la misma o es el primer acceso, entramos directo
+    if (empty($user_data->last_ip)) {
+        $this->UserModel->mod_update_2fa($user_post, NULL, $current_ip);
+    }
+
     $this->init_controller->insert_log("Ingreso al sistema",$user_post,"Ingreso correcto");
-    $result = $this->UserModel->get_user_data_from_username($user_post);
-    
-    $this->_create_user_session($result, $user_post);
-    redirect('dashboard'); //redireccionamos al dashboard
+    $this->_create_user_session($user_data, $user_post);
+    redirect('dashboard'); 
 
     return 0;
+  }
+
+  /**
+   * Vista de verificación de código 2FA
+   */
+  public function verify_2fa() {
+      $email = $this->session->userdata('pending_2fa_email');
+      if (!$email) {
+          redirect('admin');
+      }
+
+      $this->viewData['pageTitle'] = 'ERP/CHISA - Verificación 2FA';
+      $this->viewData['email_oculto'] = substr($email, 0, 3) . '****' . substr($email, strpos($email, '@'));
+      $this->load->view('auth/verify_2fa', $this->viewData);
+  }
+
+  /**
+   * Procesa el código 2FA ingresado
+   */
+  public function check_2fa() {
+      $email = $this->session->userdata('pending_2fa_email');
+      $code = $this->input->post('code');
+
+      if (!$email || !$code) {
+          redirect('admin');
+      }
+
+      if ($this->UserModel->mod_verify_2fa($email, $code)) {
+          $user_data = $this->UserModel->get_user_data_from_username($email);
+          $this->init_controller->insert_log("Verificación 2FA Correcta", $email, "Seguridad");
+          
+          $this->session->unset_userdata('pending_2fa_email');
+          $this->_create_user_session($user_data, $email);
+          redirect('dashboard');
+      } else {
+          $this->init_controller->insert_log("Código 2FA Incorrecto", $email, "Seguridad - Intento");
+          $this->session->set_flashdata('error', 'El código ingresado es incorrecto o ha expirado.');
+          redirect('Auth/verify_2fa');
+      }
+  }
+
+  /**
+   * Envía el código 2FA por correo electrónico
+   */
+  private function _send_2fa_email($email, $code) {
+      $this->load->library('email');
+      
+      // Intentar enviar email (será efectivo si el servidor está configurado)
+      $this->email->from('no-reply@chisarecubrimientos.com.mx', 'ERP CHISA Security');
+      $this->email->to($email);
+      $this->email->subject('Tu código de seguridad CHISA');
+      $this->email->message("Tu código de verificación es: " . $code . "\nEste código expira en 10 minutos.");
+      
+      $this->email->send();
+      
+      /** 
+       * FALLBACK/DEBUG:
+       * Como no tenemos certeza de la configuración SMTP, registramos el envío en bitácora
+       * para que el usuario pueda verlo en caso de fallo del servicio de correo.
+       */
+      $this->init_controller->insert_log("2FA Código Enviado a: " . $email . " (Código: " . $code . ")", $email, "Seguridad");
   }
 
   private function _create_user_session($user_data, $email){

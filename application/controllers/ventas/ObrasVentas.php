@@ -4,7 +4,9 @@
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class ObrasVentas extends CI_Controller {
+class ObrasVentas extends MY_Controller {
+    
+    protected $modulo = 'Obras';
     
     public function __construct() {
         parent::__construct();
@@ -192,6 +194,14 @@ class ObrasVentas extends CI_Controller {
         // Obras completadas
         $this->db->where('estatus', 'Completada');
         $stats['completadas'] = $this->db->count_all_results('obras');
+        
+        // Porcentajes para progress bars
+        $total = $stats['total'] > 0 ? $stats['total'] : 1;
+        
+        $stats['porcentaje_cotizacion'] = round(($stats['en_cotizacion'] / $total) * 100);
+        $stats['porcentaje_aprobadas'] = round(($stats['aprobadas'] / $total) * 100);
+        $stats['porcentaje_ejecucion'] = round(($stats['en_ejecucion'] / $total) * 100);
+        $stats['porcentaje_completadas'] = round(($stats['completadas'] / $total) * 100);
         
         return $stats;
     }

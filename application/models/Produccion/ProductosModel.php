@@ -426,30 +426,46 @@ class ProductosModel extends MY_Model {
     /**
      * Obtiene estadísticas de productos
      */
+    /**
+     * Obtiene estadísticas de productos para los cards
+     */
     public function get_estadisticas() {
         $stats = [];
         
-        // Total de productos
-        $stats['total_productos'] = $this->db->count_all_results($this->tableName);
+        // 1. Total de Productos y Porcentaje Activos
+        $total_query = $this->db->get($this->tableName);
+        $stats['total_products'] = $total_query->num_rows();
         
-        // Productos fabricados
+        $this->db->where('estatus', 'Activo');
+        $stats['active_products'] = $this->db->count_all_results($this->tableName);
+        
+        $stats['inactive_products'] = $stats['total_products'] - $stats['active_products'];
+        
+        $stats['active_percentage'] = ($stats['total_products'] > 0) 
+            ? round(($stats['active_products'] / $stats['total_products']) * 100) 
+            : 0;
+            
+        // 2. Nuevos Productos (últimos 30 días)
+        $fecha_limite = date('Y-m-d', strtotime('-30 days'));
+        $this->db->where('fecha_creacion >=', $fecha_limite);
+        $stats['new_products_30days'] = $this->db->count_all_results($this->tableName);
+        
+        // Crecimiento (comparado com previo a 30 días)
+        $this->db->where('fecha_creacion <', $fecha_limite);
+        $previous_total = $this->db->count_all_results($this->tableName);
+        
+        $stats['growth_percentage'] = ($previous_total > 0)
+            ? round(($stats['new_products_30days'] / $previous_total) * 100)
+            : 100;
+            
+        // 3. Productos Fabricados vs Reventa
         $this->db->where('tipo_producto', 'Fabricado');
-        $stats['productos_fabricados'] = $this->db->count_all_results($this->tableName);
+        $stats['manufactured_products'] = $this->db->count_all_results($this->tableName);
         
-        // Productos de reventa
-        $this->db->where('tipo_producto', 'Reventa');
-        $stats['productos_reventa'] = $this->db->count_all_results($this->tableName);
-        
-        // Productos con stock bajo
+        // 4. Stock Bajo (Alerta)
         $this->db->where('stock_actual <=', 'stock_minimo', FALSE);
         $this->db->where('estatus', 'Activo');
-        $stats['stock_bajo'] = $this->db->count_all_results($this->tableName);
-        
-        // Valor total de inventario
-        $this->db->select('SUM(stock_actual * precio_venta) as valor_total', FALSE);
-        $this->db->where('estatus', 'Activo');
-        $result = $this->db->get($this->tableName)->row();
-        $stats['valor_inventario'] = $result->valor_total ?? 0;
+        $stats['low_stock_products'] = $this->db->count_all_results($this->tableName);
         
         return $stats;
     }

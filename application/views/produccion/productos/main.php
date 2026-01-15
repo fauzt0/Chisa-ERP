@@ -37,68 +37,122 @@ const PUEDE_VER_COSTOS = <?= $puede_ver_costos ? 'true' : 'false' ?>;
   </div>
 </div>
 
-<!-- Estadísticas -->
-<div class="row mb-4">
-  <div class="col-md-3">
-    <div class="card bg-primary text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="card-title mb-0">Total Productos</h6>
-            <h3 class="mb-0"><?=number_format($stats['total_productos'] ?? 0)?></h3>
+<!-- Cards de estadísticas -->
+<div class="row">
+  <!-- Total de Productos -->
+  <div class="col-lg-6 col-xl-3 d-flex">
+    <div class="card flex-fill">
+      <div class="card-header">
+        <h5 class="card-title mb-0 mt-2">Total Productos</h5>
+      </div>
+      <div class="card-body my-0 pt-0">
+        <div class="row d-flex align-items-center mb-3">
+          <div class="col-8">
+            <h3 class="d-flex align-items-center mb-0 fw-light">
+              <?php echo number_format($stats['total_products'] ?? 0); ?>
+            </h3>
           </div>
-          <div>
-            <i class="fas fa-box fa-3x opacity-50"></i>
+          <div class="col-4 text-end">
+            <span class="badge bg-primary"><?php echo $stats['active_percentage'] ?? 0; ?>%</span>
           </div>
         </div>
+
+        <div class="progress progress-sm shadow-sm mb-1">
+          <div class="progress-bar bg-primary" role="progressbar" style="width: <?php echo $stats['active_percentage'] ?? 0; ?>%"></div>
+        </div>
+        <small class="text-muted">Activos: <?php echo number_format($stats['active_products'] ?? 0); ?> | Inactivos: <?php echo number_format($stats['inactive_products'] ?? 0); ?></small>
       </div>
     </div>
   </div>
-  
-  <div class="col-md-3">
-    <div class="card bg-success text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="card-title mb-0">Fabricados</h6>
-            <h3 class="mb-0"><?=number_format($stats['productos_fabricados'] ?? 0)?></h3>
+
+  <!-- Nuevos Productos (30 días) -->
+  <div class="col-lg-6 col-xl-3 d-flex">
+    <div class="card flex-fill">
+      <div class="card-header">
+        <h5 class="card-title mb-0 mt-2">Nuevos (30d)</h5>
+      </div>
+      <div class="card-body my-0 pt-0">
+        <div class="row d-flex align-items-center mb-3">
+          <div class="col-8">
+            <h3 class="d-flex align-items-center mb-0 fw-light">
+              <?php echo number_format($stats['new_products_30days'] ?? 0); ?>
+            </h3>
           </div>
-          <div>
-            <i class="fas fa-industry fa-3x opacity-50"></i>
+          <div class="col-4 text-end">
+            <span class="badge bg-success">+<?php echo $stats['growth_percentage'] ?? 0; ?>%</span>
           </div>
         </div>
+
+        <div class="progress progress-sm shadow-sm mb-1">
+          <div class="progress-bar bg-success" role="progressbar" style="width: <?php echo min($stats['growth_percentage'] ?? 0, 100); ?>%"></div>
+        </div>
+        <small class="text-muted">Crecimiento últimos 30 días</small>
       </div>
     </div>
   </div>
-  
-  <div class="col-md-3">
-    <div class="card bg-warning text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="card-title mb-0">Stock Bajo</h6>
-            <h3 class="mb-0"><?=number_format($stats['stock_bajo'] ?? 0)?></h3>
+
+  <!-- Fabricados vs Reventa -->
+  <div class="col-lg-6 col-xl-3 d-flex">
+    <div class="card flex-fill">
+      <div class="card-header">
+        <h5 class="card-title mb-0 mt-2">Fabricados</h5>
+      </div>
+      <div class="card-body my-0 pt-0">
+        <div class="row d-flex align-items-center mb-3">
+          <div class="col-8">
+            <h3 class="d-flex align-items-center mb-0 fw-light">
+              <?php echo number_format($stats['manufactured_products'] ?? 0); ?>
+            </h3>
           </div>
-          <div>
-            <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+          <div class="col-4 text-end">
+            <i class="fas fa-industry text-info" style="font-size: 1.5rem;"></i>
           </div>
         </div>
+
+        <div class="progress progress-sm shadow-sm mb-1">
+            <?php 
+                $manufactured_percentage = ($stats['total_products'] > 0) 
+                    ? ($stats['manufactured_products'] / $stats['total_products']) * 100 
+                    : 0; 
+            ?>
+          <div class="progress-bar bg-info" role="progressbar" style="width: <?php echo $manufactured_percentage; ?>%"></div>
+        </div>
+        <small class="text-muted">Prod. Fabricados del total</small>
       </div>
     </div>
   </div>
-  
-  <div class="col-md-3">
-    <div class="card bg-info text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="card-title mb-0">Valor Inventario</h6>
-            <h3 class="mb-0">$<?=number_format($stats['valor_inventario'] ?? 0, 2)?></h3>
+
+  <!-- Stock Bajo -->
+  <div class="col-lg-6 col-xl-3 d-flex">
+    <div class="card flex-fill">
+      <div class="card-header">
+        <h5 class="card-title mb-0 mt-2">Stock Bajo</h5>
+      </div>
+      <div class="card-body my-0 pt-0">
+        <div class="row d-flex align-items-center mb-3">
+          <div class="col-8">
+            <h3 class="d-flex align-items-center mb-0 fw-light">
+              <?php echo number_format($stats['low_stock_products'] ?? 0); ?>
+            </h3>
           </div>
-          <div>
-            <i class="fas fa-dollar-sign fa-3x opacity-50"></i>
+          <div class="col-4 text-end">
+            <?php if(($stats['low_stock_products'] ?? 0) > 0): ?>
+                <span class="badge bg-danger"><?php echo $stats['low_stock_products'] ?? 0; ?></span>
+            <?php else: ?>
+                <span class="badge bg-success"><i class="fas fa-check"></i></span>
+            <?php endif; ?>
           </div>
         </div>
+
+        <div class="progress progress-sm shadow-sm mb-1">
+            <?php 
+                $low_stock_percentage = ($stats['total_products'] > 0) 
+                    ? ($stats['low_stock_products'] / $stats['total_products']) * 100 
+                    : 0; 
+            ?>
+          <div class="progress-bar bg-danger" role="progressbar" style="width: <?php echo $low_stock_percentage; ?>%"></div>
+        </div>
+        <small class="text-muted">Productos con stock crítico</small>
       </div>
     </div>
   </div>

@@ -223,7 +223,20 @@ class VentasModel extends MY_Model {
         $hoy = $this->db->get('ordenes_venta')->row();
         $stats['ventas_hoy'] = $hoy->total ?? 0;
         $stats['monto_hoy'] = $hoy->monto ?? 0;
+
+        // Ventas dia anterior (para progreso)
+        $this->db->select('COUNT(*) as total, SUM(total) as monto');
+        $this->db->where('DATE(fecha_orden)', date('Y-m-d', strtotime('-1 day')));
+        $this->db->where('estatus !=', 'Cancelada');
+        $ayer = $this->db->get('ordenes_venta')->row();
+        $stats['ventas_ayer'] = $ayer->total ?? 0;
+        $stats['monto_ayer'] = $ayer->monto ?? 0;
         
+        // Porcentaje dia vs ayer
+        $stats['porcentaje_hoy'] = ($stats['monto_ayer'] > 0) 
+            ? min(100, round(($stats['monto_hoy'] / $stats['monto_ayer']) * 100)) 
+            : 100;
+
         // Ventas del mes
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('MONTH(fecha_orden)', date('m'));
@@ -232,14 +245,40 @@ class VentasModel extends MY_Model {
         $mes = $this->db->get('ordenes_venta')->row();
         $stats['ventas_mes'] = $mes->total ?? 0;
         $stats['monto_mes'] = $mes->monto ?? 0;
+
+        // Ventas mes anterior (para progreso)
+        $this->db->select('COUNT(*) as total, SUM(total) as monto');
+        $this->db->where('MONTH(fecha_orden)', date('m', strtotime('first day of last month')));
+        $this->db->where('YEAR(fecha_orden)', date('Y', strtotime('first day of last month')));
+        $this->db->where('estatus !=', 'Cancelada');
+        $mes_ant = $this->db->get('ordenes_venta')->row();
+        $stats['monto_mes_anterior'] = $mes_ant->monto ?? 0;
+
+         // Porcentaje mes vs mes anterior (ajustado a dias transcurridos aprox o simple raw)
+         // Simple raw para meta de superar mes anterior
+        $stats['porcentaje_mes'] = ($stats['monto_mes_anterior'] > 0) 
+             ? min(100, round(($stats['monto_mes'] / $stats['monto_mes_anterior']) * 100)) 
+             : 100;
         
         // Cotizaciones pendientes
         $this->db->where('estatus', 'Cotización');
         $stats['cotizaciones_pendientes'] = $this->db->count_all_results('ordenes_venta');
+
+        // Total Ordenes Activas (para % de cotizaciones vs total)
+        $this->db->where_in('estatus', ['Cotización', 'Confirmada', 'En Preparación']);
+        $total_activas = $this->db->count_all_results('ordenes_venta');
+        
+        $stats['porcentaje_cotizaciones'] = ($total_activas > 0) 
+            ? round(($stats['cotizaciones_pendientes'] / $total_activas) * 100)
+            : 0;
         
         // Órdenes en preparación
         $this->db->where('estatus', 'En Preparación');
         $stats['ordenes_preparacion'] = $this->db->count_all_results('ordenes_venta');
+
+        $stats['porcentaje_preparacion'] = ($total_activas > 0) 
+            ? round(($stats['ordenes_preparacion'] / $total_activas) * 100)
+            : 0;
         
         return $stats;
     }

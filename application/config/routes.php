@@ -60,3 +60,6 @@ $route['logout'] = 'auth/logout';
 
 //Dashboard
 $route['dashboard'] = 'dashboards/MainDashboard';
+
+//Errors
+$route['deny'] = 'Errors/deny';

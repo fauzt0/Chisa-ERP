@@ -1,39 +1,16 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Nomina extends CI_Controller {
+class Nomina extends MY_Controller {
     
-    public $viewData = [];
-    public $outputData = [];
+    protected $modulo = 'Contabilidad';
     
     public function __construct() {
         parent::__construct();
-        $this->load->library("Init_controller");
         $this->load->model('Contabilidad/ContabilidadModel');
         $this->load->model('Contabilidad/NominaModel');
         
-        // General viewdata for view files
-        $this->viewData = [
-            'success'     => true,
-            'statusCode'  => get_status_code_by_result('emptyresult'),
-            'message'     => 'Respuesta sin contenido',  
-            'error'       => '',
-            'pageTitle'   => '',      
-            'headTitle'   => '',   
-            'pageView'    => '',
-            'pageScript'  => '',
-            'breadcrumb'  => '',
-            'validate'    => '',
-            'response'    => [],
-        ];     
-
-        $this->outputData = [
-            'success'     => true,  
-            'statusCode'  => get_status_code_by_result('emptyresult'),
-            'message'     => 'Respuesta sin contenido',
-            'error'       => '',      
-            'response'    => [],
-        ];
+        // El controlador base ya maneja la sesión y los permisos del módulo
     }
     
     /**

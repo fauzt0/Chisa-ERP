@@ -164,6 +164,24 @@ $form['password_verify'] = array('type' => 'password', 'name' => 'password_verif
                 <!-- permisos -->
                 <div class="col-sm-12 col-md-12 col-lg-12 col-xl-7 asignar-permisos" >
                   <div class="row">
+                    <!-- Selector de Rol -->
+                    <div class="col-12 mb-4">
+                      <div class="card bg-light border-0">
+                        <div class="card-body p-3">
+                          <label class="form-label fw-bold"><i class="fas fa-user-tag"></i> Cargar Permisos desde Rol (Plantilla)</label>
+                          <select id="role_select" class="form-select">
+                            <option value="">-- Seleccionar Rol para precargar permisos --</option>
+                            <?php if(isset($response['roles'])): foreach($response['roles'] as $role): ?>
+                              <option value="<?=$role->id?>" data-permissions='<?=htmlspecialchars($role->permisos, ENT_QUOTES, 'UTF-8')?>'>
+                                <?=$role->nombre?>
+                              </option>
+                            <?php endforeach; endif; ?>
+                          </select>
+                          <small class="text-muted">Seleccionar un rol marcará automáticamente los permisos correspondientes. No guarda el rol, solo asigna los permisos.</small>
+                        </div>
+                      </div>
+                    </div>
+
                     <div class="col-12 mb-3">
                       <h5 class="d-inline-block">Asignar Permisos</h5>
                       <button type="button" id="toggleAllPermissions" class="btn btn-sm btn-outline-primary ms-3">
@@ -227,6 +245,40 @@ $form['password_verify'] = array('type' => 'password', 'name' => 'password_verif
 <!-- Script para seleccionar/deseleccionar todos los permisos -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+    
+    // Logic for Role Selector
+    const roleSelect = document.getElementById('role_select');
+    if(roleSelect) {
+        roleSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const permissionsJson = selectedOption.getAttribute('data-permissions');
+            
+            if(permissionsJson) {
+                try {
+                    const permissions = JSON.parse(permissionsJson);
+                    
+                    // Uncheck all permissions first (optional, maybe user wants to MERGE? Standard behavior for "Template" is usually replace)
+                    // But if I uncheck, I lose the user's manual checking outside the role. 
+                    // However, purpose is "Check permissions defined in role". 
+                    // A "Role" usually *defines* the set.
+                    // Let's Uncheck all first to ensure clean state matching the role.
+                    document.querySelectorAll('.asignar-permisos input[type="checkbox"]').forEach(cb => {
+                        cb.checked = false;
+                    });
+                    
+                    // Check according to role
+                    Object.keys(permissions).forEach(key => {
+                        const cb = document.querySelector(`input[name="${key}"]`);
+                        if(cb) cb.checked = true;
+                    });
+                    
+                } catch(e) {
+                    console.error("Error parsing permissions JSON", e);
+                }
+            }
+        });
+    }
+
     const toggleBtn = document.getElementById('toggleAllPermissions');
     const permissionsContainer = document.querySelector('.asignar-permisos');
     const estatusSelector = document.getElementById('estatus');
@@ -264,3 +316,23 @@ $form['password_verify'] = array('type' => 'password', 'name' => 'password_verif
     });
     });
 </script>
+
+<?php if(isset($notification)): ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if(typeof notifyShow === 'function') {
+            notifyShow('<?= addslashes($notification['msg']) ?>', '<?= $notification['type'] ?>');
+        }
+    });
+</script>
+<?php endif; ?>
+
+<?php if(validation_errors()): ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if(typeof notifyShow === 'function') {
+            notifyShow('Hay errores en el formulario, por favor revíselos', 'danger');
+        }
+    });
+</script>
+<?php endif; ?>

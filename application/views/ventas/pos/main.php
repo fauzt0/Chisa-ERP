@@ -26,69 +26,112 @@ $stats = $response['stats'] ?? [];
 </div>
 
 <!-- Estadísticas -->
+<!-- Estadísticas -->
 <div class="row mb-4">
-  <div class="col-md-3">
-    <div class="card bg-success text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="card-title mb-0">Ventas Hoy</h6>
-            <h3 class="mb-0"><?=number_format($stats['ventas_hoy'] ?? 0)?></h3>
-            <small>$<?=number_format($stats['monto_hoy'] ?? 0, 2)?></small>
+  <!-- Ventas Hoy -->
+  <div class="col-lg-6 col-xl-3 d-flex">
+    <div class="card flex-fill">
+      <div class="card-header">
+        <h5 class="card-title mb-0 mt-2">Ventas Hoy</h5>
+      </div>
+      <div class="card-body my-0 pt-0">
+        <div class="row d-flex align-items-center mb-3">
+          <div class="col-8">
+            <h3 class="d-flex align-items-center mb-0 fw-light">
+              <?php echo number_format($stats['ventas_hoy'] ?? 0); ?>
+            </h3>
           </div>
-          <div>
-            <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
+          <div class="col-4 text-end">
+             <i class="fas fa-shopping-cart text-success" style="font-size: 1.5rem;"></i>
           </div>
         </div>
+        
+        <div class="progress progress-sm shadow-sm mb-1">
+          <div class="progress-bar bg-success" role="progressbar" style="width: <?php echo $stats['porcentaje_hoy'] ?? 0; ?>%"></div>
+        </div>
+        
+        <small class="text-muted">Monto: $<?=number_format($stats['monto_hoy'] ?? 0, 2)?> | vs Ayer: <?php echo $stats['porcentaje_hoy'] ?? 0; ?>%</small>
       </div>
     </div>
   </div>
-  
-  <div class="col-md-3">
-    <div class="card bg-primary text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="card-title mb-0">Ventas del Mes</h6>
-            <h3 class="mb-0"><?=number_format($stats['ventas_mes'] ?? 0)?></h3>
-            <small>$<?=number_format($stats['monto_mes'] ?? 0, 2)?></small>
+
+  <!-- Ventas del Mes -->
+  <div class="col-lg-6 col-xl-3 d-flex">
+    <div class="card flex-fill">
+      <div class="card-header">
+        <h5 class="card-title mb-0 mt-2">Ventas del Mes</h5>
+      </div>
+      <div class="card-body my-0 pt-0">
+        <div class="row d-flex align-items-center mb-3">
+          <div class="col-8">
+            <h3 class="d-flex align-items-center mb-0 fw-light">
+              <?php echo number_format($stats['ventas_mes'] ?? 0); ?>
+            </h3>
           </div>
-          <div>
-            <i class="fas fa-chart-line fa-3x opacity-50"></i>
+          <div class="col-4 text-end">
+             <span class="badge bg-primary"><?php echo $stats['porcentaje_mes'] ?? 0; ?>%</span>
           </div>
         </div>
+        
+        <div class="progress progress-sm shadow-sm mb-1">
+          <div class="progress-bar bg-primary" role="progressbar" style="width: <?php echo $stats['porcentaje_mes'] ?? 0; ?>%"></div>
+        </div>
+        
+        <small class="text-muted">Monto: $<?=number_format($stats['monto_mes'] ?? 0, 2)?> | vs Mes Ant.</small>
       </div>
     </div>
   </div>
-  
-  <div class="col-md-3">
-    <div class="card bg-warning text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="card-title mb-0">Cotizaciones</h6>
-            <h3 class="mb-0"><?=number_format($stats['cotizaciones_pendientes'] ?? 0)?></h3>
+
+  <!-- Cotizaciones -->
+  <div class="col-lg-6 col-xl-3 d-flex">
+    <div class="card flex-fill">
+      <div class="card-header">
+        <h5 class="card-title mb-0 mt-2">Cotizaciones</h5>
+      </div>
+      <div class="card-body my-0 pt-0">
+        <div class="row d-flex align-items-center mb-3">
+          <div class="col-8">
+            <h3 class="d-flex align-items-center mb-0 fw-light">
+              <?php echo number_format($stats['cotizaciones_pendientes'] ?? 0); ?>
+            </h3>
           </div>
-          <div>
-            <i class="fas fa-file-invoice fa-3x opacity-50"></i>
+          <div class="col-4 text-end">
+            <i class="fas fa-file-invoice text-warning" style="font-size: 1.5rem;"></i>
           </div>
         </div>
+        
+        <div class="progress progress-sm shadow-sm mb-1">
+          <div class="progress-bar bg-warning" role="progressbar" style="width: <?php echo $stats['porcentaje_cotizaciones'] ?? 0; ?>%"></div>
+        </div>
+
+        <small class="text-muted"><?php echo $stats['porcentaje_cotizaciones'] ?? 0; ?>% del total de activas</small>
       </div>
     </div>
   </div>
-  
-  <div class="col-md-3">
-    <div class="card bg-info text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="card-title mb-0">En Preparación</h6>
-            <h3 class="mb-0"><?=number_format($stats['ordenes_preparacion'] ?? 0)?></h3>
+
+  <!-- En Preparación -->
+  <div class="col-lg-6 col-xl-3 d-flex">
+    <div class="card flex-fill">
+      <div class="card-header">
+        <h5 class="card-title mb-0 mt-2">En Preparación</h5>
+      </div>
+      <div class="card-body my-0 pt-0">
+        <div class="row d-flex align-items-center mb-3">
+          <div class="col-8">
+            <h3 class="d-flex align-items-center mb-0 fw-light">
+              <?php echo number_format($stats['ordenes_preparacion'] ?? 0); ?>
+            </h3>
           </div>
-          <div>
-            <i class="fas fa-boxes fa-3x opacity-50"></i>
+          <div class="col-4 text-end">
+            <i class="fas fa-boxes text-info" style="font-size: 1.5rem;"></i>
           </div>
         </div>
+        
+        <div class="progress progress-sm shadow-sm mb-1">
+          <div class="progress-bar bg-info" role="progressbar" style="width: <?php echo $stats['porcentaje_preparacion'] ?? 0; ?>%"></div>
+        </div>
+        
+        <small class="text-muted">Listas para envío (<?php echo $stats['porcentaje_preparacion'] ?? 0; ?>%)</small>
       </div>
     </div>
   </div>

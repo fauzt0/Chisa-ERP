@@ -26,7 +26,9 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>usuarios/GestionUsuarios/bitacora">
             Bitácora
           </a></li>
-          
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>usuarios/Roles">
+            Roles y Permisos
+          </a></li>
           
         </ul>
       </li>

@@ -20,36 +20,104 @@ $stats = $response['stats'] ?? [];
     </div>
 </div>
 <!-- Estadísticas -->
+<!-- Estadísticas -->
 <div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <h5 class="card-title">Total Obras</h5>
-                <h2><?=$stats['total'] ?? 0?></h2>
+    <!-- Total Obras -->
+    <div class="col-lg-6 col-xl-3 d-flex">
+        <div class="card flex-fill">
+            <div class="card-header">
+                <h5 class="card-title mb-0 mt-2">Total Obras</h5>
+            </div>
+            <div class="card-body my-0 pt-0">
+                <div class="row d-flex align-items-center mb-3">
+                    <div class="col-8">
+                        <h3 class="d-flex align-items-center mb-0 fw-light">
+                            <?=$stats['total'] ?? 0?>
+                        </h3>
+                    </div>
+                    <div class="col-4 text-end">
+                        <i class="fas fa-hard-hat text-primary" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+                <div class="progress progress-sm shadow-sm mb-1">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 100%"></div>
+                </div>
+                <small class="text-muted">Total registradas</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-white">
-            <div class="card-body">
-                <h5 class="card-title">En Cotización</h5>
-                <h2><?=$stats['en_cotizacion'] ?? 0?></h2>
+    
+    <!-- En Cotización -->
+    <div class="col-lg-6 col-xl-3 d-flex">
+        <div class="card flex-fill">
+            <div class="card-header">
+                <h5 class="card-title mb-0 mt-2">En Cotización</h5>
+            </div>
+            <div class="card-body my-0 pt-0">
+                <div class="row d-flex align-items-center mb-3">
+                    <div class="col-8">
+                        <h3 class="d-flex align-items-center mb-0 fw-light">
+                            <?=$stats['en_cotizacion'] ?? 0?>
+                        </h3>
+                    </div>
+                    <div class="col-4 text-end">
+                        <span class="badge bg-warning"><?=$stats['porcentaje_cotizacion'] ?? 0?>%</span>
+                    </div>
+                </div>
+                <div class="progress progress-sm shadow-sm mb-1">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: <?=$stats['porcentaje_cotizacion'] ?? 0?>%"></div>
+                </div>
+                <small class="text-muted">Pendientes de aprobación</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <h5 class="card-title">Aprobadas</h5>
-                <h2><?=$stats['aprobadas'] ?? 0?></h2>
+    
+    <!-- Aprobadas -->
+    <div class="col-lg-6 col-xl-3 d-flex">
+        <div class="card flex-fill">
+            <div class="card-header">
+                <h5 class="card-title mb-0 mt-2">Aprobadas</h5>
+            </div>
+            <div class="card-body my-0 pt-0">
+                <div class="row d-flex align-items-center mb-3">
+                    <div class="col-8">
+                        <h3 class="d-flex align-items-center mb-0 fw-light">
+                            <?=$stats['aprobadas'] ?? 0?>
+                        </h3>
+                    </div>
+                    <div class="col-4 text-end">
+                        <span class="badge bg-success"><?=$stats['porcentaje_aprobadas'] ?? 0?>%</span>
+                    </div>
+                </div>
+                <div class="progress progress-sm shadow-sm mb-1">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: <?=$stats['porcentaje_aprobadas'] ?? 0?>%"></div>
+                </div>
+                <small class="text-muted">Listas para iniciar</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
-            <div class="card-body">
-                <h5 class="card-title">En Ejecución</h5>
-                <h2><?=$stats['en_ejecucion'] ?? 0?></h2>
+    
+    <!-- En Ejecución -->
+    <div class="col-lg-6 col-xl-3 d-flex">
+        <div class="card flex-fill">
+            <div class="card-header">
+                <h5 class="card-title mb-0 mt-2">En Ejecución</h5>
+            </div>
+            <div class="card-body my-0 pt-0">
+                <div class="row d-flex align-items-center mb-3">
+                    <div class="col-8">
+                        <h3 class="d-flex align-items-center mb-0 fw-light">
+                            <?=$stats['en_ejecucion'] ?? 0?>
+                        </h3>
+                    </div>
+                    <div class="col-4 text-end">
+                        <span class="badge bg-info"><?=$stats['porcentaje_ejecucion'] ?? 0?>%</span>
+                    </div>
+                </div>
+                <div class="progress progress-sm shadow-sm mb-1">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: <?=$stats['porcentaje_ejecucion'] ?? 0?>%"></div>
+                </div>
+                <small class="text-muted">Obras activas</small>
             </div>
         </div>
     </div>

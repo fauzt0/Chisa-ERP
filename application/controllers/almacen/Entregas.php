@@ -5,42 +5,15 @@
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Entregas extends CI_Controller {
+class Entregas extends MY_Controller {
     
-    public $viewData = [];
-    public $outputData = [];
+    protected $modulo = 'Almacén';
     
     public function __construct() {
         parent::__construct();
         $this->load->model('Almacen/AlmacenModel');
         
-        // Verificar sesión
-        /*if(!$this->session->userdata('logged_in')) {
-            redirect('login');
-        }*/
-        
-        // Inicializar viewData
-        $this->viewData = [
-            'success'     => true,
-            'statusCode'  => get_status_code_by_result('emptyresult'),
-            'message'     => 'Respuesta sin contenido',  
-            'error'       => '',
-            'pageTitle'   => '',      
-            'headTitle'   => '',   
-            'pageView'    => '',
-            'pageScript'  => '',
-            'breadcrumb'  => '',
-            'validate'    => '',
-            'response'    => [],
-        ];
-        
-        $this->outputData = [ 
-            'success'     => true,  
-            'statusCode'  => get_status_code_by_result('emptyresult'),
-            'message'     => 'Respuesta sin contenido',
-            'error'       => '',      
-            'response'    => [],
-        ];
+        // El controlador base ya maneja la sesión y los permisos del módulo
     }
     
     /**

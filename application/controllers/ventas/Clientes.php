@@ -6,7 +6,9 @@
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Clientes extends CI_Controller {
+class Clientes extends MY_Controller {
+    
+    protected $modulo = 'Clientes (CRM)';
     
     public function __construct() {
         parent::__construct();

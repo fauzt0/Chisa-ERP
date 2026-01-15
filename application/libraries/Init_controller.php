@@ -54,8 +54,47 @@ class Init_controller{
     if($data[$module] != 1){
 			$result=0;
 		}
-    return
-    $result;
+    return $result;
+  }
+
+  /**
+   * Verifica si el usuario tiene acceso a un módulo específico
+   * (Tiene al menos un permiso dentro de ese módulo)
+   */
+  public function has_module_access($user_id, $module_name) {
+    if (!$user_id) return false;
+    
+    // Cargar permisos configurados
+    $this->ci->config->load('permissions');
+    $all_permissions = $this->ci->config->item('permissions');
+    
+    if (!isset($all_permissions[$module_name])) {
+        return true; // Si el módulo no está definido en el config, permitimos acceso (o podríamos denegar)
+    }
+    
+    $module_perms = array_keys($all_permissions[$module_name]);
+    
+    // Consultar permisos del usuario en la BD
+    $this->ci->db->where('admin', $user_id);
+    $this->ci->db->where_in('permiso', $module_perms);
+    $this->ci->db->where('valor', 1);
+    $query = $this->ci->db->get('privilege');
+    
+    return $query->num_rows() > 0;
+  }
+
+  /**
+   * Verifica si el usuario tiene un permiso específico
+   */
+  public function has_permission($user_id, $permission) {
+    if (!$user_id) return false;
+    
+    $this->ci->db->where('admin', $user_id);
+    $this->ci->db->where('permiso', $permission);
+    $this->ci->db->where('valor', 1);
+    $query = $this->ci->db->get('privilege');
+    
+    return $query->num_rows() > 0;
   }
 
   ///verificamos si tenemmos los privilegios de una cuenta de super administrador

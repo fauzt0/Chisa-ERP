@@ -1,38 +1,17 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class MainDashboard extends CI_Controller {
+class MainDashboard extends MY_Controller {
     
-  public $viewData = [];
-  public $outputData = [];
+  protected $modulo = 'dashboard_main';
   
   public function __construct() 
   {
     parent::__construct();
-    //cargamos los proceso de inicio
-    //general viewdata for view files
-    $this->viewData = [
-      'success'     => true,
-      'statusCode'  => get_status_code_by_result('emptyresult'), // 204
-      'message'     => 'Respuesta sin contenido',  
-      'error'       => '',
-      'pageTitle'   => '',      
-      'headTitle'   => '',   
-      'pageView'    => '',
-      'pageScript'  => '',
-      'breadcrumb'  => '',//establecemos breadcrumbs para la vista en general    
-      'validate'    => '',//validation messages or scripts injection from controllers (script, html, etc)           
-      'response'    => [], //empty response
-    ];     
-
-    $this->outputData = [ 
-      'success'     => true,  
-      'statusCode'  => get_status_code_by_result('emptyresult'), // 204
-      'message'     => 'Respuesta sin contenido',
-      'error'       => '',      
-      'response'    => [], //empty response
-    ];      
-
+    
+    // Sobrescribir o añadir claves específicas si es necesario
+    $this->viewData['success'] = true;
+    $this->viewData['statusCode'] = get_status_code_by_result('emptyresult');
   }
 
 

@@ -1,42 +1,18 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Departamentos extends CI_Controller {
+class Departamentos extends MY_Controller {
 
-  public $viewData = [];
-  public $outputData = [];
+  protected $modulo = 'Recursos Humanos';
   
   public function __construct() 
   {
     parent::__construct();
-    // Cargar librerías y modelos
-    $this->load->library("Init_controller");
+    // Cargar modelos específicos
     $this->load->model("RH/DepartamentoModel");
     $this->load->model("RH/EmpleadoModel");
 
-    // ViewData general
-    $this->viewData = [
-      'success'     => true,
-      'statusCode'  => get_status_code_by_result('emptyresult'),
-      'message'     => 'Respuesta sin contenido',  
-      'error'       => '',
-      'pageTitle'   => '',      
-      'headTitle'   => '',   
-      'pageView'    => '',
-      'pageScript'  => '',
-      'breadcrumb'  => '',
-      'validate'    => '',
-      'response'    => [],
-    ];     
-
-    $this->outputData = [
-      'success'     => true,  
-      'statusCode'  => get_status_code_by_result('emptyresult'),
-      'message'     => 'Respuesta sin contenido',
-      'error'       => '',      
-      'response'    => [],
-    ];     
-    $this->session->email = "soporte2@chisarecubrimientos.com"; 
+    // El controlador base ya maneja la sesión y los permisos del módulo
   }
 
   // ========================================================================

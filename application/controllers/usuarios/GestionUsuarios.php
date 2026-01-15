@@ -1,45 +1,25 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class GestionUsuarios extends CI_Controller {
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
-  public $viewData = [];
-  public $outputData = [];
+class GestionUsuarios extends MY_Controller {
+
+  protected $modulo = 'Administradores';
   
   public function __construct() 
   {
     parent::__construct();
-    //cargamos los procesos, librerias, helpers y variables de inicio
-    $this->load->library("Init_controller");//libreria de funciones generales    
-    $this->load->model("Users/UserModel"); //modelo de usuarios con el alias 
-    $this->config->load('permissions'); // Load permissions configuration
     
-
-    //general viewdata for view files
-    $this->viewData = [
-      'success'     => true,
-      'statusCode'  => get_status_code_by_result('emptyresult'), // 204
-      'message'     => 'Respuesta sin contenido',  
-      'error'       => '',
-      'pageTitle'   => '',      
-      'headTitle'   => '',   
-      'pageView'    => '',
-      'pageScript'  => '',
-      'breadcrumb'  => '',//establecemos breadcrumbs para la vista en general               
-      'validate'    => '',//validation messages or scripts injection from controllers (script, html, etc)
-      'response'    => [], //empty response
-    ];     
-
-    $this->outputData = [
-      'success'     => true,  
-      'statusCode'  => get_status_code_by_result('emptyresult'), // 204
-      'message'     => 'Respuesta sin contenido',
-      'error'       => '',      
-      'response'    => [], //empty response
-    ];     
-    $this->session->email = "soporte2@chisarecubrimientos.com"; 
-
-  }//end __construct
+    // Cargar modelos específicos
+    $this->load->model("Users/UserModel"); 
+    $this->load->model("Users/RolesModel");
+    $this->config->load('permissions'); 
+    
+    // El controlador base ya maneja la sesión y los permisos del módulo
+  }
 
   public function index(){
     //preparamos los datos de la vista
@@ -214,15 +194,18 @@ class GestionUsuarios extends CI_Controller {
         switch ($result['success']) {
           case 0:
             $this->viewData['validate'] = $this->init_controller->alert("danger",$result['msg']);            
+            $this->viewData['notification'] = ['msg' => $result['msg'], 'type' => 'danger'];
             setViewError($result['msg']);
             break;
           case 1:                        
             $this->viewData['validate'] = $this->init_controller->alert("success",$result['msg']);
             $this->init_controller->insert_log($result['msg'],$this->session->email,"Registro agregado");                                    
+            $this->viewData['notification'] = ['msg' => $result['msg'], 'type' => 'success'];
             setViewSuccess($result['msg']);            
             break;
           default:
             $this->viewData['validate'] = $this->init_controller->alert("danger","Se ha producido un error.");
+            $this->viewData['notification'] = ['msg' => "Se ha producido un error desconocido al guardar el usuario: " . $result['msg'], 'type' => 'danger'];
             setViewError("Se ha producido un error desconocido al guardar el usuario.".$result['msg']);
             break;
         }        
@@ -236,6 +219,7 @@ class GestionUsuarios extends CI_Controller {
     $this->viewData['breadcrumb'] = 'Inicio > Gestion de usuarios > Alta de usuarios';
     $this->viewData['response'] = [
       'permissions' => $permissions, //permisos desde archivo de configuracion permissions
+      'roles' => $this->RolesModel->get_all_roles()
     ];//no hay datos por el momento      
     $this->viewData['pageView'] = 'usuarios/alta';
     
@@ -270,6 +254,7 @@ class GestionUsuarios extends CI_Controller {
       'userData' => $response['user_data'],
       'userPermissions' => $user_permissions,
       'permissions' => $this->config->item('permissions'),
+      'roles' => $this->RolesModel->get_all_roles(),
       'id' => $id
     ];    
     $this->viewData['pageView'] = 'usuarios/editar'; // visa d
@@ -348,20 +333,24 @@ class GestionUsuarios extends CI_Controller {
       switch ($result['success']) {
         case 0:
           $this->viewData['validate'] = $this->init_controller->alert("danger",$result['msg']);            
+          $this->viewData['notification'] = ['msg' => $result['msg'], 'type' => 'danger'];
           setViewError('No se pudo actualizar el usuario');
           break;
         case 1:        
           $this->viewData['validate'] = $this->init_controller->alert("success",$result['msg']);        
           $this->init_controller->insert_log($result['msg'],$this->session->email,"Registro actualizado");        
+          $this->viewData['notification'] = ['msg' => $result['msg'], 'type' => 'success'];
           setViewSuccess('Usuario actualizado correctamente');                      
           break;
         default:
           $this->viewData['validate'] = $this->init_controller->alert("danger","Se ha producido un error.");
+          $this->viewData['notification'] = ['msg' => "Se ha producido un error desconocido al guardar el usuario: " . $result['msg'], 'type' => 'danger'];
           setViewError('No se pudo actualizar el usuario');
           break;
       }        
     }else{ //no se cumplieron las validaciones
       $this->viewData['validate'] = $this->init_controller->alert("danger","Se ha producido un error.");
+      $this->viewData['notification'] = ['msg' => "Hay errores en el formulario, por favor revíselo.", 'type' => 'danger'];
       setViewError('No se pudo actualizar el usuario. Error del formulario');
     }
 
@@ -465,6 +454,130 @@ class GestionUsuarios extends CI_Controller {
       'success' => true,
       'logs' => $logs->result()
     ]);
+  }
+
+  /**
+   * Vista de importación masiva desde Excel
+   */
+  public function importar() {
+    setViewSuccess('Importación masiva de usuarios');
+    $this->viewData['pageTitle'] = 'Carga Masiva de Usuarios';
+    $this->viewData['headTitle'] = 'Carga Masiva (Excel)';
+    $this->viewData['breadcrumb'] = 'Inicio > Gestión de usuarios > Importar';
+    $this->viewData['pageView'] = 'usuarios/importar';
+    
+    $this->load->view('layouts/general_template', $this->viewData);
+  }
+
+  /**
+   * Descarga la plantilla de Excel para importación
+   */
+  public function descargar_plantilla() {
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+    
+    // Cabeceras
+    $sheet->setCellValue('A1', 'Nombre');
+    $sheet->setCellValue('B1', 'Apellidos');
+    $sheet->setCellValue('C1', 'Email (Username)');
+    $sheet->setCellValue('D1', 'Password');
+    $sheet->setCellValue('E1', 'Departamento');
+    
+    // Formato
+    $sheet->getStyle('A1:E1')->getFont()->setBold(true);
+    foreach(range('A','E') as $columnID) {
+      $sheet->getColumnDimension($columnID)->setAutoSize(true);
+    }
+    
+    // Ejemplo
+    $sheet->setCellValue('A2', 'Juan');
+    $sheet->setCellValue('B2', 'Pérez');
+    $sheet->setCellValue('C2', 'juan@ejemplo.com');
+    $sheet->setCellValue('D2', 'password123');
+    $sheet->setCellValue('E2', 'Ventas');
+    
+    $writer = new Xlsx($spreadsheet);
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="plantilla_usuarios_erp.xlsx"');
+    header('Cache-Control: max-age=0');
+    $writer->save('php://output');
+  }
+
+  /**
+   * Procesa el archivo Excel subido
+   */
+  public function procesar_importacion() {
+    if(empty($_FILES['archivo_excel']['name'])) {
+      setViewError('Por favor seleccione un archivo');
+      redirect('usuarios/GestionUsuarios/importar');
+    }
+
+    $config['upload_path'] = './uploads/temp/';
+    $config['allowed_types'] = 'xlsx|xls';
+    $config['max_size'] = 2048;
+    $config['encrypt_name'] = true;
+
+    if(!is_dir($config['upload_path'])) {
+      mkdir($config['upload_path'], 0755, true);
+    }
+
+    $this->load->library('upload', $config);
+
+    if (!$this->upload->do_upload('archivo_excel')) {
+      setViewError($this->upload->display_errors());
+      redirect('usuarios/GestionUsuarios/importar');
+    } else {
+      $file_data = $this->upload->data();
+      $file_path = $file_data['full_path'];
+
+      try {
+        $spreadsheet = IOFactory::load($file_path);
+        $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+        
+        $rows = [];
+        // Saltamos la cabecera (índice 1)
+        for($i = 2; $i <= count($sheetData); $i++) {
+          if(!empty($sheetData[$i]['A'])) { // Solo si tiene nombre
+            $rows[] = [
+              'nombre' => $sheetData[$i]['A'],
+              'apellidos' => $sheetData[$i]['B'],
+              'username' => $sheetData[$i]['C'],
+              'password' => $sheetData[$i]['D'],
+              'departamento' => $sheetData[$i]['E']
+            ];
+          }
+        }
+
+        if(empty($rows)) {
+          setViewError('El archivo está vacío o no tiene el formato correcto');
+          unlink($file_path);
+          redirect('usuarios/GestionUsuarios/importar');
+        }
+
+        $permissions = $this->config->item('permissions');
+        $result = $this->UserModel->mod_bulk_insert_excel($rows, $permissions);
+
+        unlink($file_path); // Borrar archivo temp
+
+        $msg = "Carga finalizada. Insertados: {$result['inserted']}, Errores: {$result['errors']}, Omitidos: {$result['skipped']}";
+        if(!empty($result['messages'])) {
+          $msg .= "<br>Detalles:<br>" . implode("<br>", $result['messages']);
+        }
+
+        if($result['inserted'] > 0) {
+          setViewSuccess($msg);
+        } else {
+          setViewError($msg);
+        }
+        
+        redirect('usuarios/GestionUsuarios/importar');
+
+      } catch (Exception $e) {
+        setViewError('Error al procesar el archivo: ' . $e->getMessage());
+        unlink($file_path);
+        redirect('usuarios/GestionUsuarios/importar');
+      }
+    }
   }
 
 }

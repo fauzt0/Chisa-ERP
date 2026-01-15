@@ -210,21 +210,45 @@ class ClientesModel extends MY_Model {
         $this->db->where('codigo !=', 'CLI-00000');
         $stats['total_clientes'] = $this->db->count_all_results($this->tableName);
         
+        $total = $stats['total_clientes'] > 0 ? $stats['total_clientes'] : 1;
+        
         // Clientes activos
         $this->db->where('estatus', 'Activo');
         $this->db->where('codigo !=', 'CLI-00000');
         $stats['clientes_activos'] = $this->db->count_all_results($this->tableName);
         
-        // Clientes regulares
+        $stats['porcentaje_activos'] = round(($stats['clientes_activos'] / $total) * 100);
+        
+        // Clientes regulares (Tipo)
         $this->db->where('tipo_cliente', 'Regular');
         $this->db->where('codigo !=', 'CLI-00000');
         $stats['clientes_regulares'] = $this->db->count_all_results($this->tableName);
+        
+        $stats['porcentaje_regulares'] = round(($stats['clientes_regulares'] / $total) * 100);
         
         // Clientes con saldo pendiente
         $this->db->where('saldo_pendiente >', 0);
         $this->db->where('codigo !=', 'CLI-00000');
         $stats['clientes_con_saldo'] = $this->db->count_all_results($this->tableName);
         
+        $stats['porcentaje_con_saldo'] = round(($stats['clientes_con_saldo'] / $total) * 100);
+        
+        // Nuevos Clientes (últimos 30 días)
+        $fecha_limite = date('Y-m-d', strtotime('-30 days'));
+        $this->db->where('fecha_creacion >=', $fecha_limite);
+        $this->db->where('codigo !=', 'CLI-00000');
+        $stats['nuevos_30_dias'] = $this->db->count_all_results($this->tableName);
+        
+        // Crecimiento (vs periodo anterior 30 días - estimación simple)
+        $this->db->where('fecha_creacion <', $fecha_limite);
+        $this->db->where('fecha_creacion >=', date('Y-m-d', strtotime('-60 days')));
+        $this->db->where('codigo !=', 'CLI-00000');
+        $nuevos_anteriores = $this->db->count_all_results($this->tableName);
+        
+        $stats['porcentaje_crecimiento_nuevos'] = ($nuevos_anteriores > 0) 
+            ? round((($stats['nuevos_30_dias'] - $nuevos_anteriores) / $nuevos_anteriores) * 100) 
+            : 100; // Si no había nuevos, 100% crecimiento
+            
         return $stats;
     }
 

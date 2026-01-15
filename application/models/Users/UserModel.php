@@ -139,6 +139,79 @@ class UserModel extends MY_Model {
         
         return $this->success_response("Se ha agregado al Administrador con el ID: " . $inserted_id, ['id' => $inserted_id]);
     }
+
+    /**
+     * Procesa la carga masiva de usuarios desde un array de datos (Excel)
+     * 
+     * @param array $rows Datos leídos del Excel
+     * @param array $permissions Permisos por defecto
+     * @return array Resumen de la operación
+     */
+    public function mod_bulk_insert_excel($rows, $permissions) {
+        $stats = [
+            'total' => count($rows),
+            'inserted' => 0,
+            'errors' => 0,
+            'skipped' => 0,
+            'messages' => []
+        ];
+
+        foreach ($rows as $index => $row) {
+            $line = $index + 2; // +2 porque Excel es 1-indexed y tiene cabecera
+
+            // Validar datos mínimos
+            if (empty($row['nombre']) || empty($row['username']) || empty($row['password'])) {
+                $stats['errors']++;
+                $stats['messages'][] = "Línea $line: Datos incompletos (Nombre, Email y Password requeridos)";
+                continue;
+            }
+
+            // Verificar si el usuario ya existe
+            $this->db->where('username', $row['username']);
+            if ($this->db->count_all_results($this->tableName) > 0) {
+                $stats['skipped']++;
+                $stats['messages'][] = "Línea $line: El email '" . $row['username'] . "' ya está registrado";
+                continue;
+            }
+
+            // Iniciar transacción por cada usuario para evitar que uno falle y detenga todo
+            $this->db->trans_start();
+
+            $data = [
+                'nombre' => $row['nombre'],
+                'apellidos' => $row['apellidos'] ?? '',
+                'username' => $row['username'],
+                'password' => password_hash($row['password'], PASSWORD_BCRYPT),
+                'departamento' => $row['departamento'] ?? 'Sin Departamento',
+                'estatus' => 1
+            ];
+
+            $inserted_id = $this->insert($data);
+
+            if ($inserted_id) {
+                // Asignar permisos por defecto o heredados
+                $privs_batch = [];
+                foreach ($permissions as $section => $perms) {
+                    foreach ($perms as $perm_key => $perm_label) {
+                        $privs_batch[] = [
+                            'admin' => $inserted_id,
+                            'permiso' => $perm_key,
+                            'valor' => 0 // Por defecto sin permisos en carga masiva por seguridad
+                        ];
+                    }
+                }
+                $this->db->insert_batch("privilege", $privs_batch);
+                $stats['inserted']++;
+            } else {
+                $stats['errors']++;
+                $stats['messages'][] = "Línea $line: Error de base de datos al insertar";
+            }
+
+            $this->db->trans_complete();
+        }
+
+        return $stats;
+    }
     
     /**
      * Actualiza un usuario y sus permisos
@@ -436,5 +509,45 @@ class UserModel extends MY_Model {
                         ->order_by('total', 'DESC')
                         ->get($this->tableName)
                         ->result();
+    }
+    /**
+     * Actualiza el código 2FA para un usuario
+     * 
+     * @param string $username Email del usuario
+     * @param string $code Código de 6 dígitos
+     * @param string $ip Dirección IP actual
+     * @return bool True si se actualizó correctamente
+     */
+    public function mod_update_2fa($username, $code, $ip) {
+        $expires = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+        $data = [
+            'two_factor_code' => $code,
+            'two_factor_expires' => $expires,
+            'last_ip' => $ip
+        ];
+        $this->db->where('username', $username);
+        return $this->db->update($this->tableName, $data);
+    }
+    
+    /**
+     * Verifica un código 2FA
+     * 
+     * @param string $username Email del usuario
+     * @param string $code Código ingresado
+     * @return bool True si es válido y no ha expirado
+     */
+    public function mod_verify_2fa($username, $code) {
+        $this->db->where('username', $username);
+        $this->db->where('two_factor_code', $code);
+        $this->db->where('two_factor_expires >=', date('Y-m-d H:i:s'));
+        $query = $this->db->get($this->tableName);
+        
+        if ($query->num_rows() > 0) {
+            // Limpiar el código después de usarlo por seguridad
+            $this->db->where('username', $username);
+            $this->db->update($this->tableName, ['two_factor_code' => NULL]);
+            return true;
+        }
+        return false;
     }
 }
