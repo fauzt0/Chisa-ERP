@@ -198,10 +198,13 @@ class GestionUsuarios extends MY_Controller {
             setViewError($result['msg']);
             break;
           case 1:                        
-            $this->viewData['validate'] = $this->init_controller->alert("success",$result['msg']);
+            // PRG Pattern: Set flashdata and redirect
+            $this->session->set_flashdata('validate', $this->init_controller->alert("success",$result['msg']));
+            $this->session->set_flashdata('notification', ['msg' => $result['msg'], 'type' => 'success']);
+            
             $this->init_controller->insert_log($result['msg'],$this->session->email,"Registro agregado");                                    
-            $this->viewData['notification'] = ['msg' => $result['msg'], 'type' => 'success'];
-            setViewSuccess($result['msg']);            
+            
+            redirect('usuarios/GestionUsuarios/alta');
             break;
           default:
             $this->viewData['validate'] = $this->init_controller->alert("danger","Se ha producido un error.");
@@ -214,6 +217,15 @@ class GestionUsuarios extends MY_Controller {
 
     ///renderizamos la vista
     setViewSuccess('Alta de usuarios');
+
+    // Recuperar flashdata si existe (PRG Pattern)
+    if($this->session->flashdata('notification')){
+      $this->viewData['notification'] = $this->session->flashdata('notification');
+    }
+    if($this->session->flashdata('validate')){
+      $this->viewData['validate'] = $this->session->flashdata('validate');
+    }
+
     $this->viewData['pageTitle'] = 'Alta de usuarios';
     $this->viewData['headTitle'] = 'Alta de usuarios';
     $this->viewData['breadcrumb'] = 'Inicio > Gestion de usuarios > Alta de usuarios';
