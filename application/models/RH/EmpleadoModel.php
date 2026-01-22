@@ -20,7 +20,7 @@ class EmpleadoModel extends MY_Model {
      */
     protected $datatableConfig = [
         'column_order' => ['numero_empleado', 'nombre', 'apellido_paterno', 'puesto', 'departamento_id', 'estatus', null],
-        'column_search' => ['numero_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'rfc', 'curp', 'puesto'],
+        'column_search' => ['numero_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'rfc', 'curp', 'puesto', 'email_personal', 'email_corporativo'],
         'order' => ['fecha_ingreso' => 'desc']
     ];
     
@@ -350,6 +350,24 @@ class EmpleadoModel extends MY_Model {
                         ->get()
                         ->result();
     }
+
+    /**
+     * Obtiene empleados activos con datos fiscales faltantes (RFC, CURP, NSS)
+     */
+    public function get_empleados_datos_faltantes() {
+        return $this->db->select("id, nombre, apellido_paterno, apellido_materno, rfc, curp, nss")
+                        ->where('estatus', 1)
+                        ->group_start()
+                            ->where('rfc IS NULL', null, false)
+                            ->or_where('rfc', '')
+                            ->or_where('curp IS NULL', null, false)
+                            ->or_where('curp', '')
+                            ->or_where('nss IS NULL', null, false)
+                            ->or_where('nss', '')
+                        ->group_end()
+                        ->get($this->tableName)
+                        ->result();
+    }
     
     /**
      * Sobrescribe el método de DataTables para incluir JOIN con departamentos
@@ -362,17 +380,31 @@ class EmpleadoModel extends MY_Model {
         // Búsqueda general
         if (isset($_POST['search']) && !empty($_POST['search'])) {
             $search = $_POST['search'];
-            $this->db->group_start();
-            
-            foreach ($this->datatableConfig['column_search'] as $i => $column) {
-                if ($i === 0) {
-                    $this->db->like($column, $search);
-                } else {
-                    $this->db->or_like($column, $search);
-                }
+            if (is_array($search)) {
+                $search = $search['value'];
             }
             
-            $this->db->group_end();
+            if (!empty($search)) {
+                $this->db->group_start();
+                foreach ($this->datatableConfig['column_search'] as $i => $column) {
+                    if ($i === 0) {
+                        $this->db->like($column, $search);
+                    } else {
+                        $this->db->or_like($column, $search);
+                    }
+                }
+                $this->db->group_end();
+            }
+        }
+
+        // Filtro de Estatus (si existe en POST)
+        if (isset($_POST['estatus']) && $_POST['estatus'] !== 'all') {
+            $this->db->where('empleados.estatus', $_POST['estatus']);
+        }
+
+        // Filtro de Departamento (si existe en POST)
+        if (isset($_POST['departamento_id']) && $_POST['departamento_id'] !== 'all') {
+            $this->db->where('empleados.departamento_id', $_POST['departamento_id']);
         }
         
         // Ordenamiento

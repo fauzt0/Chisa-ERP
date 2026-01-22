@@ -125,15 +125,19 @@ $emp = $response['empleado'];
                 <i data-lucide="info"></i> Los datos fiscales (RFC, CURP, NSS) no se pueden modificar por seguridad.
               </div>
               <div class="row">
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
                   <label class="form-label">RFC</label>
                   <input type="text" class="form-control" value="<?php echo $emp->rfc; ?>" disabled>
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Régimen Fiscal</label>
+                  <input type="text" class="form-control" value="<?php echo $emp->regimen_fiscal ?? 'N/A'; ?>" disabled>
+                </div>
+                <div class="col-md-3 mb-3">
                   <label class="form-label">CURP</label>
                   <input type="text" class="form-control" value="<?php echo $emp->curp; ?>" disabled>
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
                   <label class="form-label">NSS (IMSS)</label>
                   <input type="text" class="form-control" value="<?php echo $emp->nss ?? 'N/A'; ?>" disabled>
                 </div>
@@ -162,6 +166,10 @@ $emp = $response['empleado'];
                     <option value="Temporal" <?php echo set_select('tipo_trabajador', 'Temporal', $emp->tipo_trabajador == 'Temporal'); ?>>Temporal</option>
                     <option value="Por Proyecto" <?php echo set_select('tipo_trabajador', 'Por Proyecto', $emp->tipo_trabajador == 'Por Proyecto'); ?>>Por Proyecto</option>
                     <option value="Honorarios" <?php echo set_select('tipo_trabajador', 'Honorarios', $emp->tipo_trabajador == 'Honorarios'); ?>>Honorarios</option>
+                    <option value="Asimilados" <?php echo set_select('tipo_trabajador', 'Asimilados', $emp->tipo_trabajador == 'Asimilados'); ?>>Asimilados a Salarios</option>
+                    <option value="Eventual" <?php echo set_select('tipo_trabajador', 'Eventual', $emp->tipo_trabajador == 'Eventual'); ?>>Eventual</option>
+                    <option value="Confianza" <?php echo set_select('tipo_trabajador', 'Confianza', $emp->tipo_trabajador == 'Confianza'); ?>>Confianza</option>
+                    <option value="Sindicalizado" <?php echo set_select('tipo_trabajador', 'Sindicalizado', $emp->tipo_trabajador == 'Sindicalizado'); ?>>Sindicalizado</option>
                     <option value="Practicante" <?php echo set_select('tipo_trabajador', 'Practicante', $emp->tipo_trabajador == 'Practicante'); ?>>Practicante</option>
                   </select>
                 </div>
@@ -226,6 +234,60 @@ $emp = $response['empleado'];
                     <option value="Semanal" <?php echo set_select('tipo_nomina', 'Semanal', $emp->tipo_nomina == 'Semanal'); ?>>Semanal</option>
                     <option value="Mensual" <?php echo set_select('tipo_nomina', 'Mensual', $emp->tipo_nomina == 'Mensual'); ?>>Mensual</option>
                   </select>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Pensión Alimenticia (%)</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" name="pension_alimenticia_porcentaje" value="<?php echo set_value('pension_alimenticia_porcentaje', $emp->pension_alimenticia_porcentaje ?? 0); ?>" step="0.01" min="0" max="100">
+                    <span class="input-group-text">%</span>
+                  </div>
+                  <small class="text-muted">Porcentaje del sueldo</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Pensión Alimenticia (Monto Fijo)</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="pension_alimenticia_monto" value="<?php echo set_value('pension_alimenticia_monto', $emp->pension_alimenticia_monto ?? 0); ?>" step="0.01" min="0">
+                  </div>
+                  <small class="text-muted">Cuota fija por periodo</small>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">ISR %</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" name="isr_porcentaje" value="<?php echo set_value('isr_porcentaje', $emp->isr_porcentaje ?? 0); ?>" step="0.01" min="0" max="100">
+                    <span class="input-group-text">%</span>
+                  </div>
+                  <small class="text-muted">Retención Impuesto Sobre Renta (ISR)</small>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Cuota IMSS</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="imss_cuota" value="<?php echo set_value('imss_cuota', $emp->imss_cuota ?? 0); ?>" step="0.01" min="0">
+                  </div>
+                  <small class="text-muted">Cuota Seguridad Social</small>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Aportación INFONAVIT</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="infonavit_aportacion" value="<?php echo set_value('infonavit_aportacion', $emp->infonavit_aportacion ?? 0); ?>" step="0.01" min="0">
+                  </div>
+                  <small class="text-muted">Aportación Vivienda</small>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Aportación AFORE</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="afore_aportacion" value="<?php echo set_value('afore_aportacion', $emp->afore_aportacion ?? 0); ?>" step="0.01" min="0">
+                  </div>
+                  <small class="text-muted">Aportación Retiro</small>
                 </div>
               </div>
 
@@ -383,5 +445,15 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
   }
+
+  // Notificaciones del servidor
+  <?php if (isset($notification)): ?>
+    notifyShow("<?php echo $notification['msg']; ?>", "<?php echo $notification['type']; ?>");
+  <?php endif; ?>
+
+  // Notificación de errores de validación de CodeIgniter
+  <?php if (validation_errors()): ?>
+    notifyShow("Hay errores en el formulario. Por favor revisa los campos marcados.", "danger");
+  <?php endif; ?>
 });
 </script>

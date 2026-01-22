@@ -12,6 +12,37 @@
   <!-- Titulo de la pagina -->
   <h1 class="h3 mb-3"><?php echo $headTitle;?></h1>
 
+  <!-- Alerta de Datos Faltantes (Solo Visible para Administradores con Permiso) -->
+  <?php if(!empty($response['datos_faltantes'])): ?>
+  <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <div class="alert-icon">
+      <i class="far fa-fw fa-bell"></i>
+    </div>
+    <div class="alert-message">
+      <strong><i class="fas fa-exclamation-triangle"></i> Atención:</strong> Se han detectado empleados con datos fiscales incompletos (RFC, CURP o NSS).
+      <ul class="mb-0 mt-1">
+        <?php foreach(array_slice($response['datos_faltantes'], 0, 5) as $emp): ?>
+          <li>
+            <?php echo $emp->nombre . ' ' . $emp->apellido_paterno; ?>: 
+            <?php 
+              $faltantes = [];
+              if(empty($emp->rfc)) $faltantes[] = 'RFC';
+              if(empty($emp->curp)) $faltantes[] = 'CURP';
+              if(empty($emp->nss)) $faltantes[] = 'NSS';
+              echo implode(', ', $faltantes);
+            ?>
+             - <a href="<?php echo base_url('rh/RecursosHumanos/editar/'.$emp->id); ?>" class="alert-link">Corregir</a>
+          </li>
+        <?php endforeach; ?>
+        <?php if(count($response['datos_faltantes']) > 5): ?>
+          <li>... y <?php echo count($response['datos_faltantes']) - 5; ?> más.</li>
+        <?php endif; ?>
+      </ul>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <?php endif; ?>
+
   <!-- Cards de estadísticas RH -->
   <div class="row">
     <!-- Total Empleados -->
@@ -116,7 +147,7 @@
 
   <div class="row">
     <!-- Columna principal de datos -->
-    <div class="col-xl-8">
+    <div class="col-xl-12">
       <div class="card">   
         <div class="card-body">
           <div class="row mb-3">
@@ -129,17 +160,17 @@
               </div>
             </div>
             <div class="col-md-6">
-              <div class="text-sm-end">              
+              <div class="d-flex flex-wrap gap-2 justify-content-md-end">              
                 <div class="dropdown position-relative d-inline-block">
-                  <a href="#" data-bs-toggle="dropdown" data-bs-display="static" class="btn btn-light btn-lg me-2">
+                  <a href="#" data-bs-toggle="dropdown" data-bs-display="static" class="btn btn-light btn-lg">
                     <i data-lucide="download"></i> Exportar
                   </a>
                   <div class="dropdown-menu dropdown-menu-end" id="table_menu_actions">                    
                   </div>
                 </div>                
                 <a href="<?php echo base_url('rh/RecursosHumanos/alta'); ?>" class="btn btn-primary btn-lg"><i data-lucide="plus"></i> Alta Empleado</a>                
-                <button onclick="abrirTodasSolicitudes()" class="btn btn-warning btn-lg me-2">
-                  <i class="fas fa-umbrella-beach"></i> Solicitudes Pendientes
+                <button onclick="abrirTodasSolicitudes()" class="btn btn-warning btn-lg">
+                  <i class="fas fa-umbrella-beach"></i> Vacaciones
                 </button>
               </div>
             </div>
@@ -151,6 +182,15 @@
                 <option value="all">Todos</option>
                 <option value="1" selected>Activos</option>
                 <option value="0">Inactivos</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label for="filter-departamento" class="form-label">Departamento:</label>
+              <select class="form-select" id="filter-departamento">
+                <option value="all">Todos</option>
+                <?php foreach($response['departamentos'] as $dept): ?>
+                  <option value="<?php echo $dept->id; ?>"><?php echo $dept->nombre; ?></option>
+                <?php endforeach; ?>
               </select>
             </div>
             <div class="col-md-3">
@@ -186,74 +226,73 @@
       </div>
     </div>
 
+    <!-- Offcanvas Detalle Empleado -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasDetalleEmpleado" aria-labelledby="offcanvasDetalleEmpleadoLabel">
+      <div class="offcanvas-header bg-light">
+        <h5 id="offcanvasDetalleEmpleadoLabel"><i class="fas fa-user-circle"></i> Datos del Empleado</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+         <div id="actions" class="mb-3 text-center"></div>
+         <hr>
+          <div class="table-responsive">
+            <table class="table table-sm my-2">
+              <tbody id="detalles">
+              </tbody>
+            </table>
+          </div>
 
-    <!-- columna lateral derecha -->
-    <div class="col-xl-4">
-        <!-- Detalle del empleado -->
-        <div class="card">
-					<div class="card-header">
-
-						<h5 class="card-title mb-0">Datos del Empleado:</h5>
-					</div>
-					<div class="card-body">
-            <div id="actions"></div>
-            <br>          
-						<table class="table table-sm my-2">
-							<tbody id="detalles">
-							</tbody>
-						</table>
-
-            <!-- Balance de Vacaciones -->
-            <div id="vacaciones-badge" style="display:none;" class="alert alert-info mt-3 p-3">
-              <div class="border-bottom pb-2 mb-3">
-                <strong class="text-primary text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">🏖️ Vacaciones</strong><br>
-                <button class="btn btn-sm btn-primary shadow-sm mt-2" onclick="verVacaciones()" id="btn-ver-vacaciones">
-                  <i class="fas fa-calendar-alt"></i> Ver Detalle
-                </button>
-              </div>
-              <div class="text-center">
-                <h2 class="mb-1 fw-bold" id="dias-disponibles">-- días</h2>
-                <small class="text-muted d-block" id="periodo-vacaciones">Cargando...</small>
-              </div>
+          <!-- Balance de Vacaciones -->
+          <div id="vacaciones-badge" style="display:none;" class="alert alert-info mt-3 p-3">
+            <div class="border-bottom pb-2 mb-3">
+              <strong class="text-primary text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">🏖️ Vacaciones</strong><br>
+              <button class="btn btn-sm btn-primary shadow-sm mt-2" onclick="verVacaciones()" id="btn-ver-vacaciones">
+                <i class="fas fa-calendar-alt"></i> Ver Detalle
+              </button>
             </div>
-
-            <!-- Balance de Incidencias -->
-            <div id="incidencias-badge" style="display:none;" class="alert alert-warning mt-3 p-3">
-              <div class="border-bottom pb-2 mb-3">
-                <strong class="text-warning text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">⚠️ Incidencias</strong><br>
-                <button class="btn btn-sm btn-warning shadow-sm mt-2" onclick="verIncidencias()" id="btn-ver-incidencias">
-                  <i class="fas fa-exclamation-triangle"></i> Ver Incidencias
-                </button>
-              </div>
-              <div class="text-center">
-                <h2 class="mb-1 fw-bold" id="total-incidencias">0</h2>
-                <small class="text-muted d-block">Incidencias este año</small>
-              </div>
+            <div class="text-center">
+              <h2 class="mb-1 fw-bold" id="dias-disponibles">-- días</h2>
+              <small class="text-muted d-block" id="periodo-vacaciones">Cargando...</small>
             </div>
+          </div>
 
-            <!-- Horario Laboral -->
-            <div id="horario-badge" style="display:none;" class="alert alert-info mt-3 p-3">
-              <div class="border-bottom pb-2 mb-3">
-                <strong class="text-info text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">🕐 Horario Laboral</strong><br>
-                <button class="btn btn-sm btn-info shadow-sm mt-2" onclick="verHorario()" id="btn-ver-horario">
-                  <i class="fas fa-clock"></i> Ver/Editar Horario
-                </button>
-              </div>
-              <div class="text-center">
-                <h2 class="mb-1 fw-bold" id="horas-semana">0 hrs</h2>
-                <small class="text-muted d-block" id="turno-empleado">Sin horario</small>
-              </div>
+          <!-- Balance de Incidencias -->
+          <div id="incidencias-badge" style="display:none;" class="alert alert-warning mt-3 p-3">
+            <div class="border-bottom pb-2 mb-3">
+              <strong class="text-warning text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">⚠️ Incidencias</strong><br>
+              <button class="btn btn-sm btn-warning shadow-sm mt-2" onclick="verIncidencias()" id="btn-ver-incidencias">
+                <i class="fas fa-exclamation-triangle"></i> Ver Incidencias
+              </button>
             </div>
+            <div class="text-center">
+              <h2 class="mb-1 fw-bold" id="total-incidencias">0</h2>
+              <small class="text-muted d-block">Incidencias este año</small>
+            </div>
+          </div>
 
-            <!-- Historial de Contratos -->
-            <strong>Historial de Contratos</strong>
+          <!-- Horario Laboral -->
+          <div id="horario-badge" style="display:none;" class="alert alert-info mt-3 p-3">
+            <div class="border-bottom pb-2 mb-3">
+              <strong class="text-info text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">🕐 Horario Laboral</strong><br>
+              <button class="btn btn-sm btn-info shadow-sm mt-2" onclick="verHorario()" id="btn-ver-horario">
+                <i class="fas fa-clock"></i> Ver/Editar Horario
+              </button>
+            </div>
+            <div class="text-center">
+              <h2 class="mb-1 fw-bold" id="horas-semana">0 hrs</h2>
+              <small class="text-muted d-block" id="turno-empleado">Sin horario</small>
+            </div>
+          </div>
+
+          <!-- Historial de Contratos -->
+          <div class="mt-4">
+            <h6 class="border-bottom pb-2">Historial de Contratos</h6>
             <ul class="timeline mt-2 mb-0" id="historial-contratos">
               <li class="text-muted">Selecciona un empleado para ver su historial</li>
             </ul>
-					</div>
-				</div>        
-    </div>  
-    
+          </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -650,76 +689,7 @@
 
 
 
-<!-- Modal: Ver/Editar Horario -->
-<div class="modal fade" id="modalHorario" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header bg-info text-white">
-        <h5 class="modal-title"><i class="fas fa-clock"></i> Horario Laboral del Empleado</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <!-- Resumen -->
-        <div class="row mb-3">
-          <div class="col-md-4">
-            <div class="card bg-light">
-              <div class="card-body text-center">
-                <h3 id="resumen-horas">0 hrs</h3>
-                <small class="text-muted">Horas por semana</small>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card bg-light">
-              <div class="card-body text-center">
-                <h3 id="resumen-dias">0</h3>
-                <small class="text-muted">Días laborales</small>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <button class="btn btn-success w-100 h-100" onclick="crearHorarioEstandar()">
-              <i class="fas fa-plus"></i> Horario Estándar
-            </button>
-          </div>
-        </div>
-        <!-- Formulario de horarios -->
-        <form id="formHorario">
-          <input type="hidden" name="empleado_id" id="horario_empleado_id">
-          
-          <div class="mb-3">
-            <label class="form-label">Fecha de inicio de vigencia</label>
-            <input type="date" class="form-control" name="fecha_inicio" value="<?php echo date('Y-m-d'); ?>">
-          </div>
-          <div class="table-responsive">
-            <table class="table table-bordered">
-              <thead class="table-light">
-                <tr>
-                  <th>Día</th>
-                  <th>Laboral</th>
-                  <th>Entrada</th>
-                  <th>Salida</th>
-                  <th>Comida Inicio</th>
-                  <th>Comida Fin</th>
-                  <th>Turno</th>
-                </tr>
-              </thead>
-              <tbody id="horarios-tabla">
-                <!-- Se llena dinámicamente -->
-              </tbody>
-            </table>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="guardarHorario()">
-          <i class="fas fa-save"></i> Guardar Horario
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+
 
 <!-- Scripts necesarios para exportar tabla excel, pdf -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
@@ -767,6 +737,7 @@ document.addEventListener("DOMContentLoaded", function() {
               "data": function ( data ) {
                   data.search = $('#datatables-empleados-search').val();
                   data.estatus = $('#filter-estatus').val();
+                  data.departamento_id = $('#filter-departamento').val();
                   data.<?php echo $this->security->get_csrf_token_name();?> = '<?php echo $this->security->get_csrf_hash();?>';
               }
           },
@@ -815,6 +786,11 @@ document.addEventListener("DOMContentLoaded", function() {
           table.ajax.reload();
       });
 
+      ///evento para el filtro de departamento
+      $('#filter-departamento').on('change', function(){
+          table.ajax.reload();
+      });
+
   });
 </script>  
 
@@ -831,6 +807,10 @@ document.addEventListener("DOMContentLoaded", function() {
       if(result['response']!=null){
         $("#detalles").html(result['detail']);
         $("#actions").html(result['actions']);
+        
+        // Mostrar el Offcanvas
+        var bsOffcanvas = new bootstrap.Offcanvas(document.getElementById('offcanvasDetalleEmpleado'));
+        bsOffcanvas.show();
         
         // Cargar historial de contratos después de cargar detalles
         cargarHistorialContratos(id);

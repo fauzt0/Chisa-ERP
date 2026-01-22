@@ -31,8 +31,17 @@ class RecursosHumanos extends MY_Controller {
     
     $this->viewData['response'] = [
       'stats' => $stats,
-      'por_departamento' => $por_departamento
+      'por_departamento' => $por_departamento,
+      'departamentos' => $this->DepartamentoModel->get_lista_departamentos(),
+      'datos_faltantes' => [] // Inicializar vacío
     ];
+
+    // Verificar permiso para ver alertas de datos faltantes
+    // Asumiendo que el ID del módulo de RH es 8 o que validamos por nombre/slug
+    // Pero usaremos la verificación estándar del sistema si existe
+    if($this->init_controller->has_permission($this->session->userdata('id'), 'Consultar empleados')){
+      $this->viewData['response']['datos_faltantes'] = $this->EmpleadoModel->get_empleados_datos_faltantes();
+    }
     $this->viewData['validate'] = '';
     $this->viewData['pageView'] = 'rh/empleados/main_empleados';
     
@@ -129,6 +138,10 @@ class RecursosHumanos extends MY_Controller {
       $this->viewData['headTitle'] = 'Nuevo Empleado';
       $this->viewData['breadcrumb'] = 'Inicio > Recursos Humanos > Alta de empleado';
       
+      // Obtener flashdata si existe
+      $this->viewData['validate'] = $this->session->flashdata('validate') ?? '';
+      $this->viewData['notification'] = $this->session->flashdata('notification') ?? null;
+      
       // Obtener departamentos para select
       $departamentos = $this->DepartamentoModel->get_lista_departamentos();
       $empleados = $this->EmpleadoModel->get_lista_empleados_activos();
@@ -162,6 +175,7 @@ class RecursosHumanos extends MY_Controller {
         'estado' => $this->input->post('estado'),
         'pais' => $this->input->post('pais') ?: 'México',
         'rfc' => strtoupper($this->input->post('rfc')),
+        'regimen_fiscal' => $this->input->post('regimen_fiscal'),
         'curp' => strtoupper($this->input->post('curp')),
         'nss' => $this->input->post('nss'),
         'afore' => $this->input->post('afore'),
@@ -175,6 +189,12 @@ class RecursosHumanos extends MY_Controller {
         'jefe_directo_id' => $this->input->post('jefe_directo_id'),
         'fecha_ingreso' => $this->input->post('fecha_ingreso'),
         'salario_base_mensual' => $this->input->post('salario_base_mensual'),
+        'pension_alimenticia_porcentaje' => $this->input->post('pension_alimenticia_porcentaje') ?: 0,
+        'pension_alimenticia_monto' => $this->input->post('pension_alimenticia_monto') ?: 0,
+        'isr_porcentaje' => $this->input->post('isr_porcentaje') ?: 0,
+        'imss_cuota' => $this->input->post('imss_cuota') ?: 0,
+        'infonavit_aportacion' => $this->input->post('infonavit_aportacion') ?: 0,
+        'afore_aportacion' => $this->input->post('afore_aportacion') ?: 0,
         'tipo_nomina' => $this->input->post('tipo_nomina'),
         'forma_pago' => $this->input->post('forma_pago'),
         'banco' => $this->input->post('banco'),
@@ -184,10 +204,12 @@ class RecursosHumanos extends MY_Controller {
       $result = $this->EmpleadoModel->mod_add($data);
 
       if($result['success'] == 1){
-        setViewSuccess($result['msg']);
+        $this->session->set_flashdata('validate', $this->init_controller->alert("success", $result['msg']));
+        $this->session->set_flashdata('notification', ['msg' => $result['msg'], 'type' => 'success']);
         redirect('rh/RecursosHumanos');
       } else {
-        setViewError($result['msg']);
+        $this->session->set_flashdata('validate', $this->init_controller->alert("danger", $result['msg']));
+        $this->session->set_flashdata('notification', ['msg' => $result['msg'], 'type' => 'danger']);
         redirect('rh/RecursosHumanos/alta');
       }
     }
@@ -229,6 +251,10 @@ class RecursosHumanos extends MY_Controller {
       $this->viewData['headTitle'] = 'Editar Empleado: ' . $empleado->nombre;
       $this->viewData['breadcrumb'] = 'Inicio > Recursos Humanos > Editar empleado';
       
+      // Obtener flashdata si existe
+      $this->viewData['validate'] = $this->session->flashdata('validate') ?? '';
+      $this->viewData['notification'] = $this->session->flashdata('notification') ?? null;
+      
       $departamentos = $this->DepartamentoModel->get_lista_departamentos();
       $empleados = $this->EmpleadoModel->get_lista_empleados_activos();
       
@@ -263,6 +289,7 @@ class RecursosHumanos extends MY_Controller {
         'pais' => $this->input->post('pais'),
         'afore' => $this->input->post('afore'),
         'afore_numero_cuenta' => $this->input->post('afore_numero_cuenta'),
+        'regimen_fiscal' => $this->input->post('regimen_fiscal'),
         'tiene_fonacot' => $this->input->post('tiene_fonacot') ? 1 : 0,
         'tiene_infonavit' => $this->input->post('tiene_infonavit') ? 1 : 0,
         'descuento_infonavit' => $this->input->post('descuento_infonavit'),
@@ -271,6 +298,12 @@ class RecursosHumanos extends MY_Controller {
         'puesto' => $this->input->post('puesto'),
         'jefe_directo_id' => $this->input->post('jefe_directo_id'),
         'salario_base_mensual' => $this->input->post('salario_base_mensual'),
+        'pension_alimenticia_porcentaje' => $this->input->post('pension_alimenticia_porcentaje') ?: 0,
+        'pension_alimenticia_monto' => $this->input->post('pension_alimenticia_monto') ?: 0,
+        'isr_porcentaje' => $this->input->post('isr_porcentaje') ?: 0,
+        'imss_cuota' => $this->input->post('imss_cuota') ?: 0,
+        'infonavit_aportacion' => $this->input->post('infonavit_aportacion') ?: 0,
+        'afore_aportacion' => $this->input->post('afore_aportacion') ?: 0,
         'tipo_nomina' => $this->input->post('tipo_nomina'),
         'forma_pago' => $this->input->post('forma_pago'),
         'banco' => $this->input->post('banco'),
@@ -281,9 +314,11 @@ class RecursosHumanos extends MY_Controller {
       $result = $this->EmpleadoModel->mod_update($id, $data);
 
       if($result['success'] == 1){
-        setViewSuccess($result['msg']);
+        $this->session->set_flashdata('validate', $this->init_controller->alert("success", $result['msg']));
+        $this->session->set_flashdata('notification', ['msg' => $result['msg'], 'type' => 'success']);
       } else {
-        setViewError($result['msg']);
+        $this->session->set_flashdata('validate', $this->init_controller->alert("danger", $result['msg']));
+        $this->session->set_flashdata('notification', ['msg' => $result['msg'], 'type' => 'danger']);
       }
       
       redirect('rh/RecursosHumanos/editar/'.$id);
@@ -321,14 +356,25 @@ class RecursosHumanos extends MY_Controller {
 
     // Generar HTML de detalles
     $detail = '
-      <tr><td><strong>Número:</strong></td><td>'.$empleado->numero_empleado.'</td></tr>
+      <tr class="table-light"><td colspan="2"><strong>Información Personal</strong></td></tr>
       <tr><td><strong>Nombre:</strong></td><td>'.$empleado->nombre.' '.$empleado->apellido_paterno.' '.$empleado->apellido_materno.'</td></tr>
+      <tr><td><strong>Género:</strong></td><td>'.$empleado->genero.'</td></tr>
+      <tr><td><strong>Estado Civil:</strong></td><td>'.($empleado->estado_civil ?? 'No especificado').'</td></tr>
+      <tr><td><strong>Teléfono:</strong></td><td>'.($empleado->telefono ?? 'N/A').'</td></tr>
+      <tr><td><strong>Email Personal:</strong></td><td>'.($empleado->email_personal ?? 'N/A').'</td></tr>
+      
+      <tr class="table-light"><td colspan="2"><strong>Información Fiscal</strong></td></tr>
+      <tr><td><strong>Número Empleado:</strong></td><td>'.$empleado->numero_empleado.'</td></tr>
       <tr><td><strong>RFC:</strong></td><td>'.$empleado->rfc.'</td></tr>
       <tr><td><strong>CURP:</strong></td><td>'.$empleado->curp.'</td></tr>
       <tr><td><strong>NSS:</strong></td><td>'.($empleado->nss ?? 'N/A').'</td></tr>
+      
+      <tr class="table-light"><td colspan="2"><strong>Información Laboral</strong></td></tr>
       <tr><td><strong>Puesto:</strong></td><td>'.$empleado->puesto.'</td></tr>
       <tr><td><strong>Departamento:</strong></td><td>'.($empleado->departamento_nombre ?? 'N/A').'</td></tr>
-      <tr><td><strong>Salario:</strong></td><td>$'.number_format($empleado->salario_base_mensual, 2).'</td></tr>
+      <tr><td><strong>Tipo:</strong></td><td>'.$empleado->tipo_trabajador.'</td></tr>
+      <tr><td><strong>Email Corp:</strong></td><td>'.($empleado->email_corporativo ?? 'N/A').'</td></tr>
+      <tr><td><strong>Salario Mensual:</strong></td><td>$'.number_format($empleado->salario_base_mensual, 2).'</td></tr>
       <tr><td><strong>Fecha Ingreso:</strong></td><td>'.$empleado->fecha_ingreso.'</td></tr>
       <tr><td><strong>Estatus:</strong></td><td>'.($empleado->estatus == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>').'</td></tr>
     ';

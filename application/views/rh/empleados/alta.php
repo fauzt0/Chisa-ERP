@@ -140,6 +140,19 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
                   <small class="text-muted">Ejemplo: AAAA######XXX</small>
                 </div>
                 <div class="col-md-4 mb-3">
+                  <label class="form-label">Régimen Fiscal (SAT)</label>
+                  <select class="form-select" name="regimen_fiscal">
+                    <option value="">Seleccionar...</option>
+                    <option value="605" <?php echo set_select('regimen_fiscal', '605'); ?>>605 - Sueldos y Salarios e Ingresos Asimilados</option>
+                    <option value="606" <?php echo set_select('regimen_fiscal', '606'); ?>>606 - Arrendamiento</option>
+                    <option value="608" <?php echo set_select('regimen_fiscal', '608'); ?>>608 - Demás ingresos</option>
+                    <option value="612" <?php echo set_select('regimen_fiscal', '612'); ?>>612 - Personas Físicas con Actividades Empresariales</option>
+                    <option value="621" <?php echo set_select('regimen_fiscal', '621'); ?>>621 - Incorporación Fiscal</option>
+                    <option value="625" <?php echo set_select('regimen_fiscal', '625'); ?>>625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas</option>
+                    <option value="626" <?php echo set_select('regimen_fiscal', '626'); ?>>626 - Régimen Simplificado de Confianza</option>
+                  </select>
+                </div>
+                <div class="col-md-4 mb-3">
                   <label class="form-label">CURP * <small class="text-muted">(18 caracteres)</small></label>
                   <input type="text" class="form-control <?php echo $form['curp_class']; ?>" name="curp" value="<?php echo set_value('curp'); ?>" maxlength="18" style="text-transform: uppercase;">
                   <small class="text-muted">Ejemplo: AAAA######HXXXXX##</small>
@@ -176,6 +189,10 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
                     <option value="Temporal" <?php echo set_select('tipo_trabajador', 'Temporal'); ?>>Temporal</option>
                     <option value="Por Proyecto" <?php echo set_select('tipo_trabajador', 'Por Proyecto'); ?>>Por Proyecto</option>
                     <option value="Honorarios" <?php echo set_select('tipo_trabajador', 'Honorarios'); ?>>Honorarios</option>
+                    <option value="Asimilados" <?php echo set_select('tipo_trabajador', 'Asimilados'); ?>>Asimilados a Salarios</option>
+                    <option value="Eventual" <?php echo set_select('tipo_trabajador', 'Eventual'); ?>>Eventual</option>
+                    <option value="Confianza" <?php echo set_select('tipo_trabajador', 'Confianza'); ?>>Confianza</option>
+                    <option value="Sindicalizado" <?php echo set_select('tipo_trabajador', 'Sindicalizado'); ?>>Sindicalizado</option>
                     <option value="Practicante" <?php echo set_select('tipo_trabajador', 'Practicante'); ?>>Practicante</option>
                   </select>
                 </div>
@@ -235,6 +252,61 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
                   </select>
                 </div>
               </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Pensión Alimenticia (%)</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" name="pension_alimenticia_porcentaje" value="<?php echo set_value('pension_alimenticia_porcentaje'); ?>" step="0.01" min="0" max="100">
+                    <span class="input-group-text">%</span>
+                  </div>
+                  <small class="text-muted">Porcentaje del sueldo</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Pensión Alimenticia (Monto Fijo)</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="pension_alimenticia_monto" value="<?php echo set_value('pension_alimenticia_monto'); ?>" step="0.01" min="0">
+                  </div>
+                  <small class="text-muted">Cuota fija por periodo</small>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">ISR %</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" name="isr_porcentaje" value="<?php echo set_value('isr_porcentaje'); ?>" step="0.01" min="0" max="100">
+                    <span class="input-group-text">%</span>
+                  </div>
+                  <small class="text-muted">Retención Impuesto Sobre Renta</small>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Cuota IMSS</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="imss_cuota" value="<?php echo set_value('imss_cuota'); ?>" step="0.01" min="0">
+                  </div>
+                  <small class="text-muted">Cuota Seguridad Social</small>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Aportación INFONAVIT</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="infonavit_aportacion" value="<?php echo set_value('infonavit_aportacion'); ?>" step="0.01" min="0">
+                  </div>
+                  <small class="text-muted">Aportación Vivienda</small>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Aportación AFORE</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="afore_aportacion" value="<?php echo set_value('afore_aportacion'); ?>" step="0.01" min="0">
+                  </div>
+                  <small class="text-muted">Aportación Retiro</small>
+                </div>
+              </div>
+
 
               <div class="row">
                 <div class="col-md-4 mb-3">
@@ -420,10 +492,20 @@ document.addEventListener("DOMContentLoaded", function() {
     
     if(errores.length > 0) {
       e.preventDefault();
-      alert('Por favor completa los siguientes campos:\n\n' + errores.join('\n'));
+      notifyShow('Por favor completa los campos obligatorios.', 'warning');
       return false;
     }
   });
+
+  // Notificaciones del servidor
+  <?php if (isset($notification)): ?>
+    notifyShow("<?php echo $notification['msg']; ?>", "<?php echo $notification['type']; ?>");
+  <?php endif; ?>
+
+  // Notificación de errores de validación de CodeIgniter
+  <?php if (validation_errors()): ?>
+    notifyShow("Hay errores en el formulario. Por favor revisa los campos marcados.", "danger");
+  <?php endif; ?>
 });
 </script>
 
