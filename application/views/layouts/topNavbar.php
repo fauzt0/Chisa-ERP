@@ -81,7 +81,7 @@
           </div>
         </div>
       </li>
-      <!--
+      
       <li class="nav-item nav-theme-toggle dropdown">
         <a class="nav-icon js-theme-toggle" href="#">
           <div class="position-relative">
@@ -89,7 +89,7 @@
             <i class="align-middle text-body nav-theme-toggle-dark" data-lucide="moon"></i>
           </div>
         </a>
-      </li>-->
+      </li>
       <!--
       <li class="nav-item dropdown">
         <a class="nav-flag dropdown-toggle" href="#" id="languageDropdown" data-bs-toggle="dropdown">

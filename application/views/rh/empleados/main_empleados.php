@@ -43,6 +43,22 @@
   </div>
   <?php endif; ?>
 
+  <!-- Alerta de Vacaciones Pendientes -->
+  <?php if(!empty($response['vacaciones_pendientes']) && $response['vacaciones_pendientes'] > 0): ?>
+  <div class="alert alert-info alert-dismissible fade show" role="alert">
+    <div class="alert-icon">
+      <i class="fas fa-umbrella-beach"></i>
+    </div>
+    <div class="alert-message">
+      <strong><i class="fas fa-clock"></i> Solicitudes Pendientes:</strong> Hay <strong><?php echo $response['vacaciones_pendientes']; ?></strong> solicitudes de vacaciones esperando aprobación.
+      <div class="mt-1">
+          <button class="btn btn-sm btn-light" onclick="abrirTodasSolicitudes()">Revisar Solicitudes</button>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <?php endif; ?>
+
   <!-- Cards de estadísticas RH -->
   <div class="row">
     <!-- Total Empleados -->
@@ -168,7 +184,8 @@
                   <div class="dropdown-menu dropdown-menu-end" id="table_menu_actions">                    
                   </div>
                 </div>                
-                <a href="<?php echo base_url('rh/RecursosHumanos/alta'); ?>" class="btn btn-primary btn-lg"><i data-lucide="plus"></i> Alta Empleado</a>                
+                <a href="<?php echo base_url('rh/RecursosHumanos/alta'); ?>" class="btn btn-primary btn-lg"><i data-lucide="plus"></i> Alta Empleado</a>
+                <a href="<?php echo base_url('rh/RecursosHumanos/plantillas'); ?>" class="btn btn-info btn-lg"><i class="fas fa-file-contract"></i> Plantillas Contratos</a>                
                 <button onclick="abrirTodasSolicitudes()" class="btn btn-warning btn-lg">
                   <i class="fas fa-umbrella-beach"></i> Vacaciones
                 </button>
@@ -287,6 +304,19 @@
           <!-- Historial de Contratos -->
           <div class="mt-4">
             <h6 class="border-bottom pb-2">Historial de Contratos</h6>
+            
+            <div class="row g-2 mb-2">
+              <div class="col-5">
+                <input type="date" class="form-control form-control-sm" id="historial-desde" placeholder="Desde">
+              </div>
+              <div class="col-5">
+                <input type="date" class="form-control form-control-sm" id="historial-hasta" placeholder="Hasta">
+              </div>
+              <div class="col-2">
+                <button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarHistorial()"><i class="fas fa-search"></i></button>
+              </div>
+            </div>
+
             <ul class="timeline mt-2 mb-0" id="historial-contratos">
               <li class="text-muted">Selecciona un empleado para ver su historial</li>
             </ul>
@@ -314,9 +344,6 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           <i class="fas fa-times"></i> Cerrar
-        </button>
-        <button type="button" class="btn btn-info" onclick="imprimirContrato()">
-          <i class="fas fa-print"></i> Imprimir
         </button>
         <button type="button" class="btn btn-primary" onclick="descargarPDF()">
           <i class="fas fa-file-pdf"></i> Descargar PDF
@@ -439,6 +466,30 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
+        <!-- Tabs de navegación -->
+        <ul class="nav nav-tabs mb-3">
+          <li class="nav-item">
+            <button class="nav-link nav-link-solicitudes active" id="tab-sol-Pendiente" onclick="cargarTodasSolicitudes('Pendiente')">
+              <i class="fas fa-clock"></i> Pendientes
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link nav-link-solicitudes" id="tab-sol-Aprobada" onclick="cargarTodasSolicitudes('Aprobada')">
+              <i class="fas fa-check"></i> Aprobadas
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link nav-link-solicitudes" id="tab-sol-Rechazada" onclick="cargarTodasSolicitudes('Rechazada')">
+              <i class="fas fa-times"></i> Rechazadas
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link nav-link-solicitudes" id="tab-sol-Todas" onclick="cargarTodasSolicitudes('Todas')">
+              <i class="fas fa-list"></i> Todas
+            </button>
+          </li>
+        </ul>
+
         <div class="table-responsive">
           <table class="table table-hover" id="tabla-todas-solicitudes">
             <thead>
@@ -607,6 +658,11 @@
             <label class="form-label">Observaciones</label>
             <textarea class="form-control" name="observaciones" rows="2"></textarea>
           </div>
+          <div class="mb-3">
+            <label class="form-label">Evidencia (PDF, Imagen) - Opcional</label>
+            <input type="file" class="form-control" name="archivo_evidencia" accept="image/*,.pdf">
+            <small class="text-muted">Máx. 5MB</small>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -614,6 +670,104 @@
         <button type="button" class="btn btn-success" onclick="guardarIncidencia()">
           <i class="fas fa-save"></i> Guardar Incidencia
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Calculadora de Finiquito/Liquidación -->
+<div class="modal fade" id="modalCalculadoraBaja" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fas fa-calculator"></i> Calculadora de Finiquito y Liquidación (Estimado)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle"></i> <strong>Nota Legal:</strong> Este cálculo es una estimación basada en la Ley Federal del Trabajo. Se recomienda validación por el departamento legal o contable antes de proceder con el pago.
+        </div>
+        
+        <div class="row">
+          <!-- Datos del Empleado (Readonly) -->
+          <div class="col-md-6 mb-3">
+            <h6 class="border-bottom pb-2">Datos del Empleado</h6>
+            <div class="mb-2">
+              <label class="fw-bold">Empleado:</label> <span id="calc-nombre"></span>
+            </div>
+            <div class="mb-2">
+              <label class="fw-bold">Fecha Ingreso:</label> <span id="calc-fecha-ingreso"></span>
+            </div>
+            <div class="mb-2">
+              <label class="fw-bold">Antigüedad:</label> <span id="calc-antiguedad"></span> años
+            </div>
+            <div class="mb-2">
+              <label class="fw-bold">Salario Diario:</label> $<span id="calc-salario-diario"></span>
+            </div>
+            <input type="hidden" id="calc-salario-diario-val">
+            <input type="hidden" id="calc-fecha-ingreso-val">
+          </div>
+          
+          <!-- Parámetros del Cálculo -->
+          <div class="col-md-6 mb-3">
+            <h6 class="border-bottom pb-2">Parámetros de Baja</h6>
+            <div class="mb-3">
+              <label class="form-label">Fecha de Baja</label>
+              <input type="date" class="form-control" id="calc-fecha-baja" value="<?php echo date('Y-m-d'); ?>">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Motivo de Baja</label>
+              <select class="form-select" id="calc-motivo">
+                <option value="renuncia">Renuncia Voluntaria (Finiquito)</option>
+                <option value="despido_justificado">Despido Justificado (Finiquito)</option>
+                <option value="despido_injustificado">Despido Injustificado (Liquidación)</option>
+              </select>
+            </div>
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label class="form-label">Días Aguinaldo</label>
+                <input type="number" class="form-control" id="calc-dias-aguinaldo" value="15">
+              </div>
+              <div class="col-6 mb-3">
+                <label class="form-label">Días Vac. Pendientes</label>
+                <input type="number" class="form-control" id="calc-dias-vacaciones" value="0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2 mb-4">
+          <button class="btn btn-success" onclick="calcularBaja()">
+            <i class="fas fa-coins"></i> Realizar Cálculo
+          </button>
+        </div>
+
+        <!-- Resultados -->
+        <h6 class="border-bottom pb-2">Desglose del Cálculo</h6>
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped text-center">
+            <thead class="table-dark">
+              <tr>
+                <th>Concepto</th>
+                <th>Operación</th>
+                <th>Monto</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-calculo-body">
+              <tr><td colspan="3" class="text-muted">Realice el cálculo para ver resultados</td></tr>
+            </tbody>
+            <tfoot class="table-light fw-bold">
+              <tr>
+                <td colspan="2" class="text-end">TOTAL ESTIMADO A PAGAR:</td>
+                <td class="text-success" id="calc-total">$0.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <!-- <button type="button" class="btn btn-primary"><i class="fas fa-print"></i> Imprimir</button> -->
       </div>
     </div>
   </div>
@@ -692,6 +846,7 @@
 
 
 <!-- Scripts necesarios para exportar tabla excel, pdf -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
@@ -700,6 +855,7 @@
 <script>
 var table;
 var export_filename = 'empleados-<?php echo date("Y-m-d");?>';
+var currentEmpleadoId = null;
 
 document.addEventListener("DOMContentLoaded", function() {
       //datatables      
@@ -796,6 +952,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 <script>
   function empleado_detail(id){
+    currentEmpleadoId = id;
+    $('#historial-desde').val('');
+    $('#historial-hasta').val('');
+
     $.post('<?=base_url();?>/rh/RecursosHumanos/detail',
     {
       'id':id,
@@ -855,11 +1015,25 @@ document.addEventListener("DOMContentLoaded", function() {
     }    
   } 
 
+  // Filtrar historial
+  function filtrarHistorial() {
+    if(currentEmpleadoId) {
+      cargarHistorialContratos(currentEmpleadoId);
+    }
+  }
+
   // Cargar historial de contratos cuando se selecciona un empleado
   function cargarHistorialContratos(empleado_id) {
+    var fecha_inicio = $('#historial-desde').val();
+    var fecha_fin = $('#historial-hasta').val();
+
+    $("#historial-contratos").html('<li class="text-center text-muted mt-2"><i class="fas fa-spinner fa-spin"></i> Cargando...</li>');
+
     $.post('<?=base_url();?>/rh/RecursosHumanos/historial_contratos',
     {
       'empleado_id': empleado_id,
+      'fecha_inicio': fecha_inicio,
+      'fecha_fin': fecha_fin,
       'peticion': 'ajax',
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
     },
@@ -959,31 +1133,6 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  function imprimirContrato() {
-    if(!contratoActual) {
-      notifyShow("No hay contrato cargado", "warning");
-      return;
-    }
-    
-    var contenido = document.getElementById('contrato-content').innerHTML;
-    var ventana = window.open('', '_blank');
-    var htmlDoc = '<html><head>' +
-      '<title>Contrato - ' + contratoActual.tipo_contrato + '</title>' +
-      '<style>' +
-        'body { font-family: Times New Roman, serif; padding: 20px; line-height: 1.9; background: #f5f5f5; }' +
-        '@media print { body { padding: 0; background: white; } }' +
-        '@page { margin: 2cm; }' +
-      '</style>' +
-      '</head><body>' + contenido + '</body></html>';
-    
-    ventana.document.write(htmlDoc);
-    ventana.document.close();
-    ventana.focus();
-    setTimeout(function() {
-      ventana.print();
-      ventana.close();
-    }, 250);
-  }
 
   function descargarPDF() {
     if(!contratoActual) {
@@ -991,8 +1140,114 @@ document.addEventListener("DOMContentLoaded", function() {
       return;
     }
     
-    notifyShow("Usa la función de imprimir y selecciona 'Guardar como PDF' en tu navegador", "info");
-    imprimirContrato();
+    var html = contratoActual.contrato_texto;
+    
+    // Crear contenedor virtual simulando hoja carta
+    var element = document.createElement('div');
+    element.innerHTML = html;
+    
+    // Estilos para simular un documento profesional
+    Object.assign(element.style, {
+        padding: '20px',
+        fontFamily: '"Times New Roman", serif',
+        fontSize: '12pt',
+        lineHeight: '1.5',
+        textAlign: 'justify',
+        color: '#000000',
+        backgroundColor: '#ffffff',
+        width: '800px', // Ancho fijo para consistencia
+        margin: '0 auto'
+    });
+    
+    // Ajustar imágenes
+    var imgs = element.querySelectorAll('img');
+    imgs.forEach(function(img) {
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.display = 'block';
+        img.style.margin = '0 auto';
+    });
+    
+    var opt = {
+      margin:       [15, 15, 15, 15], // Márgenes del PDF (mm)
+      filename:     'Contrato_' + (contratoActual.tipo_contrato || 'Historico') + '.pdf',
+      image:        { type: 'jpeg', quality: 1 },
+      html2canvas:  { 
+          scale: 2, // Mayor calidad
+          useCORS: true, 
+          scrollY: 0
+      },
+      jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
+    };
+    
+    // Usar worker para mejor control
+    html2pdf().set(opt).from(element).save().catch(function(err) {
+        console.error(err);
+        alert('Error al generar PDF. Verifique que no haya imágenes bloqueadas.');
+    });
+  }
+
+  function descargarPDFDirecto(id) {
+    var btn = $(event.target).closest('button');
+    var originalText = btn.html();
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+    
+    $.post('<?=base_url();?>/rh/RecursosHumanos/ver_contrato',
+    {
+      'contrato_id': id,
+      'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    },
+    function(result) {
+      btn.prop('disabled', false).html(originalText);
+      try {
+          result = JSON.parse(result);
+          if(result['success']) {
+            var contrato = result['contrato'];
+            
+            // Usar solo texto del contrato
+            var html = contrato.contrato_texto;
+            
+            var element = document.createElement('div');
+            element.innerHTML = html;
+            
+            Object.assign(element.style, {
+                padding: '20px',
+                fontFamily: '"Times New Roman", serif',
+                fontSize: '12pt',
+                lineHeight: '1.5',
+                textAlign: 'justify',
+                color: '#000000',
+                backgroundColor: '#ffffff',
+                width: '800px',
+                margin: '0 auto'
+            });
+            
+            var imgs = element.querySelectorAll('img');
+            imgs.forEach(function(img) {
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                img.style.display = 'block';
+                img.style.margin = '0 auto';
+            });
+            
+            var opt = {
+              margin:       [15, 15, 15, 15],
+              filename:     'Contrato_' + (contrato.tipo_contrato || 'Historico') + '.pdf',
+              image:        { type: 'jpeg', quality: 1 },
+              html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+              jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+            
+          } else {
+            notifyShow(result['message'], "danger");
+          }
+      } catch(e) {
+          notifyShow('Error al procesar respuesta', 'danger');
+      }
+    });
   }
 
   // ========================================================================
@@ -1180,14 +1435,26 @@ document.addEventListener("DOMContentLoaded", function() {
   // Abrir modal con todas las solicitudes (Admin)
   function abrirTodasSolicitudes() {
     $('#modalTodasSolicitudes').modal('show');
-    cargarTodasSolicitudes();
+    cargarTodasSolicitudes('Pendiente');
   }
 
-  // Cargar todas las solicitudes pendientes
-  function cargarTodasSolicitudes() {
+  // Cargar todas las solicitudes
+  var estatusActualSolicitudes = 'Pendiente';
+
+  function cargarTodasSolicitudes(estatus) {
+    if(!estatus) estatus = 'Pendiente';
+    estatusActualSolicitudes = estatus;
+
+    // Actualizar UI de tabs
+    $('.nav-link-solicitudes').removeClass('active');
+    $('#tab-sol-' + estatus).addClass('active');
+
+    // Mapear 'Todas' a vacío para el backend
+    var estatusBackend = estatus === 'Todas' ? '' : estatus;
+
     $.post('<?=base_url();?>/rh/RecursosHumanos/solicitudes_vacaciones_lista',
     {
-      'estatus': 'Pendiente',
+      'estatus': estatusBackend,
       'peticion': 'ajax',
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
     },
@@ -1197,20 +1464,35 @@ document.addEventListener("DOMContentLoaded", function() {
         var html = '';
         if(result['solicitudes'].length > 0) {
           result['solicitudes'].forEach(function(sol) {
+            
+            var acciones = '';
+            if(sol.estatus === 'Pendiente') {
+                acciones = '<button class="btn btn-sm btn-success me-1" onclick="procesarSolicitud(' + sol.id + ', \'aprobar\')"><i class="fas fa-check"></i></button>' +
+                           '<button class="btn btn-sm btn-danger" onclick="procesarSolicitud(' + sol.id + ', \'rechazar\')"><i class="fas fa-times"></i></button>';
+            } else {
+                acciones = '<span class="text-muted">-</span>';
+            }
+
+            // Badge de estatus
+            var badgeClass = 'bg-secondary';
+            if(sol.estatus === 'Aprobada') badgeClass = 'bg-success';
+            if(sol.estatus === 'Rechazada') badgeClass = 'bg-danger';
+            if(sol.estatus === 'Pendiente') badgeClass = 'bg-warning text-dark';
+            
+            var estatusHtml = '<span class="badge ' + badgeClass + '">' + sol.estatus + '</span>';
+
             html += '<tr>' +
               '<td>' + sol.numero_empleado + ' - ' + sol.nombre + ' ' + sol.apellido_paterno + '</td>' +
               '<td>' + sol.fecha_solicitud + '</td>' +
               '<td>' + sol.fecha_inicio + ' al ' + sol.fecha_fin + '</td>' +
               '<td>' + sol.dias_solicitados + '</td>' +
               '<td>' + (sol.observaciones || '-') + '</td>' +
-              '<td>' +
-                '<button class="btn btn-sm btn-success me-1" onclick="procesarSolicitud(' + sol.id + ', \'aprobar\')"><i class="fas fa-check"></i></button>' +
-                '<button class="btn btn-sm btn-danger" onclick="procesarSolicitud(' + sol.id + ', \'rechazar\')"><i class="fas fa-times"></i></button>' +
-              '</td>' +
+              '<td>' + estatusHtml + '</td>' + // Mostrar estatus si se ven todas
+              '<td>' + acciones + '</td>' +
             '</tr>';
           });
         } else {
-          html = '<tr><td colspan="6" class="text-center text-muted">No hay solicitudes pendientes</td></tr>';
+          html = '<tr><td colspan="7" class="text-center text-muted">No hay solicitudes ' + estatus.toLowerCase() + 's</td></tr>';
         }
         $('#todas-solicitudes-body').html(html);
       }
@@ -1328,7 +1610,10 @@ document.addEventListener("DOMContentLoaded", function() {
         <tr>
           <td>${inc.fecha_incidencia}${inc.hora_incidencia ? ' ' + inc.hora_incidencia : ''}</td>
           <td><span class="badge bg-warning">${inc.tipo_incidencia}</span></td>
-          <td>${inc.descripcion || '-'}</td>
+          <td>
+            ${inc.descripcion || '-'}
+            ${inc.archivo_evidencia ? `<br><a href="<?=base_url()?>${inc.archivo_evidencia}" target="_blank" class="text-info"><i class="fas fa-paperclip"></i> Ver Evidencia</a>` : ''}
+          </td>
           <td>${descuento}</td>
           <td><span class="badge ${badgeClass}">${inc.estatus}</span></td>
           <td>${acciones}</td>
@@ -1353,32 +1638,41 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   function guardarIncidencia() {
-    const form = $('#formRegistrarIncidencia');
-    const formData = form.serializeArray();
-    const data = {};
+    const form = $('#formRegistrarIncidencia')[0];
+    const formData = new FormData(form);
     
-    formData.forEach(item => {
-      data[item.name] = item.value;
-    });
-    
-    data.empleado_id = empleadoActualIncidencias;
-    data.peticion = 'ajax';
-    data['<?php echo $this->security->get_csrf_token_name();?>'] = '<?php echo $this->security->get_csrf_hash();?>';
+    formData.append('empleado_id', empleadoActualIncidencias);
+    formData.append('peticion', 'ajax');
+    formData.append('<?php echo $this->security->get_csrf_token_name();?>', '<?php echo $this->security->get_csrf_hash();?>');
 
-    if (!data.tipo_incidencia || !data.fecha_incidencia) {
+    const tipo = formData.get('tipo_incidencia');
+    const fecha = formData.get('fecha_incidencia');
+
+    if (!tipo || !fecha) {
       notifyShow('Completa los campos requeridos', 'warning');
       return;
     }
 
-    $.post('<?=base_url();?>/rh/RecursosHumanos/registrar_incidencia_ajax', data, function(result) {
-      result = JSON.parse(result);
-      if (result['success']) {
-        notifyShow(result['message'], 'success');
-        $('#modalRegistrarIncidencia').modal('hide');
-        cargarIncidencias();
-        cargarBadgeIncidencias(empleadoActualIncidencias);
-      } else {
-        notifyShow(result['message'], 'danger');
+    $.ajax({
+      url: '<?=base_url();?>/rh/RecursosHumanos/registrar_incidencia_ajax',
+      type: 'POST',
+      data: formData,
+      contentType: false,
+      processData: false,
+      success: function(result) {
+        result = JSON.parse(result);
+        if (result['success']) {
+          notifyShow(result['message'], 'success');
+          $('#modalRegistrarIncidencia').modal('hide');
+          cargarIncidencias();
+          cargarBadgeIncidencias(empleadoActualIncidencias);
+        } else {
+          notifyShow(result['message'], 'danger');
+        }
+      },
+      error: function(xhr, status, error) {
+        notifyShow('Error al procesar la solicitud', 'danger');
+        console.error(error);
       }
     });
   }
@@ -1556,6 +1850,130 @@ document.addEventListener("DOMContentLoaded", function() {
         cargarHorarioCompleto();
       }
     });
+  }
+
+  // ===========================================
+  // CALCULADORA DE FINIQUITOS
+  // ===========================================
+  var modalCalculadora = null;
+
+  function abrirCalculadoraBaja(id) {
+    if(!modalCalculadora) {
+        modalCalculadora = new bootstrap.Modal(document.getElementById('modalCalculadoraBaja'));
+    }
+    
+    // Resetear
+    $('#tabla-calculo-body').html('<tr><td colspan="3" class="text-muted">Realice el cálculo para ver resultados</td></tr>');
+    $('#calc-total').text('$0.00');
+    $('#calc-nombre').text('Cargando...');
+    
+    modalCalculadora.show();
+    
+    $.post('<?=base_url();?>/rh/RecursosHumanos/get_datos_calculadora',
+    {
+      'id': id,
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    },
+    function(result) {
+       var data = JSON.parse(result);
+       if(data.success) {
+           $('#calc-nombre').text(data.nombre);
+           $('#calc-fecha-ingreso').text(data.fecha_ingreso);
+           $('#calc-fecha-ingreso-val').val(data.fecha_ingreso);
+           $('#calc-antiguedad').text(data.antiguedad_anios);
+           $('#calc-salario-diario').text(parseFloat(data.salario_diario).toFixed(2));
+           $('#calc-salario-diario-val').val(data.salario_diario);
+       } else {
+           alert('Error al cargar datos del empleado');
+           modalCalculadora.hide();
+       }
+    });
+  }
+
+  function calcularBaja() {
+      // 1. Obtener valores
+      var salarioDiario = parseFloat($('#calc-salario-diario-val').val());
+      var fechaIngreso = new Date($('#calc-fecha-ingreso-val').val() + 'T00:00:00'); // T00 para evitar timezone shift
+      var fechaBaja = new Date($('#calc-fecha-baja').val() + 'T00:00:00');
+      var motivo = $('#calc-motivo').val();
+      var diasAguinaldoConf = parseFloat($('#calc-dias-aguinaldo').val()) || 15;
+      var diasVacacionesPendientes = parseFloat($('#calc-dias-vacaciones').val()) || 0;
+      
+      if(fechaBaja < fechaIngreso) {
+          alert('La fecha de baja no puede ser anterior a la de ingreso');
+          return;
+      }
+      
+      // Cálculo de días trabajados totales y en el último año
+      var diffTime = Math.abs(fechaBaja - fechaIngreso);
+      var diasTrabajadosTotal = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      // Días trabajados en el año actual (para aguinaldo)
+      var inicioAnio = new Date(fechaBaja.getFullYear(), 0, 1);
+      if(fechaIngreso > inicioAnio) inicioAnio = fechaIngreso; // Si entró este año
+      var diffAnio = Math.abs(fechaBaja - inicioAnio);
+      var diasTrabajadosAnio = Math.ceil(diffAnio / (1000 * 60 * 60 * 24)) + 1; // +1 inclusivo
+      
+      var antiguedadAnios = diasTrabajadosTotal / 365;
+      
+      // === CÁLCULOS ===
+      var conceptos = [];
+      var total = 0;
+      
+      // 1. Aguinaldo Proporcional
+      var aguinaldoProporcional = (diasTrabajadosAnio / 365) * diasAguinaldoConf * salarioDiario;
+      conceptos.push({nombre: 'Aguinaldo Proporcional (' + diasTrabajadosAnio + ' días trab. año)', monto: aguinaldoProporcional});
+      
+      // 2. Vacaciones Proporcionales (Pendientes + Proporcionales del año)
+      // Simplificación: Usamos el input de pendientes como total, o calculamos proporcional si no tiene pendientes asignados
+      // Para efectos de esta calculadora rápida, usaremos Vacaciones Pendientes Manuales + Proporcional del año corriente si aplica
+      // Pero lo más limpio es confiar en el input "Días Vac. Pendientes" que el usuario debe verificar
+      var vacacionesMonto = diasVacacionesPendientes * salarioDiario;
+      conceptos.push({nombre: 'Vacaciones (' + diasVacacionesPendientes + ' días)', monto: vacacionesMonto});
+      
+      // 3. Prima Vacacional (25%)
+      var primaVacacional = vacacionesMonto * 0.25;
+      conceptos.push({nombre: 'Prima Vacacional (25%)', monto: primaVacacional});
+      
+      // 4. Prima de Antigüedad (12 días por año)
+      // Tope: 2 veces el salario mínimo. Asumiremos SM 2024 = $248.93 (Zona General) -> Tope = $497.86
+      // Esto debería ser configurable, pero lo pondré hardcoded por ahora como estimación
+      var salarioMinimo = 248.93; 
+      var topePrima = salarioMinimo * 2;
+      var salarioBasePrima = (salarioDiario > topePrima) ? topePrima : salarioDiario;
+      
+      var diasPrima = antiguedadAnios * 12;
+      var montoPrima = diasPrima * salarioBasePrima;
+      
+      if(motivo == 'despido_injustificado' || (motivo == 'renuncia' && antiguedadAnios >= 15)) {
+           conceptos.push({nombre: 'Prima de Antigüedad (' + diasPrima.toFixed(2) + ' días)', monto: montoPrima});
+      } else if (motivo == 'despido_justificado') {
+           // En despido justificado también se paga prima de antigüedad según criterios recientes de la Corte, 
+           // pero tradicionalmente se discutía. La LFT art 162 dice "separados de su empleo", aplica a justificado e injustificado.
+           conceptos.push({nombre: 'Prima de Antigüedad (' + diasPrima.toFixed(2) + ' días)', monto: montoPrima});
+      }
+      
+      // 5. Indemnización Constitucional (90 días) - Solo Despido Injustificado
+      if(motivo == 'despido_injustificado') {
+          var indemnizacion = 90 * salarioDiario;
+          conceptos.push({nombre: 'Indemnización Constitucional (90 días)', monto: indemnizacion});
+          
+          // 6. 20 Días por año (Opcional, usualmente solo si patrón niega reinstalación)
+          // Lo incluiremos como nota o separado. Por ahora lo sumamos para "Liquidación Completa"
+          var indemnizacion20dias = antiguedadAnios * 20 * salarioDiario;
+          conceptos.push({nombre: 'Indemnización 20 días/año (Negativa Reinstalación)', monto: indemnizacion20dias});
+      }
+      
+      // Render Table
+        var html = '';
+        total = 0;
+        conceptos.forEach(c => {
+            html += '<tr><td class="text-start">' + c.nombre + '</td><td>+</td><td class="text-end">$' + c.monto.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td></tr>';
+            total += c.monto;
+        });
+        
+        $('#tabla-calculo-body').html(html);
+        $('#calc-total').text('$' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
   }
 
 </script>

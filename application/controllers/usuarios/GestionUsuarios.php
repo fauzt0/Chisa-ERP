@@ -16,6 +16,7 @@ class GestionUsuarios extends MY_Controller {
     // Cargar modelos específicos
     $this->load->model("Users/UserModel"); 
     $this->load->model("Users/RolesModel");
+    $this->load->model("RH/EmpleadoModel");
     $this->config->load('permissions'); 
     
     // El controlador base ya maneja la sesión y los permisos del módulo
@@ -231,7 +232,8 @@ class GestionUsuarios extends MY_Controller {
     $this->viewData['breadcrumb'] = 'Inicio > Gestion de usuarios > Alta de usuarios';
     $this->viewData['response'] = [
       'permissions' => $permissions, //permisos desde archivo de configuracion permissions
-      'roles' => $this->RolesModel->get_all_roles()
+      'roles' => $this->RolesModel->get_all_roles(),
+      'empleados' => $this->EmpleadoModel->get_lista_empleados_activos()
     ];//no hay datos por el momento      
     $this->viewData['pageView'] = 'usuarios/alta';
     
@@ -267,6 +269,7 @@ class GestionUsuarios extends MY_Controller {
       'userPermissions' => $user_permissions,
       'permissions' => $this->config->item('permissions'),
       'roles' => $this->RolesModel->get_all_roles(),
+      'empleados' => $this->EmpleadoModel->get_lista_empleados_activos(),
       'id' => $id
     ];    
     $this->viewData['pageView'] = 'usuarios/editar'; // visa d

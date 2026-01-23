@@ -211,8 +211,18 @@ class EmpleadoModel extends MY_Model {
      * Calcula salario diario integrado
      * Fórmula básica: Salario mensual / 30 días
      */
-    private function calcular_salario_diario($salario_mensual) {
+    public function calcular_salario_diario($salario_mensual) {
         return round($salario_mensual / 30, 2);
+    }
+    
+    /**
+     * Calcula edad a partir de fecha de nacimiento
+     */
+    public function calcular_edad($fecha_nacimiento) {
+        if (empty($fecha_nacimiento)) return null;
+        $dob = new DateTime($fecha_nacimiento);
+        $now = new DateTime();
+        return $now->diff($dob)->y;
     }
     
     // ========================================================================
@@ -281,7 +291,7 @@ class EmpleadoModel extends MY_Model {
      * Obtiene lista de empleados para select (jefe directo)
      */
     public function get_lista_empleados_activos() {
-        return $this->db->select("id, CONCAT(nombre, ' ', apellido_paterno, ' ', apellido_materno) as nombre_completo")
+        return $this->db->select("id, numero_empleado, nombre, apellido_paterno, apellido_materno, CONCAT(nombre, ' ', apellido_paterno, ' ', apellido_materno) as nombre_completo")
                         ->where('estatus', 1)
                         ->order_by('nombre', 'ASC')
                         ->get($this->tableName)

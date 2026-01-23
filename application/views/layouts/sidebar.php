@@ -11,6 +11,12 @@
           <i class="align-middle" data-lucide="home"></i> <span class="align-middle">Inicio</span>
         </a>
       </li>
+
+      <li class="sidebar-item">
+        <a class="sidebar-link" href="<?php echo base_url();?>usuarios/Perfil">
+          <i class="align-middle" data-lucide="user"></i> <span class="align-middle">Mi Perfil</span>
+        </a>
+      </li>
       
       <li class="sidebar-item">
         <a data-bs-target="#ecommerce" data-bs-toggle="collapse" class="sidebar-link collapsed">

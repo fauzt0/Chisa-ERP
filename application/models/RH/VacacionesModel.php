@@ -43,7 +43,7 @@ class VacacionesModel extends MY_Model {
         $empleado = $this->EmpleadoModel->get_by_id($empleado_id);
         
         if (!$empleado) {
-            return false;
+            return ['success' => false, 'message' => 'Empleado no encontrado'];
         }
         
         // Calcular años de antigüedad
@@ -53,7 +53,7 @@ class VacacionesModel extends MY_Model {
         
         // Si tiene menos de 1 año, no genera período aún
         if ($antiguedad < 1) {
-            return false;
+            return ['success' => false, 'message' => 'El empleado tiene menos de 1 año de antigüedad (' . $fecha_ingreso->diff($hoy)->m . ' meses)'];
         }
         
         // Calcular días correspondientes por ley
@@ -71,7 +71,7 @@ class VacacionesModel extends MY_Model {
                            ->count_all_results($this->tableName);
         
         if ($existe > 0) {
-            return false; // Ya existe
+            return ['success' => false, 'message' => 'Ya existe un período generado para el ciclo ' . $periodo_inicio->format('Y')]; 
         }
         
         // Preparar datos del período
@@ -89,7 +89,11 @@ class VacacionesModel extends MY_Model {
             'fecha_creacion' => date('Y-m-d H:i:s')
         ];
         
-        return $this->db->insert($this->tableName, $data);
+        if($this->db->insert($this->tableName, $data)){
+             return ['success' => true, 'message' => 'Período generado correctamente'];
+        } else {
+             return ['success' => false, 'message' => 'Error de base de datos al generar período'];
+        }
     }
     
     /**

@@ -95,6 +95,20 @@ $form['password_verify'] = array('type' => 'password', 'name' => 'password_verif
                   <input type="text" class="form-control " id="departamento" name="departamento" placeholder="" value="">
                 </div>
               </div>
+              
+              <div class="mb-3 row">
+                <label class="col-form-label col-sm-3 text-sm-right">Vincular a Empleado</label>
+                <div class="col-sm-9">
+                  <select class="form-select" name="empleado_id" id="select_empleado">
+                    <option value="">-- Sin vinculación --</option>
+                    <?php if(isset($response['empleados'])): foreach($response['empleados'] as $emp): ?>
+                      <option value="<?=$emp->id?>"><?=$emp->numero_empleado?> - <?=$emp->nombre.' '.$emp->apellido_paterno?></option>
+                    <?php endforeach; endif; ?>
+                  </select>
+                  <small class="text-muted">Seleccione un empleado si desea activar funciones de "Mi Perfil" para este usuario.</small>
+                </div>
+              </div>
+
             </div>
 
             <!-- Formulario de asignacion de permisos -->   
@@ -248,3 +262,17 @@ $form['password_verify'] = array('type' => 'password', 'name' => 'password_verif
     });
 </script>
 <?php endif; ?>
+
+<!-- Inicializar Select2 -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        if ($("#select_empleado").length > 0) {
+            $("#select_empleado").select2({
+                theme: "bootstrap-5",
+                width: '100%',
+                placeholder: "Buscar empleado...",
+                allowClear: true
+            });
+        }
+    });
+</script>

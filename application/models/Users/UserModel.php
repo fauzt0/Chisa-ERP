@@ -104,7 +104,8 @@ class UserModel extends MY_Model {
             'apellidos' => $this->input->post('apellidos'),
             'username' => $this->input->post('username'),
             'password' => password_hash($this->input->post('password'), PASSWORD_BCRYPT),
-            'departamento' => $this->input->post('departamento')
+            'departamento' => $this->input->post('departamento'),
+            'empleado_id' => $this->input->post('empleado_id') ? $this->input->post('empleado_id') : NULL
         ];
         
         // Insertar usuario (automáticamente agrega estatus=1 y fecha_alta)
@@ -235,6 +236,7 @@ class UserModel extends MY_Model {
             'apellidos' => $this->input->post('apellidos'),
             'username' => $this->input->post('username'),
             'departamento' => $this->input->post('departamento'),
+            'empleado_id' => $this->input->post('empleado_id') ? $this->input->post('empleado_id') : NULL,
             'estatus' => $this->input->post('estatus')
         ];
         

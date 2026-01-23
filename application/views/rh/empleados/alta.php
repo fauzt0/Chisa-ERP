@@ -93,7 +93,11 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
               </div>
 
               <div class="row">
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Nacionalidad</label>
+                  <input type="text" class="form-control" name="nacionalidad" value="<?php echo set_value('nacionalidad', 'Mexicana'); ?>">
+                </div>
+                <div class="col-md-3 mb-3">
                   <label class="form-label">Fecha de Nacimiento</label>
                   <input type="date" class="form-control" name="fecha_nacimiento" value="<?php echo set_value('fecha_nacimiento'); ?>">
                 </div>
@@ -127,6 +131,14 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Email Personal</label>
                   <input type="email" class="form-control" name="email_personal" value="<?php echo set_value('email_personal'); ?>">
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-12 mb-3">
+                  <label class="form-label">Beneficiarios (Art. 501 LFT)</label>
+                  <textarea class="form-control" name="beneficiarios" rows="3" placeholder="Ej: Maria Perez - Esposa - 50%, Juan Perez - Hijo - 50%"><?php echo set_value('beneficiarios'); ?></textarea>
+                  <small class="text-muted">Nombre completo - Parentesco - Porcentaje. Obligatorio por ley.</small>
                 </div>
               </div>
             </div>

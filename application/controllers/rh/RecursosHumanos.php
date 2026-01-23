@@ -42,6 +42,10 @@ class RecursosHumanos extends MY_Controller {
     if($this->init_controller->has_permission($this->session->userdata('id'), 'Consultar empleados')){
       $this->viewData['response']['datos_faltantes'] = $this->EmpleadoModel->get_empleados_datos_faltantes();
     }
+    
+    // Obtener solicitudes de vacaciones pendientes (Alerta)
+    $this->load->model('RH/VacacionesModel');
+    $this->viewData['response']['vacaciones_pendientes'] = count($this->VacacionesModel->get_todas_solicitudes('Pendiente'));
     $this->viewData['validate'] = '';
     $this->viewData['pageView'] = 'rh/empleados/main_empleados';
     
@@ -160,8 +164,10 @@ class RecursosHumanos extends MY_Controller {
         'apellido_paterno' => $this->input->post('apellido_paterno'),
         'apellido_materno' => $this->input->post('apellido_materno'),
         'fecha_nacimiento' => $this->input->post('fecha_nacimiento'),
+        'nacionalidad' => $this->input->post('nacionalidad'),
         'genero' => $this->input->post('genero'),
         'estado_civil' => $this->input->post('estado_civil'),
+        'beneficiarios' => $this->input->post('beneficiarios'),
         'telefono' => $this->input->post('telefono'),
         'telefono_emergencia' => $this->input->post('telefono_emergencia'),
         'email_personal' => $this->input->post('email_personal'),
@@ -174,6 +180,7 @@ class RecursosHumanos extends MY_Controller {
         'ciudad' => $this->input->post('ciudad'),
         'estado' => $this->input->post('estado'),
         'pais' => $this->input->post('pais') ?: 'México',
+        'direccion' => trim($this->input->post('calle') . ' ' . $this->input->post('numero_exterior') . ' ' . ($this->input->post('numero_interior') ? 'Int. '.$this->input->post('numero_interior') : '') . ', ' . $this->input->post('colonia') . ', C.P. ' . $this->input->post('codigo_postal') . ', ' . $this->input->post('ciudad') . ', ' . $this->input->post('estado')),
         'rfc' => strtoupper($this->input->post('rfc')),
         'regimen_fiscal' => $this->input->post('regimen_fiscal'),
         'curp' => strtoupper($this->input->post('curp')),
@@ -273,8 +280,10 @@ class RecursosHumanos extends MY_Controller {
         'apellido_paterno' => $this->input->post('apellido_paterno'),
         'apellido_materno' => $this->input->post('apellido_materno'),
         'fecha_nacimiento' => $this->input->post('fecha_nacimiento'),
+        'nacionalidad' => $this->input->post('nacionalidad'),
         'genero' => $this->input->post('genero'),
         'estado_civil' => $this->input->post('estado_civil'),
+        'beneficiarios' => $this->input->post('beneficiarios'),
         'telefono' => $this->input->post('telefono'),
         'telefono_emergencia' => $this->input->post('telefono_emergencia'),
         'email_personal' => $this->input->post('email_personal'),
@@ -287,6 +296,7 @@ class RecursosHumanos extends MY_Controller {
         'ciudad' => $this->input->post('ciudad'),
         'estado' => $this->input->post('estado'),
         'pais' => $this->input->post('pais'),
+        'direccion' => trim($this->input->post('calle') . ' ' . $this->input->post('numero_exterior') . ' ' . ($this->input->post('numero_interior') ? 'Int. '.$this->input->post('numero_interior') : '') . ', ' . $this->input->post('colonia') . ', C.P. ' . $this->input->post('codigo_postal') . ', ' . $this->input->post('ciudad') . ', ' . $this->input->post('estado')),
         'afore' => $this->input->post('afore'),
         'afore_numero_cuenta' => $this->input->post('afore_numero_cuenta'),
         'regimen_fiscal' => $this->input->post('regimen_fiscal'),
@@ -383,10 +393,16 @@ class RecursosHumanos extends MY_Controller {
     $actions = '
       <a href="'.base_url('rh/RecursosHumanos/editar/'.$id).'" class="btn btn-warning btn-sm w-100 mb-2">
         <i data-lucide="edit"></i> Editar
+      </a>
+      <a href="'.base_url('rh/RecursosHumanos/nuevo_contrato/'.$id).'" class="btn btn-success btn-sm w-100 mb-2">
+        <i data-lucide="file-text"></i> Nuevo Contrato
       </a>';
     
     if($empleado->estatus == 1){
       $actions .= '
+        <button class="btn btn-info btn-sm w-100 mb-2" onclick="abrirCalculadoraBaja('.$id.')">
+          <i class="fas fa-calculator"></i> Calcular Finiquito
+        </button>
         <button class="btn btn-danger btn-sm w-100" onclick="delete_empleado('.$id.')">
           <i data-lucide="trash-2"></i> Dar de Baja
         </button>';
@@ -396,6 +412,35 @@ class RecursosHumanos extends MY_Controller {
       'response' => $empleado,
       'detail' => $detail,
       'actions' => $actions
+    ]);
+  }
+
+  /**
+   * Obtiene datos para la calculadora de baja (AJAX)
+   */
+  public function get_datos_calculadora(){
+    $id = $this->input->post('id');
+    $empleado = $this->EmpleadoModel->get_empleado_completo($id);
+
+    if(!$empleado){
+      echo json_encode(['success' => false, 'message' => 'Empleado no encontrado']);
+      return;
+    }
+
+    // Calcular antigüedad
+    $fecha_ingreso = new DateTime($empleado->fecha_ingreso);
+    $hoy = new DateTime();
+    $diferencia = $fecha_ingreso->diff($hoy);
+    $antiguedad_anios = $diferencia->y + ($diferencia->m / 12) + ($diferencia->d / 365);
+
+    echo json_encode([
+      'success' => true,
+      'nombre' => $empleado->nombre . ' ' . $empleado->apellido_paterno,
+      'fecha_ingreso' => $empleado->fecha_ingreso,
+      'salario_mensual' => $empleado->salario_base_mensual,
+      'salario_diario' => $empleado->salario_base_mensual / 30, // Aproximado, ajustar si hay diario real en BD
+      'antiguedad_anios' => number_format($antiguedad_anios, 2),
+      'antiguedad_dias' => $diferencia->days
     ]);
   }
 
@@ -436,6 +481,8 @@ class RecursosHumanos extends MY_Controller {
    */
   public function historial_contratos(){
     $empleado_id = $this->input->post('empleado_id');
+    $fecha_inicio = $this->input->post('fecha_inicio');
+    $fecha_fin = $this->input->post('fecha_fin');
     
     if(!$empleado_id){
       echo json_encode(['success' => false, 'message' => 'ID de empleado requerido']);
@@ -443,7 +490,7 @@ class RecursosHumanos extends MY_Controller {
     }
 
     $this->load->model('RH/ContratoModel');
-    $contratos = $this->ContratoModel->get_historial($empleado_id);
+    $contratos = $this->ContratoModel->get_historial($empleado_id, $fecha_inicio, $fecha_fin);
 
     // Generar HTML del timeline
     $timeline_html = '';
@@ -461,7 +508,10 @@ class RecursosHumanos extends MY_Controller {
             <span class="float-end text-muted text-sm">' . $fecha . '</span>
             <p>' . $contrato->motivo_cambio . '</p>
             <button class="btn btn-sm btn-primary" onclick="verContrato(' . $contrato->id . ')">
-              <i class="fas fa-eye"></i> Ver Contrato
+              <i class="fas fa-eye"></i> Ver
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="descargarPDFDirecto(' . $contrato->id . ')">
+              <i class="fas fa-file-pdf"></i> PDF
             </button>
           </li>';
       }
@@ -584,10 +634,17 @@ class RecursosHumanos extends MY_Controller {
     $this->load->model('RH/VacacionesModel');
     $result = $this->VacacionesModel->generar_periodo_anual($empleado_id, $dias_adicionales);
     
-    if($result){
-      echo json_encode(['success' => true, 'message' => 'Período generado correctamente']);
+    // Si el resultado es booleano (compatibilidad hacia atras o error inesperado) lo manejamos,
+    // pero idealmente ahora es un array ['success', 'message']
+    if(is_array($result)){
+        echo json_encode($result);
     } else {
-      echo json_encode(['success' => false, 'message' => 'No se pudo generar el período']);
+        // Fallback por si acaso
+        if($result){
+            echo json_encode(['success' => true, 'message' => 'Período generado correctamente']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo generar el período (Error desconocido)']);
+        }
     }
   }
 
@@ -662,6 +719,32 @@ class RecursosHumanos extends MY_Controller {
 
   public function registrar_incidencia_ajax(){
     $this->load->model('RH/IncidenciasModel');
+    
+    // Configuración para subir archivo
+    $config['upload_path']   = './uploads/incidencias/';
+    $config['allowed_types'] = 'gif|jpg|jpeg|png|pdf';
+    $config['max_size']      = 5120; // 5MB
+    $config['encrypt_name']  = TRUE; // Renombrar para evitar conflictos
+
+    $this->load->library('upload', $config);
+
+    // Verificar si el directorio existe
+    if (!is_dir($config['upload_path'])) {
+        mkdir($config['upload_path'], 0777, TRUE);
+    }
+
+    $archivo_evidencia = null;
+
+    if (!empty($_FILES['archivo_evidencia']['name'])) {
+        if ($this->upload->do_upload('archivo_evidencia')) {
+            $upload_data = $this->upload->data();
+            $archivo_evidencia = 'uploads/incidencias/' . $upload_data['file_name'];
+        } else {
+            echo json_encode(['success' => false, 'message' => $this->upload->display_errors('', '')]);
+            return;
+        }
+    }
+
     $data = [
       'empleado_id' => $this->input->post('empleado_id'),
       'tipo_incidencia' => $this->input->post('tipo_incidencia'),
@@ -671,14 +754,18 @@ class RecursosHumanos extends MY_Controller {
       'observaciones' => $this->input->post('observaciones'),
       'tiene_descuento' => $this->input->post('tiene_descuento') ? 1 : 0,
       'monto_descuento' => $this->input->post('monto_descuento'),
+      'archivo_evidencia' => $archivo_evidencia,
       'registrado_por' => $this->session->userdata('id') ?: null
     ];
+    
     if(!$data['empleado_id'] || !$data['tipo_incidencia'] || !$data['fecha_incidencia']){
-      echo json_encode(['success' => false, 'message' => 'Faltan campos']);
+      echo json_encode(['success' => false, 'message' => 'Faltan campos obligatorios']);
+      if($archivo_evidencia && file_exists($archivo_evidencia)) unlink($archivo_evidencia); // Borrar si falla
       return;
     }
+    
     $result = $this->IncidenciasModel->registrar_incidencia($data);
-    echo json_encode($result ? ['success' => true, 'message' => 'Registrada'] : ['success' => false]);
+    echo json_encode($result ? ['success' => true, 'message' => 'Incidencia registrada correctamente'] : ['success' => false, 'message' => 'Error al registrar']);
   }
 
   public function cancelar_incidencia_ajax(){
@@ -775,5 +862,227 @@ class RecursosHumanos extends MY_Controller {
     }
   }
 
+
+
+  // ========================================================================
+  // GESTIÓN DE PLANTILLAS DE CONTRATO
+  // ========================================================================
+
+  public function plantillas() {
+    setViewSuccess('Plantillas de Contrato cargadas');
+    $this->viewData['pageTitle'] = 'Plantillas de Contrato';
+    $this->viewData['headTitle'] = 'Gestión de Contratos';
+    $this->viewData['breadcrumb'] = 'Inicio > RH > Plantillas';
+    
+    $this->load->model('RH/PlantillaModel');
+    $this->viewData['plantillas'] = $this->PlantillaModel->get_todas_activas();
+    
+    $this->viewData['pageView'] = 'rh/empleados/plantillas';
+    $this->load->view('layouts/general_template', $this->viewData);
+  }
+
+  public function crear_plantilla() {
+    $this->viewData['pageTitle'] = 'Nueva Plantilla';
+    $this->viewData['headTitle'] = 'Crear Plantilla';
+    $this->viewData['breadcrumb'] = 'Inicio > RH > Plantillas > Nueva';
+    $this->viewData['plantilla'] = null;
+    $this->viewData['pageView'] = 'rh/empleados/form_plantilla';
+    $this->load->view('layouts/general_template', $this->viewData);
+  }
+
+  public function editar_plantilla($id) {
+    if(!$id) redirect('rh/RecursosHumanos/plantillas');
+    
+    $this->load->model('RH/PlantillaModel');
+    $plantilla = $this->db->where('id', $id)->get('contrato_plantillas')->row();
+    
+    if(!$plantilla) {
+      $this->session->set_flashdata('error', 'Plantilla no encontrada');
+      redirect('rh/RecursosHumanos/plantillas');
+    }
+    
+    $this->viewData['pageTitle'] = 'Editar Plantilla';
+    $this->viewData['headTitle'] = 'Editar: ' . $plantilla->nombre;
+    $this->viewData['breadcrumb'] = 'Inicio > RH > Plantillas > Editar';
+    $this->viewData['plantilla'] = $plantilla;
+    $this->viewData['pageView'] = 'rh/empleados/form_plantilla';
+    $this->load->view('layouts/general_template', $this->viewData);
+  }
+
+  public function guardar_plantilla() {
+    $this->load->model('RH/PlantillaModel');
+    
+    $id = $this->input->post('id');
+    $data = [
+      'nombre' => $this->input->post('nombre'),
+      'descripcion' => $this->input->post('descripcion'),
+      'contenido' => $this->input->post('contenido') // TinyMCE content
+    ];
+    
+    // Procesar Logo
+    if(!empty($_FILES['logo']['name'])){
+        $config['upload_path']   = './assets/uploads/logos/';
+        $config['allowed_types'] = 'gif|jpg|png|jpeg';
+        $config['encrypt_name']  = TRUE;
+        
+        // Crear directorio si no existe (silenciosamente)
+        if (!is_dir($config['upload_path'])) {
+            mkdir($config['upload_path'], 0777, true);
+        }
+
+        $this->load->library('upload', $config);
+
+        if ($this->upload->do_upload('logo')){
+            $uploadData = $this->upload->data();
+            $data['logo'] = 'assets/uploads/logos/' . $uploadData['file_name'];
+        } else {
+            // Si falla la subida, notificar pero quizás guardar lo demás?
+            // Por ahora, solo loguear o mostrar error
+             $this->session->set_flashdata('warning', 'Error al subir logo: ' . $this->upload->display_errors());
+        }
+    }
+    
+    if($id){
+      $result = $this->PlantillaModel->actualizar($id, $data);
+      $msg = 'Plantilla actualizada correctamente';
+    } else {
+      $result = $this->PlantillaModel->guardar($data);
+      $msg = 'Plantilla creada correctamente';
+    }
+    
+    if($result){
+      $this->session->set_flashdata('success', $msg);
+      redirect('rh/RecursosHumanos/plantillas');
+    } else {
+      $this->session->set_flashdata('error', 'Error al guardar la plantilla');
+      redirect($id ? 'rh/RecursosHumanos/editar_plantilla/'.$id : 'rh/RecursosHumanos/crear_plantilla');
+    }
+  }
+
+  public function eliminar_plantilla($id) {
+    $this->load->model('RH/PlantillaModel');
+    if($this->PlantillaModel->desactivar($id)){
+      echo json_encode(['success' => true, 'message' => 'Plantilla eliminada']);
+    } else {
+      echo json_encode(['success' => false, 'message' => 'Error al eliminar']);
+    }
+  }
+
+  // ========================================================================
+  // NUEVO CONTRATO (Renovación / Manual)
+  // ========================================================================
+
+  public function nuevo_contrato($empleado_id) {
+    if(!$empleado_id) redirect('rh/RecursosHumanos');
+    
+    $this->load->model('RH/PlantillaModel');
+    $this->load->model('RH/EmpleadoModel');
+    
+    $empleado = $this->EmpleadoModel->get_by_id($empleado_id);
+    if(!$empleado) redirect('rh/RecursosHumanos');
+    
+    $this->viewData['pageTitle'] = 'Nuevo Contrato';
+    $this->viewData['headTitle'] = 'Contrato para: ' . $empleado->nombre;
+    $this->viewData['breadcrumb'] = 'Inicio > RH > Empleados > Nuevo Contrato';
+    $this->viewData['empleado'] = $empleado;
+    $this->viewData['plantillas'] = $this->PlantillaModel->get_todas_activas();
+    
+    // Contratos anteriores para referencia
+    $this->load->model('RH/ContratoModel');
+    $this->viewData['historial'] = $this->ContratoModel->get_historial($empleado_id);
+    
+    $this->viewData['pageView'] = 'rh/empleados/nuevo_contrato';
+    $this->load->view('layouts/general_template', $this->viewData);
+  }
+  
+  /**
+   * AJAX: Retorna el contenido de la plantilla con placeholders reemplazados
+   */
+  public function ajax_previsualizar_contrato() {
+    $empleado_id = $this->input->post('empleado_id');
+    $plantilla_id = $this->input->post('plantilla_id');
+    
+    if(!$empleado_id || !$plantilla_id) {
+      echo json_encode(['success' => false, 'message' => 'Faltan datos']);
+      return;
+    }
+    
+    $this->load->model('RH/PlantillaModel');
+    $plantilla = $this->db->where('id', $plantilla_id)->get('contrato_plantillas')->row();
+    
+    if(!$plantilla){
+       echo json_encode(['success' => false, 'message' => 'Plantilla no encontrada']);
+       return;
+    }
+    
+    $this->load->model('RH/ContratoModel');
+    $this->load->model('RH/EmpleadoModel');
+    $empleado = $this->EmpleadoModel->get_by_id($empleado_id);
+    
+    // Preparar un array básico para los placeholders
+    $contenido_procesado = $this->ContratoModel->procesar_plantilla($plantilla->contenido, $empleado, []);
+    
+    // Si tiene logo, agregarlo al inicio
+    if(!empty($plantilla->logo) && file_exists('./' . $plantilla->logo)) {
+        $logoHtml = '<div style="text-align: center; margin-bottom: 20px;"><img src="'.base_url($plantilla->logo).'" style="max-height: 100px; max-width: 200px;"></div>';
+        $contenido_procesado = $logoHtml . $contenido_procesado;
+    }
+    
+    echo json_encode(['success' => true, 'contenido' => $contenido_procesado]);
+  }
+  
+  public function guardar_nuevo_contrato() {
+    $empleado_id = $this->input->post('empleado_id');
+    $tipo_contrato = $this->input->post('tipo_contrato');
+    $motivo = $this->input->post('motivo');
+    $plantilla_id = $this->input->post('plantilla_id');
+    $plantilla_id = empty($plantilla_id) ? NULL : $plantilla_id;
+    $contenido_personalizado = $this->input->post('contenido'); // Del editor
+    
+    $guardar_como_plantilla = $this->input->post('guardar_como_plantilla');
+    $nombre_nueva_plantilla = $this->input->post('nombre_nueva_plantilla');
+    
+    $this->load->model('RH/ContratoModel');
+    
+    // 1. Guardar el contrato para el empleado
+    $result = $this->ContratoModel->crear_nuevo_contrato($empleado_id, $tipo_contrato, $motivo, $plantilla_id, $contenido_personalizado);
+    
+    if($result) {
+      // 2. Si se solicitó, guardar como nueva plantilla
+      if($guardar_como_plantilla == 1 && !empty($nombre_nueva_plantilla)){
+        $this->load->model('RH/PlantillaModel');
+        // Aquí hay un detalle: el contenido_personalizado YA TIENE los datos reemplazados del empleado.
+        // Si lo guardamos como plantilla, tendrá "Juan Perez" hardcoded.
+        // Lo ideal sería guardar el contenido ORIGINAL de la plantilla o pedir al usuario que restaure placeholders.
+        // Pero el usuario pidió: "integrará la opción de añadir dichos ajustes como nuevas plantillas generales".
+        // Asumiremos que el usuario sabe lo que hace, o mejor aún, si pudiéramos revertir cambios... es complejo.
+        // Por ahora, guardamos lo que hay en el editor, pero advertimos al usuario en la vista.
+        // Opcional: Podríamos intentar revertir los valores conocidos del empleado a placeholders, pero es arriesgado.
+        
+        $this->PlantillaModel->guardar([
+          'nombre' => $nombre_nueva_plantilla, 
+          'descripcion' => 'Generada desde contrato de empleado #' . $empleado_id, 
+          'contenido' => $contenido_personalizado
+        ]);
+      }
+      
+      $this->session->set_flashdata('success', 'Contrato generado correctamente');
+      redirect('rh/RecursosHumanos'); // O volver al detalle del empleado
+    } else {
+      $this->session->set_flashdata('error', 'Error al generar contrato');
+      redirect('rh/RecursosHumanos/nuevo_contrato/' . $empleado_id);
+    }
+  }
+
+  public function ajax_get_contrato($id) {
+    if(!$id) return;
+    $this->load->model('RH/ContratoModel');
+    $contrato = $this->ContratoModel->get_contrato_by_id($id);
+    if($contrato){
+        echo json_encode(['success' => true, 'contenido' => $contrato->contrato_texto]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Contrato no encontrado']);
+    }
+  }
 
 }
