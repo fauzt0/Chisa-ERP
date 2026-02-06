@@ -79,8 +79,9 @@ class Auth extends CI_Controller {
     /** 
      * SEGURIDAD 2FA:
      * Si la IP actual no coincide con la última registrada, solicitamos 2FA
+     * MODIFICACION: En development se salta este paso
      */
-    if ($user_data->last_ip !== $current_ip && !empty($user_data->last_ip)) {
+    if (ENVIRONMENT !== 'development' && $user_data->last_ip !== $current_ip && !empty($user_data->last_ip)) {
         $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
         $this->UserModel->mod_update_2fa($user_post, $code, $current_ip);
         
@@ -94,8 +95,9 @@ class Auth extends CI_Controller {
         return;
     }
 
-    // Si la IP es la misma o es el primer acceso, entramos directo
-    if (empty($user_data->last_ip)) {
+    // Si la IP es la misma o es el primer acceso, O estamos en desarrollo y saltamos el 2FA
+    // Aseguramos que la IP quede registrada como válida/actual
+    if (empty($user_data->last_ip) || (ENVIRONMENT === 'development' && $user_data->last_ip !== $current_ip)) {
         $this->UserModel->mod_update_2fa($user_post, NULL, $current_ip);
     }
 

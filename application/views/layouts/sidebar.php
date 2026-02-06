@@ -91,6 +91,21 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Descuentos">Descuentos</a></li>
         </ul>
       </li>
+
+      <!-- Facturación -->
+      <li class="sidebar-item">
+        <a data-bs-target="#facturacion" data-bs-toggle="collapse" class="sidebar-link collapsed">
+            <i class="align-middle fas fa-file-invoice-dollar"></i> <span class="align-middle">Facturación</span>
+        </a>
+        <ul id="facturacion" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>facturacion/Facturas">
+                    Dashboard
+                </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>facturacion/Facturas/crear">
+                    Nueva Factura
+                </a></li>
+        </ul>
+      </li>
       
       <!-- Obras -->
       <li class="sidebar-item">
