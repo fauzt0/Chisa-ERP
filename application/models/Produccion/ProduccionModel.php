@@ -321,13 +321,192 @@ class ProduccionModel extends CI_Model {
             $data['fecha_inicio'] = date('Y-m-d H:i:s');
         }
         
-        // Si pasa a "Completada", registrar fecha_completado
+        // Si pasa a "Completada", primero descontar stock de insumos
         if($nuevo_estatus == 'Completada') {
+            // Intentar descontar stock de materia prima
+            $resultado_descuento = $this->descontar_stock_produccion($orden_id);
+            
+            // Si falla el descuento de stock, NO completar la orden
+            if(!$resultado_descuento['success']) {
+                return $resultado_descuento; // Retornar el error tal cual
+            }
+            
+            // Si el descuento fue exitoso, registrar fecha_completado
             $data['fecha_completado'] = date('Y-m-d H:i:s');
         }
         
         $this->db->where('id', $orden_id);
-        return $this->db->update('ordenes_produccion', $data);
+        $actualizado = $this->db->update('ordenes_produccion', $data);
+        
+        // Si la actualización fue exitosa y era una completación, incluir detalles del descuento
+        if($actualizado && $nuevo_estatus == 'Completada' && isset($resultado_descuento)) {
+            return [
+                'success' => true,
+                'message' => 'Orden completada y stock descontado correctamente',
+                'detalles_descuento' => $resultado_descuento['detalles']
+            ];
+        }
+        
+        return $actualizado;
+    }
+    
+    /**
+     * Descuenta el stock de insumos al completar una orden de producción
+     * Usa transacciones para garantizar atomicidad (todo o nada)
+     * 
+     * @param int $orden_id ID de la orden de producción
+     * @return array ['success' => bool, 'message' => string, 'detalles' => array]
+     */
+    public function descontar_stock_produccion($orden_id) {
+        // Iniciar transacción
+        $this->db->trans_start();
+        
+        try {
+            // 1. Obtener detalles de la orden de producción
+            $this->db->select('op.*, p.nombre as producto_nombre, p.codigo as producto_codigo');
+            $this->db->from('ordenes_produccion op');
+            $this->db->join('productos p', 'p.id = op.producto_id');
+            $this->db->where('op.id', $orden_id);
+            $orden = $this->db->get()->row();
+            
+            if(!$orden) {
+                $this->db->trans_rollback();
+                return [
+                    'success' => false,
+                    'message' => 'Orden de producción no encontrada',
+                    'detalles' => []
+                ];
+            }
+            
+            // 2. Obtener la formulación activa del producto
+            $this->db->select('id');
+            $this->db->where('producto_id', $orden->producto_id);
+            $this->db->where('es_activa', 1);
+            $this->db->order_by('version', 'DESC');
+            $this->db->limit(1);
+            $formulacion = $this->db->get('formulaciones')->row();
+            
+            if(!$formulacion) {
+                $this->db->trans_rollback();
+                return [
+                    'success' => false,
+                    'message' => 'No existe formulación activa para el producto: ' . $orden->producto_nombre,
+                    'detalles' => []
+                ];
+            }
+            
+            // 3. Obtener componentes (insumos) de la formulación
+            $componentes = $this->get_componentes_formulacion($formulacion->id, $orden->cantidad);
+            
+            if(empty($componentes)) {
+                $this->db->trans_rollback();
+                return [
+                    'success' => false,
+                    'message' => 'La formulación no tiene insumos definidos',
+                    'detalles' => []
+                ];
+            }
+            
+            $detalles_descuento = [];
+            $insumos_insuficientes = [];
+            
+            // 4. Validar stock disponible para TODOS los insumos primero
+            foreach($componentes as $componente) {
+                $this->db->select('id, codigo, nombre_tecnico, stock_actual, unidad_medida');
+                $this->db->where('id', $componente->insumo_id);
+                $insumo = $this->db->get('insumos')->row();
+                
+                if(!$insumo) {
+                    $this->db->trans_rollback();
+                    return [
+                        'success' => false,
+                        'message' => 'Insumo ID ' . $componente->insumo_id . ' no encontrado',
+                        'detalles' => []
+                    ];
+                }
+                
+                $cantidad_necesaria = $componente->cantidad_necesaria;
+                $stock_disponible = $insumo->stock_actual;
+                
+                // Verificar si hay suficiente stock
+                if($stock_disponible < $cantidad_necesaria) {
+                    $insumos_insuficientes[] = [
+                        'codigo' => $insumo->codigo,
+                        'nombre' => $insumo->nombre_tecnico,
+                        'necesario' => number_format($cantidad_necesaria, 2),
+                        'disponible' => number_format($stock_disponible, 2),
+                        'faltante' => number_format($cantidad_necesaria - $stock_disponible, 2),
+                        'unidad' => $insumo->unidad_medida
+                    ];
+                }
+                
+                $detalles_descuento[] = [
+                    'insumo_id' => $insumo->id,
+                    'codigo' => $insumo->codigo,
+                    'nombre' => $insumo->nombre_tecnico,
+                    'cantidad_necesaria' => $cantidad_necesaria,
+                    'stock_anterior' => $stock_disponible,
+                    'stock_nuevo' => $stock_disponible - $cantidad_necesaria,
+                    'unidad' => $insumo->unidad_medida
+                ];
+            }
+            
+            // 5. Si hay insumos insuficientes, abortar transacción
+            if(!empty($insumos_insuficientes)) {
+                $this->db->trans_rollback();
+                
+                $mensaje = "Stock insuficiente para completar la orden:\n\n";
+                foreach($insumos_insuficientes as $ins) {
+                    $mensaje .= "• {$ins['codigo']} - {$ins['nombre']}: ";
+                    $mensaje .= "Necesario: {$ins['necesario']} {$ins['unidad']}, ";
+                    $mensaje .= "Disponible: {$ins['disponible']} {$ins['unidad']}, ";
+                    $mensaje .= "Faltante: {$ins['faltante']} {$ins['unidad']}\n";
+                }
+                
+                return [
+                    'success' => false,
+                    'message' => $mensaje,
+                    'detalles' => $insumos_insuficientes,
+                    'tipo_error' => 'stock_insuficiente'
+                ];
+            }
+            
+            // 6. Descontar stock de TODOS los insumos (atomicidad garantizada)
+            foreach($detalles_descuento as $detalle) {
+                // Actualizar stock del insumo
+                $this->db->where('id', $detalle['insumo_id']);
+                $this->db->set('stock_actual', 'stock_actual - ' . $detalle['cantidad_necesaria'], FALSE);
+                $this->db->update('insumos');
+                
+                // TODO: Registrar movimiento en tabla de auditoría (cuando se cree)
+                // Por ahora, el registro queda implícito en la orden de producción
+            }
+            
+            // 7. Commit de la transacción
+            $this->db->trans_complete();
+            
+            if ($this->db->trans_status() === FALSE) {
+                return [
+                    'success' => false,
+                    'message' => 'Error al descontar stock. La transacción fue revertida.',
+                    'detalles' => []
+                ];
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Stock descontado correctamente para ' . count($detalles_descuento) . ' insumo(s)',
+                'detalles' => $detalles_descuento
+            ];
+            
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            return [
+                'success' => false,
+                'message' => 'Error al descontar stock: ' . $e->getMessage(),
+                'detalles' => []
+            ];
+        }
     }
     
     /**
