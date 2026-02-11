@@ -589,5 +589,5 @@ document.addEventListener("DOMContentLoaded", function() {
     document.addEventListener('click', function(e) {
         if (e.target !== inputCliente) listaClientes.style.display = 'none';
     });
-});
+
 </script>
