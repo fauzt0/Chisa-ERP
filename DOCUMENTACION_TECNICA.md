@@ -4,6 +4,29 @@ Este documento sirve como guía arquitectónica, estándar de desarrollo y estad
 
 ---
 
+## Índice
+
+- [1. Arquitectura General del Sistema](#1-arquitectura-general-del-sistema)
+  - [1.1 Estructura de Directorios Clave](#11-estructura-de-directorios-clave)
+- [2. Clases Base y Estándares del Proyecto](#2-clases-base-y-estándares-del-proyecto)
+  - [2.1 Controladores (`MY_Controller.php`)](#21-controladores-my_controllerphp)
+  - [2.2 Modelos (`MY_Model.php`)](#22-modelos-my_modelphp)
+- [3. Pautas de Desarrollo Específicas](#3-pautas-de-desarrollo-específicas)
+  - [3.1 Funcionamiento de DataTables (Patrón AJAX)](#31-funcionamiento-de-datatables-patrón-ajax)
+  - [3.2 Gestión de Permisos y Costos](#32-gestión-de-permisos-y-costos)
+  - [3.3 Separación Estricta de Modelo y Controlador](#33-separación-estricta-de-modelo-y-controlador)
+- [4. Módulo de Producción y Overhaul de Formulaciones (El Reto Actual)](#4-módulo-de-producción-y-overhaul-de-formulaciones-el-reto-actual)
+  - [4.1 Entidades y Relaciones Actuales](#41-entidades-y-relaciones-actuales)
+  - [4.2 Hallazgo Crítico en Hojas de Referencia (Excel Real)](#42-hallazgo-crítico-en-hojas-de-referencia-excel-real)
+  - [4.3 Propuesta de Cambio de Base de Datos (Esquema no Destructivo)](#43-propuesta-de-cambio-de-base-de-datos-esquema-no-destructivo)
+- [5. Próximos Pasos Técnicos para Completar el Overhaul](#5-próximos-pasos-técnicos-para-completar-el-overhaul)
+  - [Paso 1: Aplicar Migración de Base de Datos](#paso-1-aplicar-migración-de-base-de-datos)
+  - [Paso 2: Actualizar el Backend (`ProductosModel.php` y `Productos.php`)](#paso-2-actualizar-el-backend-productosmodelphp-y-productosphp)
+  - [Paso 3: Rediseñar la UI de Formulaciones (`views/produccion/productos/main.php`)](#paso-3-rediseñar-la-ui-de-formulaciones-viewsproduccionproductosmainphp)
+  - [Paso 4: Importador de Archivos Excel](#paso-4-importador-de-archivos-excel)
+
+---
+
 ## 1. Arquitectura General del Sistema
 
 El ERP de Chisa Recubrimientos está construido bajo el framework **CodeIgniter 3** (PHP 7.4), utilizando una base de datos relacional (MySQL/MariaDB) y una interfaz de usuario interactiva basada en **Bootstrap**, **AdminLTE / Plantilla General**, **DataTables**, **jQuery** y **SweetAlert2**.
