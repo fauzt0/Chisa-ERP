@@ -71,6 +71,14 @@ $breadcrumb_urls = [
     'Producción' => base_url('produccion/Productos'),
     'Alta de productos' => base_url('produccion/Productos/alta'),
     'Editar producto' => '#', // No tiene enlace, es la página actual
+    // Reloj Checador
+    'Reloj Checador' => base_url('rh/RelojChecador'),
+    'Dispositivos' => base_url('rh/RelojChecador/dispositivos'),
+    'Comandos' => base_url('rh/RelojChecador/comandos'),
+    'Sync Empleados RH' => base_url('rh/RelojChecador/sync_empleados_rh'),
+    'Sincronización' => base_url('rh/RelojChecador/sync_log'),
+    'Reporte Diario' => base_url('rh/RelojChecador/reporte_diario'),
+    'Reporte Mensual' => base_url('rh/RelojChecador/reporte_mensual'),
     // Agrega más rutas según necesites
 ];
 ?>

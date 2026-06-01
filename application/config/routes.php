@@ -61,5 +61,42 @@ $route['logout'] = 'auth/logout';
 //Dashboard
 $route['dashboard'] = 'dashboards/MainDashboard';
 
+//Reloj Checador API (Proxy Local)
+$route['api/reloj/sync_asistencias'] = 'api/ApiReloj/sync_asistencias';
+$route['api/reloj/sync_asistencias_debug'] = 'api/ApiReloj/sync_asistencias_debug';
+$route['api/reloj/comandos_pendientes/(:any)'] = 'api/ApiReloj/comandos_pendientes/$1';
+$route['api/reloj/comando_resultado'] = 'api/ApiReloj/comando_resultado';
+$route['api/reloj/status'] = 'api/ApiReloj/status';
+// Monitor temporal de diagnóstico (sin BD)
+$route['api/reloj/monitor'] = 'api/ApiReloj/ver_log_reloj';
+
+//Reloj Checador Web (FASE 3)
+$route['rh/RelojChecador'] = 'rh/RelojChecador/index';
+$route['rh/RelojChecador/index'] = 'rh/RelojChecador/index';
+$route['rh/RelojChecador/dispositivos'] = 'rh/RelojChecador/dispositivos';
+$route['rh/RelojChecador/search_dispositivos'] = 'rh/RelojChecador/search_dispositivos';
+$route['rh/RelojChecador/dispositivo_detail'] = 'rh/RelojChecador/dispositivo_detail';
+$route['rh/RelojChecador/guardar_dispositivo'] = 'rh/RelojChecador/guardar_dispositivo';
+$route['rh/RelojChecador/eliminar_dispositivo'] = 'rh/RelojChecador/eliminar_dispositivo';
+$route['rh/RelojChecador/regenerar_token'] = 'rh/RelojChecador/regenerar_token';
+$route['rh/RelojChecador/comandos'] = 'rh/RelojChecador/comandos';
+$route['rh/RelojChecador/search_comandos'] = 'rh/RelojChecador/search_comandos';
+$route['rh/RelojChecador/encolar_comando'] = 'rh/RelojChecador/encolar_comando';
+$route['rh/RelojChecador/vaciar_todos_comandos'] = 'rh/RelojChecador/vaciar_todos_comandos';
+$route['rh/RelojChecador/sync_log'] = 'rh/RelojChecador/sync_log';
+$route['rh/RelojChecador/search_sync_log'] = 'rh/RelojChecador/search_sync_log';
+$route['rh/RelojChecador/reporte_diario'] = 'rh/RelojChecador/reporte_diario';
+$route['rh/RelojChecador/search_asistencias_diario'] = 'rh/RelojChecador/search_asistencias_diario';
+$route['rh/RelojChecador/reporte_mensual'] = 'rh/RelojChecador/reporte_mensual';
+$route['rh/RelojChecador/search_asistencias_mensual'] = 'rh/RelojChecador/search_asistencias_mensual';
+$route['rh/RelojChecador/asistencia_detalle_dia'] = 'rh/RelojChecador/asistencia_detalle_dia';
+$route['rh/RelojChecador/exportar_diario_csv'] = 'rh/RelojChecador/exportar_diario_csv';
+$route['rh/RelojChecador/sync_empleados_rh'] = 'rh/RelojChecador/sync_empleados_rh';
+$route['rh/RelojChecador/aplicar_migracion_sync_empleados_rh'] = 'rh/RelojChecador/aplicar_migracion_sync_empleados_rh';
+$route['rh/RelojChecador/preview_sync_empleados_rh'] = 'rh/RelojChecador/preview_sync_empleados_rh';
+$route['rh/RelojChecador/ejecutar_sync_empleados_rh'] = 'rh/RelojChecador/ejecutar_sync_empleados_rh';
+$route['rh/RelojChecador/vaciar_cola_sync_empleados_rh'] = 'rh/RelojChecador/vaciar_cola_sync_empleados_rh';
+$route['rh/RelojChecador/reencolar_cola_sync_empleados_rh'] = 'rh/RelojChecador/reencolar_cola_sync_empleados_rh';
+
 //Errors
 $route['deny'] = 'Errors/deny';

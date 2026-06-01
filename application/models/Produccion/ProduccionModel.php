@@ -566,4 +566,310 @@ class ProduccionModel extends CI_Model {
         
         return $stats;
     }
+
+    // =====================================================
+    // VERIFICACIÓN DE STOCK PARA PRODUCCIÓN
+    // =====================================================
+
+    /**
+     * Obtiene los insumos requeridos para producir todos los productos de una orden/obra,
+     * comparando con el stock actual de cada insumo.
+     *
+     * @param int    $orden_id  ID de la orden de venta u obra
+     * @param string $tipo      'venta' | 'obra'
+     * @return array ['stock_suficiente' => bool, 'insumos' => [...], 'sin_formulacion' => bool]
+     */
+    public function get_insumos_requeridos_para_orden($orden_id, $tipo = 'venta') {
+        $this->load->model('Produccion/ProductosModel');
+
+        // 1. Obtener productos de la orden según su tipo
+        if ($tipo === 'obra') {
+            $this->db->select('
+                op.producto_id,
+                op.cantidad_ajustada as cantidad,
+                p.nombre as producto_nombre,
+                p.codigo as producto_codigo,
+                op.formulacion_id
+            ');
+            $this->db->from('obras_productos op');
+            $this->db->join('productos p', 'p.id = op.producto_id');
+            $this->db->where('op.obra_id', $orden_id);
+            $productos = $this->db->get()->result();
+        } else {
+            $this->db->select('
+                dov.producto_id,
+                dov.cantidad,
+                p.nombre as producto_nombre,
+                p.codigo as producto_codigo,
+                dov.formulacion_id
+            ');
+            $this->db->from('detalle_orden_venta dov');
+            $this->db->join('productos p', 'p.id = dov.producto_id');
+            $this->db->where('dov.orden_venta_id', $orden_id);
+            $productos = $this->db->get()->result();
+        }
+
+        if (empty($productos)) {
+            return ['stock_suficiente' => true, 'insumos' => [], 'sin_formulacion' => false, 'sin_productos' => true];
+        }
+
+        // 2. Para cada producto, obtener su formulación activa y escalar insumos
+        $mapa_insumos = [];   // insumo_id => datos acumulados
+        $sin_formulacion = false;
+
+        foreach ($productos as $prod) {
+            // Usar formulacion_id específica de la línea si existe, o la activa del producto
+            if (!empty($prod->formulacion_id)) {
+                $formulacion_id = $prod->formulacion_id;
+            } else {
+                $this->db->select('id, cantidad_producida');
+                $this->db->where('producto_id', $prod->producto_id);
+                $this->db->where('es_activa', 1);
+                $this->db->limit(1);
+                $form = $this->db->get('formulaciones')->row();
+                if (!$form) {
+                    $sin_formulacion = true;
+                    continue;
+                }
+                $formulacion_id = $form->id;
+            }
+
+            // Obtener datos de la formulación (cantidad base que produce)
+            $formulacion = $this->db->select('id, cantidad_producida, unidad_produccion')
+                ->where('id', $formulacion_id)->get('formulaciones')->row();
+            if (!$formulacion) { $sin_formulacion = true; continue; }
+
+            // Calcular el factor de escala
+            // Ej: formulación produce 19L, se piden 10 unidades (cubetas de 19L) → factor = 10
+            // Si las unidades son directas (Kg) y la formulación produce en la misma unidad, factor = cantidad / cantidad_producida
+            $factor = ($formulacion->cantidad_producida > 0)
+                ? ($prod->cantidad / $formulacion->cantidad_producida)
+                : $prod->cantidad;
+
+            // Obtener los insumos de la formulación con porcentaje
+            $this->db->select('
+                df.insumo_id,
+                df.cantidad,
+                df.unidad,
+                df.porcentaje,
+                i.nombre_tecnico as insumo_nombre,
+                i.codigo as insumo_codigo,
+                i.stock_actual,
+                i.unidad_medida,
+                i.precio_promedio
+            ');
+            $this->db->from('detalle_formulacion df');
+            $this->db->join('insumos i', 'i.id = df.insumo_id');
+            $this->db->where('df.formulacion_id', $formulacion_id);
+            $this->db->where('df.tipo_componente', 'Insumo');
+            $this->db->order_by('df.orden', 'ASC');
+            $componentes = $this->db->get()->result();
+
+            foreach ($componentes as $comp) {
+                $cantidad_requerida = $comp->cantidad * $factor;
+
+                if (isset($mapa_insumos[$comp->insumo_id])) {
+                    // Si el insumo ya apareció en otro producto, acumular
+                    $mapa_insumos[$comp->insumo_id]['cantidad_requerida'] += $cantidad_requerida;
+                } else {
+                    $mapa_insumos[$comp->insumo_id] = [
+                        'insumo_id'          => $comp->insumo_id,
+                        'insumo_nombre'      => $comp->insumo_nombre,
+                        'insumo_codigo'      => $comp->insumo_codigo,
+                        'porcentaje'         => $comp->porcentaje,
+                        'unidad'             => $comp->unidad,
+                        'cantidad_por_unidad'=> $comp->cantidad,            // Kg por cubeta
+                        'cantidad_requerida' => $cantidad_requerida,        // Total necesario
+                        'stock_actual'       => (float)$comp->stock_actual,
+                        'precio_promedio'    => (float)$comp->precio_promedio,
+                    ];
+                }
+            }
+        }
+
+        // 3. Determinar disponibilidad para cada insumo acumulado
+        $resultado_insumos = [];
+        $stock_suficiente = true;
+
+        foreach ($mapa_insumos as $datos) {
+            $faltante = max(0, $datos['cantidad_requerida'] - $datos['stock_actual']);
+            $disponible = $faltante == 0;
+            if (!$disponible) $stock_suficiente = false;
+
+            $resultado_insumos[] = array_merge($datos, [
+                'faltante'   => $faltante,
+                'disponible' => $disponible,
+                'costo_estimado_faltante' => round($faltante * $datos['precio_promedio'], 2),
+            ]);
+        }
+
+        // Ordenar: primero los faltantes
+        usort($resultado_insumos, fn($a, $b) => $a['disponible'] - $b['disponible']);
+
+        return [
+            'stock_suficiente' => $stock_suficiente,
+            'insumos'          => $resultado_insumos,
+            'sin_formulacion'  => $sin_formulacion,
+            'sin_productos'    => false,
+        ];
+    }
+
+    /**
+     * Verificación rápida: ¿hay stock suficiente para producir la orden?
+     *
+     * @param int    $orden_id
+     * @param string $tipo  'venta' | 'obra'
+     * @return bool
+     */
+    public function tiene_stock_suficiente($orden_id, $tipo = 'venta') {
+        $resultado = $this->get_insumos_requeridos_para_orden($orden_id, $tipo);
+        return $resultado['stock_suficiente'];
+    }
+
+    /**
+     * Obtiene el estado de stock para múltiples órdenes (optimizado para el dashboard)
+     *
+     * @param array $ordenes  [['id' => X, 'tipo' => 'venta|obra'], ...]
+     * @return array  [ 'tipo_id' => 'ok|faltante|sin_formulacion', ... ]
+     */
+    public function get_estado_stock_multiple($ordenes) {
+        $resultado = [];
+        foreach ($ordenes as $orden) {
+            $id   = $orden['id'];
+            $tipo = $orden['tipo'];
+            $key  = $tipo . '_' . $id;
+
+            $verificacion = $this->get_insumos_requeridos_para_orden($id, $tipo);
+            if ($verificacion['sin_formulacion']) {
+                $resultado[$key] = 'sin_formulacion';
+            } elseif ($verificacion['stock_suficiente']) {
+                $resultado[$key] = 'ok';
+            } else {
+                $resultado[$key] = 'faltante';
+            }
+        }
+        return $resultado;
+    }
+
+    /**
+     * Obtiene lotes para DataTables global
+     */
+    public function get_lotes_global_datatables($filtros = []) {
+        $this->db->select('lp.*, p.nombre as producto_nombre, p.codigo as producto_codigo, f.nombre_version as formulacion_nombre, 
+                           ov.folio as ov_folio, o.folio as obra_folio');
+        $this->db->from('lotes_produccion lp');
+        $this->db->join('productos p', 'p.id = lp.producto_id', 'left');
+        $this->db->join('formulaciones f', 'f.id = lp.formulacion_id', 'left');
+        $this->db->join('ordenes_venta ov', 'ov.id = lp.orden_venta_id', 'left');
+        $this->db->join('obras o', 'o.id = lp.obra_id', 'left');
+
+        if (!empty($filtros['search'])) {
+            $this->db->group_start();
+            $this->db->like('lp.codigo_barras', $filtros['search']);
+            $this->db->or_like('p.nombre', $filtros['search']);
+            $this->db->or_like('p.codigo', $filtros['search']);
+            $this->db->or_like('ov.folio', $filtros['search']);
+            $this->db->or_like('o.folio', $filtros['search']);
+            $this->db->group_end();
+        }
+
+        if (!empty($_POST['order'])) {
+            $columns = ['lp.id', 'lp.codigo_barras', 'p.nombre', 'lp.cantidad', 'lp.fecha_produccion', 'lp.estatus'];
+            $this->db->order_by($columns[(int)$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
+        } else {
+            $this->db->order_by('lp.fecha_produccion', 'DESC');
+        }
+
+        if (isset($_POST['length']) && $_POST['length'] != -1) {
+            $this->db->limit($_POST['length'], $_POST['start']);
+        }
+
+        return $this->db->get()->result();
+    }
+
+    public function count_filtered_lotes($filtros = []) {
+        $this->db->from('lotes_produccion lp');
+        $this->db->join('productos p', 'p.id = lp.producto_id', 'left');
+        
+        if (!empty($filtros['search'])) {
+            $this->db->group_start();
+            $this->db->like('lp.codigo_barras', $filtros['search']);
+            $this->db->or_like('p.nombre', $filtros['search']);
+            $this->db->or_like('p.codigo', $filtros['search']);
+            $this->db->group_end();
+        }
+        
+        return $this->db->count_all_results();
+    }
+
+    public function count_all_lotes() {
+        return $this->db->count_all('lotes_produccion');
+    }
+
+    /**
+     * Procesa la descarga de insumos e ingreso de productos terminados en el inventario.
+     * 
+     * @param int    $id   ID de la orden (venta u obra)
+     * @param string $tipo 'venta' | 'obra'
+     * @param array  $lotes Datos de los lotes generados
+     * @return array Resultado del proceso
+     */
+    public function procesar_inventario_por_produccion($id, $tipo, $lotes) {
+        $this->db->trans_start();
+
+        // 1. OBTENER INSUMOS REQUERIDOS (Para descargar stock)
+        $resultado_insumos = $this->get_insumos_requeridos_para_orden($id, $tipo);
+        
+        foreach ($resultado_insumos['insumos'] as $insumo) {
+            $cantidad = $insumo['cantidad_requerida'];
+            
+            // Insertar movimiento de inventario (Salida de insumo)
+            // El trigger 'trg_actualizar_stock_movimiento' actualizará el stock_actual
+            $mov_insumo = [
+                'insumo_id'       => $insumo['insumo_id'],
+                'tipo_movimiento' => 'Salida',
+                'cantidad'        => $cantidad,
+                'stock_anterior'  => $insumo['stock_actual'],
+                'stock_nuevo'     => $insumo['stock_actual'] - $cantidad,
+                'motivo'          => 'Consumo por producción (' . ($tipo == 'obra' ? 'Obra' : 'Venta') . ' ID: ' . $id . ')',
+                'fecha_movimiento'=> date('Y-m-d H:i:s'),
+                'usuario_id'      => $this->session->userdata('user_id') ?: 1
+            ];
+            $this->db->insert('movimientos_inventario', $mov_insumo);
+        }
+
+        // 2. REGISTRAR ENTRADA DE PRODUCTOS TERMINADOS (Vía Lotes)
+        foreach ($lotes as $lote) {
+            // Obtener stock actual del producto
+            $this->db->select('stock_actual');
+            $this->db->where('id', $lote['producto_id']);
+            $producto = $this->db->get('productos')->row();
+            $stock_anterior = $producto ? $producto->stock_actual : 0;
+
+            // Insertar movimiento de producto (Entrada por producción)
+            // El trigger 'tr_actualizar_stock_producto' actualizará el stock_actual
+            $mov_prod = [
+                'producto_id'     => $lote['producto_id'],
+                'tipo_movimiento' => 'Produccion',
+                'cantidad'        => $lote['cantidad'],
+                'stock_anterior'  => $stock_anterior,
+                'stock_nuevo'     => $stock_anterior + $lote['cantidad'],
+                'motivo'          => 'Folio Lote: ' . $lote['codigo_barras'],
+                'fecha_movimiento'=> date('Y-m-d H:i:s'),
+                'usuario_id'      => $this->session->userdata('user_id') ?: 1
+            ];
+            
+            // Vincular con OV u Obra según corresponda
+            if ($tipo == 'venta') {
+                $mov_prod['venta_id'] = $id;
+            } else {
+                $mov_prod['motivo'] .= ' (Obra ID: ' . $id . ')';
+            }
+
+            $this->db->insert('movimientos_productos', $mov_prod);
+        }
+
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
 }

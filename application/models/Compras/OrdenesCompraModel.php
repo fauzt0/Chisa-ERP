@@ -111,7 +111,7 @@ class OrdenesCompraModel extends MY_Model {
      * Obtiene detalles de una orden
      */
     public function get_detalles($orden_id) {
-        $this->db->select('detalle_orden_compra.*, insumos.codigo, insumos.nombre_tecnico, insumos.unidad_medida');
+        $this->db->select('detalle_orden_compra.*, insumos.codigo, insumos.nombre_tecnico, insumos.unidad_medida, detalle_orden_compra.nombre_proveedor, detalle_orden_compra.codigo_proveedor');
         $this->db->from('detalle_orden_compra');
         $this->db->join('insumos', 'insumos.id = detalle_orden_compra.insumo_id');
         $this->db->where('detalle_orden_compra.orden_compra_id', $orden_id);
@@ -297,9 +297,10 @@ class OrdenesCompraModel extends MY_Model {
             // Obtener insumo actual
             $insumo = $this->db->where('id', $detalle_actual->insumo_id)->get('insumos')->row();
             
-            // Crear movimiento de inventario
+            // Crear movimiento de inventario (Polimórfico: Insumos)
             $movimiento = [
                 'insumo_id' => $detalle_actual->insumo_id,
+                'producto_id' => null, // Explicitly null
                 'tipo_movimiento' => 'Entrada',
                 'cantidad' => $cantidad_recibida,
                 'stock_anterior' => $insumo->stock_actual,

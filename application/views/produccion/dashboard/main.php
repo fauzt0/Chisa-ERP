@@ -16,6 +16,32 @@
     <div class="col-md-6">
         <h2><i class="fas fa-industry"></i> Dashboard de Producción</h2>
     </div>
+    <div class="col-md-6 d-flex align-items-center justify-content-end gap-2 flex-wrap">
+        <?php
+        $ordenes_all   = $response['ordenes'] ?? [];
+        $total_vis     = count($ordenes_all);
+        $total_ventas  = count(array_filter($ordenes_all, fn($o) => $o->tipo_registro !== 'obra'));
+        $total_obras   = count(array_filter($ordenes_all, fn($o) => $o->tipo_registro === 'obra'));
+        ?>
+        <span class="badge bg-dark fs-6 px-3 py-2">
+            <i class="fas fa-list-ul"></i> <?=$total_vis?> Órdenes
+        </span>
+        <?php if($total_ventas > 0): ?>
+        <span class="badge bg-primary fs-6 px-3 py-2">
+            <i class="fas fa-shopping-cart"></i> <?=$total_ventas?> Ventas
+        </span>
+        <?php endif; ?>
+        <?php if($total_obras > 0): ?>
+        <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+            <i class="fas fa-hard-hat"></i> <?=$total_obras?> Obras
+        </span>
+        <?php endif; ?>
+        <!-- Contador Sin Insumos (se actualiza con AJAX tras cargar badges) -->
+        <span class="badge bg-secondary fs-6 px-3 py-2" id="badge_sin_insumos" style="display:none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="count_sin_insumos">0</span> Sin Insumos
+        </span>
+    </div>
 </div>
 
 <!-- Filtros de Búsqueda -->
@@ -162,7 +188,16 @@
                     <p class="mb-1 text-muted">
                         <i class="fas fa-box"></i> 
                         <?=$orden->total_productos?> producto(s)
-                    </p>                    
+                    </p>
+                    <!-- Badge de Stock (asíncrono) -->
+                    <div class="mt-2 text-center">
+                        <?php $tipo_badge = $es_obra ? 'obra' : 'venta'; ?>
+                        <span class="badge bg-secondary stock-badge"
+                              id="stock_badge_<?=$tipo_badge?>_<?=$orden->id?>"
+                              title="Verificando stock...">
+                            <i class="fas fa-spinner fa-spin fa-xs"></i>
+                        </span>
+                    </div>
                 </div>                        
             </div>
         </div>
@@ -204,6 +239,8 @@ let verificandoOrdenes = false;
 document.addEventListener('DOMContentLoaded', function() {
     iniciarMonitoreoOrdenes();
     actualizarTextoUltimaVerificacion();
+    // Cargar badges de stock de todas las órdenes (en batch)
+    actualizarBadgesStock();
 });
 
 /**
@@ -487,6 +524,84 @@ function actualizarTextoUltimaVerificacion() {
         textoElement.textContent = horaFormateada;
     }
 }
+/**
+ * Actualiza los badges de stock de todas las órdenes visibles en el dashboard
+ * en una sola llamada AJAX para máximo rendimiento.
+ */
+function actualizarBadgesStock() {
+    const badges = document.querySelectorAll('.stock-badge');
+    if (badges.length === 0) return;
+
+    // Construir lista de órdenes a verificar
+    const ordenes = [];
+    badges.forEach(badge => {
+        // id: stock_badge_{tipo}_{id}
+        const parts = badge.id.replace('stock_badge_', '').split('_');
+        if (parts.length >= 2) {
+            const tipo = parts[0];         // 'venta' o 'obra'
+            const id   = parts.slice(1).join('_'); // soporta IDs con _
+            ordenes.push({ id: parseInt(id), tipo: tipo });
+        }
+    });
+
+    if (ordenes.length === 0) return;
+
+    $.post('<?=base_url()?>produccion/Dashboard/get_stock_estado_ordenes_ajax', {
+        ordenes: JSON.stringify(ordenes)
+    }, function(res) {
+        if (!res.success) return;
+
+        Object.entries(res.estados).forEach(([key, estado]) => {
+            const badge = document.getElementById('stock_badge_' + key);
+            if (!badge) return;
+
+            badge.classList.remove('bg-secondary', 'bg-success', 'bg-danger', 'bg-warning');
+
+            if (estado === 'ok') {
+                badge.classList.add('bg-success');
+                badge.setAttribute('title', 'Stock completo — listo para producir');
+                badge.innerHTML = '<i class="fas fa-check-circle fa-xs"></i> Stock OK';
+            } else if (estado === 'faltante') {
+                badge.classList.add('bg-danger');
+                badge.setAttribute('title', 'Insumos insuficientes — se requiere pre-orden');
+                badge.innerHTML = '<i class="fas fa-exclamation-triangle fa-xs"></i> Sin Insumos';
+            } else if (estado === 'sin_formulacion') {
+                badge.classList.add('bg-warning');
+                badge.setAttribute('title', 'Sin formulación activa configurada');
+                badge.innerHTML = '<i class="fas fa-flask fa-xs"></i> Sin Fórmula';
+            } else {
+                badge.classList.add('bg-secondary');
+                badge.innerHTML = '—';
+            }
+        });
+        // Actualizar contador "Sin Insumos" en el header
+        let countFaltante = 0;
+        Object.values(res.estados).forEach(estado => {
+            if (estado === 'faltante') countFaltante++;
+        });
+
+        const badgeSinInsumos  = document.getElementById('badge_sin_insumos');
+        const countSinInsumos  = document.getElementById('count_sin_insumos');
+        if (badgeSinInsumos && countSinInsumos) {
+            countSinInsumos.textContent = countFaltante;
+            if (countFaltante > 0) {
+                badgeSinInsumos.classList.remove('bg-secondary');
+                badgeSinInsumos.classList.add('bg-danger');
+                badgeSinInsumos.style.display = '';
+            } else {
+                badgeSinInsumos.style.display = 'none';
+            }
+        }
+
+    }, 'json').fail(function() {
+        // Silenciar errores en el dashboard — no crítico
+        badges.forEach(b => {
+            b.classList.remove('bg-secondary');
+            b.innerHTML = '';
+        });
+    });
+}
+
 </script>
 
 <style>

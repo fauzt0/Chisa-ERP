@@ -100,6 +100,12 @@ class OrdenesCompra extends MY_Controller {
                 </button>';
             }
             
+            // Botón de PDF siempre visible
+            $acciones .= '
+                <a href="'.base_url('compras/OrdenesCompra/generar_pdf/'.$orden->id).'" target="_blank" class="btn btn-sm btn-danger" title="Generar PDF">
+                    <i class="fas fa-file-pdf"></i>
+                </a>';
+
             $row[] = $acciones;
             
             $data[] = $row;
@@ -131,6 +137,24 @@ class OrdenesCompra extends MY_Controller {
         } else {
             echo json_encode(['success' => false, 'message' => 'Orden no encontrada']);
         }
+    }
+    
+    /**
+     * Genera la vista imprimible / PDF de una orden de compra
+     */
+    public function generar_pdf($id = null) {
+        if(!$id) show_404();
+        
+        $orden = $this->OrdenesCompraModel->get_orden($id);
+        if(!$orden) show_404();
+        
+        $detalles = $orden->detalles ?? [];
+        
+        // Cargar vista standalone (sin layout general)
+        $this->load->view('compras/ordenes_compra/pdf_oc', [
+            'orden'    => $orden,
+            'detalles' => $detalles
+        ]);
     }
     
     /**
@@ -235,6 +259,8 @@ class OrdenesCompra extends MY_Controller {
             'insumo_id' => $insumo_id,
             'cantidad_solicitada' => $this->input->post('cantidad_solicitada'),
             'precio_unitario' => $this->input->post('precio_unitario'),
+            'nombre_proveedor' => $this->input->post('nombre_proveedor'),
+            'codigo_proveedor' => $this->input->post('codigo_proveedor'),
             'observaciones' => $this->input->post('observaciones')
         ];
         

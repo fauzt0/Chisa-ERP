@@ -56,6 +56,36 @@
           </a></li>
         </ul>
       </li>
+
+      <!-- Reloj Checador -->
+      <li class="sidebar-item">
+        <a data-bs-target="#reloj-menu" data-bs-toggle="collapse" class="sidebar-link collapsed">
+          <i class="align-middle" data-lucide="clock"></i> <span class="align-middle">Reloj Checador</span>
+        </a>
+        <ul id="reloj-menu" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/RelojChecador">
+            Dashboard
+          </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/RelojChecador/dispositivos">
+            Dispositivos
+          </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/RelojChecador/comandos">
+            Comandos
+          </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/RelojChecador/sync_empleados_rh">
+            Sync Empleados RH
+          </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/RelojChecador/sync_log">
+            Sincronización
+          </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/RelojChecador/reporte_diario">
+            Reporte Diario
+          </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/RelojChecador/reporte_mensual">
+            Reporte Mensual
+          </a></li>
+        </ul>
+      </li>
       
       <li class="sidebar-item">
         <a data-bs-target="#proveedores" data-bs-toggle="collapse" class="sidebar-link collapsed">
@@ -74,8 +104,9 @@
           <i class="align-middle" data-lucide="factory"></i> <span class="align-middle">Producción</span>
         </a>
         <ul id="produccion" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Dashboard">Dashboard Producción</a></li>
-          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Productos">Productos</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Dashboard">Fabricación Dashboard</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Productos">Productos y Fórmulas</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Lotes">Control de Lotes</a></li>
         </ul>
       </li>
       

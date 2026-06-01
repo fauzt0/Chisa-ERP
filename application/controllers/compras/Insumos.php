@@ -266,4 +266,78 @@ class Insumos extends MY_Controller {
         $insumos = $this->InsumosModel->get_insumos_stock_bajo();
         echo json_encode(['success' => true, 'insumos' => $insumos, 'total' => count($insumos)]);
     }
+    
+    // =============================================
+    // ENDPOINTS DE ALIAS MÚLTIPLES
+    // =============================================
+    
+    /**
+     * Obtiene los alias de un insumo (AJAX)
+     * GET/POST: insumo_id
+     */
+    public function get_aliases_ajax() {
+        $insumo_id = $this->input->post('insumo_id');
+        if(!$insumo_id) {
+            echo json_encode(['success' => false, 'message' => 'ID de insumo requerido']);
+            return;
+        }
+        $aliases = $this->InsumosModel->get_aliases_insumo($insumo_id);
+        echo json_encode(['success' => true, 'aliases' => $aliases]);
+    }
+    
+    /**
+     * Agrega un alias a un insumo (AJAX)
+     * POST: insumo_id, alias_nombre, tipo_alias, proveedor_id (opcional)
+     */
+    public function agregar_alias_ajax() {
+        $insumo_id   = $this->input->post('insumo_id');
+        $alias_nombre = trim($this->input->post('alias_nombre'));
+        
+        if(!$insumo_id || !$alias_nombre) {
+            echo json_encode(['success' => false, 'message' => 'Insumo y nombre de alias son requeridos']);
+            return;
+        }
+        
+        $data = [
+            'insumo_id'    => $insumo_id,
+            'alias'        => $alias_nombre,
+            'tipo'         => $this->input->post('tipo_alias') ?: 'Genérico',
+            'proveedor_id' => $this->input->post('proveedor_id') ?: null,
+            'notas'        => $this->input->post('notas')
+        ];
+        
+        $result = $this->InsumosModel->agregar_alias($data);
+        echo json_encode($result);
+    }
+    
+    /**
+     * Elimina un alias (AJAX)
+     * POST: alias_id, insumo_id
+     */
+    public function eliminar_alias_ajax() {
+        $alias_id  = $this->input->post('alias_id');
+        $insumo_id = $this->input->post('insumo_id');
+        
+        if(!$alias_id || !$insumo_id) {
+            echo json_encode(['success' => false, 'message' => 'IDs requeridos']);
+            return;
+        }
+        
+        $result = $this->InsumosModel->eliminar_alias($alias_id, $insumo_id);
+        echo json_encode($result);
+    }
+    
+    /**
+     * Busca insumos por nombre, código o alias (AJAX - para autocomplete/select2)
+     * POST: termino
+     */
+    public function buscar_ajax() {
+        $termino = trim($this->input->post('termino') ?? $this->input->get('termino'));
+        if(strlen($termino) < 2) {
+            echo json_encode(['success' => true, 'insumos' => []]);
+            return;
+        }
+        $insumos = $this->InsumosModel->buscar_insumos($termino);
+        echo json_encode(['success' => true, 'insumos' => $insumos]);
+    }
 }

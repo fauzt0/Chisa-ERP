@@ -14,10 +14,10 @@ class InsumosModel extends MY_Model {
     
     // Configuración para DataTables (sin join, se hace en los métodos)
     protected $datatableConfig = [
-        'table' => 'insumos',
-        'column_order' => ['codigo', 'nombre_tecnico', 'categoria_nombre', 'marca', 'unidad_medida', 'stock_actual', 'precio_promedio', 'estatus', null],
-        'column_search' => ['codigo', 'nombre_tecnico', 'alias', 'marca'],
-        'order' => ['nombre_tecnico' => 'ASC']
+        'table'         => 'insumos',
+        'column_order'  => ['insumos.codigo', 'insumos.nombre_tecnico', 'categoria_nombre', 'insumos.marca', 'insumos.unidad_medida', 'insumos.stock_actual', 'insumos.precio_promedio', 'insumos.estatus', null],
+        'column_search' => ['insumos.codigo', 'insumos.nombre_tecnico', 'insumos.alias', 'insumos.marca'],
+        'order'         => ['insumos.nombre_tecnico' => 'ASC']
     ];
     
     public function __construct() {
@@ -34,30 +34,28 @@ class InsumosModel extends MY_Model {
         $this->db->select('insumos.*, categorias_insumos.nombre as categoria_nombre');
         $this->db->from($this->tableName);
         $this->db->join('categorias_insumos', 'categorias_insumos.id = insumos.categoria_id', 'left');
+        $this->db->join('insumos_alias ia', 'ia.insumo_id = insumos.id', 'left');
+        $this->db->group_by('insumos.id');
         
-        // Búsqueda
-        $i = 0;
+        // Búsqueda (incluye alias de la tabla insumos_alias)
         if(isset($_POST['search']['value']) && $_POST['search']['value'] != '') {
-            foreach ($this->datatableConfig['column_search'] as $column) {
-                if($i === 0) {
-                    $this->db->group_start();
-                    $this->db->like($column, $_POST['search']['value']);
-                } else {
-                    $this->db->or_like($column, $_POST['search']['value']);
-                }
-                
-                if(count($this->datatableConfig['column_search']) - 1 == $i) {
-                    $this->db->group_end();
-                }
-                $i++;
-            }
+            $search = $_POST['search']['value'];
+            $this->db->group_start();
+            $this->db->like('insumos.codigo', $search);
+            $this->db->or_like('insumos.nombre_tecnico', $search);
+            $this->db->or_like('insumos.alias', $search);
+            $this->db->or_like('insumos.marca', $search);
+            $this->db->or_like('ia.alias', $search);
+            $this->db->group_end();
         }
         
         // Ordenamiento
         if(isset($_POST['order'])) {
             $column_index = $_POST['order'][0]['column'];
-            $column_name = $this->datatableConfig['column_order'][$column_index];
-            $this->db->order_by($column_name, $_POST['order'][0]['dir']);
+            $column_name  = $this->datatableConfig['column_order'][$column_index];
+            if($column_name) {
+                $this->db->order_by($column_name, $_POST['order'][0]['dir']);
+            }
         } elseif (isset($this->datatableConfig['order'])) {
             $order = $this->datatableConfig['order'];
             $this->db->order_by(key($order), $order[key($order)]);
@@ -101,25 +99,24 @@ class InsumosModel extends MY_Model {
         $this->db->from($this->tableName);
         $this->db->join('categorias_insumos', 'categorias_insumos.id = insumos.categoria_id', 'left');
         
-        // Aplicar filtros
         if(!empty($filtros['categoria_id'])) {
             $this->db->where('insumos.categoria_id', $filtros['categoria_id']);
         }
-        
         if(!empty($filtros['estatus'])) {
             $this->db->where('insumos.estatus', $filtros['estatus']);
         }
-        
         if(isset($filtros['stock_bajo']) && $filtros['stock_bajo'] == '1') {
             $this->db->where('insumos.stock_actual <=', 'insumos.stock_minimo', FALSE);
         }
-        
         if(!empty($filtros['busqueda'])) {
+            $busqueda = $filtros['busqueda'];
+            $alias_sub = "EXISTS (SELECT 1 FROM insumos_alias ia WHERE ia.insumo_id = insumos.id AND ia.alias LIKE '%" . $this->db->escape_like_str($busqueda) . "%')";
             $this->db->group_start();
-            $this->db->like('insumos.nombre_tecnico', $filtros['busqueda']);
-            $this->db->or_like('insumos.alias', $filtros['busqueda']);
-            $this->db->or_like('insumos.codigo', $filtros['busqueda']);
-            $this->db->or_like('insumos.marca', $filtros['busqueda']);
+            $this->db->like('insumos.nombre_tecnico', $busqueda);
+            $this->db->or_like('insumos.alias', $busqueda);
+            $this->db->or_like('insumos.codigo', $busqueda);
+            $this->db->or_like('insumos.marca', $busqueda);
+            $this->db->or_where($alias_sub, null, false);
             $this->db->group_end();
         }
         
@@ -245,21 +242,86 @@ class InsumosModel extends MY_Model {
     public function get_estadisticas() {
         $stats = [];
         
-        // Total de insumos activos
         $this->db->where('estatus', 'Activo');
         $stats['total_activos'] = $this->db->count_all_results($this->tableName);
         
-        // Insumos con stock bajo
         $this->db->where('stock_actual <=', 'stock_minimo', FALSE);
         $this->db->where('estatus', 'Activo');
         $stats['stock_bajo'] = $this->db->count_all_results($this->tableName);
         
-        // Valor total de inventario (aproximado)
         $this->db->select('SUM(stock_actual * precio_promedio) as valor_total', FALSE);
         $this->db->where('estatus', 'Activo');
         $result = $this->db->get($this->tableName)->row();
         $stats['valor_inventario'] = $result->valor_total ?? 0;
         
         return $stats;
+    }
+    
+    // =============================================
+    // GESTIÓN DE ALIAS MÚLTIPLES (insumos_alias)
+    // =============================================
+    
+    /**
+     * Obtiene todos los alias de un insumo
+     */
+    public function get_aliases_insumo($insumo_id) {
+        $this->db->select('ia.*, p.razon_social as proveedor_nombre');
+        $this->db->from('insumos_alias ia');
+        $this->db->join('proveedores p', 'p.id = ia.proveedor_id', 'left');
+        $this->db->where('ia.insumo_id', $insumo_id);
+        $this->db->order_by('ia.tipo, ia.alias', 'ASC');
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Agrega un alias a un insumo
+     */
+    public function agregar_alias($data) {
+        $this->db->where('insumo_id', $data['insumo_id']);
+        $this->db->where('alias', $data['alias']);
+        $existente = $this->db->get('insumos_alias')->row();
+        if($existente) {
+            return ['success' => false, 'message' => 'Ya existe ese alias para este insumo'];
+        }
+        $result = $this->db->insert('insumos_alias', $data);
+        return [
+            'success' => $result,
+            'message' => $result ? 'Alias agregado correctamente' : 'Error al agregar alias',
+            'id'      => $result ? $this->db->insert_id() : null
+        ];
+    }
+    
+    /**
+     * Elimina un alias
+     */
+    public function eliminar_alias($alias_id, $insumo_id) {
+        $this->db->where('id', $alias_id);
+        $this->db->where('insumo_id', $insumo_id);
+        $result = $this->db->delete('insumos_alias');
+        return [
+            'success' => $result,
+            'message' => $result ? 'Alias eliminado' : 'Error al eliminar alias'
+        ];
+    }
+    
+    /**
+     * Busca insumos por nombre, código o cualquier alias (autocomplete)
+     */
+    public function buscar_insumos($termino) {
+        $sql = "SELECT DISTINCT insumos.id, insumos.codigo, insumos.nombre_tecnico,
+                       insumos.unidad_medida, insumos.stock_actual, insumos.precio_promedio
+                FROM insumos
+                LEFT JOIN insumos_alias ia ON ia.insumo_id = insumos.id
+                WHERE insumos.estatus = 'Activo'
+                AND (
+                    insumos.nombre_tecnico LIKE ?
+                    OR insumos.alias LIKE ?
+                    OR insumos.codigo LIKE ?
+                    OR ia.alias LIKE ?
+                )
+                ORDER BY insumos.nombre_tecnico ASC
+                LIMIT 30";
+        $like = '%' . $termino . '%';
+        return $this->db->query($sql, [$like, $like, $like, $like])->result();
     }
 }

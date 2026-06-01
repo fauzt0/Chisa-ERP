@@ -467,7 +467,17 @@
         
         let html = '<option value="">-- Seleccionar --</option>';
         result.insumos.forEach(function(ins) {
-          html += `<option value="${ins.insumo_id}" data-precio="${ins.precio_compra}" data-codigo="${ins.codigo}" data-nombre="${ins.nombre_tecnico}" data-um="${ins.unidad_medida}">${ins.codigo} - ${ins.nombre_tecnico} ($${parseFloat(ins.precio_compra).toFixed(2)})</option>`;
+          const nomProv = ins.nombre_proveedor || '';
+          const codProv = ins.codigo_proveedor || '';
+          html += `<option value="${ins.insumo_id}" 
+                    data-precio="${ins.precio_compra}" 
+                    data-codigo="${ins.codigo}" 
+                    data-nombre="${ins.nombre_tecnico}" 
+                    data-um="${ins.unidad_medida}"
+                    data-nomprov="${nomProv}"
+                    data-codprov="${codProv}">
+                    ${ins.codigo} - ${ins.nombre_tecnico} ($${parseFloat(ins.precio_compra).toFixed(2)})
+                   </option>`;
         });
         $('#detalle_insumo_id').html(html);
       }
@@ -522,6 +532,8 @@
     const codigo = selected.data('codigo');
     const nombre = selected.data('nombre');
     const um = selected.data('um');
+    const nomProv = selected.data('nomprov');
+    const codProv = selected.data('codprov');
     const subtotal = cantidad * precio;
 
     const detalle = {
@@ -529,6 +541,8 @@
       codigo: codigo,
       nombre: nombre,
       unidad_medida: um,
+      nombre_proveedor: nomProv,
+      codigo_proveedor: codProv,
       cantidad: cantidad,
       precio: precio,
       subtotal: subtotal
@@ -545,10 +559,12 @@
     } else {
       let html = '';
       detallesTemporales.forEach(function(det, index) {
+        const infoProv = det.nombre_proveedor ? `<br><small class="text-primary"><i class="fas fa-tag"></i> ${det.nombre_proveedor}</small>` : '';
+        const codigoProv = det.codigo_proveedor ? `<br><small class="text-muted">${det.codigo_proveedor}</small>` : '';
         html += `
           <tr>
-            <td>${det.codigo}</td>
-            <td>${det.nombre} <small class="text-muted">(${det.unidad_medida})</small></td>
+            <td>${det.codigo}${codigoProv}</td>
+            <td>${det.nombre} ${infoProv} <small class="text-muted">(${det.unidad_medida})</small></td>
             <td>${det.cantidad}</td>
             <td>$${det.precio.toFixed(2)}</td>
             <td>$${det.subtotal.toFixed(2)}</td>
@@ -607,6 +623,8 @@
               'insumo_id': det.insumo_id,
               'cantidad_solicitada': det.cantidad,
               'precio_unitario': det.precio,
+              'nombre_proveedor': det.nombre_proveedor,
+              'codigo_proveedor': det.codigo_proveedor,
               'peticion': 'ajax',
               '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
             }, function() {
@@ -768,6 +786,8 @@
                 'insumo_id': det.insumo_id,
                 'cantidad_solicitada': det.cantidad,
                 'precio_unitario': det.precio,
+                'nombre_proveedor': det.nombre_proveedor,
+                'codigo_proveedor': det.codigo_proveedor,
                 'peticion': 'ajax',
                 '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
               }, function() {

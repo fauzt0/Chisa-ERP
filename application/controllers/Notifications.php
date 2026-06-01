@@ -144,22 +144,21 @@ class Notifications extends MY_Controller {
    * Obtiene productos e insumos con stock bajo
    */
   private function _get_stock_bajo() {
-    // Productos
+    // Productos con stock bajo o en cero
     $this->db->select('id, codigo, nombre, stock_actual, stock_minimo, unidad_venta as unidad');
     $this->db->from('productos');
     $this->db->where('stock_actual <=', 'stock_minimo', FALSE);
-    $this->db->where('stock_actual >', 0);
     $this->db->where('estatus', 'Activo');
     $this->db->limit(5);
     $productos = $this->db->get()->result();
 
-    // Insumos - usar nombre_tecnico en lugar de nombre
+    // Insumos con stock bajo o en cero (incluye stock = 0)
     $this->db->select('id, codigo, nombre_tecnico as nombre, stock_actual, stock_minimo, unidad_medida as unidad');
     $this->db->from('insumos');
     $this->db->where('stock_actual <=', 'stock_minimo', FALSE);
-    $this->db->where('stock_actual >', 0);
     $this->db->where('estatus', 'Activo');
-    $this->db->limit(5);
+    $this->db->order_by('stock_actual', 'ASC');
+    $this->db->limit(10);
     $insumos = $this->db->get()->result();
 
     return array_merge($productos, $insumos);

@@ -313,6 +313,13 @@ class ProductosModel extends MY_Model {
             $data['costo_unitario'] = $producto->costo_produccion ?? 0;
         }
         
+        // Guardar porcentaje si viene del formulario
+        if(isset($data['porcentaje']) && $data['porcentaje'] !== '' && $data['porcentaje'] !== null) {
+            $data['porcentaje'] = (float)$data['porcentaje'];
+        } else {
+            $data['porcentaje'] = null;
+        }
+        
         // El trigger calculará el costo_total automáticamente
         $result = $this->db->insert('detalle_formulacion', $data);
         
@@ -505,18 +512,36 @@ class ProductosModel extends MY_Model {
     }
     
     /**
-     * Obtiene historial de formulaciones de un producto con búsqueda opcional
+     * Obtiene historial de formulaciones de un producto con búsqueda y filtros opcionales
      */
-    public function get_historial_formulaciones($producto_id, $busqueda = null) {
-        $this->db->select('formulaciones.*');
+    public function get_historial_formulaciones($producto_id, $busqueda = null, $cliente_id = null, $fecha_inicio = null, $fecha_fin = null) {
+        $this->db->select('formulaciones.*, administradores.nombre as creador_nombre, administradores.apellidos as creador_apellidos, clientes.razon_social as cliente_nombre, clientes.nombre_comercial');
         $this->db->from('formulaciones');
+        $this->db->join('administradores', 'administradores.id = formulaciones.usuario_creacion', 'left');
+        $this->db->join('clientes', 'clientes.id = formulaciones.cliente_id', 'left');
         $this->db->where('formulaciones.producto_id', $producto_id);
         
-        // Búsqueda opcional por nombre de versión o descripción
+        // Filtro por cliente
+        if($cliente_id !== null && $cliente_id !== '') {
+            $this->db->where('formulaciones.cliente_id', $cliente_id);
+        }
+        
+        // Rango de fechas
+        if($fecha_inicio) {
+            $this->db->where('DATE(formulaciones.fecha_creacion) >=', $fecha_inicio);
+        }
+        if($fecha_fin) {
+            $this->db->where('DATE(formulaciones.fecha_creacion) <=', $fecha_fin);
+        }
+        
+        // Búsqueda opcional por nombre de versión, descripción o comentarios
         if($busqueda && trim($busqueda) != '') {
             $this->db->group_start();
             $this->db->like('formulaciones.nombre_version', $busqueda);
             $this->db->or_like('formulaciones.descripcion', $busqueda);
+            $this->db->or_like('formulaciones.comentarios', $busqueda);
+            $this->db->or_like('clientes.razon_social', $busqueda);
+            $this->db->or_like('clientes.nombre_comercial', $busqueda);
             $this->db->group_end();
         }
         
@@ -525,12 +550,13 @@ class ProductosModel extends MY_Model {
     }
     
     /**
-     * Obtiene una formulación completa con todos sus componentes
+     * Obtiene una formulación completa con todos sus componentes y el nombre del cliente
      */
     public function get_formulacion_completa($formulacion_id) {
         // Obtener datos de la formulación
-        $this->db->select('formulaciones.*');
+        $this->db->select('formulaciones.*, clientes.razon_social as cliente_nombre');
         $this->db->from('formulaciones');
+        $this->db->join('clientes', 'clientes.id = formulaciones.cliente_id', 'left');
         $this->db->where('formulaciones.id', $formulacion_id);
         $formulacion = $this->db->get()->row();
         
@@ -540,5 +566,71 @@ class ProductosModel extends MY_Model {
         }
         
         return $formulacion;
+    }
+
+    /**
+     * Calcula y escala los insumos requeridos para un proyecto basado en cubetas o m²
+     */
+    public function calcular_insumos_para_proyecto($formulacion_id, $cubetas = null, $m2 = null) {
+        $formulacion = $this->get_formulacion_completa($formulacion_id);
+        if(!$formulacion) {
+            return null;
+        }
+
+        $rendimiento = !empty($formulacion->rendimiento_m2_por_kg) ? (float)$formulacion->rendimiento_m2_por_kg : null;
+        if($rendimiento === null) {
+            // Buscar rendimiento global del producto
+            $producto = $this->db->select('rendimiento')->where('id', $formulacion->producto_id)->get('productos')->row();
+            $rendimiento = $producto && !empty($producto->rendimiento) ? (float)$producto->rendimiento : 1.0; // Evitar división por cero
+        }
+
+        // Determinar multiplicador de escala
+        $total_kg_necesarios = 0.0;
+        $total_cubetas = 0.0;
+        
+        if($m2 !== null && $m2 !== '' && $m2 > 0) {
+            // kg = m² / rendimiento (m²/kg)
+            $total_kg_necesarios = (float)$m2 / $rendimiento;
+            // cubetas = kg / cantidad_producida
+            $cantidad_base = !empty($formulacion->cantidad_producida) ? (float)$formulacion->cantidad_producida : 27.0;
+            $total_cubetas = ceil($total_kg_necesarios / $cantidad_base);
+            $multiplicador = $total_cubetas; // Escalar por cubetas enteras requeridas
+        } elseif($cubetas !== null && $cubetas !== '' && $cubetas > 0) {
+            $total_cubetas = (float)$cubetas;
+            $cantidad_base = !empty($formulacion->cantidad_producida) ? (float)$formulacion->cantidad_producida : 27.0;
+            $total_kg_necesarios = $total_cubetas * $cantidad_base;
+            $multiplicador = $total_cubetas;
+        } else {
+            $total_cubetas = 1.0;
+            $cantidad_base = !empty($formulacion->cantidad_producida) ? (float)$formulacion->cantidad_producida : 27.0;
+            $total_kg_necesarios = $cantidad_base;
+            $multiplicador = 1.0;
+        }
+
+        // Escalar componentes
+        $componentes_escalados = [];
+        foreach($formulacion->componentes as $comp) {
+            $comp_escalado = clone $comp;
+            $comp_escalado->cantidad_original = $comp->cantidad;
+            $comp_escalado->cantidad_escalada = (float)$comp->cantidad * $multiplicador;
+            $comp_escalado->costo_total_escalado = (float)$comp->costo_unitario * $comp_escalado->cantidad_escalada;
+            
+            // Cálculos de fase acuosa
+            if(!empty($comp->porcentaje_fase_acuosa)) {
+                $comp_escalado->kg_fase_acuosa_escalado = $comp_escalado->cantidad_escalada * ((float)$comp->porcentaje_fase_acuosa / 100);
+            } else {
+                $comp_escalado->kg_fase_acuosa_escalado = null;
+            }
+
+            $componentes_escalados[] = $comp_escalado;
+        }
+
+        return [
+            'formulacion' => $formulacion,
+            'cubetas_calculadas' => $total_cubetas,
+            'kg_necesarios' => $total_kg_necesarios,
+            'multiplicador' => $multiplicador,
+            'componentes' => $componentes_escalados
+        ];
     }
 }

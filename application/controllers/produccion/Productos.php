@@ -64,7 +64,7 @@ class Productos extends MY_Controller {
                            class="img-thumbnail" 
                            style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
                            onclick="verImagenProductoZoom(\'' . $imagen . '\', \'' . addslashes($producto->nombre) . '\')"
-                           onerror="this.src=\'' . base_url('assets/img/no-image.png') . '\'">';
+                           onerror="this.onerror=null; this.src=\'' . base_url('assets/img/no-image.png') . '\'">';
             
             // Nombre con badges de variante
             $nombre_display = $producto->nombre;
@@ -410,9 +410,12 @@ class Productos extends MY_Controller {
     public function crear_formulacion_ajax() {
         $data = [
             'producto_id' => $this->input->post('producto_id'),
+            'cliente_id' => $this->input->post('cliente_id') ?: NULL,
             'nombre_version' => $this->input->post('nombre_version'),
             'descripcion' => $this->input->post('descripcion'),
+            'comentarios' => $this->input->post('comentarios') ?: NULL,
             'cantidad_producida' => $this->input->post('cantidad_producida'),
+            'rendimiento_m2_por_kg' => $this->input->post('rendimiento_m2_por_kg') ?: NULL,
             'unidad_produccion' => $this->input->post('unidad_produccion'),
             'costo_mano_obra' => $this->input->post('costo_mano_obra') ?: 0,
             'costo_indirecto' => $this->input->post('costo_indirecto') ?: 0,
@@ -450,7 +453,11 @@ class Productos extends MY_Controller {
             'tipo_componente' => $tipo_componente,
             'cantidad' => $this->input->post('cantidad'),
             'unidad' => $this->input->post('unidad'),
+            'porcentaje' => $this->input->post('porcentaje') !== '' ? $this->input->post('porcentaje') : null,
             'observaciones' => $this->input->post('observaciones'),
+            'grupo_color' => $this->input->post('grupo_color') ?: NULL,
+            'porcentaje_fase_acuosa' => $this->input->post('porcentaje_fase_acuosa') !== '' ? $this->input->post('porcentaje_fase_acuosa') : null,
+            'kg_fase_acuosa' => $this->input->post('kg_fase_acuosa') !== '' ? $this->input->post('kg_fase_acuosa') : null,
             'orden' => $this->input->post('orden') ?: 0
         ];
         
@@ -576,13 +583,16 @@ class Productos extends MY_Controller {
     public function get_historial_formulaciones_ajax() {
         $producto_id = $this->input->post('producto_id');
         $busqueda = $this->input->post('busqueda');
+        $cliente_id = $this->input->post('cliente_id') ?: null;
+        $fecha_inicio = $this->input->post('fecha_inicio') ?: null;
+        $fecha_fin = $this->input->post('fecha_fin') ?: null;
         
         if(!$producto_id) {
             echo json_encode(['success' => false, 'message' => 'Producto ID requerido']);
             return;
         }
         
-        $formulaciones = $this->ProductosModel->get_historial_formulaciones($producto_id, $busqueda);
+        $formulaciones = $this->ProductosModel->get_historial_formulaciones($producto_id, $busqueda, $cliente_id, $fecha_inicio, $fecha_fin);
         
         // Para cada formulación, obtener historial de ventas
         foreach($formulaciones as &$formulacion) {
@@ -695,15 +705,72 @@ class Productos extends MY_Controller {
     }
     
     /**
+     * Activa una formulación como la versión por defecto (AJAX)
+     */
+    public function activar_formulacion_ajax() {
+        $formulacion_id = $this->input->post('formulacion_id');
+        if(!$formulacion_id) {
+            echo json_encode(['success' => false, 'message' => 'ID de formulación requerido']);
+            return;
+        }
+        
+        $result = $this->ProductosModel->activar_formulacion($formulacion_id);
+        echo json_encode($result);
+    }
+
+    /**
      * Obtiene productos base (no variantes) para selector (AJAX)
      */
     public function get_productos_base_ajax() {
         $this->db->select('id, codigo, nombre');
         $this->db->where('es_variante', 0);
         $this->db->where('estatus', 'Activo');
+        $this->db->where('tipo_producto', 'Fabricado');
         $this->db->order_by('nombre', 'ASC');
         $productos = $this->db->get('productos')->result();
         
         echo json_encode(['success' => true, 'productos' => $productos]);
+    }
+
+    /**
+     * Calcula y escala los insumos requeridos para un proyecto (AJAX)
+     */
+    public function calcular_insumos_ajax() {
+        $formulacion_id = $this->input->post('formulacion_id');
+        $cubetas = $this->input->post('cubetas');
+        $m2 = $this->input->post('m2');
+
+        if(!$formulacion_id) {
+            echo json_encode(['success' => false, 'message' => 'Formulación ID requerido']);
+            return;
+        }
+
+        $resultado = $this->ProductosModel->calcular_insumos_para_proyecto($formulacion_id, $cubetas, $m2);
+
+        if($resultado) {
+            echo json_encode(['success' => true, 'datos' => $resultado]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al realizar el cálculo']);
+        }
+    }
+
+    /**
+     * Importación masiva de formulaciones desde Excel (AJAX)
+     */
+    public function importar_formulacion_excel_ajax() {
+        // TODO: Implementación completa con PhpSpreadsheet 
+        // Esta es la estructura base para recibir el archivo
+        if(empty($_FILES['excel_file']['name'])) {
+            echo json_encode(['success' => false, 'message' => 'No se ha seleccionado ningún archivo']);
+            return;
+        }
+
+        // Aquí se realizará la lectura del Excel y mapeo de columnas 
+        // (Insumo, %, kg/cubeta, etc) para generar o actualizar formulaciones.
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Preparación de endpoint de importación Excel exitosa. (Funcionalidad pendiente de implementación con PhpSpreadsheet)'
+        ]);
     }
 }

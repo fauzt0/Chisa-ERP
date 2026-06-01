@@ -21,6 +21,7 @@ class MainDashboard extends MY_Controller {
     $this->load->model('Ventas/VentasModel');
     $this->load->model('Produccion/ProduccionModel');
     $this->load->model('Ventas/ClientesModel');
+    $this->load->model('Compras/InsumosModel');
 
     //preparamos los datos de la vista
     setViewSuccess('Dashboard cargado correctamente');
@@ -36,11 +37,15 @@ class MainDashboard extends MY_Controller {
     // Obtener datos para la gráfica (Nuevos Clientes)
     $datos_grafica = $this->ClientesModel->get_nuevos_clientes_mensuales_anio();
 
+    // Obtener alertas de stock (Insumos)
+    $alertas_stock = $this->InsumosModel->get_insumos_stock_bajo();
+
     $this->viewData['response'] = [
         'ventas_stats' => $ventas_stats,
         'produccion_stats' => $produccion_stats,
         'ultimas_ordenes' => $ultimas_ordenes,
-        'datos_grafica' => $datos_grafica // Array de 12 valores para cada mes
+        'datos_grafica' => $datos_grafica, // Array de 12 valores para cada mes
+        'alertas_stock' => $alertas_stock
     ];
     $this->viewData['pageView'] = 'dashboards/mainDashboard';
     $this->viewData['pageScript'] = 'dashboards/mainDashboard_script';

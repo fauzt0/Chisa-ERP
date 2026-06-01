@@ -87,6 +87,9 @@ class Proveedores extends MY_Controller {
             
             // Acciones
             $acciones = '
+                <button type="button" class="btn btn-sm btn-secondary" onclick="verDetalleProveedor('.$proveedor->id.')" title="Ver Detalle">
+                    <i class="fas fa-eye"></i>
+                </button>
                 <button type="button" class="btn btn-sm btn-info" onclick="mostrarModalInsumos('.$proveedor->id.')" title="Insumos">
                     <i class="fas fa-boxes"></i>
                 </button>
@@ -263,11 +266,12 @@ class Proveedores extends MY_Controller {
         }
         
         $data = [
-            'precio_compra' => $this->input->post('precio_compra'),
+            'precio_compra'       => $this->input->post('precio_compra'),
             'tiempo_entrega_dias' => $this->input->post('tiempo_entrega_dias') ?: 0,
-            'cantidad_minima' => $this->input->post('cantidad_minima') ?: 1,
-            'codigo_proveedor' => $this->input->post('codigo_proveedor'),
-            'observaciones' => $this->input->post('observaciones')
+            'cantidad_minima'     => $this->input->post('cantidad_minima') ?: 1,
+            'codigo_proveedor'    => $this->input->post('codigo_proveedor'),
+            'nombre_proveedor'    => $this->input->post('nombre_proveedor'),
+            'observaciones'       => $this->input->post('observaciones')
         ];
         
         $result = $this->ProveedoresModel->agregar_insumo($proveedor_id, $insumo_id, $data);
@@ -287,11 +291,12 @@ class Proveedores extends MY_Controller {
         }
         
         $data = [
-            'precio_compra' => $this->input->post('precio_compra'),
+            'precio_compra'       => $this->input->post('precio_compra'),
             'tiempo_entrega_dias' => $this->input->post('tiempo_entrega_dias'),
-            'cantidad_minima' => $this->input->post('cantidad_minima'),
-            'codigo_proveedor' => $this->input->post('codigo_proveedor'),
-            'observaciones' => $this->input->post('observaciones')
+            'cantidad_minima'     => $this->input->post('cantidad_minima'),
+            'codigo_proveedor'    => $this->input->post('codigo_proveedor'),
+            'nombre_proveedor'    => $this->input->post('nombre_proveedor'),
+            'observaciones'       => $this->input->post('observaciones')
         ];
         
         $result = $this->ProveedoresModel->actualizar_precio_insumo($proveedor_id, $insumo_id, $data);

@@ -329,6 +329,13 @@
                   </select>
                 </div>
 
+                <div class="mb-3">
+                  <label class="form-label">Nombre que usa este proveedor para el insumo</label>
+                  <input type="text" class="form-control" id="insumo_nombre_proveedor"
+                    placeholder="Ej: Resina Acrílica XT-300, Acrilato Premium, etc.">
+                  <small class="text-muted">Nombre comercial o técnico que utiliza el proveedor. Será buscable al crear órdenes de compra.</small>
+                </div>
+
                 <div class="row">
                   <div class="col-md-6 mb-3">
                     <label class="form-label">Precio de Compra <span class="text-danger">*</span></label>
@@ -346,7 +353,7 @@
                     <input type="number" class="form-control" id="insumo_cantidad_minima" value="1" min="1" step="0.01">
                   </div>
                   <div class="col-md-6 mb-3">
-                    <label class="form-label">Código del Proveedor</label>
+                    <label class="form-label">Código / SKU del Proveedor</label>
                     <input type="text" class="form-control" id="insumo_codigo_proveedor" placeholder="SKU del proveedor">
                   </div>
                 </div>
@@ -372,8 +379,9 @@
           <table class="table table-sm table-hover" id="tablaInsumosProveedor">
             <thead class="table-light">
               <tr>
-                <th>Código</th>
+                <th>Código Interno</th>
                 <th>Insumo</th>
+                <th>Nombre del Proveedor</th>
                 <th>Precio</th>
                 <th>UM</th>
                 <th>Tiempo Entrega</th>
@@ -392,6 +400,86 @@
     </div>
   </div>
 </div>
+
+
+<!-- =====================================================
+     Offcanvas: Detalle del Proveedor
+===================================================== -->
+<div class="offcanvas offcanvas-end" style="width:500px;" tabindex="-1"
+     id="offcanvasDetalleProveedor" aria-labelledby="offcanvasProveedorLabel">
+  <div class="offcanvas-header bg-primary text-white">
+    <h5 id="offcanvasProveedorLabel" class="mb-0">
+      <i class="fas fa-truck"></i> <span id="oc-razon-social">Proveedor</span>
+    </h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body p-0">
+
+    <!-- Header info rápida -->
+    <div class="px-3 py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+      <span class="text-muted small">Código: <strong id="oc-codigo">&mdash;</strong></span>
+      <span id="oc-estatus-badge"></span>
+    </div>
+
+    <!-- Botones de acciones rápidas -->
+    <div class="px-3 py-2 border-bottom d-flex gap-2">
+      <button class="btn btn-sm btn-primary" id="oc-btn-editar">
+        <i class="fas fa-edit"></i> Editar
+      </button>
+      <button class="btn btn-sm btn-info" id="oc-btn-insumos">
+        <i class="fas fa-boxes"></i> Ver Insumos
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs px-3 pt-2" id="ocTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="oc-info-tab" data-bs-toggle="tab"
+                data-bs-target="#oc-tab-info" type="button">Información</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="oc-ins-tab" data-bs-toggle="tab"
+                data-bs-target="#oc-tab-insumos" type="button" id="oc-tab-insumos-btn">Insumos</button>
+      </li>
+    </ul>
+
+    <div class="tab-content px-3 py-3">
+
+      <!-- TAB INFO -->
+      <div class="tab-pane fade show active" id="oc-tab-info" role="tabpanel">
+        <table class="table table-sm">
+          <tbody id="oc-detalles">
+            <tr><td colspan="2" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB INSUMOS -->
+      <div class="tab-pane fade" id="oc-tab-insumos" role="tabpanel">
+        <div class="text-center text-muted py-4" id="oc-insumos-loading">
+          <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+        <div id="oc-insumos-container" style="display:none;">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Insumo</th>
+                  <th>Nom. Proveedor</th>
+                  <th class="text-end">Precio</th>
+                  <th class="text-center">Entrega</th>
+                </tr>
+              </thead>
+              <tbody id="oc-insumos-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- /Offcanvas Proveedor -->
 
 <script>
 (function() {
@@ -581,15 +669,17 @@
           html = '<tr><td colspan="6" class="text-center text-muted">No hay insumos relacionados</td></tr>';
         } else {
           result.insumos.forEach(function(ins) {
+            const nombreProv = ins.nombre_proveedor ? `<span class="badge bg-info text-dark">${ins.nombre_proveedor}</span>` : '<span class="text-muted">—</span>';
             html += `
               <tr>
-                <td>${ins.codigo}</td>
-                <td>${ins.nombre_tecnico}</td>
+                <td><small>${ins.codigo}</small></td>
+                <td><strong>${ins.nombre_tecnico}</strong></td>
+                <td>${nombreProv}</td>
                 <td>$${parseFloat(ins.precio_compra).toFixed(2)}</td>
-                <td>${ins.unidad_medida}</td>
+                <td><span class="badge bg-light text-dark">${ins.unidad_medida}</span></td>
                 <td>${ins.tiempo_entrega_dias} días</td>
                 <td>
-                  <button class="btn btn-sm btn-primary" onclick="editarInsumoProveedor(${ins.insumo_id}, ${ins.precio_compra}, ${ins.tiempo_entrega_dias}, ${ins.cantidad_minima}, '${ins.codigo_proveedor || ''}', '${ins.observaciones || ''}')" title="Editar">
+                  <button class="btn btn-sm btn-primary" onclick="editarInsumoProveedor(${ins.insumo_id}, ${ins.precio_compra}, ${ins.tiempo_entrega_dias}, ${ins.cantidad_minima}, '${ins.codigo_proveedor || ''}', '${(ins.nombre_proveedor || '').replace(/'/g, '\\&apos;')}', '${ins.observaciones || ''}')" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
                   <button class="btn btn-sm btn-danger" onclick="eliminarInsumoProveedor(${ins.insumo_id})" title="Eliminar">
@@ -618,14 +708,15 @@
     $('#formInsumoProveedor')[0].reset();
   };
 
-  window.editarInsumoProveedor = function(insumoId, precio, tiempoEntrega, cantidadMin, codigoProv, obs) {
-    $('#tituloFormInsumo').text('Editar Precio de Insumo');
+  window.editarInsumoProveedor = function(insumoId, precio, tiempoEntrega, cantidadMin, codigoProv, nombreProv, obs) {
+    $('#tituloFormInsumo').text('Editar Insumo del Proveedor');
     $('#insumo_editando_id').val(insumoId);
     $('#insumo_select').val(insumoId).prop('disabled', true);
     $('#insumo_precio_compra').val(precio);
     $('#insumo_tiempo_entrega').val(tiempoEntrega);
     $('#insumo_cantidad_minima').val(cantidadMin);
     $('#insumo_codigo_proveedor').val(codigoProv);
+    $('#insumo_nombre_proveedor').val(nombreProv);
     $('#insumo_observaciones').val(obs);
     $('#formAgregarInsumo').slideDown();
   };
@@ -643,6 +734,7 @@
       'tiempo_entrega_dias': $('#insumo_tiempo_entrega').val(),
       'cantidad_minima': $('#insumo_cantidad_minima').val(),
       'codigo_proveedor': $('#insumo_codigo_proveedor').val(),
+      'nombre_proveedor': $('#insumo_nombre_proveedor').val(),
       'observaciones': $('#insumo_observaciones').val(),
       'peticion': 'ajax',
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
@@ -674,6 +766,120 @@
       }
     });
   };
+
+  // --------------------------------------------------
+  // VER DETALLE EN OFFCANVAS
+  // --------------------------------------------------
+  window.verDetalleProveedor = function(id) {
+    // Abrir offcanvas
+    var oc = new bootstrap.Offcanvas(document.getElementById('offcanvasDetalleProveedor'));
+    oc.show();
+
+    // Reset UI
+    $('#oc-detalles').html('<tr><td colspan="2" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+    $('#oc-razon-social').text('Proveedor');
+    $('#oc-codigo').text('...');
+    $('#oc-estatus-badge').html('');
+    $('#oc-insumos-loading').show();
+    $('#oc-insumos-container').hide();
+
+    // Activar tab Información por defecto
+    $('#oc-info-tab').tab('show');
+
+    // Botones de acción rápida
+    $('#oc-btn-editar').off('click').on('click', function() {
+      mostrarModalEditar(id);
+    });
+    $('#oc-btn-insumos').off('click').on('click', function() {
+      mostrarModalInsumos(id);
+    });
+
+    // Cargar datos del proveedor
+    $.post('<?=base_url();?>compras/Proveedores/get_proveedor_ajax', {
+      'id': id, 'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      res = JSON.parse(res);
+      if(!res.success) return;
+      var p = res.proveedor;
+
+      // Header
+      $('#oc-razon-social').text(p.razon_social);
+      $('#oc-codigo').text(p.codigo || '-');
+      var badgeClass = p.estatus === 'Activo' ? 'bg-success' : 'bg-secondary';
+      $('#oc-estatus-badge').html('<span class="badge ' + badgeClass + '">' + p.estatus + '</span>');
+
+      // Filas de información
+      function fila(label, valor) {
+        return '<tr><th class="text-muted fw-normal" style="width:40%;">' + label + '</th><td>' + (valor || '<span class="text-muted">-</span>') + '</td></tr>';
+      }
+
+      var html = '';
+      html += '<tr><td colspan="2" class="bg-light fw-bold text-uppercase small py-1 ps-2" style="font-size:0.7rem;letter-spacing:1px;">General</td></tr>';
+      html += fila('Nombre Comercial', p.nombre_comercial);
+      html += fila('RFC', p.rfc);
+      html += fila('Tipo', p.tipo_proveedor);
+      html += fila('País', p.pais);
+      html += '<tr><td colspan="2" class="bg-light fw-bold text-uppercase small py-1 ps-2" style="font-size:0.7rem;letter-spacing:1px;">Contacto</td></tr>';
+      html += fila('Contacto', p.contacto_principal);
+      html += fila('Teléfono', p.telefono ? '<a href="tel:' + p.telefono + '">' + p.telefono + '</a>' : null);
+      html += fila('Email', p.email ? '<a href="mailto:' + p.email + '">' + p.email + '</a>' : null);
+      html += fila('Sitio Web', p.sitio_web ? '<a href="' + p.sitio_web + '" target="_blank">' + p.sitio_web + '</a>' : null);
+      html += '<tr><td colspan="2" class="bg-light fw-bold text-uppercase small py-1 ps-2" style="font-size:0.7rem;letter-spacing:1px;">Dirección</td></tr>';
+      html += fila('Dirección', p.direccion);
+      html += fila('Ciudad', p.ciudad);
+      html += fila('Estado', p.estado);
+      html += fila('C.P.', p.codigo_postal);
+      html += '<tr><td colspan="2" class="bg-light fw-bold text-uppercase small py-1 ps-2" style="font-size:0.7rem;letter-spacing:1px;">Condiciones Comerciales</td></tr>';
+      html += fila('Días de Crédito', p.dias_credito ? p.dias_credito + ' días' : null);
+      html += fila('Límite de Crédito', p.limite_credito ? '$' + parseFloat(p.limite_credito).toLocaleString('es-MX', {minimumFractionDigits:2}) : null);
+      html += fila('Banco', p.banco);
+      html += fila('Calificación', p.calificacion ? '⭐'.repeat(parseInt(p.calificacion)) : null);
+      if(p.observaciones) {
+        html += '<tr><td colspan="2" class="bg-light fw-bold text-uppercase small py-1 ps-2" style="font-size:0.7rem;letter-spacing:1px;">Observaciones</td></tr>';
+        html += '<tr><td colspan="2" class="text-muted small">' + p.observaciones + '</td></tr>';
+      }
+
+      $('#oc-detalles').html(html);
+    });
+
+    // Cargar insumos cuando el tab se activa
+    $('#oc-ins-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
+      cargarInsumosOC(id);
+    });
+  };
+
+  function cargarInsumosOC(proveedorId) {
+    $('#oc-insumos-loading').show();
+    $('#oc-insumos-container').hide();
+
+    $.post('<?=base_url();?>compras/Proveedores/get_insumos_proveedor_ajax', {
+      'proveedor_id': proveedorId, 'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      res = JSON.parse(res);
+      $('#oc-insumos-loading').hide();
+      var tbody = '';
+      if(res.success && res.insumos && res.insumos.length > 0) {
+        res.insumos.forEach(function(ins) {
+          var nomProv = ins.nombre_proveedor
+            ? '<span class="badge bg-info text-dark">' + ins.nombre_proveedor + '</span>'
+            : '<span class="text-muted">-</span>';
+          tbody += '<tr>';
+          tbody += '<td><strong class="small">' + ins.nombre_tecnico + '</strong><br><span class="text-muted" style="font-size:0.75rem;">' + (ins.codigo || '') + '</span></td>';
+          tbody += '<td>' + nomProv + '</td>';
+          tbody += '<td class="text-end">' + (ins.precio_compra ? '$' + parseFloat(ins.precio_compra).toLocaleString('es-MX', {minimumFractionDigits:2}) : '-') + '</td>';
+          tbody += '<td class="text-center">' + (ins.tiempo_entrega_dias ? ins.tiempo_entrega_dias + ' días' : '-') + '</td>';
+          tbody += '</tr>';
+        });
+        $('#oc-insumos-tbody').html(tbody);
+        $('#oc-insumos-container').show();
+      } else {
+        $('#oc-insumos-tbody').html('<tr><td colspan="4" class="text-center text-muted py-3">Sin insumos asignados</td></tr>');
+        $('#oc-insumos-container').show();
+      }
+    });
+  }
 
   // Inicializar cuando jQuery esté disponible
   if (typeof jQuery !== 'undefined') {

@@ -61,6 +61,7 @@ $config['permissions'] = array(
     'produccion_formulaciones'     => 'Gestionar formulaciones',
     'produccion_ordenes'           => 'Gestionar órdenes de producción',
     'produccion_ver_costos'        => 'Ver costos y precios',
+    'produccion_preordenes'        => 'Generar pre-órdenes de compra desde producción',
   ),
   
   'Almacén' => array(
@@ -102,5 +103,13 @@ $config['permissions'] = array(
     'dashboard_ventas'     => 'Ver dashboard de ventas',
     'dashboard_produccion' => 'Ver dashboard de producción',
     'dashboard_almacen'    => 'Ver dashboard de almacén',
+  ),
+  
+  'Reloj Checador' => array(
+    'reloj_ver_dashboard'   => 'Ver dashboard del reloj checador',
+    'reloj_sync_asistencias' => 'Sincronizar asistencias',
+    'reloj_ver_reportes'    => 'Ver reportes de asistencia',
+    'reloj_gestionar'       => 'Gestionar dispositivos y comandos',
+    'reloj_sync_empleados_rh' => 'Sincronización forzada de empleados RH al reloj',
   ),
 );

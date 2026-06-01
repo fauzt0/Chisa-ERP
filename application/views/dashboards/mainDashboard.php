@@ -10,6 +10,7 @@
   $ventas_stats = $response['ventas_stats'] ?? [];
   $produccion_stats = $response['produccion_stats'] ?? [];
   $ultimas_ordenes = $response['ultimas_ordenes'] ?? [];
+  $alertas_stock = $response['alertas_stock'] ?? [];
   ?>
 
   <div class="row">
@@ -91,6 +92,51 @@
       </div>
     </div>
   </div>
+
+  <?php if(!empty($alertas_stock)): ?>
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-danger shadow-sm">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title text-white mb-0"><i class="fas fa-exclamation-triangle"></i> Alertas de Stock Bajo</h5>
+            <span class="badge bg-white text-danger rounded-pill"><?=count($alertas_stock)?> Insumos</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Insumo</th>
+                            <th>Marca</th>
+                            <th>Stock Actual</th>
+                            <th>Mínimo</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($alertas_stock as $insumo): ?>
+                        <tr>
+                            <td><strong><?=$insumo->codigo?></strong></td>
+                            <td><?=$insumo->nombre_tecnico?></td>
+                            <td><?=$insumo->marca?></td>
+                            <td class="text-danger fw-bold"><?=$insumo->stock_actual?> <?=$insumo->unidad_medida?></td>
+                            <td><?=$insumo->stock_minimo?> <?=$insumo->unidad_medida?></td>
+                            <td>
+                                <a href="<?=base_url()?>compras/OrdenesCompra" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-shopping-cart"></i> Crear Orden
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <div class="row">
     <div class="col-12 d-flex">
