@@ -73,6 +73,7 @@ $route['api/reloj/monitor'] = 'api/ApiReloj/ver_log_reloj';
 //Reloj Checador Web (FASE 3)
 $route['rh/RelojChecador'] = 'rh/RelojChecador/index';
 $route['rh/RelojChecador/index'] = 'rh/RelojChecador/index';
+$route['rh/RelojChecador/dashboard_stats_ajax'] = 'rh/RelojChecador/dashboard_stats_ajax';
 $route['rh/RelojChecador/dispositivos'] = 'rh/RelojChecador/dispositivos';
 $route['rh/RelojChecador/search_dispositivos'] = 'rh/RelojChecador/search_dispositivos';
 $route['rh/RelojChecador/dispositivo_detail'] = 'rh/RelojChecador/dispositivo_detail';

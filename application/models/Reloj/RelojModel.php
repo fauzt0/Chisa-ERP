@@ -1050,7 +1050,435 @@ class RelojModel extends CI_Model {
             ->row();
         $stats['ultima_sincronizacion'] = $ultima_sync ? $ultima_sync->fecha : null;
 
+        $alertas = $this->get_alertas_asistencia_hoy($hoy);
+        $stats['retardos_hoy'] = $alertas['retardos'];
+        $stats['sin_salida_hoy'] = $alertas['sin_salida'];
+        $stats['empleados_sin_pin'] = $this->count_empleados_sin_pin_reloj();
+        $stats['checadas_7_dias'] = $this->get_checadas_ultimos_dias(7);
+
         return $stats;
+    }
+
+    /**
+     * Indica si un dispositivo está en línea (última conexión < 30 min)
+     */
+    public function dispositivo_esta_online($ultima_conexion)
+    {
+        if (empty($ultima_conexion)) {
+            return false;
+        }
+        return (time() - strtotime($ultima_conexion)) <= 1800;
+    }
+
+    /**
+     * Últimas checadas registradas (dashboard)
+     */
+    public function get_ultimas_checadas($limit = 10)
+    {
+        $this->db->select([
+            'asistencias.*',
+            'empleados.numero_empleado',
+            'CONCAT(empleados.nombre, " ", empleados.apellido_paterno) AS empleado_nombre',
+        ], false);
+        $this->db->from('asistencias');
+        $this->db->join('empleados', 'empleados.id = asistencias.empleado_id', 'left');
+        $this->db->order_by('asistencias.fecha_hora', 'DESC');
+        $this->db->limit((int)$limit);
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Conteo de checadas por día (últimos N días, incluye hoy)
+     */
+    public function get_checadas_ultimos_dias($dias = 7)
+    {
+        $dias = max(1, (int)$dias);
+        $inicio = date('Y-m-d', strtotime('-' . ($dias - 1) . ' days'));
+        $fin = date('Y-m-d');
+
+        $this->db->select('DATE(fecha_hora) AS fecha, COUNT(*) AS total', false);
+        $this->db->from('asistencias');
+        $this->db->where('DATE(fecha_hora) >=', $inicio);
+        $this->db->where('DATE(fecha_hora) <=', $fin);
+        $this->db->group_by('DATE(fecha_hora)');
+        $this->db->order_by('fecha', 'ASC');
+        $rows = $this->db->get()->result();
+
+        $mapa = [];
+        foreach ($rows as $row) {
+            $mapa[$row->fecha] = (int)$row->total;
+        }
+
+        $resultado = [];
+        $cursor = strtotime($inicio);
+        $fin_ts = strtotime($fin);
+        while ($cursor <= $fin_ts) {
+            $fecha = date('Y-m-d', $cursor);
+            $resultado[] = [
+                'fecha'      => $fecha,
+                'fecha_corta'=> date('d/m', $cursor),
+                'dia_semana' => $this->dia_semana_es($fecha),
+                'total'      => isset($mapa[$fecha]) ? $mapa[$fecha] : 0,
+            ];
+            $cursor = strtotime('+1 day', $cursor);
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * Empleados activos sin PIN configurado en reloj
+     */
+    public function count_empleados_sin_pin_reloj()
+    {
+        if (!$this->db->field_exists('reloj_pin', 'empleados')) {
+            return null;
+        }
+
+        $this->db->from('empleados');
+        $this->db->where('estatus', 1);
+        $this->db->group_start();
+        $this->db->where('reloj_pin IS NULL', null, false);
+        $this->db->or_where('reloj_pin', '');
+        $this->db->or_where('reloj_pin', 0);
+        $this->db->group_end();
+
+        return (int)$this->db->count_all_results();
+    }
+
+    /**
+     * Alertas del día: retardos y empleados sin checada de salida completa
+     */
+    public function get_alertas_asistencia_hoy($fecha = null)
+    {
+        $fecha = $fecha ?: date('Y-m-d');
+        $dia_semana = $this->dia_semana_es($fecha);
+
+        $this->db->distinct();
+        $this->db->select('empleado_id');
+        $this->db->from('asistencias');
+        $this->db->where('DATE(fecha_hora)', $fecha);
+        $this->db->where('empleado_id IS NOT NULL', null, false);
+        $ids_rows = $this->db->get()->result();
+
+        $empleado_ids = array_map(function ($r) {
+            return (int)$r->empleado_id;
+        }, $ids_rows);
+
+        $retardos = 0;
+        $sin_salida = 0;
+
+        if (empty($empleado_ids)) {
+            return ['retardos' => 0, 'sin_salida' => 0];
+        }
+
+        $horarios_map = $this->_get_horarios_dia_batch($empleado_ids, $fecha, $dia_semana);
+
+        foreach ($empleado_ids as $emp_id) {
+            $horario = isset($horarios_map[$emp_id]) ? $horarios_map[$emp_id] : null;
+            $calculo = $this->calcular_asistencia_diaria($emp_id, $fecha, $horario);
+
+            if (!empty($calculo['retardo'])) {
+                $retardos++;
+            }
+            if (!empty($calculo['tiene_checadas']) && empty($calculo['salida_completa'])) {
+                $sin_salida++;
+            }
+        }
+
+        return ['retardos' => $retardos, 'sin_salida' => $sin_salida];
+    }
+
+    /** @var array|null Cache de resumen diario por request */
+    private $_resumen_diario_cache = null;
+
+    /**
+     * Resumen diario por empleado (entrada/salida/comida interpretadas)
+     */
+    public function get_resumen_diario_empleados($fecha, $departamento_id = null, $empleado_id = null, $estado_filtro = null)
+    {
+        $cache_key = md5(json_encode([$fecha, $departamento_id, $empleado_id, $estado_filtro]));
+        if ($this->_resumen_diario_cache !== null && isset($this->_resumen_diario_cache[$cache_key])) {
+            return $this->_resumen_diario_cache[$cache_key];
+        }
+
+        $empleados = $this->_get_empleados_para_resumen_diario($fecha, $departamento_id, $empleado_id);
+        if (empty($empleados)) {
+            $this->_resumen_diario_cache[$cache_key] = [];
+            return [];
+        }
+
+        $empleado_ids = array_map(function ($e) {
+            return (int)$e->id;
+        }, $empleados);
+        $dia_semana = $this->dia_semana_es($fecha);
+        $horarios_map = $this->_get_horarios_dia_batch($empleado_ids, $fecha, $dia_semana);
+
+        $resultado = [];
+        foreach ($empleados as $emp) {
+            $horario = isset($horarios_map[$emp->id]) ? $horarios_map[$emp->id] : null;
+            $calculo = $this->calcular_asistencia_diaria($emp->id, $fecha, $horario);
+
+            if (!$this->_estado_coincide_filtro($calculo['estado'], $estado_filtro)) {
+                continue;
+            }
+
+            $resultado[] = (object)[
+                'empleado_id'        => (int)$emp->id,
+                'numero_empleado'    => $emp->numero_empleado,
+                'empleado_nombre'    => $emp->empleado_nombre,
+                'puesto'             => $emp->puesto,
+                'departamento_nombre'=> $emp->departamento_nombre,
+                'entrada'            => $calculo['entrada'],
+                'salida_comida'      => $calculo['salida_comida'],
+                'entrada_comida'     => $calculo['entrada_comida'],
+                'salida'             => $calculo['salida'],
+                'estado'             => $calculo['estado'],
+                'retardo'            => !empty($calculo['retardo']),
+                'minutos_retardo'    => (int)($calculo['minutos_retardo'] ?? 0),
+                'horas_trabajadas'   => $calculo['horas_trabajadas'] ?? '00:00',
+                'total_checadas'     => (int)($calculo['total_checadas'] ?? 0),
+                'tiene_horario'      => !empty($calculo['tiene_horario']),
+            ];
+        }
+
+        $this->_resumen_diario_cache[$cache_key] = $resultado;
+        return $resultado;
+    }
+
+    /**
+     * DataTables SSR — Resumen diario por empleado
+     */
+    public function get_resumen_diario_datatables()
+    {
+        $fecha = isset($_POST['fecha']) ? $_POST['fecha'] : date('Y-m-d');
+        $departamento_id = !empty($_POST['departamento_id']) ? $_POST['departamento_id'] : null;
+        $empleado_id = !empty($_POST['empleado_id']) ? $_POST['empleado_id'] : null;
+        $estado_filtro = !empty($_POST['estado']) ? $_POST['estado'] : null;
+
+        $rows = $this->get_resumen_diario_empleados($fecha, $departamento_id, $empleado_id, $estado_filtro);
+        $search = $this->_dt_search_value();
+
+        if ($search !== '') {
+            $search_lower = mb_strtolower($search, 'UTF-8');
+            $rows = array_values(array_filter($rows, function ($r) use ($search_lower) {
+                $campos = [
+                    $r->numero_empleado ?? '',
+                    $r->empleado_nombre ?? '',
+                    $r->puesto ?? '',
+                    $r->departamento_nombre ?? '',
+                    $r->estado ?? '',
+                ];
+                foreach ($campos as $campo) {
+                    if (mb_strpos(mb_strtolower((string)$campo, 'UTF-8'), $search_lower) !== false) {
+                        return true;
+                    }
+                }
+                return false;
+            }));
+        }
+
+        $sort_cols = [
+            0 => 'numero_empleado',
+            1 => 'empleado_nombre',
+            2 => 'departamento_nombre',
+            3 => 'entrada',
+            4 => 'salida_comida',
+            5 => 'entrada_comida',
+            6 => 'salida',
+            7 => 'estado',
+            8 => 'minutos_retardo',
+            9 => 'horas_trabajadas',
+        ];
+
+        if (isset($_POST['order'][0]['column'], $_POST['order'][0]['dir'])) {
+            $col_idx = (int)$_POST['order'][0]['column'];
+            $dir = strtolower($_POST['order'][0]['dir']) === 'desc' ? -1 : 1;
+            if (isset($sort_cols[$col_idx])) {
+                $key = $sort_cols[$col_idx];
+                usort($rows, function ($a, $b) use ($key, $dir) {
+                    $va = isset($a->$key) ? $a->$key : '';
+                    $vb = isset($b->$key) ? $b->$key : '';
+                    if ($va == $vb) {
+                        return 0;
+                    }
+                    return ($va < $vb ? -1 : 1) * $dir;
+                });
+            }
+        } else {
+            usort($rows, function ($a, $b) {
+                return strcmp($a->empleado_nombre ?? '', $b->empleado_nombre ?? '');
+            });
+        }
+
+        $start = isset($_POST['start']) ? (int)$_POST['start'] : 0;
+        $length = isset($_POST['length']) && (int)$_POST['length'] !== -1 ? (int)$_POST['length'] : count($rows);
+
+        return array_slice($rows, $start, $length);
+    }
+
+    public function count_resumen_diario_all($fecha = null)
+    {
+        $fecha = $fecha ?: (isset($_POST['fecha']) ? $_POST['fecha'] : date('Y-m-d'));
+        return count($this->get_resumen_diario_empleados($fecha, null, null, null));
+    }
+
+    public function count_resumen_diario_filtered()
+    {
+        $fecha = isset($_POST['fecha']) ? $_POST['fecha'] : date('Y-m-d');
+        $departamento_id = !empty($_POST['departamento_id']) ? $_POST['departamento_id'] : null;
+        $empleado_id = !empty($_POST['empleado_id']) ? $_POST['empleado_id'] : null;
+        $estado_filtro = !empty($_POST['estado']) ? $_POST['estado'] : null;
+
+        $rows = $this->get_resumen_diario_empleados($fecha, $departamento_id, $empleado_id, $estado_filtro);
+        $search = $this->_dt_search_value();
+
+        if ($search === '') {
+            return count($rows);
+        }
+
+        $search_lower = mb_strtolower($search, 'UTF-8');
+        return count(array_filter($rows, function ($r) use ($search_lower) {
+            $campos = [
+                $r->numero_empleado ?? '',
+                $r->empleado_nombre ?? '',
+                $r->puesto ?? '',
+                $r->departamento_nombre ?? '',
+                $r->estado ?? '',
+            ];
+            foreach ($campos as $campo) {
+                if (mb_strpos(mb_strtolower((string)$campo, 'UTF-8'), $search_lower) !== false) {
+                    return true;
+                }
+            }
+            return false;
+        }));
+    }
+
+    /**
+     * Badge HTML para estado de asistencia
+     */
+    public function badge_estado_asistencia_html($estado)
+    {
+        $clases = [
+            'Asistencia completa'  => 'bg-success',
+            'Con retardo'          => 'bg-warning text-dark',
+            'Retardo mayor'        => 'bg-danger',
+            'Salida temprana'      => 'bg-warning text-dark',
+            'Checadas parciales'   => 'bg-secondary',
+            'Sin checadas'         => 'bg-light text-muted border',
+            'Sin horario asignado' => 'bg-info',
+        ];
+        $clase = isset($clases[$estado]) ? $clases[$estado] : 'bg-secondary';
+        return '<span class="badge ' . $clase . '">' . htmlspecialchars($estado) . '</span>';
+    }
+
+    /**
+     * Badge HTML para método de checada ZKTeco
+     */
+    public function badge_metodo_checada_html($metodo)
+    {
+        switch ((int)$metodo) {
+            case 15:
+                return '<span class="badge bg-info">Rostro</span>';
+            case 1:
+                return '<span class="badge bg-secondary">Huella</span>';
+            case 0:
+            case 3:
+                return '<span class="badge bg-dark">Contraseña</span>';
+            default:
+                return '<span class="badge bg-light text-dark border">#' . (int)$metodo . '</span>';
+        }
+    }
+
+    private function _get_empleados_para_resumen_diario($fecha, $departamento_id = null, $empleado_id = null)
+    {
+        $dia_semana = $this->dia_semana_es($fecha);
+        $fecha_esc = $this->db->escape($fecha);
+        $dia_esc = $this->db->escape($dia_semana);
+
+        $this->db->select([
+            'empleados.id',
+            'empleados.numero_empleado',
+            'CONCAT(empleados.nombre, " ", empleados.apellido_paterno) AS empleado_nombre',
+            'empleados.puesto',
+            'departamentos.nombre AS departamento_nombre',
+        ], false);
+        $this->db->from('empleados');
+        $this->db->join('departamentos', 'departamentos.id = empleados.departamento_id', 'left');
+        $this->db->where('empleados.estatus', 1);
+
+        if ($departamento_id) {
+            $this->db->where('empleados.departamento_id', (int)$departamento_id);
+        }
+        if ($empleado_id) {
+            $this->db->where('empleados.id', (int)$empleado_id);
+        }
+
+        $this->db->where(
+            '(empleados.id IN (
+                SELECT DISTINCT a.empleado_id FROM asistencias a
+                WHERE DATE(a.fecha_hora) = ' . $fecha_esc . ' AND a.empleado_id IS NOT NULL
+            ) OR empleados.id IN (
+                SELECT DISTINCT h.empleado_id FROM horarios_empleados h
+                WHERE h.dia_semana = ' . $dia_esc . '
+                AND h.es_dia_laboral = 1
+                AND h.estatus = ' . $this->db->escape('Activo') . '
+                AND h.fecha_inicio <= ' . $fecha_esc . '
+                AND (h.fecha_fin >= ' . $fecha_esc . ' OR h.fecha_fin IS NULL)
+            ))',
+            null,
+            false
+        );
+
+        $this->db->order_by('empleado_nombre', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    private function _get_horarios_dia_batch(array $empleado_ids, $fecha, $dia_semana)
+    {
+        if (empty($empleado_ids)) {
+            return [];
+        }
+
+        $this->db->from('horarios_empleados');
+        $this->db->where_in('empleado_id', $empleado_ids);
+        $this->db->where('dia_semana', $dia_semana);
+        $this->db->where('es_dia_laboral', 1);
+        $this->db->where('estatus', 'Activo');
+        $this->db->where('fecha_inicio <=', $fecha);
+        $this->db->group_start();
+        $this->db->where('fecha_fin >=', $fecha);
+        $this->db->or_where('fecha_fin IS NULL');
+        $this->db->group_end();
+
+        $rows = $this->db->get()->result();
+        $mapa = [];
+        foreach ($rows as $row) {
+            $mapa[(int)$row->empleado_id] = $row;
+        }
+        return $mapa;
+    }
+
+    private function _estado_coincide_filtro($estado, $filtro)
+    {
+        if (empty($filtro)) {
+            return true;
+        }
+
+        $mapa = [
+            'completo'    => ['Asistencia completa'],
+            'retardo'     => ['Con retardo', 'Retardo mayor'],
+            'falta'       => ['Sin checadas'],
+            'incompleto'  => ['Salida temprana', 'Checadas parciales'],
+            'sin_horario' => ['Sin horario asignado'],
+        ];
+
+        if (!isset($mapa[$filtro])) {
+            return true;
+        }
+
+        return in_array($estado, $mapa[$filtro], true);
     }
 
     // ========================================================================
@@ -1585,6 +2013,145 @@ class RelojModel extends CI_Model {
     // ========================================================================
 
     /**
+     * Etiqueta legible del método de verificación ZKTeco (VerifyType)
+     */
+    public function metodo_checada_etiqueta($metodo)
+    {
+        $mapa = [
+            0  => 'Contraseña',
+            1  => 'Huella',
+            3  => 'Contraseña',
+            15 => 'Rostro',
+        ];
+
+        $metodo = (int)$metodo;
+        return isset($mapa[$metodo]) ? $mapa[$metodo] : 'Otro (' . $metodo . ')';
+    }
+
+    /**
+     * Asigna tipo de checada por secuencia cronológica (reloj no envía tipo).
+     * 1=entrada | 2=entrada+salida | 4=entrada+salida_comida+entrada_comida+salida
+     */
+    public function etiquetar_checadas_secuencia(array $checadas)
+    {
+        if (empty($checadas)) {
+            return [];
+        }
+
+        usort($checadas, function ($a, $b) {
+            return strtotime($a->fecha_hora) - strtotime($b->fecha_hora);
+        });
+
+        $tipos_por_cantidad = [
+            1 => ['entrada'],
+            2 => ['entrada', 'salida'],
+            3 => ['entrada', 'checada_intermedia', 'salida'],
+            4 => ['entrada', 'salida_comida', 'entrada_comida', 'salida'],
+        ];
+
+        $total = count($checadas);
+        $tipos = isset($tipos_por_cantidad[$total])
+            ? $tipos_por_cantidad[$total]
+            : array_merge(
+                ['entrada'],
+                array_fill(0, max(0, $total - 2), 'checada_extra'),
+                $total > 1 ? ['salida'] : []
+            );
+
+        $resultado = [];
+        foreach ($checadas as $i => $checada) {
+            $tipo = isset($tipos[$i]) ? $tipos[$i] : 'checada_extra';
+            $resultado[] = [
+                'id'           => $checada->id ?? null,
+                'fecha_hora'   => $checada->fecha_hora,
+                'hora'         => date('H:i:s', strtotime($checada->fecha_hora)),
+                'metodo'       => (int)$checada->metodo,
+                'metodo_label' => $this->metodo_checada_etiqueta($checada->metodo),
+                'tipo'         => $tipo,
+                'tipo_label'   => $this->tipo_checada_etiqueta($tipo),
+                'dispositivo_sn' => $checada->dispositivo_sn ?? null,
+            ];
+        }
+
+        return $resultado;
+    }
+
+    public function tipo_checada_etiqueta($tipo)
+    {
+        $mapa = [
+            'entrada'            => 'Entrada',
+            'salida'             => 'Salida',
+            'salida_comida'      => 'Salida a comida',
+            'entrada_comida'     => 'Regreso de comida',
+            'checada_intermedia' => 'Checada intermedia',
+            'checada_extra'      => 'Checada adicional',
+        ];
+
+        return isset($mapa[$tipo]) ? $mapa[$tipo] : ucfirst(str_replace('_', ' ', $tipo));
+    }
+
+    /**
+     * Resumen diario de asistencias en un rango (para modal RH / reportes)
+     */
+    public function get_resumen_asistencias_periodo($empleado_id, $fecha_inicio, $fecha_fin, $horarios_por_dia = [])
+    {
+        $checadas = $this->get_asistencias_rango($fecha_inicio, $fecha_fin, $empleado_id);
+        $por_fecha = [];
+
+        foreach ($checadas as $checada) {
+            $fecha = date('Y-m-d', strtotime($checada->fecha_hora));
+            if (!isset($por_fecha[$fecha])) {
+                $por_fecha[$fecha] = [];
+            }
+            $por_fecha[$fecha][] = $checada;
+        }
+
+        $dias = [];
+        $cursor = strtotime($fecha_inicio);
+        $fin = strtotime($fecha_fin);
+
+        while ($cursor <= $fin) {
+            $fecha = date('Y-m-d', $cursor);
+            $checadas_dia = isset($por_fecha[$fecha]) ? $por_fecha[$fecha] : [];
+            $horario_hoy = isset($horarios_por_dia[$fecha]) ? $horarios_por_dia[$fecha] : null;
+
+            $dias[] = [
+                'fecha'      => $fecha,
+                'dia_semana' => $this->dia_semana_es($fecha),
+                'checadas'   => $this->etiquetar_checadas_secuencia($checadas_dia),
+                'calculo'    => $this->calcular_asistencia_diaria($empleado_id, $fecha, $horario_hoy),
+            ];
+
+            $cursor = strtotime('+1 day', $cursor);
+        }
+
+        return array_reverse($dias);
+    }
+
+    public function dia_semana_es($fecha)
+    {
+        $mapa = [
+            'Monday'    => 'Lunes',
+            'Tuesday'   => 'Martes',
+            'Wednesday' => 'Miércoles',
+            'Thursday'  => 'Jueves',
+            'Friday'    => 'Viernes',
+            'Saturday'  => 'Sábado',
+            'Sunday'    => 'Domingo',
+        ];
+
+        return $mapa[date('l', strtotime($fecha))] ?? date('l', strtotime($fecha));
+    }
+
+    public function contar_checadas_empleado($empleado_id, $fecha_inicio, $fecha_fin)
+    {
+        $this->db->where('empleado_id', $empleado_id);
+        $this->db->where('fecha_hora >=', $fecha_inicio . ' 00:00:00');
+        $this->db->where('fecha_hora <=', $fecha_fin . ' 23:59:59');
+        return (int)$this->db->count_all_results('asistencias');
+    }
+
+    /**
      * Calcula la asistencia diaria de un empleado, cruzando sus checadas
      * contra el horario asignado para detectar retardos, entradas/salidas faltantes, etc.
      *
@@ -1606,6 +2173,9 @@ class RelojModel extends CI_Model {
             'tiene_horario'     => ($horario_hoy !== null),
             'entrada'           => null,
             'salida'            => null,
+            'salida_comida'     => null,
+            'entrada_comida'    => null,
+            'duracion_comida_minutos' => 0,
             'retardo'           => false,
             'minutos_retardo'   => 0,
             'entrada_completa'  => false,
@@ -1619,6 +2189,11 @@ class RelojModel extends CI_Model {
         }
 
         // Primera y última checada del día
+        // Ordenar checadas cronológicamente para el cálculo
+        usort($checadas, function($a, $b) {
+            return strtotime($a->fecha_hora) - strtotime($b->fecha_hora);
+        });
+
         $primera = $checadas[0];
         $ultima = $checadas[count($checadas) - 1];
 
@@ -1630,19 +2205,96 @@ class RelojModel extends CI_Model {
             $resultado['estado'] = 'Sin horario asignado';
             $resultado['entrada'] = date('H:i', strtotime($primera->fecha_hora));
             $resultado['salida'] = date('H:i', strtotime($ultima->fecha_hora));
+            
+            // Si hay 4 checadas, asumir comida
+            if (count($checadas) === 4) {
+                $resultado['salida_comida'] = date('H:i', strtotime($checadas[1]->fecha_hora));
+                $resultado['entrada_comida'] = date('H:i', strtotime($checadas[2]->fecha_hora));
+            }
             return $resultado;
         }
 
         // Parsear horario del empleado
         $hora_entrada = substr($horario_hoy->hora_entrada, 0, 5);
         $hora_salida = substr($horario_hoy->hora_salida, 0, 5);
+        $hora_salida_comida = isset($horario_hoy->hora_salida_comida) ? substr($horario_hoy->hora_salida_comida, 0, 5) : null;
+        $hora_entrada_comida = isset($horario_hoy->hora_entrada_comida) ? substr($horario_hoy->hora_entrada_comida, 0, 5) : null;
         $tolerancia = isset($horario_hoy->tolerancia) ? (int)$horario_hoy->tolerancia : 0;
 
-        $resultado['entrada'] = $hora_entrada;
-        $resultado['salida'] = $hora_salida;
+        $resultado['entrada_horario'] = $hora_entrada;
+        $resultado['salida_horario'] = $hora_salida;
+        $resultado['salida_comida_horario'] = $hora_salida_comida;
+        $resultado['entrada_comida_horario'] = $hora_entrada_comida;
 
+        // === Lógica de asignación de checadas ===
+        $checada_entrada = null;
+        $checada_salida = null;
+        $checada_salida_comida = null;
+        $checada_entrada_comida = null;
+
+        // Asignar primera y última checada
+        $checada_entrada = $checadas[0];
+        $checada_salida = $checadas[count($checadas) - 1];
+
+        // Tiempos reales de primera y última checada
+        $resultado['entrada'] = date('H:i', strtotime($checada_entrada->fecha_hora));
+        $resultado['salida'] = date('H:i', strtotime($checada_salida->fecha_hora));
+
+        // Si hay 4 checadas, identificar comida
+        if (count($checadas) === 4) {
+            $resultado['salida_comida'] = date('H:i', strtotime($checadas[1]->fecha_hora));
+            $resultado['entrada_comida'] = date('H:i', strtotime($checadas[2]->fecha_hora));
+            $salida_comida_ts = strtotime($checadas[1]->fecha_hora);
+            $entrada_comida_ts = strtotime($checadas[2]->fecha_hora);
+            $resultado['duracion_comida_minutos'] = max(0, (int)round(($entrada_comida_ts - $salida_comida_ts) / 60));
+        } elseif (count($checadas) >= 4 && $hora_salida_comida && $hora_entrada_comida) {
+            // Buscar las checadas más cercanas a la hora de salida y entrada de comida
+            $target_salida_comida_ts = strtotime($fecha . ' ' . $hora_salida_comida);
+            $target_entrada_comida_ts = strtotime($fecha . ' ' . $hora_entrada_comida);
+
+            $min_diff_salida_comida = PHP_INT_MAX;
+            $min_diff_entrada_comida = PHP_INT_MAX;
+
+            foreach ($checadas as $i => $checada) {
+                if ($i === 0 || $i === count($checadas) - 1) continue; // Ignorar primera y última
+
+                $checada_ts = strtotime($checada->fecha_hora);
+
+                // Buscar salida de comida
+                $diff_salida = abs($checada_ts - $target_salida_comida_ts);
+                if ($diff_salida < $min_diff_salida_comida && $checada_ts > strtotime($checada_entrada->fecha_hora)) {
+                    $min_diff_salida_comida = $diff_salida;
+                    $checada_salida_comida = $checada;
+                }
+
+                // Buscar entrada de comida (debe ser después de salida comida)
+                if ($checada_salida_comida && $checada_ts > strtotime($checada_salida_comida->fecha_hora)) {
+                    $diff_entrada = abs($checada_ts - $target_entrada_comida_ts);
+                    if ($diff_entrada < $min_diff_entrada_comida) {
+                        $min_diff_entrada_comida = $diff_entrada;
+                        $checada_entrada_comida = $checada;
+                    }
+                }
+            }
+            
+            // Validar que las checadas de comida están en orden
+            if ($checada_salida_comida && $checada_entrada_comida && strtotime($checada_salida_comida->fecha_hora) < strtotime($checada_entrada_comida->fecha_hora)) {
+                $resultado['salida_comida'] = date('H:i', strtotime($checada_salida_comida->fecha_hora));
+                $resultado['entrada_comida'] = date('H:i', strtotime($checada_entrada_comida->fecha_hora));
+                
+                $salida_comida_ts = strtotime($checada_salida_comida->fecha_hora);
+                $entrada_comida_ts = strtotime($checada_entrada_comida->fecha_hora);
+                $resultado['duracion_comida_minutos'] = round(($entrada_comida_ts - $salida_comida_ts) / 60);
+            } else {
+                // Si no se pueden identificar bien las checadas de comida, dejar como nulas
+                $resultado['salida_comida'] = null;
+                $resultado['entrada_comida'] = null;
+                $resultado['duracion_comida_minutos'] = 0;
+            }
+        }
+        
         // Calcular retardo en la primera checada vs hora de entrada
-        $hora_primera = date('H:i', strtotime($primera->fecha_hora));
+        $hora_primera = date('H:i', strtotime($checada_entrada->fecha_hora));
         $entrada_ts = strtotime($fecha . ' ' . $hora_entrada);
         $primera_ts = strtotime($fecha . ' ' . $hora_primera);
 
@@ -1660,15 +2312,24 @@ class RelojModel extends CI_Model {
 
         // Determinar si la salida fue completa (última checada después o cerca de la hora de salida)
         $salida_ts = strtotime($fecha . ' ' . $hora_salida);
-        $ultima_ts = strtotime($fecha . ' ' . date('H:i', strtotime($ultima->fecha_hora)));
+        $ultima_ts = strtotime($fecha . ' ' . date('H:i', strtotime($checada_salida->fecha_hora)));
 
         // La salida se considera completa si la última checada es >= hora_salida - 30min
         if ($ultima_ts >= ($salida_ts - 1800)) {
             $resultado['salida_completa'] = true;
         }
 
-        // Calcular horas trabajadas aproximadas (diferencia entre primera y última checada)
-        $diff_segundos = $ultima_ts - $primera_ts;
+        // Calcular horas trabajadas (diferencia entre primera checada y última, restando tiempo de comida)
+        $diff_segundos = 0;
+        if ($checada_entrada && $checada_salida) {
+            $diff_segundos = strtotime($checada_salida->fecha_hora) - strtotime($checada_entrada->fecha_hora);
+            
+            // Restar duración de comida si se identificó
+            if ($resultado['duracion_comida_minutos'] > 0) {
+                $diff_segundos -= ($resultado['duracion_comida_minutos'] * 60);
+            }
+        }
+        
         if ($diff_segundos > 0) {
             $horas = floor($diff_segundos / 3600);
             $minutos = floor(($diff_segundos % 3600) / 60);

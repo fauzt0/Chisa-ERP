@@ -46,6 +46,10 @@ class RecursosHumanos extends MY_Controller {
     // Obtener solicitudes de vacaciones pendientes (Alerta)
     $this->load->model('RH/VacacionesModel');
     $this->viewData['response']['vacaciones_pendientes'] = count($this->VacacionesModel->get_todas_solicitudes('Pendiente'));
+    $this->viewData['response']['puede_ver_reloj'] = $this->init_controller->has_permission(
+        $this->session->userdata('id'),
+        'reloj_ver_reportes'
+    );
     $this->viewData['validate'] = '';
     $this->viewData['pageView'] = 'rh/empleados/main_empleados';
     
@@ -1083,6 +1087,159 @@ class RecursosHumanos extends MY_Controller {
     } else {
         echo json_encode(['success' => false, 'message' => 'Contrato no encontrado']);
     }
+  }
+
+  // ========================================================================
+  // ASISTENCIAS RELOJ CHECADOR (desde offcanvas de empleado)
+  // ========================================================================
+
+  /**
+   * Resumen rápido para badge del offcanvas (últimos 30 días)
+   */
+  public function asistencias_reloj_resumen()
+  {
+    $this->output->set_content_type('application/json', 'utf-8');
+
+    if (!$this->init_controller->has_permission($this->session->userdata('id'), 'reloj_ver_reportes')) {
+      $this->output->set_output(json_encode(['success' => false, 'message' => 'Sin permiso']));
+      return;
+    }
+
+    $empleado_id = (int)$this->input->post('empleado_id');
+    if (!$empleado_id) {
+      $this->output->set_output(json_encode(['success' => false, 'message' => 'Empleado requerido']));
+      return;
+    }
+
+    $this->load->model('Reloj/RelojModel');
+
+    $hoy = date('Y-m-d');
+    $inicio_mes = date('Y-m-01');
+    $inicio_30 = date('Y-m-d', strtotime('-30 days'));
+
+    $checadas_mes = $this->RelojModel->get_asistencias_rango($inicio_mes, $hoy, $empleado_id);
+    $dias_con_checada = [];
+    $ultima = null;
+
+    foreach ($checadas_mes as $c) {
+      $dias_con_checada[date('Y-m-d', strtotime($c->fecha_hora))] = true;
+      if (!$ultima || strtotime($c->fecha_hora) > strtotime($ultima)) {
+        $ultima = $c->fecha_hora;
+      }
+    }
+
+    $this->output->set_output(json_encode([
+      'success'           => true,
+      'total_checadas_30' => $this->RelojModel->contar_checadas_empleado($empleado_id, $inicio_30, $hoy),
+      'dias_trabajados_mes' => count($dias_con_checada),
+      'ultima_checada'    => $ultima,
+      'ultima_checada_fmt' => $ultima ? date('d/m/Y H:i', strtotime($ultima)) : null,
+    ]));
+  }
+
+  /**
+   * Detalle de asistencias por periodo: dia | semana | mes (AJAX modal)
+   */
+  public function asistencias_reloj_periodo()
+  {
+    $this->output->set_content_type('application/json', 'utf-8');
+
+    if (!$this->init_controller->has_permission($this->session->userdata('id'), 'reloj_ver_reportes')) {
+      $this->output->set_output(json_encode(['success' => false, 'message' => 'Sin permiso']));
+      return;
+    }
+
+    $empleado_id = (int)$this->input->post('empleado_id');
+    $modo = $this->input->post('modo') ?: 'semana';
+    $fecha_ref = $this->input->post('fecha_ref') ?: date('Y-m-d');
+
+    if (!$empleado_id) {
+      $this->output->set_output(json_encode(['success' => false, 'message' => 'Empleado requerido']));
+      return;
+    }
+
+    $this->load->model('Reloj/RelojModel');
+    $this->load->model('RH/HorariosModel');
+
+    $empleado = $this->EmpleadoModel->get_empleado_completo($empleado_id);
+    if (!$empleado) {
+      $this->output->set_output(json_encode(['success' => false, 'message' => 'Empleado no encontrado']));
+      return;
+    }
+
+    switch ($modo) {
+      case 'dia':
+        $fecha_inicio = $fecha_ref;
+        $fecha_fin = $fecha_ref;
+        break;
+      case 'mes':
+        $fecha_inicio = date('Y-m-01', strtotime($fecha_ref));
+        $fecha_fin = date('Y-m-t', strtotime($fecha_ref));
+        break;
+      case 'semana':
+      default:
+        $modo = 'semana';
+        $ts = strtotime($fecha_ref);
+        $dia_num = (int)date('N', $ts);
+        $fecha_inicio = date('Y-m-d', strtotime('-' . ($dia_num - 1) . ' days', $ts));
+        $fecha_fin = date('Y-m-d', strtotime('+' . (7 - $dia_num) . ' days', $ts));
+        break;
+    }
+
+    $horarios = $this->HorariosModel->get_horario_empleado($empleado_id);
+    $horarios_por_dia = [];
+    $mapa_dia = [
+      'Monday' => 'Lunes', 'Tuesday' => 'Martes', 'Wednesday' => 'Miércoles',
+      'Thursday' => 'Jueves', 'Friday' => 'Viernes', 'Saturday' => 'Sábado', 'Sunday' => 'Domingo',
+    ];
+
+    $cursor = strtotime($fecha_inicio);
+    $fin = strtotime($fecha_fin);
+    while ($cursor <= $fin) {
+      $fecha = date('Y-m-d', $cursor);
+      $dia_es = $mapa_dia[date('l', $cursor)] ?? '';
+      foreach ($horarios as $h) {
+        if ($h->dia_semana === $dia_es && (int)$h->es_dia_laboral === 1) {
+          $horarios_por_dia[$fecha] = $h;
+          break;
+        }
+      }
+      $cursor = strtotime('+1 day', $cursor);
+    }
+
+    $dias = $this->RelojModel->get_resumen_asistencias_periodo(
+      $empleado_id,
+      $fecha_inicio,
+      $fecha_fin,
+      $horarios_por_dia
+    );
+
+    $total_checadas = 0;
+    $dias_con_registro = 0;
+    foreach ($dias as $dia) {
+      $total_checadas += count($dia['checadas']);
+      if (!empty($dia['checadas'])) {
+        $dias_con_registro++;
+      }
+    }
+
+    $this->output->set_output(json_encode([
+      'success' => true,
+      'modo' => $modo,
+      'fecha_inicio' => $fecha_inicio,
+      'fecha_fin' => $fecha_fin,
+      'empleado' => [
+        'id' => $empleado->id,
+        'nombre' => trim($empleado->nombre . ' ' . $empleado->apellido_paterno),
+        'numero_empleado' => $empleado->numero_empleado,
+      ],
+      'resumen' => [
+        'total_checadas' => $total_checadas,
+        'dias_con_registro' => $dias_con_registro,
+        'dias_periodo' => count($dias),
+      ],
+      'dias' => $dias,
+    ]));
   }
 
 }

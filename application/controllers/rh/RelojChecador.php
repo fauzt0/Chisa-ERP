@@ -57,17 +57,83 @@ class RelojChecador extends MY_Controller {
         $stats = $this->RelojModel->get_estadisticas_dashboard();
         $dispositivos = $this->RelojModel->get_dispositivos(true);
         $ultimo_sync = $this->RelojModel->get_sync_log(10);
+        $ultimas_checadas = $this->RelojModel->get_ultimas_checadas(10);
+        foreach ($ultimas_checadas as &$c) {
+            $c->metodo_html = $this->RelojModel->badge_metodo_checada_html($c->metodo);
+        }
+        unset($c);
 
+        foreach ($dispositivos as &$d) {
+            $d->online = $this->RelojModel->dispositivo_esta_online($d->ultima_conexion);
+        }
+        unset($d);
+
+        $dispositivos_online = count(array_filter($dispositivos, function ($d) {
+            return !empty($d->online);
+        }));
+
+        $user_id = $this->session->userdata('id');
         $this->viewData['response'] = [
-            'stats'         => $stats,
-            'dispositivos'  => $dispositivos,
-            'ultimo_sync'   => $ultimo_sync,
+            'stats'               => $stats,
+            'dispositivos'        => $dispositivos,
+            'dispositivos_online' => $dispositivos_online,
+            'ultimo_sync'      => $ultimo_sync,
+            'ultimas_checadas' => $ultimas_checadas,
+            'permisos'         => [
+                'reportes'      => $this->init_controller->has_permission($user_id, 'reloj_ver_reportes'),
+                'gestionar'     => $this->init_controller->has_permission($user_id, 'reloj_gestionar'),
+                'sync_empleados'=> $this->init_controller->has_permission($user_id, 'reloj_sync_empleados_rh'),
+            ],
         ];
 
         $this->viewData['validate']  = '';
         $this->viewData['pageView']  = 'rh/reloj_checador/dashboard';
+        $this->viewData['pageScript']= 'rh/reloj_checador/dashboard_scripts';
 
         $this->load->view('layouts/general_template', $this->viewData);
+    }
+
+    /**
+     * Stats del dashboard en tiempo real (AJAX)
+     * Permiso: reloj_ver_dashboard
+     */
+    public function dashboard_stats_ajax()
+    {
+        $this->output->set_content_type('application/json', 'utf-8');
+
+        if (!$this->init_controller->has_permission($this->session->userdata('id'), 'reloj_ver_dashboard')) {
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'No autorizado']));
+            return;
+        }
+
+        $stats = $this->RelojModel->get_estadisticas_dashboard();
+        $dispositivos = $this->RelojModel->get_dispositivos(true);
+        $ultimas_checadas = $this->RelojModel->get_ultimas_checadas(10);
+
+        $dispositivos_status = [];
+        foreach ($dispositivos as $d) {
+            $dispositivos_status[] = [
+                'sn'      => $d->sn,
+                'alias'   => $d->alias,
+                'online'  => $this->RelojModel->dispositivo_esta_online($d->ultima_conexion),
+                'ultima'  => $d->ultima_conexion,
+            ];
+        }
+
+        $this->output->set_output(json_encode([
+            'success'          => true,
+            'stats'            => $stats,
+            'dispositivos'     => $dispositivos_status,
+            'ultimas_checadas' => array_map(function ($c) {
+                return [
+                    'numero_empleado' => $c->numero_empleado ?? $c->usuario_id,
+                    'empleado_nombre' => $c->empleado_nombre ?? ('PIN ' . $c->usuario_id),
+                    'hora'            => date('H:i:s', strtotime($c->fecha_hora)),
+                    'metodo'          => (int)$c->metodo,
+                    'metodo_html'     => $this->RelojModel->badge_metodo_checada_html($c->metodo),
+                ];
+            }, $ultimas_checadas),
+        ]));
     }
 
     // ========================================================================
@@ -557,51 +623,51 @@ class RelojChecador extends MY_Controller {
     }
 
     /**
-     * DataTables SSR — Asistencias diarias (AJAX)
+     * DataTables SSR — Resumen diario por empleado (AJAX)
      */
     public function search_asistencias_diario()
     {
         $this->output->set_content_type('application/json', 'utf-8');
 
-        $list = $this->RelojModel->get_asistencias_diario_datatables();
+        if (!$this->init_controller->has_permission($this->session->userdata('id'), 'reloj_ver_reportes')) {
+            $this->output->set_output(json_encode([
+                'draw'            => isset($_POST['draw']) ? (int)$_POST['draw'] : 0,
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => [],
+                'error'           => 'No autorizado',
+            ]));
+            return;
+        }
+
+        $list = $this->RelojModel->get_resumen_diario_datatables();
         $data = [];
-        $no = isset($_POST['start']) ? (int)$_POST['start'] : 0;
 
-        foreach ($list as $a) {
-            $no++;
-            $row = [];
+        foreach ($list as $r) {
+            $retardo_html = $r->retardo
+                ? '<span class="text-danger fw-semibold">' . (int)$r->minutos_retardo . ' min</span>'
+                : '<span class="text-muted">—</span>';
 
-            $row[] = $a->numero_empleado ?: $a->usuario_id;
-            $row[] = $a->empleado_nombre ?: '<span class="text-muted">Empleado #' . $a->usuario_id . '</span>';
-            $row[] = $a->puesto ?: '<span class="text-muted">—</span>';
-            $row[] = $a->departamento_nombre ?: '<span class="text-muted">—</span>';
-            $row[] = date('H:i:s', strtotime($a->fecha_hora));
-
-            // Método
-            switch ((int)$a->metodo) {
-                case 15:
-                    $metodo_label = '<span class="badge bg-info">Rostro</span>';
-                    break;
-                case 1:
-                    $metodo_label = '<span class="badge bg-secondary">Huella</span>';
-                    break;
-                case 0:
-                    $metodo_label = '<span class="badge bg-dark">Password</span>';
-                    break;
-                default:
-                    $metodo_label = '<span class="badge bg-light text-dark">#' . $a->metodo . '</span>';
-                    break;
-            }
-            $row[] = $metodo_label;
-
-            $data[] = $row;
+            $data[] = [
+                htmlspecialchars($r->numero_empleado),
+                htmlspecialchars($r->empleado_nombre),
+                htmlspecialchars($r->departamento_nombre ?: '—'),
+                $r->entrada ?: '<span class="text-muted">—</span>',
+                $r->salida_comida ?: '<span class="text-muted">—</span>',
+                $r->entrada_comida ?: '<span class="text-muted">—</span>',
+                $r->salida ?: '<span class="text-muted">—</span>',
+                $this->RelojModel->badge_estado_asistencia_html($r->estado),
+                $retardo_html,
+                '<strong>' . htmlspecialchars($r->horas_trabajadas) . '</strong>',
+                (int)$r->empleado_id,
+            ];
         }
 
         $output = [
-            "draw"            => isset($_POST['draw']) ? (int)$_POST['draw'] : 0,
-            "recordsTotal"    => $this->RelojModel->count_asistencias_diario_all(),
-            "recordsFiltered" => $this->RelojModel->count_asistencias_diario_filtered(),
-            "data"            => $data,
+            'draw'            => isset($_POST['draw']) ? (int)$_POST['draw'] : 0,
+            'recordsTotal'    => $this->RelojModel->count_resumen_diario_all(),
+            'recordsFiltered' => $this->RelojModel->count_resumen_diario_filtered(),
+            'data'            => $data,
         ];
 
         $this->output->set_output(json_encode($output));
@@ -714,6 +780,11 @@ class RelojChecador extends MY_Controller {
      */
     public function asistencia_detalle_dia()
     {
+        if (!$this->init_controller->has_permission($this->session->userdata('id'), 'reloj_ver_reportes')) {
+            echo json_encode(['success' => false, 'message' => 'No autorizado']);
+            return;
+        }
+
         $empleado_id = $this->input->post('empleado_id');
         $fecha = $this->input->post('fecha') ?: date('Y-m-d');
 
@@ -748,12 +819,14 @@ class RelojChecador extends MY_Controller {
 
         // Calcular asistencia diaria
         $calculo = $this->RelojModel->calcular_asistencia_diaria($empleado_id, $fecha, $horario_hoy);
+        $checadas_etiquetadas = $this->RelojModel->etiquetar_checadas_secuencia($checadas);
 
         echo json_encode([
             'success'    => true,
             'fecha'      => $fecha,
             'dia_semana' => $dia_actual,
             'checadas'   => $checadas,
+            'checadas_etiquetadas' => $checadas_etiquetadas,
             'horario'    => $horario_hoy,
             'calculo'    => $calculo,
         ]);
@@ -921,37 +994,40 @@ class RelojChecador extends MY_Controller {
 
         $fecha = $this->input->get('fecha') ?: date('Y-m-d');
         $empleado_id = $this->input->get('empleado_id');
+        $departamento_id = $this->input->get('departamento_id');
+        $estado = $this->input->get('estado');
 
-        $asistencias = $this->RelojModel->get_asistencias_rango($fecha, $fecha, $empleado_id ?: null);
+        $resumen = $this->RelojModel->get_resumen_diario_empleados(
+            $fecha,
+            $departamento_id ?: null,
+            $empleado_id ?: null,
+            $estado ?: null
+        );
 
         header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="asistencias_' . $fecha . '.csv"');
+        header('Content-Disposition: attachment; filename="asistencias_resumen_' . $fecha . '.csv"');
 
         $output = fopen('php://output', 'w');
-        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF)); // BOM UTF-8
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
-        fputcsv($output, ['Empleado', 'Fecha/Hora', 'Método', 'Dispositivo']);
+        fputcsv($output, [
+            'No. Empleado', 'Nombre', 'Departamento', 'Entrada', 'Salida comida',
+            'Entrada comida', 'Salida', 'Estado', 'Retardo (min)', 'Horas trabajadas', 'Checadas',
+        ]);
 
-        foreach ($asistencias as $a) {
-            switch ((int)$a->metodo) {
-                case 15:
-                    $metodo = 'Rostro';
-                    break;
-                case 1:
-                    $metodo = 'Huella';
-                    break;
-                case 0:
-                    $metodo = 'Password';
-                    break;
-                default:
-                    $metodo = 'Desconocido';
-                    break;
-            }
+        foreach ($resumen as $r) {
             fputcsv($output, [
-                $a->empleado_nombre ?? $a->usuario_id,
-                $a->fecha_hora,
-                $metodo,
-                $a->dispositivo_sn,
+                $r->numero_empleado,
+                $r->empleado_nombre,
+                $r->departamento_nombre,
+                $r->entrada ?: '',
+                $r->salida_comida ?: '',
+                $r->entrada_comida ?: '',
+                $r->salida ?: '',
+                $r->estado,
+                $r->retardo ? $r->minutos_retardo : '',
+                $r->horas_trabajadas,
+                $r->total_checadas,
             ]);
         }
 

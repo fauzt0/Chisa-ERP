@@ -301,6 +301,24 @@
             </div>
           </div>
 
+          <?php if (!empty($response['puede_ver_reloj'])): ?>
+          <!-- Asistencias Reloj Checador -->
+          <div id="reloj-badge" class="mt-3 rounded-3 p-0 overflow-hidden" style="border: 1px solid #86efac;">
+            <div class="px-3 py-2 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);">
+              <span class="text-white fw-semibold" style="font-size: 0.82rem; letter-spacing: 0.4px;">
+                <i class="fas fa-fingerprint me-1"></i> RELOJ CHECADOR
+              </span>
+              <button class="btn btn-light btn-sm py-0 px-2" onclick="verAsistenciasReloj()" id="btn-ver-reloj" style="font-size:0.78rem;">
+                <i class="fas fa-table me-1"></i>Ver registros
+              </button>
+            </div>
+            <div class="px-3 py-3 text-center" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+              <div class="fw-bold text-success fs-5 mb-0" id="reloj-ultima-checada">—</div>
+              <small class="text-muted" id="reloj-resumen-mes">Selecciona un empleado</small>
+            </div>
+          </div>
+          <?php endif; ?>
+
           <!-- Historial de Contratos -->
           <div class="mt-4">
             <h6 class="border-bottom pb-2">Historial de Contratos</h6>
@@ -840,6 +858,116 @@
   </div>
 </div>
 
+<?php if (!empty($response['puede_ver_reloj'])): ?>
+<!-- Modal: Asistencias Reloj Checador -->
+<div class="modal fade" id="modalAsistenciasReloj" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+
+      <!-- Header verde degradado -->
+      <div class="modal-header border-0 text-white pb-2" style="background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);">
+        <div>
+          <h5 class="modal-title mb-0">
+            <i class="fas fa-fingerprint me-2"></i>Registros del Reloj Checador
+          </h5>
+          <small class="opacity-75" id="reloj-modal-periodo">—</small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <!-- Sub-barra: empleado + periodo + stats -->
+      <div class="px-3 py-2 border-bottom" style="background:#f8fdf9;">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <span class="fw-semibold text-success" id="reloj-modal-empleado">—</span>
+          </div>
+          <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="badge rounded-pill" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;" id="reloj-stat-checadas">0 checadas</span>
+            <span class="badge rounded-pill" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;" id="reloj-stat-dias">0 días con registro</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-body pt-3">
+
+        <!-- Controles: periodo + fecha -->
+        <div class="row g-2 mb-3 align-items-end">
+          <div class="col-auto">
+            <label class="form-label small text-muted mb-1">Ver por</label>
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-outline-success active" id="tab-reloj-dia" onclick="cambiarModoReloj('dia')">
+                <i class="fas fa-calendar-day me-1"></i>Día
+              </button>
+              <button type="button" class="btn btn-outline-success" id="tab-reloj-semana" onclick="cambiarModoReloj('semana')">
+                <i class="fas fa-calendar-week me-1"></i>Semana
+              </button>
+              <button type="button" class="btn btn-outline-success" id="tab-reloj-mes" onclick="cambiarModoReloj('mes')">
+                <i class="fas fa-calendar-alt me-1"></i>Mes
+              </button>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted mb-1">Fecha de referencia</label>
+            <input type="date" class="form-control form-control-sm" id="reloj-fecha-ref" value="<?php echo date('Y-m-d'); ?>">
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-success btn-sm" onclick="cargarAsistenciasReloj()">
+              <i class="fas fa-search me-1"></i>Consultar
+            </button>
+          </div>
+        </div>
+
+        <!-- Pestañas de vista -->
+        <ul class="nav nav-tabs mb-0" id="reloj-vista-tabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active px-3 py-2 small" id="tab-reloj-resumen-vista"
+              data-bs-toggle="tab" data-bs-target="#reloj-panel-resumen" type="button" role="tab">
+              <i class="fas fa-table me-1"></i>Resumen por día
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link px-3 py-2 small" id="tab-reloj-detalle-vista"
+              data-bs-toggle="tab" data-bs-target="#reloj-panel-detalle" type="button" role="tab">
+              <i class="fas fa-list me-1"></i>Checadas individuales
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content border border-top-0 rounded-bottom" id="reloj-vista-panels">
+          <div class="tab-pane fade show active" id="reloj-panel-resumen" role="tabpanel">
+            <div id="reloj-tabla-resumen">
+              <div class="text-center text-muted py-5">
+                <i class="fas fa-fingerprint fa-2x mb-2 opacity-25"></i>
+                <p class="mb-0 small">Elige un periodo y presiona <strong>Consultar</strong></p>
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="reloj-panel-detalle" role="tabpanel">
+            <div id="reloj-tabla-detalle">
+              <div class="text-center text-muted py-5">
+                <i class="fas fa-list fa-2x mb-2 opacity-25"></i>
+                <p class="mb-0 small">Elige un periodo y presiona <strong>Consultar</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer border-top py-2" style="background:#f8fdf9;">
+        <a href="<?php echo base_url('rh/RelojChecador/reporte_diario'); ?>" class="btn btn-sm btn-outline-success" target="_blank">
+          <i class="fas fa-external-link-alt me-1"></i>Reporte diario
+        </a>
+        <a href="<?php echo base_url('rh/RelojChecador/reporte_mensual'); ?>" class="btn btn-sm btn-outline-success" target="_blank">
+          <i class="fas fa-calendar-alt me-1"></i>Reporte mensual
+        </a>
+        <button type="button" class="btn btn-sm btn-secondary ms-auto" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 
 
@@ -953,6 +1081,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
   function empleado_detail(id){
     currentEmpleadoId = id;
+    empleadoActualId = id;
     $('#historial-desde').val('');
     $('#historial-hasta').val('');
 
@@ -983,6 +1112,10 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // Cargar horario
         cargarBadgeHorario(id);
+
+        <?php if (!empty($response['puede_ver_reloj'])): ?>
+        cargarBadgeReloj(id);
+        <?php endif; ?>
       }else {
         notifyShow("Error al obtener los datos","danger");
       }
@@ -1398,17 +1531,17 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // Calcular días al cambiar fechas
-  $('#fecha_inicio_vac, #fecha_fin_vac').on('change', function() {
-    var inicio = $('#fecha_inicio_vac').val();
-    var fin = $('#fecha_fin_vac').val();
-    
-    if(inicio && fin) {
-      // Calcular días hábiles (aproximado - el servidor hará el cálculo exacto)
-      var d1 = new Date(inicio);
-      var d2 = new Date(fin);
-      var dias = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
-      $('#dias_calculados').val(dias);
-    }
+  document.addEventListener("DOMContentLoaded", function() {
+    $('#fecha_inicio_vac, #fecha_fin_vac').on('change', function() {
+      var inicio = $('#fecha_inicio_vac').val();
+      var fin = $('#fecha_fin_vac').val();
+      if(inicio && fin) {
+        var d1 = new Date(inicio);
+        var d2 = new Date(fin);
+        var dias = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+        $('#dias_calculados').val(dias);
+      }
+    });
   });
 
   // Enviar solicitud
@@ -1696,20 +1829,22 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // Toggle campos según tipo
-  $('#tipo_incidencia').on('change', function() {
-    if ($(this).val() === 'Retardo') {
-      $('#hora-container').show();
-    } else {
-      $('#hora-container').hide();
-    }
-  });
+  document.addEventListener("DOMContentLoaded", function() {
+    $('#tipo_incidencia').on('change', function() {
+      if ($(this).val() === 'Retardo') {
+        $('#hora-container').show();
+      } else {
+        $('#hora-container').hide();
+      }
+    });
 
-  $('#tiene_descuento_inc').on('change', function() {
-    if ($(this).val() == '1') {
-      $('#monto-descuento-container').show();
-    } else {
-      $('#monto-descuento-container').hide();
-    }
+    $('#tiene_descuento_inc').on('change', function() {
+      if ($(this).val() == '1') {
+        $('#monto-descuento-container').show();
+      } else {
+        $('#monto-descuento-container').hide();
+      }
+    });
   });
 
   // ========================================================================
@@ -1851,6 +1986,232 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
   }
+
+  <?php if (!empty($response['puede_ver_reloj'])): ?>
+  // ========================================================================
+  // ASISTENCIAS RELOJ CHECADOR (offcanvas + modal)
+  // ========================================================================
+  var modoRelojActual = 'semana';
+
+  function _rjParse(r) {
+    if (typeof r === 'string') { try { return JSON.parse(r); } catch(e) { return null; } }
+    return r || null;
+  }
+
+  function cargarBadgeReloj(empleado_id) {
+    $('#reloj-badge').show();
+    $('#reloj-ultima-checada').html('<i class="fas fa-spinner fa-spin fa-sm text-success"></i>');
+    $('#reloj-resumen-mes').text('Cargando...');
+
+    $.post('<?=base_url();?>/rh/RecursosHumanos/asistencias_reloj_resumen', {
+      empleado_id: empleado_id,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(raw) {
+      var result = _rjParse(raw);
+      if (result && result.success) {
+        $('#reloj-ultima-checada').text(result.ultima_checada_fmt || 'Sin registros');
+        $('#reloj-resumen-mes').text(
+          (result.dias_trabajados_mes || 0) + ' días este mes · ' +
+          (result.total_checadas_30 || 0) + ' checadas (30d)'
+        );
+      } else {
+        $('#reloj-ultima-checada').text('—');
+        $('#reloj-resumen-mes').text((result && result.message) ? result.message : 'Sin datos');
+      }
+    });
+  }
+
+  function verAsistenciasReloj() {
+    if (!empleadoActualId) {
+      notifyShow('Selecciona un empleado primero', 'warning');
+      return;
+    }
+    $('#reloj-fecha-ref').val(new Date().toISOString().slice(0, 10));
+    modoRelojActual = 'semana';
+    actualizarTabsReloj();
+    $('#modalAsistenciasReloj').modal('show');
+    cargarAsistenciasReloj();
+  }
+
+  function cambiarModoReloj(modo) {
+    modoRelojActual = modo;
+    actualizarTabsReloj();
+    cargarAsistenciasReloj();
+  }
+
+  function actualizarTabsReloj() {
+    $('#tab-reloj-dia, #tab-reloj-semana, #tab-reloj-mes').removeClass('active');
+    $('#tab-reloj-' + modoRelojActual).addClass('active');
+  }
+
+  function cargarAsistenciasReloj() {
+    if (!empleadoActualId) return;
+
+    var loading = '<div class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-2 text-success"></i><p class="mb-0 small mt-2">Cargando registros...</p></div>';
+    $('#reloj-tabla-resumen').html(loading);
+    $('#reloj-tabla-detalle').html(loading);
+
+    $.post('<?=base_url();?>/rh/RecursosHumanos/asistencias_reloj_periodo', {
+      empleado_id: empleadoActualId,
+      modo: modoRelojActual,
+      fecha_ref: $('#reloj-fecha-ref').val(),
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(raw) {
+      var result = _rjParse(raw);
+      if (!result) {
+        var errHtml = '<div class="alert alert-danger m-3"><i class="fas fa-exclamation-circle me-2"></i>No se pudo procesar la respuesta del servidor. Intenta de nuevo.</div>';
+        $('#reloj-tabla-resumen, #reloj-tabla-detalle').html(errHtml);
+        return;
+      }
+      if (!result.success) {
+        var warnHtml = '<div class="alert alert-warning m-3"><i class="fas fa-info-circle me-2"></i>' + (result.message || 'No se pudo cargar el periodo.') + '</div>';
+        $('#reloj-tabla-resumen, #reloj-tabla-detalle').html(warnHtml);
+        return;
+      }
+
+      $('#reloj-modal-empleado').text(
+        result.empleado.numero_empleado + ' — ' + result.empleado.nombre
+      );
+      $('#reloj-modal-periodo').text(
+        'Del ' + formatearFechaMx(result.fecha_inicio) + ' al ' + formatearFechaMx(result.fecha_fin)
+      );
+      $('#reloj-stat-checadas').text(result.resumen.total_checadas + ' checadas');
+      $('#reloj-stat-dias').text(result.resumen.dias_con_registro + ' días con registro');
+
+      renderAsistenciasReloj(result.dias);
+    }).fail(function(xhr) {
+      var errHtml = '<div class="alert alert-danger m-3"><i class="fas fa-exclamation-circle me-2"></i>Error de red (HTTP ' + (xhr.status || '?') + '). Verifica tu conexión.</div>';
+      $('#reloj-tabla-resumen, #reloj-tabla-detalle').html(errHtml);
+    });
+  }
+
+  function formatearFechaMx(fecha) {
+    if (!fecha) return '';
+    var p = fecha.split('-');
+    return p[2] + '/' + p[1] + '/' + p[0];
+  }
+
+  var _relojEstadoClases = {
+    'Asistencia completa': 'bg-success',
+    'Con retardo':         'bg-warning text-dark',
+    'Retardo mayor':       'bg-danger',
+    'Salida temprana':     'bg-warning text-dark',
+    'Checadas parciales':  'bg-secondary',
+    'Sin checadas':        'bg-light text-muted border',
+    'Sin horario asignado':'bg-info text-dark'
+  };
+
+  var _relojTipoClases = {
+    entrada:            'bg-success',
+    salida:             'bg-primary',
+    salida_comida:      'bg-warning text-dark',
+    entrada_comida:     'bg-info text-dark',
+    checada_intermedia: 'bg-secondary',
+    checada_extra:      'bg-light text-dark border'
+  };
+
+  function badgeEstadoAsistencia(estado) {
+    var mapa = (typeof _relojEstadoClases !== 'undefined') ? _relojEstadoClases : {};
+    var etiqueta = estado || 'Sin checadas';
+    var cls = mapa[etiqueta] || 'bg-secondary';
+    return '<span class="badge rounded-pill ' + cls + '">' + etiqueta + '</span>';
+  }
+
+  function badgeTipoChecada(tipo, label) {
+    var mapa = (typeof _relojTipoClases !== 'undefined') ? _relojTipoClases : {};
+    var cls = mapa[tipo] || 'bg-secondary';
+    return '<span class="badge ' + cls + '">' + (label || tipo || '—') + '</span>';
+  }
+
+  function celdaHora(val) {
+    return val
+      ? '<span class="fw-semibold text-success">' + val + '</span>'
+      : '<span class="text-muted small">—</span>';
+  }
+
+  function renderAsistenciasReloj(dias) {
+    if (!dias || dias.length === 0) {
+      var vacio = '<div class="text-center text-muted py-5"><i class="fas fa-calendar-times fa-2x mb-2 opacity-25"></i><p class="mb-0 small">Sin registros en este periodo</p></div>';
+      $('#reloj-tabla-resumen, #reloj-tabla-detalle').html(vacio);
+      return;
+    }
+
+    // --- Tabla resumen ---
+    var r = '<div class="table-responsive">';
+    r += '<table class="table table-sm table-hover align-middle mb-0" style="font-size:0.82rem">';
+    r += '<thead><tr style="background:#f0fdf4;color:#15803d;">';
+    r += '<th class="fw-semibold">Fecha</th>';
+    r += '<th class="fw-semibold">Día</th>';
+    r += '<th class="fw-semibold text-center"><i class="fas fa-sign-in-alt me-1"></i>Entrada</th>';
+    r += '<th class="fw-semibold text-center">Sal. comida</th>';
+    r += '<th class="fw-semibold text-center">Ent. comida</th>';
+    r += '<th class="fw-semibold text-center"><i class="fas fa-sign-out-alt me-1"></i>Salida</th>';
+    r += '<th class="fw-semibold">Estado</th>';
+    r += '<th class="fw-semibold text-end">Retardo</th>';
+    r += '<th class="fw-semibold text-end">Horas</th>';
+    r += '</tr></thead><tbody>';
+
+    dias.forEach(function(dia) {
+      var calc = dia.calculo || {};
+      var tieneDatos = dia.checadas && dia.checadas.length > 0;
+      var trClass = tieneDatos ? '' : 'opacity-60';
+      var retardo = calc.retardo
+        ? '<span class="text-danger fw-semibold">' + calc.minutos_retardo + 'min</span>'
+        : '<span class="text-muted">—</span>';
+
+      r += '<tr class="' + trClass + '">';
+      r += '<td class="fw-semibold">' + formatearFechaMx(dia.fecha) + '</td>';
+      r += '<td><small class="text-muted">' + dia.dia_semana + '</small></td>';
+      r += '<td class="text-center">' + celdaHora(calc.entrada) + '</td>';
+      r += '<td class="text-center">' + celdaHora(calc.salida_comida) + '</td>';
+      r += '<td class="text-center">' + celdaHora(calc.entrada_comida) + '</td>';
+      r += '<td class="text-center">' + celdaHora(calc.salida) + '</td>';
+      r += '<td>' + badgeEstadoAsistencia(calc.estado || 'Sin checadas') + '</td>';
+      r += '<td class="text-end">' + retardo + '</td>';
+      r += '<td class="text-end fw-semibold">' + (calc.horas_trabajadas || '00:00') + '</td>';
+      r += '</tr>';
+    });
+
+    r += '</tbody></table></div>';
+    $('#reloj-tabla-resumen').html(r);
+
+    // --- Tabla detalle ---
+    var d = '<div class="table-responsive">';
+    d += '<table class="table table-sm table-hover align-middle mb-0" style="font-size:0.82rem">';
+    d += '<thead><tr style="background:#f0fdf4;color:#15803d;">';
+    d += '<th class="fw-semibold">Fecha</th>';
+    d += '<th class="fw-semibold">Hora</th>';
+    d += '<th class="fw-semibold">Tipo</th>';
+    d += '<th class="fw-semibold">Método</th>';
+    d += '<th class="fw-semibold">Dispositivo</th>';
+    d += '</tr></thead><tbody>';
+
+    var hayChecadas = false;
+    dias.forEach(function(dia) {
+      if (!dia.checadas || !dia.checadas.length) return;
+      hayChecadas = true;
+      dia.checadas.forEach(function(c, idx) {
+        d += idx === 0
+          ? '<tr class="table-success table-success-subtle">'
+          : '<tr>';
+        d += '<td class="text-muted small">' + (idx === 0 ? '<strong class="text-dark">' + formatearFechaMx(dia.fecha) + '</strong>' : '') + '</td>';
+        d += '<td class="fw-semibold">' + c.hora + '</td>';
+        d += '<td>' + badgeTipoChecada(c.tipo, c.tipo_label) + '</td>';
+        d += '<td><small class="text-muted">' + c.metodo_label + '</small></td>';
+        d += '<td><code class="small text-muted">' + (c.dispositivo_sn || '—') + '</code></td>';
+        d += '</tr>';
+      });
+    });
+
+    if (!hayChecadas) {
+      d += '<tr><td colspan="5" class="text-muted text-center py-4"><i class="fas fa-inbox me-2"></i>Sin checadas en este periodo</td></tr>';
+    }
+    d += '</tbody></table></div>';
+    $('#reloj-tabla-detalle').html(d);
+  }
+  <?php endif; ?>
 
   // ===========================================
   // CALCULADORA DE FINIQUITOS
