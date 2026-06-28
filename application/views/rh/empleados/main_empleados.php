@@ -12,6 +12,13 @@
   <!-- Titulo de la pagina -->
   <h1 class="h3 mb-3"><?php echo $headTitle;?></h1>
 
+  <?php if (empty($response['vinculo_usuarios_habilitado'])): ?>
+  <div class="alert alert-secondary border mb-3 py-2 small">
+    <i class="fas fa-info-circle"></i> Para vincular usuarios ERP con empleados, ejecute la migración
+    <code>database/empleado_usuario_vinculo.sql</code>.
+  </div>
+  <?php endif; ?>
+
   <!-- Alerta de Datos Faltantes (Solo Visible para Administradores con Permiso) -->
   <?php if(!empty($response['datos_faltantes'])): 
     $total_faltantes = count($response['datos_faltantes']);
@@ -85,6 +92,20 @@
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <?php endif; ?>
+
+  <?php if (!empty($response['vinculo_usuarios_habilitado']) && !empty($response['usuarios_sin_empleado'])): ?>
+  <div class="alert alert-primary border-start border-primary border-4 px-3 py-2 mb-3" role="alert">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div>
+        <strong><i class="fas fa-user-lock me-1"></i> Usuarios ERP sin expediente:</strong>
+        Hay <strong><?= (int)$response['usuarios_sin_empleado'] ?></strong> usuario(s) del sistema sin empleado vinculado.
+      </div>
+      <button type="button" class="btn btn-sm btn-primary" onclick="abrirModalUsuariosSinEmpleado()">
+        <i class="fas fa-link"></i> Vincular / Crear empleados
+      </button>
+    </div>
   </div>
   <?php endif; ?>
 
@@ -420,12 +441,14 @@
   </div>
 </div>
 
+<?php $this->load->view('rh/partials/modal_styles'); ?>
+
 <!-- Modal para ver Contrato -->
-<div class="modal fade" id="modalContrato" tabindex="-1">
+<div class="modal fade rh-modal" id="modalContrato" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title"><i class="fas fa-file-contract"></i> Contrato de Trabajo</h5>
+        <h5 class="modal-title text-white"><i class="fas fa-file-contract"></i> Contrato de Trabajo</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-0" style="background: #f5f5f5;">
@@ -448,11 +471,11 @@
 </div>
 
 <!-- Modal Vacaciones: Detalle y Balance -->
-<div class="modal fade" id="modalVacaciones" tabindex="-1">
+<div class="modal fade rh-modal" id="modalVacaciones" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-info text-white">
-        <h5 class="modal-title"><i class="fas fa-umbrella-beach"></i> Gestión de Vacaciones</h5>
+        <h5 class="modal-title text-white"><i class="fas fa-umbrella-beach"></i> Gestión de Vacaciones</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -506,11 +529,11 @@
 </div>
 
 <!-- Modal: Solicitar Vacaciones -->
-<div class="modal fade" id="modalSolicitarVacaciones" tabindex="-1">
+<div class="modal fade rh-modal" id="modalSolicitarVacaciones" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-success text-white">
-        <h5 class="modal-title"><i class="fas fa-calendar-plus"></i> Solicitar Vacaciones</h5>
+        <h5 class="modal-title text-white"><i class="fas fa-calendar-plus"></i> Solicitar Vacaciones</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -552,11 +575,11 @@
     </div>
   </div>
 </div><!-- Modal: Todas las Solicitudes (Admin) -->
-<div class="modal fade" id="modalTodasSolicitudes" tabindex="-1">
+<div class="modal fade rh-modal" id="modalTodasSolicitudes" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-warning text-dark">
-        <h5 class="modal-title"><i class="fas fa-tasks"></i> Solicitudes de Vacaciones Pendientes</h5>
+        <h5 class="modal-title text-dark"><i class="fas fa-tasks"></i> Solicitudes de Vacaciones Pendientes</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -610,11 +633,11 @@
 </div>
 
 <!-- Modal: Ver Incidencias -->
-<div class="modal fade" id="modalIncidencias" tabindex="-1">
+<div class="modal fade rh-modal" id="modalIncidencias" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-warning text-dark">
-        <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Incidencias del Empleado</h5>
+        <h5 class="modal-title text-dark"><i class="fas fa-exclamation-triangle"></i> Incidencias del Empleado</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -694,11 +717,11 @@
 </div>
 
 <!-- Modal: Registrar Incidencia -->
-<div class="modal fade" id="modalRegistrarIncidencia" tabindex="-1">
+<div class="modal fade rh-modal" id="modalRegistrarIncidencia" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-success text-white">
-        <h5 class="modal-title"><i class="fas fa-plus"></i> Registrar Nueva Incidencia</h5>
+        <h5 class="modal-title text-white"><i class="fas fa-plus"></i> Registrar Nueva Incidencia</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -771,11 +794,11 @@
 </div>
 
 <!-- Modal: Subir Documento del Empleado -->
-<div class="modal fade" id="modalSubirDocumento" tabindex="-1">
+<div class="modal fade rh-modal" id="modalSubirDocumento" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content border-0 shadow">
       <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
-        <h5 class="modal-title"><i data-lucide="upload" style="width:20px;height:20px;"></i> Adjuntar Documento</h5>
+        <h5 class="modal-title text-white"><i data-lucide="upload" style="width:20px;height:20px;"></i> Adjuntar Documento</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -821,12 +844,12 @@
 </div>
 
 <!-- Modal: Calculadora de Finiquito/Liquidación -->
-<div class="modal fade" id="modalCalculadoraBaja" tabindex="-1">
+<div class="modal fade rh-modal" id="modalCalculadoraBaja" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content border-0 shadow">
       <div class="modal-header text-white pb-2" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%);">
         <div>
-          <h5 class="modal-title mb-1 fw-bold"><i class="fas fa-calculator me-2"></i>Simulador de referencia — Finiquito / Liquidación</h5>
+          <h5 class="modal-title mb-1 fw-bold text-white"><i class="fas fa-calculator me-2"></i>Simulador de referencia — Finiquito / Liquidación</h5>
           <p class="mb-0 small opacity-75">Solo estimación orientativa. El ERP no genera finiquitos oficiales; cargue el documento firmado en el expediente.</p>
           <small class="text-white-50">Estimación basada en la Ley Federal del Trabajo</small>
         </div>
@@ -932,11 +955,11 @@
 </div>
 
 <!-- Modal: Ver/Editar Horario -->
-<div class="modal fade" id="modalHorario" tabindex="-1">
+<div class="modal fade rh-modal" id="modalHorario" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-info text-white">
-        <h5 class="modal-title"><i class="fas fa-clock"></i> Horario Laboral del Empleado</h5>
+        <h5 class="modal-title text-white"><i class="fas fa-clock"></i> Horario Laboral del Empleado</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -998,16 +1021,67 @@
   </div>
 </div>
 
+<!-- Modal: Vincular usuario ERP a empleado -->
+<div class="modal fade rh-modal" id="modalVincularUsuario" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header rh-header-brand text-white">
+        <h5 class="modal-title text-white"><i class="fas fa-user-lock me-2"></i>Vincular Usuario ERP</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="vinculo-empleado-id">
+        <p class="text-muted small mb-3">Empleado: <strong id="vinculo-empleado-nombre">—</strong></p>
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="fas fa-search"></i></span>
+          <input type="text" class="form-control" id="vinculo-buscar-usuario" placeholder="Buscar por nombre, email o ID de usuario...">
+          <button type="button" class="btn btn-outline-primary" onclick="buscarUsuariosVinculo()">Buscar</button>
+        </div>
+        <div id="vinculo-usuarios-lista" class="list-group list-group-flush border rounded" style="max-height:320px;overflow-y:auto;">
+          <div class="list-group-item text-muted text-center py-4">Escriba para buscar usuarios disponibles</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-danger me-auto" id="btn-desvincular-usuario" onclick="desvincularUsuarioEmpleado()" style="display:none;">
+          <i class="fas fa-unlink"></i> Desvincular
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Usuarios ERP sin empleado -->
+<div class="modal fade rh-modal" id="modalUsuariosSinEmpleado" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header rh-header-brand text-white">
+        <h5 class="modal-title text-white"><i class="fas fa-users-cog me-2"></i>Usuarios sin expediente de empleado</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div id="lista-usuarios-sin-empleado" class="list-group list-group-flush">
+          <div class="list-group-item text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <small class="text-muted me-auto">Se creará un expediente básico con RFC/CURP pendientes de completar.</small>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?php if (!empty($response['puede_ver_reloj'])): ?>
 <!-- Modal: Asistencias Reloj Checador -->
-<div class="modal fade" id="modalAsistenciasReloj" tabindex="-1">
+<div class="modal fade rh-modal" id="modalAsistenciasReloj" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content border-0 shadow">
 
       <!-- Header verde degradado -->
       <div class="modal-header border-0 text-white pb-2" style="background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);">
         <div>
-          <h5 class="modal-title mb-0">
+          <h5 class="modal-title mb-0 text-white">
             <i class="fas fa-fingerprint me-2"></i>Registros del Reloj Checador
           </h5>
           <small class="opacity-75" id="reloj-modal-periodo">—</small>
@@ -1282,6 +1356,11 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         if (result.actions.mostrar_baja) {
           actionsHtml += '<button class="btn btn-danger btn-sm" onclick="delete_empleado(' + result.actions.empleado_id + ')"><i data-lucide="trash-2" class="me-1" style="width:14px;height:14px;"></i>Dar de Baja</button>';
+        }
+        if (result.actions.vinculo_habilitado) {
+          var lblVinculo = result.actions.usuario_vinculado ? 'Usuario ERP' : 'Vincular usuario';
+          var clsVinculo = result.actions.usuario_vinculado ? 'btn-outline-primary' : 'btn-primary';
+          actionsHtml += '<button class="btn btn-sm ' + clsVinculo + '" onclick="abrirModalVincularUsuario(' + result.actions.empleado_id + ')"><i class="fas fa-user-lock me-1"></i>' + lblVinculo + '</button>';
         }
         $('#offcanvas-actions').html(actionsHtml);
         if (typeof lucide !== 'undefined') { lucide.createIcons(); }
@@ -2751,6 +2830,140 @@ document.addEventListener("DOMContentLoaded", function() {
       if (result.success) cargarDocumentosEmpleado(currentEmpleadoId);
     });
   }
+
+  var vinculoEmpleadoModalId = null;
+
+  function abrirModalVincularUsuario(empleadoId) {
+    vinculoEmpleadoModalId = empleadoId;
+    var nombre = $('#offcanvas-empleado-nombre').text() || ('Empleado #' + empleadoId);
+    $('#vinculo-empleado-id').val(empleadoId);
+    $('#vinculo-empleado-nombre').text(nombre);
+    $('#vinculo-buscar-usuario').val('');
+    $('#vinculo-usuarios-lista').html('<div class="list-group-item text-muted text-center py-4">Escriba para buscar usuarios disponibles</div>');
+    $('#btn-desvincular-usuario').hide();
+    buscarUsuariosVinculo();
+    $('#modalVincularUsuario').modal('show');
+  }
+
+  function buscarUsuariosVinculo() {
+    if (!vinculoEmpleadoModalId) return;
+    $.post('<?= base_url('rh/RecursosHumanos/usuarios_buscar_ajax') ?>', {
+      empleado_id: vinculoEmpleadoModalId,
+      q: $('#vinculo-buscar-usuario').val(),
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) { return; }
+      if (!result.success || !result.usuarios.length) {
+        $('#vinculo-usuarios-lista').html('<div class="list-group-item text-muted text-center py-4">No hay usuarios disponibles</div>');
+        return;
+      }
+      var html = '';
+      var tieneVinculoActual = false;
+      result.usuarios.forEach(function(u) {
+        if (u.vinculado_a_este) tieneVinculoActual = true;
+        var btn = u.ocupado
+          ? '<span class="badge bg-secondary">Ocupado</span>'
+          : '<button type="button" class="btn btn-sm btn-primary" onclick="confirmarVinculoUsuario(' + u.id + ')"><i class="fas fa-link"></i> Vincular</button>';
+        html += '<div class="list-group-item d-flex justify-content-between align-items-center">' +
+          '<div><strong>#' + u.id + '</strong> ' + u.nombre + '<br><small class="text-muted">' + u.username + '</small></div>' +
+          btn + '</div>';
+      });
+      $('#vinculo-usuarios-lista').html(html);
+      if (tieneVinculoActual) $('#btn-desvincular-usuario').show();
+    });
+  }
+
+  function confirmarVinculoUsuario(usuarioId) {
+    if (!vinculoEmpleadoModalId) return;
+    $.post('<?= base_url('rh/RecursosHumanos/vincular_usuario_ajax') ?>', {
+      empleado_id: vinculoEmpleadoModalId,
+      usuario_id: usuarioId,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) { notifyShow('Error al procesar respuesta', 'danger'); return; }
+      notifyShow(result.message, result.success ? 'success' : 'danger');
+      if (result.success) {
+        $('#modalVincularUsuario').modal('hide');
+        if (typeof table !== 'undefined' && table.ajax) table.ajax.reload(null, false);
+        empleado_detail(vinculoEmpleadoModalId);
+      }
+    });
+  }
+
+  function desvincularUsuarioEmpleado() {
+    if (!vinculoEmpleadoModalId || !confirm('¿Desvincular el usuario ERP de este empleado?')) return;
+    $.post('<?= base_url('rh/RecursosHumanos/desvincular_usuario_ajax') ?>', {
+      empleado_id: vinculoEmpleadoModalId,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) { return; }
+      notifyShow(result.message, result.success ? 'success' : 'warning');
+      if (result.success) {
+        $('#modalVincularUsuario').modal('hide');
+        if (typeof table !== 'undefined' && table.ajax) table.ajax.reload(null, false);
+        empleado_detail(vinculoEmpleadoModalId);
+      }
+    });
+  }
+
+  function abrirModalUsuariosSinEmpleado() {
+    $('#lista-usuarios-sin-empleado').html('<div class="list-group-item text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>');
+    $('#modalUsuariosSinEmpleado').modal('show');
+    $.post('<?= base_url('rh/RecursosHumanos/usuarios_sin_empleado_ajax') ?>', {
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) { return; }
+      if (!result.success || !result.usuarios.length) {
+        $('#lista-usuarios-sin-empleado').html('<div class="list-group-item text-center text-muted py-4">Todos los usuarios activos ya tienen empleado vinculado</div>');
+        return;
+      }
+      var html = '';
+      result.usuarios.forEach(function(u) {
+        html += '<div class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">' +
+          '<div><strong>#' + u.id + '</strong> ' + u.nombre + '<br><small class="text-muted">' + u.username + '</small></div>' +
+          '<button type="button" class="btn btn-sm btn-success" onclick="crearEmpleadoDesdeUsuario(' + u.id + ')"><i class="fas fa-user-plus"></i> Crear empleado</button>' +
+          '</div>';
+      });
+      $('#lista-usuarios-sin-empleado').html(html);
+    });
+  }
+
+  function crearEmpleadoDesdeUsuario(usuarioId) {
+    if (!confirm('¿Crear expediente de empleado para este usuario y vincularlo automáticamente?')) return;
+    $.post('<?= base_url('rh/RecursosHumanos/crear_empleado_desde_usuario_ajax') ?>', {
+      usuario_id: usuarioId,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) { notifyShow('Error al procesar respuesta', 'danger'); return; }
+      notifyShow(result.message, result.success ? 'success' : 'danger');
+      if (result.success) {
+        $('#modalUsuariosSinEmpleado').modal('hide');
+        if (typeof table !== 'undefined' && table.ajax) table.ajax.reload(null, false);
+        if (result.empleado_id) empleado_detail(result.empleado_id);
+      }
+    });
+  }
+
+  $('#vinculo-buscar-usuario').on('keyup', function(e) {
+    if (e.key === 'Enter') buscarUsuariosVinculo();
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var abrirVinculo = sessionStorage.getItem('abrirVinculoEmpleado');
+    if (abrirVinculo && typeof empleado_detail === 'function') {
+      sessionStorage.removeItem('abrirVinculoEmpleado');
+      var empId = parseInt(abrirVinculo, 10);
+      setTimeout(function() {
+        empleado_detail(empId);
+        setTimeout(function() { abrirModalVincularUsuario(empId); }, 600);
+      }, 400);
+    }
+  });
 
 </script>
 

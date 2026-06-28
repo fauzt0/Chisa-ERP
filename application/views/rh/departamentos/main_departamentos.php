@@ -142,13 +142,15 @@
   </div>
 </div>
 
+<?php $this->load->view('rh/partials/modal_styles'); ?>
+
 <!-- Modal Agregar Departamento -->
-<div class="modal fade" id="modalAgregar" tabindex="-1">
+<div class="modal fade rh-modal" id="modalAgregar" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i data-lucide="plus-circle"></i> Nuevo Departamento</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="modal-header rh-header-brand text-white">
+        <h5 class="modal-title text-white"><i data-lucide="plus-circle"></i> Nuevo Departamento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="formAgregar">
@@ -171,12 +173,12 @@
 </div>
 
 <!-- Modal Editar Departamento -->
-<div class="modal fade" id="modalEditar" tabindex="-1">
+<div class="modal fade rh-modal" id="modalEditar" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i data-lucide="edit"></i> Editar Departamento</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="modal-header rh-header-brand text-white">
+        <h5 class="modal-title text-white"><i data-lucide="edit"></i> Editar Departamento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="formEditar">

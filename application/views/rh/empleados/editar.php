@@ -22,6 +22,25 @@ $emp = $response['empleado'];
         </div>
         <div class="card-body">
 
+          <?php if (!empty($response['vinculo_habilitado'])): ?>
+          <div class="alert alert-light border mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div>
+                <h6 class="mb-1"><i class="fas fa-user-lock text-primary"></i> Usuario ERP vinculado</h6>
+                <?php if (!empty($response['usuario_vinculado'])): ?>
+                  <span class="small">#<?= (int)$response['usuario_vinculado']->id ?> — <?= htmlspecialchars($response['usuario_vinculado']->nombre . ' ' . $response['usuario_vinculado']->apellidos) ?></span><br>
+                  <span class="text-muted small"><?= htmlspecialchars($response['usuario_vinculado']->username) ?></span>
+                <?php else: ?>
+                  <span class="text-muted small">Este empleado no tiene usuario del sistema vinculado.</span>
+                <?php endif; ?>
+              </div>
+              <a href="<?= base_url('rh/RecursosHumanos') ?>" class="btn btn-sm btn-outline-primary" onclick="sessionStorage.setItem('abrirVinculoEmpleado', '<?= (int)$emp->id ?>');">
+                <i class="fas fa-link"></i> Gestionar vinculación
+              </a>
+            </div>
+          </div>
+          <?php endif; ?>
+
           <?php echo form_open_multipart('rh/RecursosHumanos/editar/'.$emp->id); ?>
 
           <!-- Tabs de navegación -->

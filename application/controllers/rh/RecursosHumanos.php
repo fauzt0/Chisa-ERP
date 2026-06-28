@@ -12,6 +12,7 @@ class RecursosHumanos extends MY_Controller {
     $this->load->model("RH/EmpleadoModel");
     $this->load->model("RH/DepartamentoModel");
     $this->load->model("RH/DocumentoEmpleadoModel");
+    $this->load->model("RH/EmpleadoUsuarioModel");
     
     // El controlador base ya maneja la sesión y los permisos del módulo
   }
@@ -51,6 +52,10 @@ class RecursosHumanos extends MY_Controller {
         $this->session->userdata('id'),
         'reloj_ver_reportes'
     );
+    $this->viewData['response']['vinculo_usuarios_habilitado'] = $this->EmpleadoUsuarioModel->tiene_vinculo_habilitado();
+    $this->viewData['response']['usuarios_sin_empleado'] = $this->EmpleadoUsuarioModel->tiene_vinculo_habilitado()
+        ? count($this->EmpleadoUsuarioModel->usuarios_sin_empleado(500))
+        : 0;
     $this->viewData['validate'] = '';
     $this->viewData['pageView'] = 'rh/empleados/main_empleados';
     
@@ -100,6 +105,12 @@ class RecursosHumanos extends MY_Controller {
       if (isset($expediente_map[$empleado->id])) {
         $exp_falt = htmlspecialchars(implode(', ', $expediente_map[$empleado->id]['faltantes']), ENT_QUOTES, 'UTF-8');
         $nombre_html .= ' <span class="badge bg-danger ms-1" style="font-size:0.65rem;cursor:pointer;" title="Expediente incompleto: ' . $exp_falt . '" onclick="empleado_detail(' . $empleado->id . ')">📁</span>';
+      }
+      if ($this->EmpleadoUsuarioModel->tiene_vinculo_habilitado()) {
+        $usr = $this->EmpleadoUsuarioModel->get_usuario_por_empleado($empleado->id);
+        if ($usr) {
+          $nombre_html .= ' <span class="badge bg-primary ms-1" style="font-size:0.65rem;" title="Usuario ERP: ' . htmlspecialchars($usr->username, ENT_QUOTES) . '"><i class="fas fa-user-lock"></i></span>';
+        }
       }
       $row[] = $nombre_html;
       
@@ -301,6 +312,8 @@ class RecursosHumanos extends MY_Controller {
         'empleados' => $empleados,
         'tipos_documento' => DocumentoEmpleadoModel::TIPOS_DOCUMENTO,
         'checklist' => $this->DocumentoEmpleadoModel->get_checklist_empleado($id),
+        'usuario_vinculado' => $this->EmpleadoUsuarioModel->get_usuario_por_empleado($id),
+        'vinculo_habilitado' => $this->EmpleadoUsuarioModel->tiene_vinculo_habilitado(),
       ];
       $this->viewData['pageView'] = 'rh/empleados/editar';
       
@@ -400,11 +413,20 @@ class RecursosHumanos extends MY_Controller {
     $tabs = [];
 
     // Tab 1: Información Personal
+    $usuario_vinculado = $this->EmpleadoUsuarioModel->get_usuario_por_empleado($id);
+    $usuario_html = '<span class="text-muted">Sin vincular</span>';
+    if ($usuario_vinculado) {
+        $usuario_html = '<strong>#' . (int)$usuario_vinculado->id . '</strong> — '
+            . htmlspecialchars($usuario_vinculado->nombre . ' ' . $usuario_vinculado->apellidos)
+            . '<br><small class="text-muted">' . htmlspecialchars($usuario_vinculado->username) . '</small>';
+    }
+
     $tabs['personal'] = [
       'icon' => 'user',
       'label' => 'Personal',
       'fields' => [
         ['label' => 'Nombre completo', 'value' => $empleado->nombre . ' ' . $empleado->apellido_paterno . ' ' . $empleado->apellido_materno, 'icon' => 'user'],
+        ['label' => 'Usuario ERP', 'value' => $usuario_html, 'icon' => 'user-check'],
         ['label' => 'Género', 'value' => $empleado->genero, 'icon' => 'users'],
         ['label' => 'Estado Civil', 'value' => $empleado->estado_civil ?? 'No especificado', 'icon' => 'heart'],
         ['label' => 'Fecha Nacimiento', 'value' => $empleado->fecha_nacimiento ?? 'N/A', 'icon' => 'calendar'],
@@ -487,6 +509,12 @@ class RecursosHumanos extends MY_Controller {
       'empleado_id' => $id,
       'total_documentos' => $total_docs,
       'checklist' => $checklist,
+      'vinculo_habilitado' => $this->EmpleadoUsuarioModel->tiene_vinculo_habilitado(),
+      'usuario_vinculado' => $usuario_vinculado ? [
+        'id' => (int)$usuario_vinculado->id,
+        'nombre' => $usuario_vinculado->nombre . ' ' . $usuario_vinculado->apellidos,
+        'username' => $usuario_vinculado->username,
+      ] : null,
     ];
 
     echo json_encode([
@@ -497,6 +525,70 @@ class RecursosHumanos extends MY_Controller {
       'tabs' => $tabs,
       'actions' => $actions
     ]);
+  }
+
+  // ========================================================================
+  // VINCULACIÓN USUARIO ERP ↔ EMPLEADO
+  // ========================================================================
+
+  public function usuarios_buscar_ajax() {
+    $termino = trim((string)$this->input->post('q'));
+    $empleado_id = (int)$this->input->post('empleado_id');
+    $usuarios = $this->EmpleadoUsuarioModel->buscar_usuarios($termino, $empleado_id ?: null);
+    $lista = [];
+    foreach ($usuarios as $u) {
+      $lista[] = [
+        'id' => (int)$u->id,
+        'nombre' => trim($u->nombre . ' ' . $u->apellidos),
+        'username' => $u->username,
+        'departamento' => $u->departamento,
+        'vinculado_a_este' => $empleado_id && (int)$u->empleado_id === $empleado_id,
+        'ocupado' => !empty($u->empleado_id) && (!$empleado_id || (int)$u->empleado_id !== $empleado_id),
+      ];
+    }
+    echo json_encode(['success' => true, 'usuarios' => $lista]);
+  }
+
+  public function usuarios_sin_empleado_ajax() {
+    $usuarios = $this->EmpleadoUsuarioModel->usuarios_sin_empleado(100);
+    $lista = [];
+    foreach ($usuarios as $u) {
+      $lista[] = [
+        'id' => (int)$u->id,
+        'nombre' => trim($u->nombre . ' ' . $u->apellidos),
+        'username' => $u->username,
+        'departamento' => $u->departamento,
+      ];
+    }
+    echo json_encode(['success' => true, 'usuarios' => $lista, 'total' => count($lista)]);
+  }
+
+  public function vincular_usuario_ajax() {
+    $empleado_id = (int)$this->input->post('empleado_id');
+    $usuario_id = (int)$this->input->post('usuario_id');
+    if (!$empleado_id || !$usuario_id) {
+      echo json_encode(['success' => false, 'message' => 'Empleado y usuario son requeridos']);
+      return;
+    }
+    echo json_encode($this->EmpleadoUsuarioModel->vincular($empleado_id, $usuario_id));
+  }
+
+  public function desvincular_usuario_ajax() {
+    $empleado_id = (int)$this->input->post('empleado_id');
+    if (!$empleado_id) {
+      echo json_encode(['success' => false, 'message' => 'Empleado requerido']);
+      return;
+    }
+    echo json_encode($this->EmpleadoUsuarioModel->desvincular($empleado_id));
+  }
+
+  public function crear_empleado_desde_usuario_ajax() {
+    $usuario_id = (int)$this->input->post('usuario_id');
+    if (!$usuario_id) {
+      echo json_encode(['success' => false, 'message' => 'Usuario requerido']);
+      return;
+    }
+    echo json_encode($this->EmpleadoUsuarioModel->crear_empleado_desde_usuario($usuario_id));
   }
 
   // ========================================================================

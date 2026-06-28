@@ -135,12 +135,12 @@
 #tablaNominas .btn-group { gap: 0; }
 </style>
 
-<!-- Modal Nueva Nómina -->
-<div class="modal fade" id="modalNomina" tabindex="-1">
+<?php $this->load->view('rh/partials/modal_styles'); ?>
+<div class="modal fade rh-modal" id="modalNomina" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content border-0 shadow">
       <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
-        <h5 class="modal-title"><i data-lucide="plus-circle" style="width:20px;height:20px;"></i> Nueva Nómina</h5>
+        <h5 class="modal-title text-white"><i data-lucide="plus-circle" style="width:20px;height:20px;"></i> Nueva Nómina</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -187,11 +187,11 @@
 </div>
 
 <!-- Modal Detalle -->
-<div class="modal fade" id="modalDetalleNomina" tabindex="-1">
+<div class="modal fade rh-modal" id="modalDetalleNomina" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content border-0 shadow">
       <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
-        <h5 class="modal-title"><i data-lucide="receipt" style="width:20px;height:20px;"></i> Detalle de Nómina</h5>
+        <h5 class="modal-title text-white"><i data-lucide="receipt" style="width:20px;height:20px;"></i> Detalle de Nómina</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="detalleNominaBody"></div>
@@ -209,12 +209,12 @@
 </div>
 
 <!-- Modal Procesar Pago (selección por trabajador) -->
-<div class="modal fade" id="modalProcesarPago" tabindex="-1">
+<div class="modal fade rh-modal" id="modalProcesarPago" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content border-0 shadow">
       <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
         <div>
-          <h5 class="modal-title mb-0"><i data-lucide="banknote" style="width:20px;height:20px;"></i> Procesar Pago de Nómina</h5>
+          <h5 class="modal-title mb-0 text-white"><i data-lucide="banknote" style="width:20px;height:20px;"></i> Procesar Pago de Nómina</h5>
           <small class="text-white-50" id="pago-nomina-subtitulo">Seleccione los trabajadores a pagar</small>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -294,11 +294,11 @@
 </div>
 
 <!-- Modal Recibos de Pago (previsualización + PDF) -->
-<div class="modal fade" id="modalRecibosNomina" tabindex="-1">
+<div class="modal fade rh-modal" id="modalRecibosNomina" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content border-0 shadow">
       <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title mb-0">
+        <h5 class="modal-title mb-0 text-white">
           <i class="fas fa-receipt me-2"></i> Recibos de Pago
           <span class="badge bg-light text-dark ms-2" id="recibos-modal-folio"></span>
           <small class="text-white-50 ms-2" id="recibos-modal-count"></small>
