@@ -106,6 +106,30 @@ class IncidenciasModel extends MY_Model {
     }
     
     /**
+     * Incidencias activas con impacto en nómina dentro del periodo.
+     */
+    public function get_incidencias_nomina_periodo($empleado_id, $periodo_inicio, $periodo_fin) {
+        $this->db->from($this->tableName);
+        $this->db->where('empleado_id', (int)$empleado_id);
+        $this->db->where('fecha_incidencia >=', $periodo_inicio);
+        $this->db->where('fecha_incidencia <=', $periodo_fin);
+        $this->db->where('estatus', 'Activa');
+        $this->db->order_by('fecha_incidencia', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Marca incidencias del periodo como procesadas en nómina.
+     */
+    public function marcar_procesadas_periodo($empleado_id, $periodo_inicio, $periodo_fin) {
+        $this->db->where('empleado_id', (int)$empleado_id);
+        $this->db->where('fecha_incidencia >=', $periodo_inicio);
+        $this->db->where('fecha_incidencia <=', $periodo_fin);
+        $this->db->where('estatus', 'Activa');
+        return $this->db->update($this->tableName, ['estatus' => 'Procesada']);
+    }
+
+    /**
      * Marca una incidencia como procesada
      */
     public function marcar_procesada($id) {

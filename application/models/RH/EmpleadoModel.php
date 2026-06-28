@@ -365,7 +365,7 @@ class EmpleadoModel extends MY_Model {
      * Obtiene empleados activos con datos fiscales faltantes (RFC, CURP, NSS)
      */
     public function get_empleados_datos_faltantes() {
-        return $this->db->select("id, nombre, apellido_paterno, apellido_materno, rfc, curp, nss")
+        $empleados = $this->db->select("id, nombre, apellido_paterno, apellido_materno, rfc, curp, nss, email_corporativo, telefono, fecha_nacimiento, genero")
                         ->where('estatus', 1)
                         ->group_start()
                             ->where('rfc IS NULL', null, false)
@@ -374,9 +374,47 @@ class EmpleadoModel extends MY_Model {
                             ->or_where('curp', '')
                             ->or_where('nss IS NULL', null, false)
                             ->or_where('nss', '')
+                            ->or_where('email_corporativo IS NULL', null, false)
+                            ->or_where('email_corporativo', '')
+                            ->or_where('fecha_nacimiento IS NULL', null, false)
+                            ->or_where('fecha_nacimiento', '')
                         ->group_end()
                         ->get($this->tableName)
                         ->result();
+
+        $resultado = [];
+        $campos_revisar = [
+            'rfc' => 'RFC',
+            'curp' => 'CURP',
+            'nss' => 'NSS',
+            'email_corporativo' => 'Email Corp.',
+            'fecha_nacimiento' => 'Fecha Nac.',
+        ];
+
+        foreach ($empleados as $emp) {
+            $faltantes = [];
+            foreach ($campos_revisar as $campo => $etiqueta) {
+                if (empty($emp->$campo)) {
+                    $faltantes[] = $etiqueta;
+                }
+            }
+            if (!empty($faltantes)) {
+                $resultado[] = [
+                    'id' => $emp->id,
+                    'nombre' => $emp->nombre . ' ' . $emp->apellido_paterno . ' ' . $emp->apellido_materno,
+                    'numero_empleado' => $emp->id,
+                    'faltantes' => $faltantes,
+                    'total_faltantes' => count($faltantes),
+                    'rfc' => $emp->rfc,
+                    'curp' => $emp->curp,
+                    'nss' => $emp->nss,
+                    'email' => $emp->email_corporativo,
+                    'fecha_nacimiento' => $emp->fecha_nacimiento,
+                ];
+            }
+        }
+
+        return $resultado;
     }
     
     /**

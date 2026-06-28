@@ -15,9 +15,10 @@ $emp = $response['empleado'];
   
   <div class="row">
     <div class="col-md-12">
-      <div class="card">
-        <div class="card-header">
-          <h2><i class="fa-solid fa-user-edit"></i> Editar Empleado: <?php echo $emp->numero_empleado; ?></h2>
+      <div class="card border-0 shadow-sm">
+        <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%);">
+          <h2 class="h4 mb-0"><i data-lucide="user-pen" class="me-2" style="width:24px;height:24px;"></i> Editar Empleado: <?php echo htmlspecialchars($emp->numero_empleado); ?></h2>
+          <small class="text-white-50"><?php echo htmlspecialchars(trim($emp->nombre . ' ' . $emp->apellido_paterno)); ?></small>
         </div>
         <div class="card-body">
 
@@ -53,6 +54,11 @@ $emp = $response['empleado'];
             <li class="nav-item" role="presentation">
               <button class="nav-link" id="prestaciones-tab" data-bs-toggle="tab" data-bs-target="#prestaciones" type="button">
                 <i data-lucide="shield"></i> Prestaciones
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="documentos-tab" data-bs-toggle="tab" data-bs-target="#documentos" type="button">
+                <i data-lucide="folder"></i> Documentos
               </button>
             </li>
           </ul>
@@ -417,6 +423,71 @@ $emp = $response['empleado'];
               </div>
             </div>
 
+            <!-- TAB 7: Documentos del Expediente -->
+            <div class="tab-pane fade" id="documentos" role="tabpanel">
+              <?php $chk = $response['checklist']; ?>
+              <div class="card border-0 mb-3" style="background: linear-gradient(135deg, #f8fafc, #eef2f7);">
+                <div class="card-body py-3" id="checklist-expediente-editar">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i data-lucide="clipboard-check"></i> Checklist de Expediente</h6>
+                    <span class="badge bg-<?php echo $chk['completo'] ? 'success' : 'warning'; ?>"><?php echo $chk['porcentaje']; ?>% completo</span>
+                  </div>
+                  <div class="progress mb-3" style="height:10px;">
+                    <div class="progress-bar bg-<?php echo $chk['completo'] ? 'success' : 'primary'; ?>" style="width:<?php echo $chk['porcentaje']; ?>%"></div>
+                  </div>
+                  <div class="row g-2">
+                    <?php foreach ($chk['items'] as $item): ?>
+                      <div class="col-md-4 col-6">
+                        <div class="d-flex align-items-center gap-2 small <?php echo $item['tiene'] ? 'text-success' : 'text-danger'; ?>">
+                          <i data-lucide="<?php echo $item['tiene'] ? 'check-circle' : 'circle'; ?>" style="width:16px;height:16px;"></i>
+                          <?php echo htmlspecialchars($item['label']); ?>
+                        </div>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-5">
+                  <div class="card border-0 bg-light">
+                    <div class="card-body">
+                      <h6 class="mb-3"><i data-lucide="upload"></i> Subir Documento</h6>
+                      <form id="formDocEditar" enctype="multipart/form-data">
+                        <input type="hidden" name="empleado_id" value="<?php echo $emp->id; ?>">
+                        <div class="mb-3">
+                          <label class="form-label">Tipo de Documento</label>
+                          <select class="form-select" name="tipo_documento" required>
+                            <option value="">Seleccionar...</option>
+                            <?php foreach ($response['tipos_documento'] as $key => $label): ?>
+                              <option value="<?php echo $key; ?>"><?php echo $label; ?></option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Archivo (PDF o imagen)</label>
+                          <input type="file" class="form-control" name="archivo" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" required>
+                          <small class="text-muted">Máximo 10 MB · NSS, acta de nacimiento, CURP, etc.</small>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Observaciones</label>
+                          <textarea class="form-control" name="observaciones" rows="2"></textarea>
+                        </div>
+                        <button type="button" class="btn btn-primary w-100" onclick="subirDocEditar()">
+                          <i data-lucide="upload"></i> Subir Documento
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-7">
+                  <h6 class="mb-3"><i data-lucide="folder"></i> Expediente Digital</h6>
+                  <div id="lista-docs-editar">
+                    <div class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <!-- Mensajes de validación -->
@@ -467,5 +538,86 @@ document.addEventListener("DOMContentLoaded", function() {
   <?php if (validation_errors()): ?>
     notifyShow("Hay errores en el formulario. Por favor revisa los campos marcados.", "danger");
   <?php endif; ?>
+
+  cargarDocsEditar(<?php echo (int)$emp->id; ?>);
+
+  if (window.location.hash === '#documentos') {
+    var tab = document.querySelector('#documentos-tab');
+    if (tab) new bootstrap.Tab(tab).show();
+  }
 });
+
+function cargarDocsEditar(empleadoId) {
+  $.post('<?= base_url('rh/RecursosHumanos/documentos_listar') ?>', {
+    empleado_id: empleadoId,
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(result) {
+    result = JSON.parse(result);
+    if (result.checklist) {
+      actualizarChecklistEditar(result.checklist);
+    }
+    if (!result.success || !result.documentos.length) {
+      $('#lista-docs-editar').html('<div class="alert alert-light border text-center">Sin documentos en el expediente</div>');
+      return;
+    }
+    var html = '<div class="table-responsive"><table class="table table-sm table-hover"><thead class="table-light"><tr><th>Tipo</th><th>Archivo</th><th>Fecha</th><th></th></tr></thead><tbody>';
+    result.documentos.forEach(function(doc) {
+      html += '<tr><td><span class="badge bg-primary">' + doc.tipo_label + '</span></td>' +
+        '<td class="small text-truncate" style="max-width:180px;">' + doc.nombre_archivo + '</td>' +
+        '<td class="small text-muted">' + doc.fecha_subida + '</td>' +
+        '<td class="text-end text-nowrap">' +
+          '<a href="' + doc.url + '" target="_blank" class="btn btn-sm btn-outline-primary py-0"><i data-lucide="eye" style="width:14px;height:14px;"></i></a> ' +
+          '<button class="btn btn-sm btn-outline-danger py-0" onclick="eliminarDocEditar(' + doc.id + ',' + empleadoId + ')"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>' +
+        '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    $('#lista-docs-editar').html(html);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  });
+}
+
+function subirDocEditar() {
+  var formData = new FormData(document.getElementById('formDocEditar'));
+  formData.append('peticion', 'ajax');
+  formData.append('<?php echo $this->security->get_csrf_token_name();?>', '<?php echo $this->security->get_csrf_hash();?>');
+  $.ajax({
+    url: '<?= base_url('rh/RecursosHumanos/documento_subir') ?>',
+    type: 'POST', data: formData, processData: false, contentType: false,
+    success: function(result) {
+      result = JSON.parse(result);
+      notifyShow(result.message, result.success ? 'success' : 'danger');
+      if (result.success) {
+        document.getElementById('formDocEditar').reset();
+        cargarDocsEditar(<?php echo (int)$emp->id; ?>);
+      }
+    }
+  });
+}
+
+function eliminarDocEditar(docId, empleadoId) {
+  if (!confirm('¿Eliminar este documento?')) return;
+  $.post('<?= base_url('rh/RecursosHumanos/documento_eliminar') ?>', {
+    id: docId, empleado_id: empleadoId, peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(result) {
+    result = JSON.parse(result);
+    notifyShow(result.message, result.success ? 'success' : 'danger');
+    if (result.success) cargarDocsEditar(empleadoId);
+  });
+}
+
+function actualizarChecklistEditar(chk) {
+  var html = '<div class="d-flex justify-content-between align-items-center mb-2">' +
+    '<h6 class="mb-0"><i data-lucide="clipboard-check"></i> Checklist de Expediente</h6>' +
+    '<span class="badge bg-' + (chk.completo ? 'success' : 'warning') + '">' + chk.porcentaje + '% completo</span></div>' +
+    '<div class="progress mb-3" style="height:10px;"><div class="progress-bar bg-' + (chk.completo ? 'success' : 'primary') + '" style="width:' + chk.porcentaje + '%"></div></div><div class="row g-2">';
+  chk.items.forEach(function(item) {
+    html += '<div class="col-md-4 col-6"><div class="d-flex align-items-center gap-2 small ' + (item.tiene ? 'text-success' : 'text-danger') + '">' +
+      '<i data-lucide="' + (item.tiene ? 'check-circle' : 'circle') + '" style="width:16px;height:16px;"></i>' + item.label + '</div></div>';
+  });
+  html += '</div>';
+  $('#checklist-expediente-editar').html(html);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
 </script>

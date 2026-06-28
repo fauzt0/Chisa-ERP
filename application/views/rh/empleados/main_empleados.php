@@ -13,33 +13,62 @@
   <h1 class="h3 mb-3"><?php echo $headTitle;?></h1>
 
   <!-- Alerta de Datos Faltantes (Solo Visible para Administradores con Permiso) -->
-  <?php if(!empty($response['datos_faltantes'])): ?>
-  <div class="alert alert-warning alert-dismissible fade show" role="alert">
-    <div class="alert-icon">
-      <i class="far fa-fw fa-bell"></i>
+  <?php if(!empty($response['datos_faltantes'])): 
+    $total_faltantes = count($response['datos_faltantes']);
+  ?>
+  <div class="alert alert-warning border-start border-warning border-4 px-3 py-2 mb-3" role="alert">
+    <div class="d-flex align-items-center gap-3">
+      <div class="flex-shrink-0">
+        <i class="fas fa-exclamation-triangle text-warning" style="font-size:1.3rem;"></i>
+      </div>
+      <div class="flex-grow-1">
+        <strong><i class="fas fa-bell me-1"></i> Datos Incompletos:</strong> 
+        <strong class="text-danger"><?php echo $total_faltantes; ?></strong> empleado<?php echo $total_faltantes > 1 ? 's' : ''; ?> con información fiscal faltante.
+        <div class="mt-1 d-flex flex-wrap gap-1">
+          <?php foreach(array_slice($response['datos_faltantes'], 0, 5) as $emp): 
+            $faltantes_str = implode(', ', $emp['faltantes']);
+          ?>
+            <a href="<?php echo base_url('rh/RecursosHumanos/editar/'.$emp['id']); ?>" 
+               class="btn btn-sm btn-outline-danger px-2 py-0" 
+               style="font-size:0.72rem;"
+               title="Faltan: <?php echo $faltantes_str; ?>">
+              <?php echo $emp['nombre']; ?> 
+              <span class="badge bg-warning text-dark ms-1"><?php echo $emp['total_faltantes']; ?></span>
+            </a>
+          <?php endforeach; ?>
+          <?php if($total_faltantes > 5): ?>
+            <span class="small text-muted align-self-center ms-1">+<?php echo $total_faltantes - 5; ?> más</span>
+          <?php endif; ?>
+        </div>
+      </div>
+      <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-    <div class="alert-message">
-      <strong><i class="fas fa-exclamation-triangle"></i> Atención:</strong> Se han detectado empleados con datos fiscales incompletos (RFC, CURP o NSS).
-      <ul class="mb-0 mt-1">
-        <?php foreach(array_slice($response['datos_faltantes'], 0, 5) as $emp): ?>
-          <li>
-            <?php echo $emp->nombre . ' ' . $emp->apellido_paterno; ?>: 
-            <?php 
-              $faltantes = [];
-              if(empty($emp->rfc)) $faltantes[] = 'RFC';
-              if(empty($emp->curp)) $faltantes[] = 'CURP';
-              if(empty($emp->nss)) $faltantes[] = 'NSS';
-              echo implode(', ', $faltantes);
-            ?>
-             - <a href="<?php echo base_url('rh/RecursosHumanos/editar/'.$emp->id); ?>" class="alert-link">Corregir</a>
-          </li>
-        <?php endforeach; ?>
-        <?php if(count($response['datos_faltantes']) > 5): ?>
-          <li>... y <?php echo count($response['datos_faltantes']) - 5; ?> más.</li>
-        <?php endif; ?>
-      </ul>
+  </div>
+  <?php endif; ?>
+
+  <!-- Alerta de Expedientes Incompletos -->
+  <?php if(!empty($response['total_expedientes_incompletos']) && $response['total_expedientes_incompletos'] > 0): ?>
+  <div class="alert alert-danger border-start border-danger border-4 px-3 py-2 mb-3" role="alert">
+    <div class="d-flex align-items-center gap-3">
+      <div class="flex-shrink-0">
+        <i class="fas fa-folder-open text-danger" style="font-size:1.3rem;"></i>
+      </div>
+      <div class="flex-grow-1">
+        <strong><i class="fas fa-file-alt me-1"></i> Expedientes Incompletos:</strong>
+        <strong><?php echo (int)$response['total_expedientes_incompletos']; ?></strong> empleado(s) sin documentación requerida (acta, CURP, RFC, NSS, INE, comprobante domicilio).
+        <div class="mt-1 d-flex flex-wrap gap-1">
+          <?php foreach(($response['expedientes_incompletos'] ?? []) as $exp): ?>
+            <a href="<?php echo base_url('rh/RecursosHumanos/editar/'.$exp['id'].'#documentos'); ?>"
+               class="btn btn-sm btn-outline-danger px-2 py-0" style="font-size:0.72rem;"
+               title="Faltan: <?php echo htmlspecialchars(implode(', ', $exp['faltantes'])); ?>">
+              <?php echo htmlspecialchars($exp['nombre']); ?>
+              <span class="badge bg-light text-danger ms-1"><?php echo (int)$exp['total_faltantes']; ?></span>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="alert"></button>
     </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
   <?php endif; ?>
 
@@ -185,6 +214,7 @@
                   </div>
                 </div>                
                 <a href="<?php echo base_url('rh/RecursosHumanos/alta'); ?>" class="btn btn-primary btn-lg"><i data-lucide="plus"></i> Alta Empleado</a>
+                <a href="<?php echo base_url('rh/Nomina'); ?>" class="btn btn-success btn-lg"><i data-lucide="banknote"></i> Nómina</a>
                 <a href="<?php echo base_url('rh/RecursosHumanos/plantillas'); ?>" class="btn btn-info btn-lg"><i class="fas fa-file-contract"></i> Plantillas Contratos</a>                
                 <button onclick="abrirTodasSolicitudes()" class="btn btn-warning btn-lg">
                   <i class="fas fa-umbrella-beach"></i> Vacaciones
@@ -244,59 +274,105 @@
     </div>
 
     <!-- Offcanvas Detalle Empleado -->
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasDetalleEmpleado" aria-labelledby="offcanvasDetalleEmpleadoLabel">
-      <div class="offcanvas-header bg-light">
-        <h5 id="offcanvasDetalleEmpleadoLabel"><i class="fas fa-user-circle"></i> Datos del Empleado</h5>
-        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasDetalleEmpleado" aria-labelledby="offcanvasDetalleEmpleadoLabel" style="width: 520px !important;">
+      <div class="offcanvas-header border-bottom" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%);">
+        <div>
+          <h5 id="offcanvasDetalleEmpleadoLabel" class="mb-1 fw-bold text-white" style="font-size:1rem;"><i class="fas fa-id-card me-2 text-white"></i><span id="offcanvas-empleado-nombre" class="text-white">Datos del Empleado</span></h5>
+          <small class="text-white-50" id="offcanvas-empleado-numero"></small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
-      <div class="offcanvas-body">
-         <div id="actions" class="mb-3 text-center"></div>
-         <hr>
-          <div class="table-responsive">
-            <table class="table table-sm my-2">
-              <tbody id="detalles">
-              </tbody>
-            </table>
+      <!-- Tabs de navegación -->
+      <ul class="nav nav-tabs nav-fill px-2 pt-2" id="offcanvasTabs" role="tablist" style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tab-personal-btn" data-bs-toggle="tab" data-bs-target="#tab-personal" type="button" role="tab">
+            <i data-lucide="user" class="d-block mx-auto mb-1" style="width:18px;height:18px;"></i>
+            <small>Personal</small>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-fiscal-btn" data-bs-toggle="tab" data-bs-target="#tab-fiscal" type="button" role="tab">
+            <i data-lucide="file-text" class="d-block mx-auto mb-1" style="width:18px;height:18px;"></i>
+            <small>Fiscal</small>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-laboral-btn" data-bs-toggle="tab" data-bs-target="#tab-laboral" type="button" role="tab">
+            <i data-lucide="briefcase" class="d-block mx-auto mb-1" style="width:18px;height:18px;"></i>
+            <small>Laboral</small>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-documentos-btn" data-bs-toggle="tab" data-bs-target="#tab-documentos" type="button" role="tab">
+            <i data-lucide="folder" class="d-block mx-auto mb-1" style="width:18px;height:18px;"></i>
+            <small>Docs</small>
+          </button>
+        </li>
+      </ul>
+      <div class="offcanvas-body pt-3">
+        <!-- Acciones rápidas -->
+        <div id="offcanvas-actions" class="d-flex gap-2 flex-wrap mb-3">
+        </div>
+
+        <!-- Contenido de tabs -->
+        <div class="tab-content" id="offcanvasTabsContent">
+          <div class="tab-pane fade show active" id="tab-personal" role="tabpanel">
+            <div class="list-group list-group-flush" id="tab-personal-content"></div>
           </div>
+          <div class="tab-pane fade" id="tab-fiscal" role="tabpanel">
+            <div class="list-group list-group-flush" id="tab-fiscal-content"></div>
+          </div>
+          <div class="tab-pane fade" id="tab-laboral" role="tabpanel">
+            <div class="list-group list-group-flush" id="tab-laboral-content"></div>
+          </div>
+          <div class="tab-pane fade" id="tab-documentos" role="tabpanel">
+            <div id="checklist-documentos-offcanvas" class="mb-2"></div>
+            <div class="list-group list-group-flush mb-2" id="tab-documentos-content"></div>
+            <div id="lista-documentos-empleado" class="mb-2"></div>
+            <button type="button" class="btn btn-sm btn-outline-primary w-100" onclick="abrirModalSubirDocumento()">
+              <i data-lucide="upload" style="width:14px;height:14px;"></i> Adjuntar Documento
+            </button>
+          </div>
+        </div>
 
           <!-- Balance de Vacaciones -->
-          <div id="vacaciones-badge" style="display:none;" class="alert alert-info mt-3 p-3">
-            <div class="border-bottom pb-2 mb-3">
-              <strong class="text-primary text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">🏖️ Vacaciones</strong><br>
-              <button class="btn btn-sm btn-primary shadow-sm mt-2" onclick="verVacaciones()" id="btn-ver-vacaciones">
+          <div id="vacaciones-badge" style="display:none;" class="alert alert-info mt-3 px-4 py-3">
+            <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-2 me-3">
+              <strong class="text-primary text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">🏖️ Vacaciones</strong>
+              <button class="btn btn-sm btn-primary py-1" onclick="verVacaciones()" id="btn-ver-vacaciones">
                 <i class="fas fa-calendar-alt"></i> Ver Detalle
               </button>
             </div>
-            <div class="text-center">
-              <h2 class="mb-1 fw-bold" id="dias-disponibles">-- días</h2>
+            <div class="text-center py-1">
+              <h2 class="mb-0 fw-bold" id="dias-disponibles">-- días</h2>
               <small class="text-muted d-block" id="periodo-vacaciones">Cargando...</small>
             </div>
           </div>
 
           <!-- Balance de Incidencias -->
-          <div id="incidencias-badge" style="display:none;" class="alert alert-warning mt-3 p-3">
-            <div class="border-bottom pb-2 mb-3">
-              <strong class="text-warning text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">⚠️ Incidencias</strong><br>
-              <button class="btn btn-sm btn-warning shadow-sm mt-2" onclick="verIncidencias()" id="btn-ver-incidencias">
+          <div id="incidencias-badge" style="display:none;" class="alert alert-warning mt-3 px-4 py-3">
+            <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-2">
+              <strong class="text-warning text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">⚠️ Incidencias</strong>
+              <button class="btn btn-sm btn-warning py-1" onclick="verIncidencias()" id="btn-ver-incidencias">
                 <i class="fas fa-exclamation-triangle"></i> Ver Incidencias
               </button>
             </div>
-            <div class="text-center">
-              <h2 class="mb-1 fw-bold" id="total-incidencias">0</h2>
+            <div class="text-center py-1">
+              <h2 class="mb-0 fw-bold" id="total-incidencias">0</h2>
               <small class="text-muted d-block">Incidencias este año</small>
             </div>
           </div>
 
           <!-- Horario Laboral -->
-          <div id="horario-badge" style="display:none;" class="alert alert-info mt-3 p-3">
-            <div class="border-bottom pb-2 mb-3">
-              <strong class="text-info text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">🕐 Horario Laboral</strong><br>
-              <button class="btn btn-sm btn-info shadow-sm mt-2" onclick="verHorario()" id="btn-ver-horario">
+          <div id="horario-badge" style="display:none;" class="alert alert-info mt-3 px-4 py-3">
+            <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-2">
+              <strong class="text-info text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">🕐 Horario Laboral</strong>
+              <button class="btn btn-sm btn-info py-1" onclick="verHorario()" id="btn-ver-horario">
                 <i class="fas fa-clock"></i> Ver/Editar Horario
               </button>
             </div>
-            <div class="text-center">
-              <h2 class="mb-1 fw-bold" id="horas-semana">0 hrs</h2>
+            <div class="text-center py-1">
+              <h2 class="mb-0 fw-bold" id="horas-semana">0 hrs</h2>
               <small class="text-muted d-block" id="turno-empleado">Sin horario</small>
             </div>
           </div>
@@ -637,6 +713,7 @@
                 <option value="Falta Justificada">Falta Justificada</option>
                 <option value="Permiso">Permiso</option>
                 <option value="Incapacidad">Incapacidad</option>
+                <option value="Horas Extras">Horas Extras</option>
                 <option value="Suspensión">Suspensión</option>
                 <option value="Amonestación">Amonestación</option>
                 <option value="Renuncia">Renuncia</option>
@@ -693,99 +770,162 @@
   </div>
 </div>
 
+<!-- Modal: Subir Documento del Empleado -->
+<div class="modal fade" id="modalSubirDocumento" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
+        <h5 class="modal-title"><i data-lucide="upload" style="width:20px;height:20px;"></i> Adjuntar Documento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formSubirDocumento" enctype="multipart/form-data">
+          <input type="hidden" name="empleado_id" id="doc_empleado_id">
+          <div class="mb-3">
+            <label class="form-label">Tipo de Documento <span class="text-danger">*</span></label>
+            <select class="form-select" name="tipo_documento" id="doc_tipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="acta_nacimiento">Acta de Nacimiento</option>
+              <option value="curp">CURP</option>
+              <option value="rfc">Constancia RFC</option>
+              <option value="nss">IMSS / Seguro Social</option>
+              <option value="ine">INE / Identificación</option>
+              <option value="comprobante_domicilio">Comprobante de Domicilio</option>
+              <option value="comprobante_estudios">Comprobante de Estudios</option>
+              <option value="carta_recomendacion">Carta de Recomendación</option>
+              <option value="constancia_fiscal">Constancia de Situación Fiscal</option>
+              <option value="cuenta_bancaria">Estado de Cuenta / CLABE</option>
+              <option value="contrato_firmado">Contrato Firmado</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Archivo (PDF o imagen) <span class="text-danger">*</span></label>
+            <input type="file" class="form-control" name="archivo" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" required>
+            <small class="text-muted">Máximo 10 MB</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea class="form-control" name="observaciones" rows="2" placeholder="Notas opcionales..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="subirDocumentoEmpleado()">
+          <i data-lucide="upload" style="width:16px;height:16px;"></i> Subir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Calculadora de Finiquito/Liquidación -->
 <div class="modal fade" id="modalCalculadoraBaja" tabindex="-1">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title"><i class="fas fa-calculator"></i> Calculadora de Finiquito y Liquidación (Estimado)</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header text-white pb-2" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%);">
+        <div>
+          <h5 class="modal-title mb-1 fw-bold"><i class="fas fa-calculator me-2"></i>Simulador de referencia — Finiquito / Liquidación</h5>
+          <p class="mb-0 small opacity-75">Solo estimación orientativa. El ERP no genera finiquitos oficiales; cargue el documento firmado en el expediente.</p>
+          <small class="text-white-50">Estimación basada en la Ley Federal del Trabajo</small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <div class="alert alert-warning">
-          <i class="fas fa-exclamation-triangle"></i> <strong>Nota Legal:</strong> Este cálculo es una estimación basada en la Ley Federal del Trabajo. Se recomienda validación por el departamento legal o contable antes de proceder con el pago.
+      <div class="modal-body px-4 py-4">
+        <div class="alert alert-warning py-2 px-3 small mb-4">
+          <i class="fas fa-exclamation-triangle me-1"></i> <strong>Nota Legal:</strong> Este cálculo es una <strong>estimación</strong>. Se recomienda validación por el departamento legal o contable antes de proceder con el pago.
         </div>
         
-        <div class="row">
+        <div class="row g-3">
           <!-- Datos del Empleado (Readonly) -->
-          <div class="col-md-6 mb-3">
-            <h6 class="border-bottom pb-2">Datos del Empleado</h6>
-            <div class="mb-2">
-              <label class="fw-bold">Empleado:</label> <span id="calc-nombre"></span>
-            </div>
-            <div class="mb-2">
-              <label class="fw-bold">Fecha Ingreso:</label> <span id="calc-fecha-ingreso"></span>
-            </div>
-            <div class="mb-2">
-              <label class="fw-bold">Antigüedad:</label> <span id="calc-antiguedad"></span> años
-            </div>
-            <div class="mb-2">
-              <label class="fw-bold">Salario Diario:</label> $<span id="calc-salario-diario"></span>
+          <div class="col-md-6">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body py-3">
+                <h6 class="text-uppercase text-muted mb-3" style="font-size:0.75rem;letter-spacing:0.5px;"><i class="fas fa-user me-2"></i>Datos del Empleado</h6>
+                <div class="row">
+                  <div class="col-5 text-muted small">Empleado:</div>
+                  <div class="col-7 fw-semibold text-dark" id="calc-nombre">—</div>
+                </div>
+                <div class="row mt-2">
+                  <div class="col-5 text-muted small">Fecha Ingreso:</div>
+                  <div class="col-7 fw-semibold" id="calc-fecha-ingreso">—</div>
+                </div>
+                <div class="row mt-2">
+                  <div class="col-5 text-muted small">Antigüedad:</div>
+                  <div class="col-7 fw-semibold" id="calc-antiguedad">— años</div>
+                </div>
+                <div class="row mt-2 pt-2 border-top">
+                  <div class="col-5 text-muted small">Salario Diario:</div>
+                  <div class="col-7 fw-bold text-primary fs-5" id="calc-salario-diario">$0.00</div>
+                </div>
+              </div>
             </div>
             <input type="hidden" id="calc-salario-diario-val">
             <input type="hidden" id="calc-fecha-ingreso-val">
           </div>
           
           <!-- Parámetros del Cálculo -->
-          <div class="col-md-6 mb-3">
-            <h6 class="border-bottom pb-2">Parámetros de Baja</h6>
-            <div class="mb-3">
-              <label class="form-label">Fecha de Baja</label>
-              <input type="date" class="form-control" id="calc-fecha-baja" value="<?php echo date('Y-m-d'); ?>">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Motivo de Baja</label>
-              <select class="form-select" id="calc-motivo">
-                <option value="renuncia">Renuncia Voluntaria (Finiquito)</option>
-                <option value="despido_justificado">Despido Justificado (Finiquito)</option>
-                <option value="despido_injustificado">Despido Injustificado (Liquidación)</option>
-              </select>
-            </div>
-            <div class="row">
-              <div class="col-6 mb-3">
-                <label class="form-label">Días Aguinaldo</label>
-                <input type="number" class="form-control" id="calc-dias-aguinaldo" value="15">
-              </div>
-              <div class="col-6 mb-3">
-                <label class="form-label">Días Vac. Pendientes</label>
-                <input type="number" class="form-control" id="calc-dias-vacaciones" value="0">
+          <div class="col-md-6">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body py-3">
+                <h6 class="text-uppercase text-muted mb-3" style="font-size:0.75rem;letter-spacing:0.5px;"><i class="fas fa-sliders-h me-2"></i>Parámetros de Baja</h6>
+                <div class="mb-2">
+                  <label class="form-label small fw-semibold mb-1">Fecha de Baja</label>
+                  <input type="date" class="form-control form-control-sm" id="calc-fecha-baja" value="<?php echo date('Y-m-d'); ?>" onchange="calcularBaja()">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small fw-semibold mb-1">Motivo de Baja</label>
+                  <select class="form-select form-select-sm" id="calc-motivo" onchange="calcularBaja()">
+                    <option value="renuncia">Renuncia Voluntaria (Finiquito)</option>
+                    <option value="despido_justificado">Despido Justificado (Finiquito)</option>
+                    <option value="despido_injustificado">Despido Injustificado (Liquidación)</option>
+                  </select>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small fw-semibold mb-1">Días de Aguinaldo: <span class="text-primary" id="calc-dias-aguinaldo-label">15</span></label>
+                  <input type="range" class="form-range" id="calc-dias-aguinaldo" min="0" max="60" value="15" oninput="document.getElementById('calc-dias-aguinaldo-label').textContent=this.value;calcularBaja();">
+                </div>
+                <div class="mb-0">
+                  <label class="form-label small fw-semibold mb-1">Vacaciones Pendientes: <span class="text-primary" id="calc-dias-vacaciones-label">0</span> días</label>
+                  <input type="range" class="form-range" id="calc-dias-vacaciones" min="0" max="60" value="0" oninput="document.getElementById('calc-dias-vacaciones-label').textContent=this.value;calcularBaja();">
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="d-grid gap-2 mb-4">
-          <button class="btn btn-success" onclick="calcularBaja()">
-            <i class="fas fa-coins"></i> Realizar Cálculo
-          </button>
-        </div>
-
         <!-- Resultados -->
-        <h6 class="border-bottom pb-2">Desglose del Cálculo</h6>
-        <div class="table-responsive">
-          <table class="table table-bordered table-striped text-center">
-            <thead class="table-dark">
-              <tr>
-                <th>Concepto</th>
-                <th>Operación</th>
-                <th>Monto</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-calculo-body">
-              <tr><td colspan="3" class="text-muted">Realice el cálculo para ver resultados</td></tr>
-            </tbody>
-            <tfoot class="table-light fw-bold">
-              <tr>
-                <td colspan="2" class="text-end">TOTAL ESTIMADO A PAGAR:</td>
-                <td class="text-success" id="calc-total">$0.00</td>
-              </tr>
-            </tfoot>
-          </table>
+        <div class="mt-4">
+          <h6 class="text-uppercase text-muted mb-2" style="font-size:0.75rem;letter-spacing:0.5px;"><i class="fas fa-receipt me-2"></i>Desglose del Cálculo</h6>
+          <div class="table-responsive rounded border">
+            <table class="table table-sm mb-0">
+              <thead class="table-dark text-uppercase small">
+                <tr>
+                  <th class="ps-3">Concepto</th>
+                  <th class="text-center" style="width:40px;">Op.</th>
+                  <th class="text-end pe-3" style="width:140px;">Monto</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-calculo-body">
+                <tr><td colspan="3" class="text-center text-muted small py-3"><i class="fas fa-hand-pointer me-1"></i>Los parámetros se ajustan automáticamente — revise los valores arriba</td></tr>
+              </tbody>
+              <tfoot style="background:#f0fdf4;">
+                <tr>
+                  <td colspan="2" class="text-end fw-bold pe-3" style="font-size:0.9rem;">TOTAL ESTIMADO A PAGAR:</td>
+                  <td class="text-end pe-3 fw-bold text-success" style="font-size:1.1rem;" id="calc-total">$0.00</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <!-- <button type="button" class="btn btn-primary"><i class="fas fa-print"></i> Imprimir</button> -->
+      <div class="modal-footer border-top py-2">
+        <small class="text-muted me-auto" style="font-size:0.7rem;">Salario mínimo 2026 zona general: $278.80</small>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="imprimirCalculoFiniquito()">
+          <i class="fas fa-print me-1"></i> Imprimir
+        </button>
       </div>
     </div>
   </div>
@@ -931,6 +1071,12 @@
               <i class="fas fa-list me-1"></i>Checadas individuales
             </button>
           </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link px-3 py-2 small" id="tab-reloj-calendario-vista"
+              data-bs-toggle="tab" data-bs-target="#reloj-panel-calendario" type="button" role="tab">
+              <i class="fas fa-calendar-alt me-1"></i>Calendario
+            </button>
+          </li>
         </ul>
 
         <div class="tab-content border border-top-0 rounded-bottom" id="reloj-vista-panels">
@@ -947,6 +1093,14 @@
               <div class="text-center text-muted py-5">
                 <i class="fas fa-list fa-2x mb-2 opacity-25"></i>
                 <p class="mb-0 small">Elige un periodo y presiona <strong>Consultar</strong></p>
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="reloj-panel-calendario" role="tabpanel">
+            <div id="reloj-tabla-calendario">
+              <div class="text-center text-muted py-5">
+                <i class="fas fa-calendar-alt fa-2x mb-2 opacity-25"></i>
+                <p class="mb-0 small">Cambia a modo <strong>Mes</strong> para ver el calendario</p>
               </div>
             </div>
           </div>
@@ -1093,10 +1247,45 @@ document.addEventListener("DOMContentLoaded", function() {
     },
     function(result){
       result = JSON.parse(result);
-      if(result['response']!=null){
-        $("#detalles").html(result['detail']);
-        $("#actions").html(result['actions']);
-        
+      if(result['success'] && result['response']!=null){
+
+        // Actualizar encabezado del offcanvas
+        $('#offcanvas-empleado-nombre').text(result.nombre_completo);
+        $('#offcanvas-empleado-numero').text('N° ' + (result.numero_empleado || '—'));
+
+        // Renderizar tabs desde la estructura de datos
+        if (result.tabs) {
+          Object.keys(result.tabs).forEach(function(tabKey) {
+            var tab = result.tabs[tabKey];
+            var tabContentId = '#tab-' + tabKey + '-content';
+            var html = '';
+            tab.fields.forEach(function(field) {
+              var iconHtml = field.icon ? '<i data-lucide="' + field.icon + '" class="me-2 text-muted" style="width:16px;height:16px;"></i>' : '';
+              var cssClass = field.css_class || '';
+              html += '<div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">' +
+                '<span class="text-muted small">' + iconHtml + field.label + '</span>' +
+                '<span class="fw-semibold text-end ' + cssClass + '" style="max-width:60%;">' + field.value + '</span>' +
+              '</div>';
+            });
+            $(tabContentId).html(html);
+          });
+          // Reinicializar iconos Lucide
+          if (typeof lucide !== 'undefined') { lucide.createIcons(); }
+        }
+
+        // Renderizar acciones
+        var actionsHtml = '';
+        actionsHtml += '<a href="' + result.actions.editar + '" class="btn btn-warning btn-sm"><i data-lucide="edit" class="me-1" style="width:14px;height:14px;"></i>Editar</a>';
+        actionsHtml += '<a href="' + result.actions.nuevo_contrato + '" class="btn btn-success btn-sm"><i data-lucide="file-text" class="me-1" style="width:14px;height:14px;"></i>Nuevo Contrato</a>';
+        if (result.actions.mostrar_finiquito) {
+          actionsHtml += '<button class="btn btn-info btn-sm" onclick="abrirCalculadoraBaja(' + result.actions.empleado_id + ')"><i class="fas fa-calculator me-1"></i>Finiquito</button>';
+        }
+        if (result.actions.mostrar_baja) {
+          actionsHtml += '<button class="btn btn-danger btn-sm" onclick="delete_empleado(' + result.actions.empleado_id + ')"><i data-lucide="trash-2" class="me-1" style="width:14px;height:14px;"></i>Dar de Baja</button>';
+        }
+        $('#offcanvas-actions').html(actionsHtml);
+        if (typeof lucide !== 'undefined') { lucide.createIcons(); }
+
         // Mostrar el Offcanvas
         var bsOffcanvas = new bootstrap.Offcanvas(document.getElementById('offcanvasDetalleEmpleado'));
         bsOffcanvas.show();
@@ -1116,11 +1305,23 @@ document.addEventListener("DOMContentLoaded", function() {
         <?php if (!empty($response['puede_ver_reloj'])): ?>
         cargarBadgeReloj(id);
         <?php endif; ?>
+
+        cargarDocumentosEmpleado(id);
       }else {
         notifyShow("Error al obtener los datos","danger");
       }
 
     });
+  }
+
+  // Función para notificar datos faltantes al hacer clic en el badge ⚠️
+  function notificarFaltantes(id) {
+    // Simplemente abrimos el offcanvas de detalle (ya muestra los campos en rojo en la tab Fiscal)
+    empleado_detail(id);
+    setTimeout(function() {
+      // Mostrar mensaje auxiliar indicando que revise la pestaña Fiscal
+      notifyShow('⚠️ Revisa la pestaña "Fiscal" del empleado para ver los datos faltantes (marcados en rojo)', 'warning');
+    }, 800);
   }
 
   function delete_empleado(id){
@@ -1417,7 +1618,7 @@ document.addEventListener("DOMContentLoaded", function() {
       } else {
         // No hay período, mostrar mensaje y opción de generar
         $('#dias-disponibles').html('<small class="text-muted">Sin período activo</small>');
-        $('#periodo-vacaciones').html('<button class="btn btn-sm btn-warning mt-2" onclick="generarPeriodoManual(' + empleado_id + ')"><i class="fas fa-plus"></i> Generar Período</button>');
+        $('#periodo-vacaciones').html('<button class="btn btn-sm btn-success mt-2" onclick="generarPeriodoManual(' + empleado_id + ')"><i class="fas fa-plus"></i> Generar Período</button>');
         $('#btn-ver-vacaciones').hide();
       }
     });
@@ -2134,7 +2335,7 @@ document.addEventListener("DOMContentLoaded", function() {
   function renderAsistenciasReloj(dias) {
     if (!dias || dias.length === 0) {
       var vacio = '<div class="text-center text-muted py-5"><i class="fas fa-calendar-times fa-2x mb-2 opacity-25"></i><p class="mb-0 small">Sin registros en este periodo</p></div>';
-      $('#reloj-tabla-resumen, #reloj-tabla-detalle').html(vacio);
+      $('#reloj-tabla-resumen, #reloj-tabla-detalle, #reloj-tabla-calendario').html(vacio);
       return;
     }
 
@@ -2210,6 +2411,46 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     d += '</tbody></table></div>';
     $('#reloj-tabla-detalle').html(d);
+
+    // --- Calendario mensual (solo si modo es 'mes') ---
+    if (modoRelojActual === 'mes') {
+      // Extraer año y mes de la primera fecha
+      var year = 0, month = 0;
+      dias.forEach(function(dia) {
+        if (dia.fecha) {
+          var p = dia.fecha.split('-');
+          year = parseInt(p[0], 10);
+          month = parseInt(p[1], 10);
+          return false; // break
+        }
+      });
+      if (year > 0 && month > 0 && typeof window.renderCalendarioMensual === 'function') {
+        $('#reloj-tabla-calendario').html('<div class="mt-4">' +
+          '<div class="d-flex align-items-center justify-content-between mb-3">' +
+          '<h6 class="fw-bold mb-0"><i class="fas fa-calendar-alt me-2 text-success"></i>Vista Calendario Mensual</h6>' +
+          '<div class="d-flex gap-2 align-items-center">' +
+          '<span class="badge bg-success rounded-pill px-3 py-1" style="font-size:0.7rem;">✓ Asistió</span>' +
+          '<span class="badge bg-warning text-dark rounded-pill px-3 py-1" style="font-size:0.7rem;">⚠ Retardo</span>' +
+          '<span class="badge bg-danger rounded-pill px-3 py-1" style="font-size:0.7rem;">✗ Falta</span>' +
+          '<span class="badge bg-secondary rounded-pill px-3 py-1" style="font-size:0.7rem;">— Descanso</span>' +
+          '<span class="badge bg-light text-muted rounded-pill px-3 py-1 border" style="font-size:0.7rem;"> Sin datos</span>' +
+          '</div></div>' +
+          '<div class="table-responsive rounded border">' +
+          '<table class="table table-sm table-bordered mb-0 text-center cal-month-table" style="font-size:0.8rem;">' +
+          '<thead class="table-success text-uppercase small">' +
+          '<tr><th class="fw-semibold" style="width:14.28%;">Lun</th><th class="fw-semibold" style="width:14.28%;">Mar</th><th class="fw-semibold" style="width:14.28%;">Mié</th><th class="fw-semibold" style="width:14.28%;">Jue</th><th class="fw-semibold" style="width:14.28%;">Vie</th><th class="fw-semibold text-muted" style="width:14.28%;">Sáb</th><th class="fw-semibold text-danger" style="width:14.28%;">Dom</th></tr>' +
+          '</thead><tbody id="calendario-cuerpo"></tbody></table></div>' +
+          '<div class="row mt-3 g-2" id="calendario-resumen">' +
+          '<div class="col-3"><div class="card bg-success bg-opacity-10 border-success text-center py-2"><div class="fw-bold text-success fs-5" id="cal-dias-asistio">0</div><small class="text-muted">Asistió</small></div></div>' +
+          '<div class="col-3"><div class="card bg-warning bg-opacity-10 border-warning text-center py-2"><div class="fw-bold text-warning fs-5" id="cal-dias-retardo">0</div><small class="text-muted">Con retardo</small></div></div>' +
+          '<div class="col-3"><div class="card bg-danger bg-opacity-10 border-danger text-center py-2"><div class="fw-bold text-danger fs-5" id="cal-dias-falta">0</div><small class="text-muted">Falta</small></div></div>' +
+          '<div class="col-3"><div class="card bg-light border text-center py-2"><div class="fw-bold fs-5" id="cal-total-horas">0 hrs</div><small class="text-muted">Horas trabajadas</small></div></div>' +
+          '</div></div>');
+        renderCalendarioMensual(dias, year, month);
+      } else {
+        $('#reloj-tabla-calendario').html('<div class="text-center text-muted py-5"><i class="fas fa-calendar-alt fa-2x mb-2 opacity-25"></i><p class="mb-0 small">Selecciona un mes para ver el calendario</p></div>');
+      }
+    }
   }
   <?php endif; ?>
 
@@ -2217,6 +2458,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // CALCULADORA DE FINIQUITOS
   // ===========================================
   var modalCalculadora = null;
+  var calculoResultados = null;
 
   function abrirCalculadoraBaja(id) {
     if(!modalCalculadora) {
@@ -2224,9 +2466,15 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     // Resetear
-    $('#tabla-calculo-body').html('<tr><td colspan="3" class="text-muted">Realice el cálculo para ver resultados</td></tr>');
+    calculoResultados = null;
+    $('#tabla-calculo-body').html('<tr><td colspan="3" class="text-center text-muted small py-3"><i class="fas fa-hand-pointer me-1"></i>Los parámetros se ajustan automáticamente — revise los valores arriba</td></tr>');
     $('#calc-total').text('$0.00');
     $('#calc-nombre').text('Cargando...');
+    $('#calc-salario-diario').text('$0.00');
+    $('#calc-dias-aguinaldo').val(15);
+    $('#calc-dias-vacaciones').val(0);
+    $('#calc-dias-aguinaldo-label').text('15');
+    $('#calc-dias-vacaciones-label').text('0');
     
     modalCalculadora.show();
     
@@ -2242,8 +2490,10 @@ document.addEventListener("DOMContentLoaded", function() {
            $('#calc-fecha-ingreso').text(data.fecha_ingreso);
            $('#calc-fecha-ingreso-val').val(data.fecha_ingreso);
            $('#calc-antiguedad').text(data.antiguedad_anios);
-           $('#calc-salario-diario').text(parseFloat(data.salario_diario).toFixed(2));
+           $('#calc-salario-diario').text('$' + parseFloat(data.salario_diario).toFixed(2));
            $('#calc-salario-diario-val').val(data.salario_diario);
+           // Auto-calcular al cargar los datos
+           calcularBaja();
        } else {
            alert('Error al cargar datos del empleado');
            modalCalculadora.hide();
@@ -2254,26 +2504,33 @@ document.addEventListener("DOMContentLoaded", function() {
   function calcularBaja() {
       // 1. Obtener valores
       var salarioDiario = parseFloat($('#calc-salario-diario-val').val());
-      var fechaIngreso = new Date($('#calc-fecha-ingreso-val').val() + 'T00:00:00'); // T00 para evitar timezone shift
+      var fechaIngresoStr = $('#calc-fecha-ingreso-val').val();
+      if (!fechaIngresoStr || !salarioDiario) return;
+      
+      var fechaIngreso = new Date(fechaIngresoStr + 'T00:00:00');
       var fechaBaja = new Date($('#calc-fecha-baja').val() + 'T00:00:00');
       var motivo = $('#calc-motivo').val();
-      var diasAguinaldoConf = parseFloat($('#calc-dias-aguinaldo').val()) || 15;
-      var diasVacacionesPendientes = parseFloat($('#calc-dias-vacaciones').val()) || 0;
+      var diasAguinaldoConf = parseInt($('#calc-dias-aguinaldo').val()) || 15;
+      var diasVacacionesPendientes = parseInt($('#calc-dias-vacaciones').val()) || 0;
+      
+      // Update slider labels
+      $('#calc-dias-aguinaldo-label').text(diasAguinaldoConf);
+      $('#calc-dias-vacaciones-label').text(diasVacacionesPendientes);
       
       if(fechaBaja < fechaIngreso) {
-          alert('La fecha de baja no puede ser anterior a la de ingreso');
-          return;
+        $('#tabla-calculo-body').html('<tr><td colspan="3" class="text-center text-danger small py-2">La fecha de baja no puede ser anterior a la de ingreso</td></tr>');
+        $('#calc-total').text('$0.00');
+        return;
       }
       
       // Cálculo de días trabajados totales y en el último año
       var diffTime = Math.abs(fechaBaja - fechaIngreso);
       var diasTrabajadosTotal = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
-      // Días trabajados en el año actual (para aguinaldo)
       var inicioAnio = new Date(fechaBaja.getFullYear(), 0, 1);
-      if(fechaIngreso > inicioAnio) inicioAnio = fechaIngreso; // Si entró este año
+      if(fechaIngreso > inicioAnio) inicioAnio = fechaIngreso;
       var diffAnio = Math.abs(fechaBaja - inicioAnio);
-      var diasTrabajadosAnio = Math.ceil(diffAnio / (1000 * 60 * 60 * 24)) + 1; // +1 inclusivo
+      var diasTrabajadosAnio = Math.ceil(diffAnio / (1000 * 60 * 60 * 24)) + 1;
       
       var antiguedadAnios = diasTrabajadosTotal / 365;
       
@@ -2283,58 +2540,216 @@ document.addEventListener("DOMContentLoaded", function() {
       
       // 1. Aguinaldo Proporcional
       var aguinaldoProporcional = (diasTrabajadosAnio / 365) * diasAguinaldoConf * salarioDiario;
-      conceptos.push({nombre: 'Aguinaldo Proporcional (' + diasTrabajadosAnio + ' días trab. año)', monto: aguinaldoProporcional});
+      conceptos.push({nombre: 'Aguinaldo Proporcional (' + diasTrabajadosAnio + ' días trab. año)', operacion: (diasTrabajadosAnio + '/365 × ' + diasAguinaldoConf + ' × $' + salarioDiario.toFixed(2)), monto: aguinaldoProporcional});
       
-      // 2. Vacaciones Proporcionales (Pendientes + Proporcionales del año)
-      // Simplificación: Usamos el input de pendientes como total, o calculamos proporcional si no tiene pendientes asignados
-      // Para efectos de esta calculadora rápida, usaremos Vacaciones Pendientes Manuales + Proporcional del año corriente si aplica
-      // Pero lo más limpio es confiar en el input "Días Vac. Pendientes" que el usuario debe verificar
+      // 2. Vacaciones
       var vacacionesMonto = diasVacacionesPendientes * salarioDiario;
-      conceptos.push({nombre: 'Vacaciones (' + diasVacacionesPendientes + ' días)', monto: vacacionesMonto});
+      conceptos.push({nombre: 'Vacaciones Pendientes (' + diasVacacionesPendientes + ' días)', operacion: (diasVacacionesPendientes + ' × $' + salarioDiario.toFixed(2)), monto: vacacionesMonto});
       
       // 3. Prima Vacacional (25%)
       var primaVacacional = vacacionesMonto * 0.25;
-      conceptos.push({nombre: 'Prima Vacacional (25%)', monto: primaVacacional});
+      conceptos.push({nombre: 'Prima Vacacional (25%)', operacion: ('$' + vacacionesMonto.toFixed(2) + ' × 25%'), monto: primaVacacional});
       
-      // 4. Prima de Antigüedad (12 días por año)
-      // Tope: 2 veces el salario mínimo. Asumiremos SM 2024 = $248.93 (Zona General) -> Tope = $497.86
-      // Esto debería ser configurable, pero lo pondré hardcoded por ahora como estimación
-      var salarioMinimo = 248.93; 
+      // 4. Prima de Antigüedad (12 días por año, tope 2× salario mínimo)
+      var salarioMinimo = 278.80;
       var topePrima = salarioMinimo * 2;
       var salarioBasePrima = (salarioDiario > topePrima) ? topePrima : salarioDiario;
-      
       var diasPrima = antiguedadAnios * 12;
       var montoPrima = diasPrima * salarioBasePrima;
       
-      if(motivo == 'despido_injustificado' || (motivo == 'renuncia' && antiguedadAnios >= 15)) {
-           conceptos.push({nombre: 'Prima de Antigüedad (' + diasPrima.toFixed(2) + ' días)', monto: montoPrima});
-      } else if (motivo == 'despido_justificado') {
-           // En despido justificado también se paga prima de antigüedad según criterios recientes de la Corte, 
-           // pero tradicionalmente se discutía. La LFT art 162 dice "separados de su empleo", aplica a justificado e injustificado.
-           conceptos.push({nombre: 'Prima de Antigüedad (' + diasPrima.toFixed(2) + ' días)', monto: montoPrima});
+      if(motivo == 'despido_injustificado' || motivo == 'despido_justificado' || (motivo == 'renuncia' && antiguedadAnios >= 15)) {
+           var notaTope = (salarioDiario > topePrima) ? ' (tope 2×SM)' : '';
+           conceptos.push({nombre: 'Prima de Antigüedad (' + diasPrima.toFixed(2) + ' días)' + notaTope, operacion: (diasPrima.toFixed(1) + ' × $' + salarioBasePrima.toFixed(2)), monto: montoPrima});
       }
       
       // 5. Indemnización Constitucional (90 días) - Solo Despido Injustificado
       if(motivo == 'despido_injustificado') {
           var indemnizacion = 90 * salarioDiario;
-          conceptos.push({nombre: 'Indemnización Constitucional (90 días)', monto: indemnizacion});
+          conceptos.push({nombre: 'Indemnización Constitucional (90 días)', operacion: ('90 × $' + salarioDiario.toFixed(2)), monto: indemnizacion});
           
-          // 6. 20 Días por año (Opcional, usualmente solo si patrón niega reinstalación)
-          // Lo incluiremos como nota o separado. Por ahora lo sumamos para "Liquidación Completa"
           var indemnizacion20dias = antiguedadAnios * 20 * salarioDiario;
-          conceptos.push({nombre: 'Indemnización 20 días/año (Negativa Reinstalación)', monto: indemnizacion20dias});
+          conceptos.push({nombre: 'Indemnización 20 días/año (Negativa Reinstalación)', operacion: (antiguedadAnios.toFixed(2) + ' años × 20 × $' + salarioDiario.toFixed(2)), monto: indemnizacion20dias});
       }
       
+      // Guardar resultados para impresión
+      calculoResultados = { conceptos: conceptos, total: 0, empleado: $('#calc-nombre').text(), fechaIngreso: $('#calc-fecha-ingreso').text(), antiguedad: $('#calc-antiguedad').text(), salarioDiario: salarioDiario, motivo: motivo, fechaBaja: $('#calc-fecha-baja').val(), diasAguinaldo: diasAguinaldoConf, diasVacaciones: diasVacacionesPendientes };
+      
       // Render Table
-        var html = '';
-        total = 0;
-        conceptos.forEach(c => {
-            html += '<tr><td class="text-start">' + c.nombre + '</td><td>+</td><td class="text-end">$' + c.monto.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td></tr>';
-            total += c.monto;
+      var html = '';
+      total = 0;
+      conceptos.forEach(function(c) {
+          html += '<tr><td class="text-start small">' + c.nombre + '</td><td class="text-center text-muted small">' + c.operacion + '</td><td class="text-end fw-semibold">$' + c.monto.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td></tr>';
+          total += c.monto;
+      });
+      calculoResultados.total = total;
+      
+      $('#tabla-calculo-body').html(html);
+      $('#calc-total').text('$' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+  }
+
+  function imprimirCalculoFiniquito() {
+      if (!calculoResultados || !calculoResultados.conceptos || calculoResultados.conceptos.length === 0) {
+          calcularBaja();
+          if (!calculoResultados || !calculoResultados.conceptos || calculoResultados.conceptos.length === 0) {
+              alert('Primero debe realizarse el cálculo');
+              return;
+          }
+      }
+      var r = calculoResultados;
+      
+      var html = '<div style="padding:30px;font-family:Arial,sans-serif;max-width:700px;margin:0 auto;">';
+      html += '<div style="text-align:center;border-bottom:2px solid #1e3a5f;padding-bottom:15px;margin-bottom:20px;">';
+      html += '<h3 style="color:#1e3a5f;margin:0 0 5px 0;">CHISA RECUBRIMIENTOS</h3>';
+      html += '<h4 style="color:#555;margin:0;">Cálculo Estimado de Finiquito / Liquidación</h4>';
+      html += '<small style="color:#888;">Generado el ' + new Date().toLocaleDateString('es-MX') + '</small>';
+      html += '</div>';
+      
+      html += '<table style="width:100%;font-size:13px;margin-bottom:15px;">';
+      html += '<tr><td style="color:#666;padding:3px 0;">Empleado:</td><td><strong>' + r.empleado + '</strong></td></tr>';
+      html += '<tr><td style="color:#666;padding:3px 0;">Fecha Ingreso:</td><td>' + r.fechaIngreso + '</td></tr>';
+      html += '<tr><td style="color:#666;padding:3px 0;">Antigüedad:</td><td>' + r.antiguedad + ' años</td></tr>';
+      html += '<tr><td style="color:#666;padding:3px 0;">Salario Diario:</td><td>$' + r.salarioDiario.toFixed(2) + '</td></tr>';
+      html += '<tr><td style="color:#666;padding:3px 0;">Fecha de Baja:</td><td>' + r.fechaBaja + '</td></tr>';
+      html += '<tr><td style="color:#666;padding:3px 0;">Motivo:</td><td>' + (r.motivo === 'renuncia' ? 'Renuncia Voluntaria' : r.motivo === 'despido_justificado' ? 'Despido Justificado' : 'Despido Injustificado') + '</td></tr>';
+      html += '</table>';
+      
+      html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:15px;">';
+      html += '<thead><tr style="background:#1e3a5f;color:#fff;"><th style="padding:8px;text-align:left;">Concepto</th><th style="padding:8px;text-align:right;">Monto</th></tr></thead><tbody>';
+      r.conceptos.forEach(function(c) {
+          html += '<tr style="border-bottom:1px solid #eee;"><td style="padding:6px 8px;">' + c.nombre + '</td><td style="padding:6px 8px;text-align:right;font-weight:bold;">$' + c.monto.toLocaleString('en-US', {minimumFractionDigits: 2}) + '</td></tr>';
+      });
+      html += '</tbody><tfoot><tr style="background:#f0fdf4;"><td style="padding:10px 8px;text-align:right;font-weight:bold;font-size:14px;">TOTAL ESTIMADO A PAGAR:</td><td style="padding:10px 8px;text-align:right;font-weight:bold;font-size:14px;color:#15803d;">$' + r.total.toLocaleString('en-US', {minimumFractionDigits: 2}) + '</td></tr></tfoot>';
+      html += '</table>';
+      
+      html += '<div style="background:#fff3cd;padding:10px;border:1px solid #ffc107;border-radius:4px;font-size:11px;color:#856404;margin-top:15px;">';
+      html += '<strong>⚠️ Nota Legal:</strong> Este cálculo es una estimación basada en la Ley Federal del Trabajo (aguinaldo ' + r.diasAguinaldo + ' días, prima vacacional 25%, salario mínimo $278.80 zona general 2026). Se recomienda validación por el departamento legal o contable antes de proceder con el pago.';
+      html += '</div>';
+      html += '</div>';
+      
+      var element = document.createElement('div');
+      element.innerHTML = html;
+      
+      var opt = {
+        margin: [10, 10, 10, 10],
+        filename: 'Finiquito_' + r.empleado.replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf',
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+        jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+      };
+      
+      html2pdf().set(opt).from(element).save().catch(function(err) {
+        alert('Error al generar PDF: ' + (err.message || ''));
+      });
+  }
+
+  // ========================================================================
+  // DOCUMENTOS DEL EMPLEADO
+  // ========================================================================
+
+  function cargarDocumentosEmpleado(empleado_id) {
+    $('#lista-documentos-empleado').html('<div class="text-center text-muted py-2 small"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>');
+    $.post('<?= base_url('rh/RecursosHumanos/documentos_listar') ?>', {
+      empleado_id: empleado_id,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      result = JSON.parse(result);
+      if (!result.success) {
+        $('#lista-documentos-empleado').html('<div class="text-danger small">Error al cargar documentos</div>');
+        return;
+      }
+
+      if (result.checklist) {
+        var chk = result.checklist;
+        var chkHtml = '<div class="card border-0 bg-light mb-2"><div class="card-body py-2 px-3">' +
+          '<div class="d-flex justify-content-between align-items-center mb-1">' +
+          '<small class="fw-bold text-uppercase text-muted">Checklist expediente</small>' +
+          '<span class="badge bg-' + (chk.completo ? 'success' : 'warning') + '">' + chk.porcentaje + '%</span></div>' +
+          '<div class="progress mb-2" style="height:6px;"><div class="progress-bar" style="width:' + chk.porcentaje + '%"></div></div>' +
+          '<div class="d-flex flex-wrap gap-1">';
+        chk.items.forEach(function(item) {
+          chkHtml += '<span class="badge ' + (item.tiene ? 'bg-success' : 'bg-danger') + '" style="font-size:0.65rem;">' +
+            (item.tiene ? '✓' : '✗') + ' ' + item.label + '</span>';
         });
-        
-        $('#tabla-calculo-body').html(html);
-        $('#calc-total').text('$' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        chkHtml += '</div></div></div>';
+        $('#checklist-documentos-offcanvas').html(chkHtml);
+      }
+
+      if (!result.documentos.length) {
+        $('#lista-documentos-empleado').html('<div class="alert alert-light border text-center py-3 mb-0"><i data-lucide="folder-open" style="width:24px;height:24px;" class="text-muted mb-1"></i><br><small class="text-muted">Sin documentos adjuntos</small></div>');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+      }
+      var html = '<div class="list-group list-group-flush">';
+      result.documentos.forEach(function(doc) {
+        var icon = doc.ruta_archivo.match(/\.pdf$/i) ? 'file-text' : 'image';
+        html += '<div class="list-group-item px-2 py-2">' +
+          '<div class="d-flex align-items-start gap-2">' +
+            '<i data-lucide="' + icon + '" class="text-primary flex-shrink-0 mt-1" style="width:16px;height:16px;"></i>' +
+            '<div class="flex-grow-1 min-w-0">' +
+              '<div class="fw-semibold small">' + doc.tipo_label + '</div>' +
+              '<div class="text-muted text-truncate" style="font-size:0.72rem;">' + doc.nombre_archivo + '</div>' +
+              '<div class="text-muted" style="font-size:0.68rem;">' + doc.fecha_subida + ' · ' + doc.tamano + '</div>' +
+            '</div>' +
+            '<div class="d-flex gap-1 flex-shrink-0">' +
+              '<a href="' + doc.url + '" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-1" title="Ver"><i data-lucide="eye" style="width:14px;height:14px;"></i></a>' +
+              '<button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarDocumentoEmpleado(' + doc.id + ')" title="Eliminar"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>' +
+            '</div>' +
+          '</div></div>';
+      });
+      html += '</div>';
+      $('#lista-documentos-empleado').html(html);
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+  }
+
+  function abrirModalSubirDocumento() {
+    if (!currentEmpleadoId) return;
+    $('#doc_empleado_id').val(currentEmpleadoId);
+    $('#formSubirDocumento')[0].reset();
+    $('#doc_empleado_id').val(currentEmpleadoId);
+    $('#modalSubirDocumento').modal('show');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  function subirDocumentoEmpleado() {
+    if (!currentEmpleadoId) return;
+    var formData = new FormData(document.getElementById('formSubirDocumento'));
+    formData.append('peticion', 'ajax');
+    formData.append('<?php echo $this->security->get_csrf_token_name();?>', '<?php echo $this->security->get_csrf_hash();?>');
+
+    $.ajax({
+      url: '<?= base_url('rh/RecursosHumanos/documento_subir') ?>',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(result) {
+        result = JSON.parse(result);
+        notifyShow(result.message, result.success ? 'success' : 'danger');
+        if (result.success) {
+          $('#modalSubirDocumento').modal('hide');
+          cargarDocumentosEmpleado(currentEmpleadoId);
+        }
+      },
+      error: function() {
+        notifyShow('Error al subir el archivo', 'danger');
+      }
+    });
+  }
+
+  function eliminarDocumentoEmpleado(docId) {
+    if (!confirm('¿Eliminar este documento del expediente?')) return;
+    $.post('<?= base_url('rh/RecursosHumanos/documento_eliminar') ?>', {
+      id: docId,
+      empleado_id: currentEmpleadoId,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      result = JSON.parse(result);
+      notifyShow(result.message, result.success ? 'success' : 'danger');
+      if (result.success) cargarDocumentosEmpleado(currentEmpleadoId);
+    });
   }
 
 </script>

@@ -11,6 +11,7 @@ class RecursosHumanos extends MY_Controller {
     // Cargar modelos específicos
     $this->load->model("RH/EmpleadoModel");
     $this->load->model("RH/DepartamentoModel");
+    $this->load->model("RH/DocumentoEmpleadoModel");
     
     // El controlador base ya maneja la sesión y los permisos del módulo
   }
@@ -37,10 +38,10 @@ class RecursosHumanos extends MY_Controller {
     ];
 
     // Verificar permiso para ver alertas de datos faltantes
-    // Asumiendo que el ID del módulo de RH es 8 o que validamos por nombre/slug
-    // Pero usaremos la verificación estándar del sistema si existe
     if($this->init_controller->has_permission($this->session->userdata('id'), 'Consultar empleados')){
       $this->viewData['response']['datos_faltantes'] = $this->EmpleadoModel->get_empleados_datos_faltantes();
+      $this->viewData['response']['expedientes_incompletos'] = $this->DocumentoEmpleadoModel->get_empleados_expediente_incompleto(10);
+      $this->viewData['response']['total_expedientes_incompletos'] = $this->DocumentoEmpleadoModel->contar_expedientes_incompletos();
     }
     
     // Obtener solicitudes de vacaciones pendientes (Alerta)
@@ -67,6 +68,22 @@ class RecursosHumanos extends MY_Controller {
     $data = array();
     $no = $_POST['start'];
 
+    // Obtener IDs de empleados con datos faltantes para badge
+    $this->load->model('RH/EmpleadoModel');
+    $datos_faltantes = $this->EmpleadoModel->get_empleados_datos_faltantes();
+    $faltantes_ids = [];
+    $faltantes_info = [];
+    foreach ($datos_faltantes as $df) {
+      $faltantes_ids[$df['id']] = true;
+      $faltantes_info[$df['id']] = implode(', ', $df['faltantes']);
+    }
+
+    $expedientes_incompletos = $this->DocumentoEmpleadoModel->get_empleados_expediente_incompleto(500);
+    $expediente_map = [];
+    foreach ($expedientes_incompletos as $exp) {
+      $expediente_map[$exp['id']] = $exp;
+    }
+
     foreach ($list as $empleado) {
       $no++;
       $row = array();
@@ -74,8 +91,17 @@ class RecursosHumanos extends MY_Controller {
       // Número de empleado
       $row[] = $empleado->numero_empleado;
       
-      // Nombre completo
-      $row[] = $empleado->nombre . ' ' . $empleado->apellido_paterno . ' ' . $empleado->apellido_materno;
+      // Nombre completo (con badge si hay datos faltantes)
+      $nombre_html = $empleado->nombre . ' ' . $empleado->apellido_paterno . ' ' . $empleado->apellido_materno;
+      if (isset($faltantes_ids[$empleado->id])) {
+        $faltantes_str = htmlspecialchars($faltantes_info[$empleado->id], ENT_QUOTES, 'UTF-8');
+        $nombre_html .= ' <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;cursor:pointer;" title="Faltan datos: ' . $faltantes_str . '" onclick="notificarFaltantes(' . $empleado->id . ')">⚠️</span>';
+      }
+      if (isset($expediente_map[$empleado->id])) {
+        $exp_falt = htmlspecialchars(implode(', ', $expediente_map[$empleado->id]['faltantes']), ENT_QUOTES, 'UTF-8');
+        $nombre_html .= ' <span class="badge bg-danger ms-1" style="font-size:0.65rem;cursor:pointer;" title="Expediente incompleto: ' . $exp_falt . '" onclick="empleado_detail(' . $empleado->id . ')">📁</span>';
+      }
+      $row[] = $nombre_html;
       
       // Puesto
       $row[] = $empleado->puesto;
@@ -272,7 +298,9 @@ class RecursosHumanos extends MY_Controller {
       $this->viewData['response'] = [
         'empleado' => $empleado,
         'departamentos' => $departamentos,
-        'empleados' => $empleados
+        'empleados' => $empleados,
+        'tipos_documento' => DocumentoEmpleadoModel::TIPOS_DOCUMENTO,
+        'checklist' => $this->DocumentoEmpleadoModel->get_checklist_empleado($id),
       ];
       $this->viewData['pageView'] = 'rh/empleados/editar';
       
@@ -368,55 +396,224 @@ class RecursosHumanos extends MY_Controller {
       return;
     }
 
-    // Generar HTML de detalles
-    $detail = '
-      <tr class="table-light"><td colspan="2"><strong>Información Personal</strong></td></tr>
-      <tr><td><strong>Nombre:</strong></td><td>'.$empleado->nombre.' '.$empleado->apellido_paterno.' '.$empleado->apellido_materno.'</td></tr>
-      <tr><td><strong>Género:</strong></td><td>'.$empleado->genero.'</td></tr>
-      <tr><td><strong>Estado Civil:</strong></td><td>'.($empleado->estado_civil ?? 'No especificado').'</td></tr>
-      <tr><td><strong>Teléfono:</strong></td><td>'.($empleado->telefono ?? 'N/A').'</td></tr>
-      <tr><td><strong>Email Personal:</strong></td><td>'.($empleado->email_personal ?? 'N/A').'</td></tr>
-      
-      <tr class="table-light"><td colspan="2"><strong>Información Fiscal</strong></td></tr>
-      <tr><td><strong>Número Empleado:</strong></td><td>'.$empleado->numero_empleado.'</td></tr>
-      <tr><td><strong>RFC:</strong></td><td>'.$empleado->rfc.'</td></tr>
-      <tr><td><strong>CURP:</strong></td><td>'.$empleado->curp.'</td></tr>
-      <tr><td><strong>NSS:</strong></td><td>'.($empleado->nss ?? 'N/A').'</td></tr>
-      
-      <tr class="table-light"><td colspan="2"><strong>Información Laboral</strong></td></tr>
-      <tr><td><strong>Puesto:</strong></td><td>'.$empleado->puesto.'</td></tr>
-      <tr><td><strong>Departamento:</strong></td><td>'.($empleado->departamento_nombre ?? 'N/A').'</td></tr>
-      <tr><td><strong>Tipo:</strong></td><td>'.$empleado->tipo_trabajador.'</td></tr>
-      <tr><td><strong>Email Corp:</strong></td><td>'.($empleado->email_corporativo ?? 'N/A').'</td></tr>
-      <tr><td><strong>Salario Mensual:</strong></td><td>$'.number_format($empleado->salario_base_mensual, 2).'</td></tr>
-      <tr><td><strong>Fecha Ingreso:</strong></td><td>'.$empleado->fecha_ingreso.'</td></tr>
-      <tr><td><strong>Estatus:</strong></td><td>'.($empleado->estatus == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>').'</td></tr>
-    ';
+    // Construir tabs con datos estructurados
+    $tabs = [];
+
+    // Tab 1: Información Personal
+    $tabs['personal'] = [
+      'icon' => 'user',
+      'label' => 'Personal',
+      'fields' => [
+        ['label' => 'Nombre completo', 'value' => $empleado->nombre . ' ' . $empleado->apellido_paterno . ' ' . $empleado->apellido_materno, 'icon' => 'user'],
+        ['label' => 'Género', 'value' => $empleado->genero, 'icon' => 'users'],
+        ['label' => 'Estado Civil', 'value' => $empleado->estado_civil ?? 'No especificado', 'icon' => 'heart'],
+        ['label' => 'Fecha Nacimiento', 'value' => $empleado->fecha_nacimiento ?? 'N/A', 'icon' => 'calendar'],
+        ['label' => 'Nacionalidad', 'value' => $empleado->nacionalidad ?? 'N/A', 'icon' => 'flag'],
+        ['label' => 'Teléfono', 'value' => $empleado->telefono ?? 'N/A', 'icon' => 'phone'],
+        ['label' => 'Tel. Emergencia', 'value' => $empleado->telefono_emergencia ?? 'N/A', 'icon' => 'phone-call'],
+        ['label' => 'Email Personal', 'value' => $empleado->email_personal ?? 'N/A', 'icon' => 'mail'],
+        ['label' => 'Email Corporativo', 'value' => $empleado->email_corporativo ?? 'N/A', 'icon' => 'briefcase'],
+      ]
+    ];
+
+    // Tab 2: Información Fiscal
+    $rfc_color = empty($empleado->rfc) ? 'text-danger' : '';
+    $curp_color = empty($empleado->curp) ? 'text-danger' : '';
+    $nss_color = empty($empleado->nss) ? 'text-danger' : '';
+
+    $tabs['fiscal'] = [
+      'icon' => 'file-text',
+      'label' => 'Fiscal',
+      'fields' => [
+        ['label' => 'N° Empleado', 'value' => $empleado->numero_empleado, 'icon' => 'hash', 'css_class' => ''],
+        ['label' => 'RFC', 'value' => $empleado->rfc ?: '<span class="text-danger fw-bold">FALTANTE</span>', 'icon' => 'credit-card', 'css_class' => $rfc_color],
+        ['label' => 'CURP', 'value' => $empleado->curp ?: '<span class="text-danger fw-bold">FALTANTE</span>', 'icon' => 'shield', 'css_class' => $curp_color],
+        ['label' => 'NSS', 'value' => $empleado->nss ?: '<span class="text-danger fw-bold">FALTANTE</span>', 'icon' => 'activity', 'css_class' => $nss_color],
+        ['label' => 'Afore', 'value' => $empleado->afore ?? 'N/A', 'icon' => 'database'],
+        ['label' => 'Cuenta Bancaria', 'value' => $empleado->banco ? ($empleado->banco . ' - Cuenta: ' . ($empleado->cuenta_bancaria ?? 'N/A')) : 'N/A', 'icon' => 'dollar-sign'],
+        ['label' => 'Régimen Fiscal', 'value' => $empleado->regimen_fiscal ?? 'N/A', 'icon' => 'bookmark'],
+      ]
+    ];
+
+    // Tab 3: Información Laboral
+    $tabs['laboral'] = [
+      'icon' => 'briefcase',
+      'label' => 'Laboral',
+      'fields' => [
+        ['label' => 'Puesto', 'value' => $empleado->puesto, 'icon' => 'award'],
+        ['label' => 'Departamento', 'value' => $empleado->departamento_nombre ?? '<span class="text-muted">Sin departamento</span>', 'icon' => 'grid'],
+        ['label' => 'Tipo Trabajador', 'value' => $empleado->tipo_trabajador, 'icon' => 'clipboard'],
+        ['label' => 'Tipo Nómina', 'value' => $empleado->tipo_nomina ?? 'N/A', 'icon' => 'dollar-sign'],
+        ['label' => 'Salario Mensual', 'value' => '$' . number_format($empleado->salario_base_mensual, 2), 'icon' => 'trending-up'],
+        ['label' => 'Fecha Ingreso', 'value' => date('d M Y', strtotime($empleado->fecha_ingreso)), 'icon' => 'calendar'],
+        ['label' => 'Estatus', 'value' => $empleado->estatus == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>', 'icon' => 'check-circle'],
+        ['label' => 'Jefe Directo', 'value' => $empleado->jefe_nombre ?? 'N/A', 'icon' => 'user-plus'],
+      ]
+    ];
+
+    // Tab 4: Documentos (resumen + checklist)
+    $total_docs = $this->DocumentoEmpleadoModel->contar_por_empleado($id);
+    $checklist = $this->DocumentoEmpleadoModel->get_checklist_empleado($id);
+    $checklist_html = '<div class="progress mb-2" style="height:8px;"><div class="progress-bar bg-' . ($checklist['completo'] ? 'success' : 'warning') . '" style="width:' . $checklist['porcentaje'] . '%"></div></div>';
+    $checklist_html .= '<small class="text-muted">' . $checklist['completados'] . '/' . $checklist['total_req'] . ' documentos requeridos</small>';
+    if (!$checklist['completo']) {
+        $checklist_html .= '<div class="mt-2">';
+        foreach ($checklist['items'] as $item) {
+            $icon = $item['tiene'] ? '✅' : '❌';
+            $cls = $item['tiene'] ? 'text-success' : 'text-danger';
+            $checklist_html .= '<div class="small ' . $cls . '">' . $icon . ' ' . htmlspecialchars($item['label']) . '</div>';
+        }
+        $checklist_html .= '</div>';
+    }
+
+    $tabs['documentos'] = [
+      'icon' => 'folder',
+      'label' => 'Documentos',
+      'fields' => [
+        ['label' => 'Expediente', 'value' => $checklist_html, 'icon' => 'clipboard-check'],
+        ['label' => 'Archivos adjuntos', 'value' => $total_docs . ' documento(s)', 'icon' => 'paperclip'],
+        ['label' => 'Estado', 'value' => $checklist['completo']
+          ? '<span class="badge bg-success">Expediente completo</span>'
+          : '<span class="badge bg-warning text-dark">Faltan ' . count($checklist['faltantes']) . ' documento(s)</span>', 'icon' => 'folder-open'],
+      ],
+    ];
 
     // Acciones
-    $actions = '
-      <a href="'.base_url('rh/RecursosHumanos/editar/'.$id).'" class="btn btn-warning btn-sm w-100 mb-2">
-        <i data-lucide="edit"></i> Editar
-      </a>
-      <a href="'.base_url('rh/RecursosHumanos/nuevo_contrato/'.$id).'" class="btn btn-success btn-sm w-100 mb-2">
-        <i data-lucide="file-text"></i> Nuevo Contrato
-      </a>';
-    
-    if($empleado->estatus == 1){
-      $actions .= '
-        <button class="btn btn-info btn-sm w-100 mb-2" onclick="abrirCalculadoraBaja('.$id.')">
-          <i class="fas fa-calculator"></i> Calcular Finiquito
-        </button>
-        <button class="btn btn-danger btn-sm w-100" onclick="delete_empleado('.$id.')">
-          <i data-lucide="trash-2"></i> Dar de Baja
-        </button>';
+    $actions = [
+      'editar' => base_url('rh/RecursosHumanos/editar/' . $id),
+      'nuevo_contrato' => base_url('rh/RecursosHumanos/nuevo_contrato/' . $id),
+      'mostrar_finiquito' => ($empleado->estatus == 1),
+      'mostrar_baja' => ($empleado->estatus == 1),
+      'empleado_id' => $id,
+      'total_documentos' => $total_docs,
+      'checklist' => $checklist,
+    ];
+
+    echo json_encode([
+      'success' => true,
+      'response' => $empleado,
+      'nombre_completo' => $empleado->nombre . ' ' . $empleado->apellido_paterno . ' ' . $empleado->apellido_materno,
+      'numero_empleado' => $empleado->numero_empleado,
+      'tabs' => $tabs,
+      'actions' => $actions
+    ]);
+  }
+
+  // ========================================================================
+  // DOCUMENTOS DEL EMPLEADO
+  // ========================================================================
+
+  public function documentos_listar() {
+    $empleado_id = (int)$this->input->post('empleado_id');
+    if (!$empleado_id) {
+      echo json_encode(['success' => false, 'message' => 'Empleado requerido']);
+      return;
+    }
+
+    $docs = $this->DocumentoEmpleadoModel->get_por_empleado($empleado_id);
+    $lista = [];
+    foreach ($docs as $doc) {
+      $lista[] = [
+        'id'              => $doc->id,
+        'tipo_documento'  => $doc->tipo_documento,
+        'tipo_label'      => $this->DocumentoEmpleadoModel->label_tipo($doc->tipo_documento),
+        'nombre_archivo'  => $doc->nombre_archivo,
+        'ruta_archivo'    => $doc->ruta_archivo,
+        'url'             => base_url($doc->ruta_archivo),
+        'tamano'          => $this->DocumentoEmpleadoModel->formatear_tamano($doc->tamano_bytes),
+        'fecha_subida'    => date('d/m/Y H:i', strtotime($doc->fecha_subida)),
+        'observaciones'   => $doc->observaciones,
+      ];
     }
 
     echo json_encode([
-      'response' => $empleado,
-      'detail' => $detail,
-      'actions' => $actions
+      'success' => true,
+      'documentos' => $lista,
+      'tipos' => DocumentoEmpleadoModel::TIPOS_DOCUMENTO,
+      'checklist' => $this->DocumentoEmpleadoModel->get_checklist_empleado($empleado_id),
     ]);
+  }
+
+  public function expediente_checklist() {
+    $empleado_id = (int)$this->input->post('empleado_id');
+    if (!$empleado_id) {
+      echo json_encode(['success' => false, 'message' => 'Empleado requerido']);
+      return;
+    }
+    echo json_encode([
+      'success' => true,
+      'checklist' => $this->DocumentoEmpleadoModel->get_checklist_empleado($empleado_id),
+    ]);
+  }
+
+  public function documento_subir() {
+    $empleado_id = (int)$this->input->post('empleado_id');
+    $tipo = $this->input->post('tipo_documento');
+
+    if (!$empleado_id || !$tipo) {
+      echo json_encode(['success' => false, 'message' => 'Empleado y tipo de documento son requeridos']);
+      return;
+    }
+
+    if (empty($_FILES['archivo']['name'])) {
+      echo json_encode(['success' => false, 'message' => 'Seleccione un archivo']);
+      return;
+    }
+
+    $upload_path = './uploads/empleados/' . $empleado_id . '/';
+    if (!is_dir($upload_path)) {
+      mkdir($upload_path, 0755, true);
+    }
+
+    $config = [
+      'upload_path'   => $upload_path,
+      'allowed_types' => 'pdf|jpg|jpeg|png|gif|webp',
+      'max_size'      => 10240,
+      'encrypt_name'  => true,
+    ];
+
+    $this->load->library('upload', $config);
+
+    if (!$this->upload->do_upload('archivo')) {
+      echo json_encode(['success' => false, 'message' => strip_tags($this->upload->display_errors('', ''))]);
+      return;
+    }
+
+    $upload_data = $this->upload->data();
+    $ruta = 'uploads/empleados/' . $empleado_id . '/' . $upload_data['file_name'];
+
+    $id = $this->DocumentoEmpleadoModel->insertar([
+      'empleado_id'       => $empleado_id,
+      'tipo_documento'    => $tipo,
+      'nombre_archivo'    => $_FILES['archivo']['name'],
+      'ruta_archivo'      => $ruta,
+      'tamano_bytes'      => $upload_data['file_size'] * 1024,
+      'mime_type'         => $upload_data['file_type'],
+      'observaciones'     => $this->input->post('observaciones'),
+      'usuario_subida_id' => $this->session->userdata('id'),
+    ]);
+
+    echo json_encode([
+      'success' => true,
+      'message' => 'Documento subido correctamente',
+      'id'      => $id,
+    ]);
+  }
+
+  public function documento_eliminar() {
+    $id = (int)$this->input->post('id');
+    $empleado_id = (int)$this->input->post('empleado_id');
+
+    if (!$id) {
+      echo json_encode(['success' => false, 'message' => 'Documento requerido']);
+      return;
+    }
+
+    if ($this->DocumentoEmpleadoModel->eliminar($id, $empleado_id ?: null)) {
+      echo json_encode(['success' => true, 'message' => 'Documento eliminado']);
+    } else {
+      echo json_encode(['success' => false, 'message' => 'No se pudo eliminar el documento']);
+    }
   }
 
   /**
@@ -758,7 +955,7 @@ class RecursosHumanos extends MY_Controller {
       'observaciones' => $this->input->post('observaciones'),
       'tiene_descuento' => $this->input->post('tiene_descuento') ? 1 : 0,
       'monto_descuento' => $this->input->post('monto_descuento'),
-      'archivo_evidencia' => $archivo_evidencia,
+      'archivo_adjunto' => $archivo_evidencia,
       'registrado_por' => $this->session->userdata('id') ?: null
     ];
     
@@ -920,7 +1117,9 @@ class RecursosHumanos extends MY_Controller {
     $data = [
       'nombre' => $this->input->post('nombre'),
       'descripcion' => $this->input->post('descripcion'),
-      'contenido' => $this->input->post('contenido') // TinyMCE content
+      'contenido' => $this->input->post('contenido'), // TinyMCE content
+      'color_corporativo' => $this->input->post('color_corporativo'),
+      'domicilio_empresa' => $this->input->post('domicilio_empresa')
     ];
     
     // Procesar Logo
@@ -1023,8 +1222,13 @@ class RecursosHumanos extends MY_Controller {
     $this->load->model('RH/EmpleadoModel');
     $empleado = $this->EmpleadoModel->get_by_id($empleado_id);
     
-    // Preparar un array básico para los placeholders
-    $contenido_procesado = $this->ContratoModel->procesar_plantilla($plantilla->contenido, $empleado, []);
+    // Pasar datos de la plantilla al procesador para placeholders como color, logo, domicilio
+    $contrato_data = [
+        'color_corporativo' => $plantilla->color_corporativo ?? '#1a3a5c',
+        'domicilio_empresa'  => $plantilla->domicilio_empresa ?? null,
+        'logo'               => $plantilla->logo ?? null,
+    ];
+    $contenido_procesado = $this->ContratoModel->procesar_plantilla($plantilla->contenido, $empleado, $contrato_data);
     
     // Si tiene logo, agregarlo al inicio
     if(!empty($plantilla->logo) && file_exists('./' . $plantilla->logo)) {
@@ -1041,7 +1245,18 @@ class RecursosHumanos extends MY_Controller {
     $motivo = $this->input->post('motivo');
     $plantilla_id = $this->input->post('plantilla_id');
     $plantilla_id = empty($plantilla_id) ? NULL : $plantilla_id;
-    $contenido_personalizado = $this->input->post('contenido'); // Del editor
+    $contenido_personalizado = $this->input->post('contenido');
+
+    $tipos_legales = [
+        'Tiempo Indeterminado', 'Tiempo Determinado', 'Prueba (3 Meses)',
+        'Capacitación Inicial', 'Por Obra Determinada', 'Sustitución',
+    ];
+    if (in_array($tipo_contrato, $tipos_legales, true)) {
+        $tipo_legal = $tipo_contrato;
+        $previos = (int)$this->db->where('empleado_id', (int)$empleado_id)->count_all_results('contratos_empleados');
+        $tipo_contrato = $previos > 0 ? 'Renovación' : 'Inicial';
+        $motivo = trim($tipo_legal . ($motivo ? ' — ' . $motivo : ''));
+    }
     
     $guardar_como_plantilla = $this->input->post('guardar_como_plantilla');
     $nombre_nueva_plantilla = $this->input->post('nombre_nueva_plantilla');

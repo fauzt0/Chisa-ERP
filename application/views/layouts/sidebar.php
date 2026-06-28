@@ -54,6 +54,9 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/Departamentos">
             Departamentos
           </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/Nomina">
+            Nómina
+          </a></li>
         </ul>
       </li>
 

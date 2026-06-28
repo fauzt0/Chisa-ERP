@@ -29,6 +29,8 @@ class PlantillaModel extends MY_Model {
             'descripcion' => $data['descripcion'] ?? '',
             'contenido' => $data['contenido'],
             'logo' => $data['logo'] ?? NULL,
+            'color_corporativo' => $data['color_corporativo'] ?? '#1a3a5c',
+            'domicilio_empresa' => $data['domicilio_empresa'] ?? NULL,
             'estatus' => 1,
             'fecha_creacion' => date('Y-m-d H:i:s'),
             'usuario_id' => $this->session->userdata('id')
@@ -46,6 +48,8 @@ class PlantillaModel extends MY_Model {
             'nombre' => $data['nombre'],
             'descripcion' => $data['descripcion'] ?? '',
             'contenido' => $data['contenido'],
+            'color_corporativo' => $data['color_corporativo'] ?? '#1a3a5c',
+            'domicilio_empresa' => $data['domicilio_empresa'] ?? NULL,
         ];
         
         if(isset($data['logo'])){

@@ -22,6 +22,7 @@ $config['permissions'] = array(
     'rh_empleados_consult' => 'Consultar empleados',
     'rh_empleados_delete'  => 'Eliminar empleados',
     'rh_departamentos'     => 'Gestionar departamentos',
+    'rh_nomina'            => 'Gestionar nómina',
   ),
   
   'Clientes (CRM)' => array(
