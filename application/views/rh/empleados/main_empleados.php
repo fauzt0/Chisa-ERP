@@ -1074,6 +1074,55 @@
   </div>
 </div>
 
+<!-- Modal: Crear usuario ERP desde empleado -->
+<?php if (!empty($response['puede_crear_usuario_erp']) && !empty($response['vinculo_usuarios_habilitado'])): ?>
+<div class="modal fade rh-modal" id="modalCrearUsuarioEmpleado" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header rh-header-brand text-white">
+        <h5 class="modal-title text-white"><i class="fas fa-user-plus me-2"></i>Crear Usuario ERP</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="crear-usuario-empleado-id">
+        <div class="alert alert-info py-2 small mb-3">
+          Se creará un administrador con los datos del trabajador y quedará vinculado automáticamente.
+          El correo de acceso no es el correo de contacto personal.
+        </div>
+        <p class="text-muted small mb-3">Trabajador: <strong id="crear-usuario-empleado-nombre">—</strong></p>
+        <div class="mb-3">
+          <label class="form-label">Correo de acceso al ERP *</label>
+          <input type="email" class="form-control" id="crear-usuario-username" placeholder="usuario@chisarecubrimientos.com.mx" required>
+          <small class="text-muted">Será el usuario para iniciar sesión en el sistema.</small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Rol de administración *</label>
+          <select class="form-select" id="crear-usuario-role-id" required>
+            <option value="">Cargando roles...</option>
+          </select>
+          <small class="text-muted">Define los permisos del módulo según la plantilla del rol.</small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contraseña *</label>
+          <input type="password" class="form-control" id="crear-usuario-password" minlength="6" autocomplete="new-password" required>
+          <small class="text-muted">Mínimo 6 caracteres.</small>
+        </div>
+        <div class="mb-0">
+          <label class="form-label">Confirmar contraseña *</label>
+          <input type="password" class="form-control" id="crear-usuario-password-verify" minlength="6" autocomplete="new-password" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" id="btn-confirmar-crear-usuario" onclick="confirmarCrearUsuarioEmpleado()">
+          <i class="fas fa-user-check"></i> Crear y vincular
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
 <!-- Modal: Usuarios ERP sin empleado -->
 <div class="modal fade rh-modal" id="modalUsuariosSinEmpleado" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -1235,6 +1284,7 @@
 var table;
 var export_filename = 'empleados-<?php echo date("Y-m-d");?>';
 var currentEmpleadoId = null;
+var RH_PUEDE_CREAR_USUARIO_ERP = <?php echo !empty($response['puede_crear_usuario_erp']) ? 'true' : 'false'; ?>;
 
 document.addEventListener("DOMContentLoaded", function() {
       //datatables      
@@ -1391,6 +1441,9 @@ document.addEventListener("DOMContentLoaded", function() {
           var lblVinculo = result.actions.usuario_vinculado ? 'Usuario ERP' : 'Vincular usuario';
           var clsVinculo = result.actions.usuario_vinculado ? 'btn-outline-primary' : 'btn-primary';
           actionsHtml += '<button class="btn btn-sm ' + clsVinculo + '" onclick="abrirModalVincularUsuario(' + result.actions.empleado_id + ')"><i class="fas fa-user-lock me-1"></i>' + lblVinculo + '</button>';
+          if (result.actions.puede_crear_usuario_erp && !result.actions.usuario_vinculado) {
+            actionsHtml += '<button class="btn btn-sm btn-success" onclick="abrirModalCrearUsuarioEmpleado(' + result.actions.empleado_id + ')"><i class="fas fa-user-plus me-1"></i>Crear usuario ERP</button>';
+          }
         }
         $('#offcanvas-actions').html(actionsHtml);
         if (typeof lucide !== 'undefined') { lucide.createIcons(); }
@@ -2862,6 +2915,122 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   var vinculoEmpleadoModalId = null;
+  var crearUsuarioEmpleadoModalId = null;
+  var rolesAdminCache = null;
+
+  function abrirModalCrearUsuarioEmpleado(empleadoId) {
+    if (!RH_PUEDE_CREAR_USUARIO_ERP) {
+      notifyShow('No tiene permiso para crear usuarios administradores (Agregar usuarios).', 'danger');
+      return;
+    }
+    crearUsuarioEmpleadoModalId = empleadoId;
+    $('#crear-usuario-empleado-id').val(empleadoId);
+    $('#crear-usuario-empleado-nombre').text('Cargando...');
+    $('#crear-usuario-username').val('');
+    $('#crear-usuario-password').val('');
+    $('#crear-usuario-password-verify').val('');
+    $('#crear-usuario-role-id').html('<option value="">Cargando roles...</option>');
+    $('#modalCrearUsuarioEmpleado').modal('show');
+
+    cargarRolesAdmin(function() {
+      $.post('<?= base_url('rh/RecursosHumanos/datos_crear_usuario_empleado_ajax') ?>', {
+        empleado_id: empleadoId,
+        peticion: 'ajax',
+        '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+      }, function(result) {
+        try { result = JSON.parse(result); } catch (e) { return; }
+        if (!result.success) {
+          notifyShow(result.message || 'No se pudo cargar el empleado', 'danger');
+          $('#modalCrearUsuarioEmpleado').modal('hide');
+          return;
+        }
+        var emp = result.empleado;
+        $('#crear-usuario-empleado-nombre').text(emp.nombre_completo + ' (' + emp.numero_empleado + ')');
+        $('#crear-usuario-username').val(emp.username || '');
+      });
+    });
+  }
+
+  function cargarRolesAdmin(callback) {
+    if (rolesAdminCache) {
+      pintarRolesAdminSelect(rolesAdminCache);
+      if (callback) callback();
+      return;
+    }
+    $.post('<?= base_url('rh/RecursosHumanos/roles_admin_ajax') ?>', {
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) { return; }
+      if (!result.success) {
+        notifyShow(result.message || 'No se pudieron cargar los roles', 'danger');
+        return;
+      }
+      rolesAdminCache = result.roles || [];
+      pintarRolesAdminSelect(rolesAdminCache);
+      if (callback) callback();
+    });
+  }
+
+  function pintarRolesAdminSelect(roles) {
+    var html = '<option value="">Seleccione un rol...</option>';
+    roles.forEach(function(r) {
+      var desc = r.descripcion ? ' — ' + r.descripcion : '';
+      html += '<option value="' + r.id + '">' + r.nombre + desc + '</option>';
+    });
+    $('#crear-usuario-role-id').html(html);
+  }
+
+  function confirmarCrearUsuarioEmpleado() {
+    if (!RH_PUEDE_CREAR_USUARIO_ERP) {
+      notifyShow('No tiene permiso para crear usuarios administradores (Agregar usuarios).', 'danger');
+      return;
+    }
+    if (!crearUsuarioEmpleadoModalId) return;
+
+    var username = $('#crear-usuario-username').val().trim();
+    var roleId = $('#crear-usuario-role-id').val();
+    var password = $('#crear-usuario-password').val();
+    var passwordVerify = $('#crear-usuario-password-verify').val();
+
+    if (!username) {
+      notifyShow('Ingrese el correo de acceso al ERP', 'warning');
+      return;
+    }
+    if (!roleId) {
+      notifyShow('Seleccione un rol de administración', 'warning');
+      return;
+    }
+    if (password.length < 6) {
+      notifyShow('La contraseña debe tener al menos 6 caracteres', 'warning');
+      return;
+    }
+    if (password !== passwordVerify) {
+      notifyShow('Las contraseñas no coinciden', 'warning');
+      return;
+    }
+
+    $('#btn-confirmar-crear-usuario').prop('disabled', true);
+
+    $.post('<?= base_url('rh/RecursosHumanos/crear_usuario_desde_empleado_ajax') ?>', {
+      empleado_id: crearUsuarioEmpleadoModalId,
+      username: username,
+      role_id: roleId,
+      password: password,
+      password_verify: passwordVerify,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      $('#btn-confirmar-crear-usuario').prop('disabled', false);
+      try { result = JSON.parse(result); } catch (e) { return; }
+      notifyShow(result.message, result.success ? 'success' : 'danger');
+      if (result.success) {
+        $('#modalCrearUsuarioEmpleado').modal('hide');
+        table.ajax.reload(null, false);
+        empleado_detail(crearUsuarioEmpleadoModalId);
+      }
+    });
+  }
 
   function abrirModalVincularUsuario(empleadoId) {
     vinculoEmpleadoModalId = empleadoId;

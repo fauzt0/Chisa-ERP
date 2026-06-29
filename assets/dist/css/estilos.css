@@ -208,3 +208,18 @@
         text-align: center;
     }
 }
+
+/* ========================================
+   ESCALA DE LETRA — contenido principal (no sidebar / topbar)
+   ======================================== */
+:root {
+    --erp-font-zoom: 1;
+}
+
+#erp-main-content.erp-font-scalable {
+    zoom: var(--erp-font-zoom, 1);
+}
+
+#erp-main-footer {
+    zoom: var(--erp-font-zoom, 1);
+}

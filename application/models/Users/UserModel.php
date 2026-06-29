@@ -142,6 +142,77 @@ class UserModel extends MY_Model {
     }
 
     /**
+     * Crea un administrador con permisos sin depender de $_POST (p. ej. desde expediente RH).
+     *
+     * @param array $userData nombre, apellidos, username, password (plano), departamento, empleado_id (opcional)
+     * @param array $enabledPermissionKeys Claves de permiso activas (user_add, rh_empleados_consult, ...)
+     */
+    public function insert_with_permissions(array $userData, array $enabledPermissionKeys) {
+        $username = trim((string)($userData['username'] ?? ''));
+        $password = (string)($userData['password'] ?? '');
+
+        if ($username === '' || !filter_var($username, FILTER_VALIDATE_EMAIL)) {
+            return $this->error_response('Ingrese un correo de acceso válido');
+        }
+        if (strlen($password) < 6) {
+            return $this->error_response('La contraseña debe tener al menos 6 caracteres');
+        }
+
+        $this->db->where('username', $username);
+        if ($this->db->count_all_results($this->tableName) > 0) {
+            return $this->error_response('Ese correo ya está registrado como usuario del sistema');
+        }
+
+        $permissions = $this->config->item('permissions');
+        if (empty($permissions) || !is_array($permissions)) {
+            $this->config->load('permissions');
+            $permissions = $this->config->item('permissions');
+        }
+
+        $enabled = array_fill_keys($enabledPermissionKeys, true);
+
+        $this->db->trans_start();
+
+        $data = [
+            'nombre'       => trim((string)($userData['nombre'] ?? '')),
+            'apellidos'    => trim((string)($userData['apellidos'] ?? '')),
+            'username'     => $username,
+            'password'     => password_hash($password, PASSWORD_BCRYPT),
+            'departamento' => trim((string)($userData['departamento'] ?? '')) ?: 'Sin departamento',
+            'empleado_id'  => !empty($userData['empleado_id']) ? (int)$userData['empleado_id'] : null,
+        ];
+
+        $inserted_id = $this->insert($data);
+        if (!$inserted_id) {
+            $this->db->trans_rollback();
+            return $this->error_response('Error al crear el usuario administrador');
+        }
+
+        $privs_batch = [];
+        foreach ($permissions as $perms) {
+            foreach ($perms as $perm_key => $perm_label) {
+                $privs_batch[] = [
+                    'admin'   => $inserted_id,
+                    'permiso' => $perm_key,
+                    'valor'   => isset($enabled[$perm_key]) ? 1 : 0,
+                ];
+            }
+        }
+
+        if (!empty($privs_batch)) {
+            $this->db->insert_batch('privilege', $privs_batch);
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            return $this->error_response('Error al asignar permisos del administrador');
+        }
+
+        return $this->success_response('Usuario administrador creado correctamente', ['id' => $inserted_id]);
+    }
+
+    /**
      * Procesa la carga masiva de usuarios desde un array de datos (Excel)
      * 
      * @param array $rows Datos leídos del Excel

@@ -4,6 +4,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class RecursosHumanos extends MY_Controller {
 
   protected $modulo = 'Recursos Humanos';
+
+  /** Permiso requerido para crear administradores desde un expediente de empleado */
+  const PERMISO_CREAR_USUARIO_ERP = 'user_add';
   
   public function __construct() 
   {
@@ -53,6 +56,7 @@ class RecursosHumanos extends MY_Controller {
         'reloj_ver_reportes'
     );
     $this->viewData['response']['vinculo_usuarios_habilitado'] = $this->EmpleadoUsuarioModel->tiene_vinculo_habilitado();
+    $this->viewData['response']['puede_crear_usuario_erp'] = $this->puede_crear_usuario_erp();
     $this->viewData['response']['usuarios_sin_empleado'] = $this->EmpleadoUsuarioModel->tiene_vinculo_habilitado()
         ? count($this->EmpleadoUsuarioModel->usuarios_sin_empleado(500))
         : 0;
@@ -533,6 +537,7 @@ class RecursosHumanos extends MY_Controller {
       'total_documentos' => $total_docs,
       'checklist' => $checklist,
       'vinculo_habilitado' => $this->EmpleadoUsuarioModel->tiene_vinculo_habilitado(),
+      'puede_crear_usuario_erp' => $this->puede_crear_usuario_erp(),
       'usuario_vinculado' => $usuario_vinculado ? [
         'id' => (int)$usuario_vinculado->id,
         'nombre' => $usuario_vinculado->nombre . ' ' . $usuario_vinculado->apellidos,
@@ -612,6 +617,79 @@ class RecursosHumanos extends MY_Controller {
       return;
     }
     echo json_encode($this->EmpleadoUsuarioModel->crear_empleado_desde_usuario($usuario_id));
+  }
+
+  public function roles_admin_ajax() {
+    if (!$this->puede_crear_usuario_erp()) {
+      $this->json_sin_permiso_crear_usuario_erp();
+      return;
+    }
+    $this->load->model('Users/RolesModel');
+    $roles = [];
+    foreach ($this->RolesModel->get_all_roles() as $role) {
+      $roles[] = [
+        'id' => (int)$role->id,
+        'nombre' => $role->nombre,
+        'descripcion' => $role->descripcion,
+      ];
+    }
+    echo json_encode(['success' => true, 'roles' => $roles]);
+  }
+
+  public function datos_crear_usuario_empleado_ajax() {
+    if (!$this->puede_crear_usuario_erp()) {
+      $this->json_sin_permiso_crear_usuario_erp();
+      return;
+    }
+    $empleado_id = (int)$this->input->post('empleado_id');
+    if (!$empleado_id) {
+      echo json_encode(['success' => false, 'message' => 'Empleado requerido']);
+      return;
+    }
+    echo json_encode($this->EmpleadoUsuarioModel->get_datos_para_crear_usuario($empleado_id));
+  }
+
+  public function crear_usuario_desde_empleado_ajax() {
+    if (!$this->puede_crear_usuario_erp()) {
+      $this->json_sin_permiso_crear_usuario_erp();
+      return;
+    }
+
+    $empleado_id = (int)$this->input->post('empleado_id');
+    $username = trim((string)$this->input->post('username'));
+    $password = (string)$this->input->post('password');
+    $password_verify = (string)$this->input->post('password_verify');
+    $role_id = (int)$this->input->post('role_id');
+
+    if (!$empleado_id) {
+      echo json_encode(['success' => false, 'message' => 'Empleado requerido']);
+      return;
+    }
+    if ($password === '' || $password_verify === '') {
+      echo json_encode(['success' => false, 'message' => 'Ingrese y confirme la contraseña']);
+      return;
+    }
+    if ($password !== $password_verify) {
+      echo json_encode(['success' => false, 'message' => 'Las contraseñas no coinciden']);
+      return;
+    }
+
+    $result = $this->EmpleadoUsuarioModel->crear_usuario_desde_empleado(
+      $empleado_id,
+      $username,
+      $password,
+      $role_id
+    );
+
+    if (!empty($result['success'])) {
+      $this->init_controller->insert_log(
+        $result['message'] . ' (empleado #' . $empleado_id . ')',
+        $this->session->email,
+        'Usuario ERP creado desde RH'
+      );
+    }
+
+    echo json_encode($result);
   }
 
   // ========================================================================
@@ -1570,6 +1648,23 @@ class RecursosHumanos extends MY_Controller {
       ],
       'dias' => $dias,
     ]));
+  }
+
+  /**
+   * Verifica permiso "Agregar usuarios" (user_add) para crear administradores desde RH.
+   */
+  private function puede_crear_usuario_erp() {
+    return $this->init_controller->has_permission(
+      (int)$this->session->userdata('id'),
+      self::PERMISO_CREAR_USUARIO_ERP
+    );
+  }
+
+  private function json_sin_permiso_crear_usuario_erp() {
+    echo json_encode([
+      'success' => false,
+      'message' => 'No tiene permiso para crear usuarios administradores (Agregar usuarios).',
+    ]);
   }
 
 }

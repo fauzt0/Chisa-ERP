@@ -211,4 +211,139 @@ class EmpleadoUsuarioModel extends CI_Model {
             'numero_empleado' => $result['data']['numero_empleado'] ?? null,
         ];
     }
+
+    /**
+     * Datos del empleado para precargar el formulario de creación de usuario ERP.
+     */
+    public function get_datos_para_crear_usuario($empleado_id) {
+        if (!$this->tiene_vinculo_habilitado()) {
+            return ['success' => false, 'message' => 'Ejecute la migración database/empleado_usuario_vinculo.sql'];
+        }
+
+        $empleado_id = (int)$empleado_id;
+        $empleado = $this->db
+            ->select('empleados.*, departamentos.nombre AS departamento_nombre')
+            ->from('empleados')
+            ->join('departamentos', 'departamentos.id = empleados.departamento_id', 'left')
+            ->where('empleados.id', $empleado_id)
+            ->get()
+            ->row();
+
+        if (!$empleado) {
+            return ['success' => false, 'message' => 'Empleado no encontrado'];
+        }
+
+        if ($this->get_usuario_por_empleado($empleado_id)) {
+            return ['success' => false, 'message' => 'Este trabajador ya tiene un usuario ERP vinculado'];
+        }
+
+        $apellidos = trim($empleado->apellido_paterno . ' ' . ($empleado->apellido_materno ?? ''));
+        $departamento = $empleado->departamento_nombre ?: ($empleado->puesto ?: 'Sin departamento');
+
+        return [
+            'success' => true,
+            'empleado' => [
+                'id'              => $empleado_id,
+                'numero_empleado' => $empleado->numero_empleado,
+                'nombre'          => $empleado->nombre,
+                'apellidos'       => $apellidos,
+                'nombre_completo' => trim($empleado->nombre . ' ' . $apellidos),
+                'departamento'    => $departamento,
+                'username'        => $this->sugerir_username($empleado),
+                'email_contacto'  => $empleado->email_personal ?? null,
+                'email_institucional' => $empleado->email_corporativo ?? null,
+            ],
+        ];
+    }
+
+    /**
+     * Crea un usuario administrador a partir del expediente del empleado y lo vincula.
+     */
+    public function crear_usuario_desde_empleado($empleado_id, $username, $password, $role_id) {
+        if (!$this->tiene_vinculo_habilitado()) {
+            return ['success' => false, 'message' => 'Ejecute la migración database/empleado_usuario_vinculo.sql'];
+        }
+
+        $preview = $this->get_datos_para_crear_usuario($empleado_id);
+        if (empty($preview['success'])) {
+            return $preview;
+        }
+
+        $empleado = $preview['empleado'];
+        $role_id = (int)$role_id;
+        if ($role_id <= 0) {
+            return ['success' => false, 'message' => 'Seleccione un rol de administración'];
+        }
+
+        $this->load->model('Users/RolesModel');
+        $role = $this->RolesModel->get_role($role_id);
+        if (!$role || (int)$role->estatus !== 1) {
+            return ['success' => false, 'message' => 'Rol de administración no válido'];
+        }
+
+        $rolePerms = json_decode($role->permisos, true);
+        if (!is_array($rolePerms) || empty($rolePerms)) {
+            return ['success' => false, 'message' => 'El rol seleccionado no tiene permisos configurados'];
+        }
+
+        $enabledKeys = [];
+        foreach ($rolePerms as $key => $value) {
+            if ($value) {
+                $enabledKeys[] = (string)$key;
+            }
+        }
+        if (empty($enabledKeys)) {
+            return ['success' => false, 'message' => 'El rol seleccionado no tiene permisos activos'];
+        }
+
+        $this->load->model('Users/UserModel');
+        $result = $this->UserModel->insert_with_permissions([
+            'nombre'       => $empleado['nombre'],
+            'apellidos'    => $empleado['apellidos'],
+            'username'     => trim((string)$username),
+            'password'     => (string)$password,
+            'departamento' => $empleado['departamento'],
+            'empleado_id'  => (int)$empleado['id'],
+        ], $enabledKeys);
+
+        if (empty($result['success'])) {
+            return ['success' => false, 'message' => $result['msg'] ?? 'No se pudo crear el usuario'];
+        }
+
+        $usuario_id = (int)($result['data']['id'] ?? 0);
+        $usuario = $this->get_usuario_por_empleado((int)$empleado['id']);
+
+        return [
+            'success'    => true,
+            'message'    => 'Usuario ERP creado y vinculado al trabajador',
+            'usuario_id' => $usuario_id,
+            'usuario'    => $usuario,
+            'rol'        => $role->nombre,
+        ];
+    }
+
+    private function sugerir_username($empleado) {
+        foreach (['email_corporativo', 'email_personal'] as $field) {
+            $email = strtolower(trim((string)($empleado->$field ?? '')));
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $email;
+            }
+        }
+
+        $nombre = $this->normalizar_para_email((string)$empleado->nombre);
+        $apPat = $this->normalizar_para_email((string)$empleado->apellido_paterno);
+        $base = trim($nombre . '.' . $apPat, '.');
+        if ($base === '') {
+            $base = 'empleado' . (int)$empleado->id;
+        }
+
+        return $base . '@chisarecubrimientos.com.mx';
+    }
+
+    private function normalizar_para_email($texto) {
+        $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto);
+        $texto = strtolower((string)$texto);
+        $texto = preg_replace('/[^a-z0-9]+/', '.', $texto);
+        return trim((string)$texto, '.');
+    }
 }

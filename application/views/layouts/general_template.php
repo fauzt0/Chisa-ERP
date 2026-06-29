@@ -20,6 +20,18 @@
 	<link href="<?php echo base_url();?>assets/dist/css/app.css" rel="stylesheet">	
 	<link href="<?php echo base_url();?>assets/dist/css/estilos.css?v=<?php echo time(); ?>" rel="stylesheet">
 	<?php $this->load->view('rh/partials/modal_styles'); ?>
+	<script>
+	(function () {
+	  var steps = { '-2': 0.85, '-1': 0.925, '0': 1, '1': 1.1, '2': 1.2 };
+	  var level = parseInt(localStorage.getItem('erp_font_scale_level') || '0', 10);
+	  if (isNaN(level)) level = 0;
+	  if (level < -2) level = -2;
+	  if (level > 2) level = 2;
+	  var zoom = steps[String(level)] || 1;
+	  document.documentElement.style.setProperty('--erp-font-zoom', String(zoom));
+	  document.documentElement.setAttribute('data-erp-font-level', String(level));
+	})();
+	</script>
   
 </head>
 
@@ -31,7 +43,7 @@
     <div class="main">
       <?php $this->load->view('layouts/topNavbar');?>
 
-      <main class="content">        
+      <main class="content erp-font-scalable" id="erp-main-content">        
         <?php $this->load->view($pageView);?>
       </main>
       
@@ -43,7 +55,7 @@
   <?php if(isset($pageScript) && $pageScript != ''){ $this->load->view($pageScript); } ?>
 
 
-  <script src="<?php echo base_url();?>assets/dist/js/tools.js"></script>
+  <script src="<?php echo base_url();?>assets/dist/js/tools.js?v=<?php echo time(); ?>"></script>
   
   <!-- Script para cargar notificaciones en tiempo real -->
   <script>
