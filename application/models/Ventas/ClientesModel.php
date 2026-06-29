@@ -15,8 +15,8 @@ class ClientesModel extends MY_Model {
     // Configuración para DataTables
     protected $datatableConfig = [
         'table' => 'clientes',
-        'column_order' => ['codigo', 'razon_social', 'rfc', 'telefono', 'tipo_cliente', 'estatus', null],
-        'column_search' => ['codigo', 'razon_social', 'nombre_comercial', 'rfc', 'telefono'],
+        'column_order' => ['clientes.codigo', 'clientes.razon_social', 'clientes.rfc', 'clientes.telefono', 'clientes.ciudad', 'clientes.saldo_pendiente', 'clientes.tipo_cliente', 'clientes.estatus', null],
+        'column_search' => ['clientes.codigo', 'clientes.razon_social', 'clientes.nombre_comercial', 'clientes.rfc', 'clientes.telefono', 'clientes.email', 'clientes.contacto_nombre', 'clientes.ciudad'],
         'order' => ['fecha_creacion' => 'DESC']
     ];
     
@@ -28,7 +28,9 @@ class ClientesModel extends MY_Model {
      * Override de _get_datatables_query
      */
     protected function _get_datatables_query() {
-        $this->db->select('clientes.*');
+        $this->db->select('clientes.*,
+            (SELECT COUNT(*) FROM ordenes_venta ov WHERE ov.cliente_id = clientes.id) AS total_ordenes,
+            (SELECT MAX(ov2.fecha_orden) FROM ordenes_venta ov2 WHERE ov2.cliente_id = clientes.id) AS ultima_orden', false);
         $this->db->from($this->tableName);
         
         // Excluir cliente MOSTRADOR de la lista
@@ -36,19 +38,31 @@ class ClientesModel extends MY_Model {
         
         // Filtros adicionales
         if(isset($_POST['filtro_tipo_cliente']) && $_POST['filtro_tipo_cliente'] != '') {
-            $this->db->where('tipo_cliente', $_POST['filtro_tipo_cliente']);
+            $this->db->where('clientes.tipo_cliente', $_POST['filtro_tipo_cliente']);
         }
         
         if(isset($_POST['filtro_estatus']) && $_POST['filtro_estatus'] != '') {
-            $this->db->where('estatus', $_POST['filtro_estatus']);
+            $this->db->where('clientes.estatus', $_POST['filtro_estatus']);
         }
         
         if(isset($_POST['filtro_saldo']) && $_POST['filtro_saldo'] != '') {
             if($_POST['filtro_saldo'] == 'con_saldo') {
-                $this->db->where('saldo_pendiente >', 0);
+                $this->db->where('clientes.saldo_pendiente >', 0);
             } else if($_POST['filtro_saldo'] == 'sin_saldo') {
-                $this->db->where('saldo_pendiente', 0);
+                $this->db->where('clientes.saldo_pendiente', 0);
             }
+        }
+
+        if(isset($_POST['filtro_busqueda_rapida']) && $_POST['filtro_busqueda_rapida'] !== '') {
+            $q = $_POST['filtro_busqueda_rapida'];
+            $this->db->group_start();
+            $this->db->like('clientes.razon_social', $q);
+            $this->db->or_like('clientes.nombre_comercial', $q);
+            $this->db->or_like('clientes.rfc', $q);
+            $this->db->or_like('clientes.codigo', $q);
+            $this->db->or_like('clientes.telefono', $q);
+            $this->db->or_like('clientes.email', $q);
+            $this->db->group_end();
         }
         
         // Búsqueda
@@ -72,14 +86,26 @@ class ClientesModel extends MY_Model {
         // Ordenamiento
         if(isset($_POST['order']) && isset($_POST['order'][0])) {
             $column_index = $_POST['order'][0]['column'];
-            $column_name = $this->datatableConfig['column_order'][$column_index];
+            $column_name = $this->datatableConfig['column_order'][$column_index] ?? null;
             if($column_name) {
                 $this->db->order_by($column_name, $_POST['order'][0]['dir']);
             }
         } elseif (isset($this->datatableConfig['order'])) {
             $order = $this->datatableConfig['order'];
-            $this->db->order_by(key($order), $order[key($order)]);
+            $this->db->order_by('clientes.' . key($order), $order[key($order)]);
         }
+    }
+
+    /**
+     * Órdenes de venta de un cliente
+     */
+    public function get_ordenes_cliente($cliente_id, $limit = 10) {
+        $this->db->select('id, folio, fecha_orden, total, estatus, estatus_pago');
+        $this->db->from('ordenes_venta');
+        $this->db->where('cliente_id', $cliente_id);
+        $this->db->order_by('fecha_orden', 'DESC');
+        $this->db->limit($limit);
+        return $this->db->get()->result();
     }
     
     /**

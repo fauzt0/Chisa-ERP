@@ -519,6 +519,78 @@ class Dashboard extends MY_Controller {
         // Render sin layout (standalone para impresión)
         $this->load->view('produccion/dashboard/etiqueta_lote', $data);
     }
+    // =====================================================
+    // ENDPOINTS BOM EXPLOSION + CATÁLOGO TOUCHSCREEN
+    // =====================================================
+
+    /**
+     * Explota el BOM de una formulación y retorna árbol JSON (AJAX)
+     */
+    public function explotar_bom_ajax() {
+        $formulacion_id = (int)$this->input->post('formulacion_id');
+        $cantidad_kg    = (float)($this->input->post('cantidad_kg') ?: 1);
+
+        if (!$formulacion_id) {
+            echo json_encode(['success' => false, 'message' => 'ID de formulación requerido']);
+            return;
+        }
+
+        $this->load->model('Produccion/ProductosModel');
+        $visitados = [];
+        $arbol = $this->ProductosModel->explotar_bom_arbol($formulacion_id, $cantidad_kg, 0, $visitados);
+        $plano = $this->ProductosModel->explotar_bom_plano($formulacion_id, $cantidad_kg, 0, $visitados);
+
+        echo json_encode([
+            'success' => true,
+            'arbol'   => $arbol,
+            'plano'   => $plano,
+            'cantidad_kg' => $cantidad_kg,
+        ]);
+    }
+
+    /**
+     * Busca formulaciones por término (AJAX - panel touchscreen)
+     */
+    public function buscar_formulaciones_ajax() {
+        $termino = trim($this->input->post('termino') ?: '');
+        $this->load->model('Produccion/ProductosModel');
+        $resultados = $this->ProductosModel->buscar_formulaciones($termino, 40);
+
+        echo json_encode(['success' => true, 'formulaciones' => $resultados]);
+    }
+
+    /**
+     * Obtiene catálogo de productos para el panel touchscreen (AJAX)
+     */
+    public function get_catalogo_ajax() {
+        $categoria_id = $this->input->post('categoria_id') ?: null;
+        $termino      = trim($this->input->post('termino') ?: '');
+
+        $this->load->model('Produccion/ProductosModel');
+        $productos    = $this->ProductosModel->get_catalogo_touchscreen($categoria_id, $termino);
+        $categorias   = $this->ProductosModel->get_categorias_select();
+
+        echo json_encode([
+            'success'   => true,
+            'productos' => $productos,
+            'categorias'=> $categorias,
+        ]);
+    }
+
+    /**
+     * Historial de órdenes completadas (AJAX)
+     */
+    public function get_historial_ajax() {
+        $busqueda = trim($this->input->get_post('busqueda') ?: '');
+        $this->load->model('Produccion/ProductosModel');
+        $historial = $this->ProductosModel->get_historial_ordenes_produccion([
+            'busqueda' => $busqueda,
+            'limite'   => 60,
+        ]);
+
+        echo json_encode(['success' => true, 'historial' => $historial]);
+    }
+
     public function aplicar_formulacion_orden_ajax() {
         $orden_id = $this->input->post('orden_id');
         $tipo_orden = $this->input->post('tipo_orden');

@@ -5,23 +5,65 @@ let insumosDisponibles = [];
 let productosDisponibles = [];
 
 function initProductos() {
+  limpiarBackdropsModal();
   inicializarDataTable();
-  
-  // Event listeners para actualizar costo total de formulación
-  $('#formulacion_costo_mano_obra, #formulacion_costo_indirecto').on('input', actualizarCostoTotal);
-  
+
+  // Buscador propio (siempre editable, independiente del buscador interno de DataTables)
+  let buscarTimer = null;
+  $('#buscarProductos').on('input', function() {
+    clearTimeout(buscarTimer);
+    const val = this.value;
+    buscarTimer = setTimeout(function() {
+      if (tabla) {
+        tabla.search(val).draw();
+      }
+    }, 350);
+  });
+
   // Filtros
   $('#filtroTipo, #filtroEstatus, #filtroStock').on('change', function() {
-    tabla.ajax.reload();
+    if (tabla) tabla.ajax.reload();
   });
+
+  $('#btnLimpiarFiltrosProductos').on('click', function() {
+    $('#buscarProductos').val('');
+    $('#filtroTipo, #filtroEstatus, #filtroStock').val('');
+    if (tabla) {
+      tabla.search('').draw();
+      tabla.ajax.reload();
+    }
+  });
+
+  // Chips de búsqueda rápida (semielaborados frecuentes)
+  $(document).on('click', '.btn-chip-buscar', function() {
+    const term = $(this).data('term') || '';
+    $('#buscarProductos').val(term).trigger('input');
+  });
+
+  // Event listeners para actualizar costo total de formulación
+  $('#formulacion_costo_mano_obra, #formulacion_costo_indirecto').on('input', actualizarCostoTotal);
+}
+
+/** Elimina backdrops de Bootstrap que bloquean clics en la página */
+function limpiarBackdropsModal() {
+  document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
+  document.body.classList.remove('modal-open');
+  document.body.style.removeProperty('overflow');
+  document.body.style.removeProperty('padding-right');
 }
 
 function inicializarDataTable() {
+  if ($.fn.DataTable.isDataTable('#tablaProductos')) {
+    $('#tablaProductos').DataTable().destroy();
+    $('#tablaProductos tbody').empty();
+  }
+
   tabla = $('#tablaProductos').DataTable({
     processing: true,
     serverSide: true,
     deferRender: true,
     autoWidth: false,
+    dom: 'lrtip', // sin buscador interno de DT — usamos #buscarProductos
     ajax: {
       url: BASE_URL+'produccion/Productos/lista_ajax',
       type: 'POST',
@@ -31,6 +73,18 @@ function inicializarDataTable() {
         d.filtro_tipo = $('#filtroTipo').val();
         d.filtro_estatus = $('#filtroEstatus').val();
         d.filtro_stock = $('#filtroStock').val();
+        // Sincronizar búsqueda externa con server-side
+        if ($('#buscarProductos').val()) {
+          d.search = d.search || {};
+          d.search.value = $('#buscarProductos').val();
+        }
+      },
+      error: function(xhr) {
+        console.error('Error lista_ajax productos:', xhr.responseText);
+        limpiarBackdropsModal();
+        if (typeof toastr !== 'undefined') {
+          toastr.error('Error al cargar el catálogo de productos');
+        }
       }
     },
     columns: [
@@ -1243,132 +1297,237 @@ window.editarFormulacion = function(productoId, formulacionId) {
   });
 };
 window.verDetalleFormulacion = function(formulacionId) {
-  // Cerrar el modal de historial antes de abrir el detalle
   $('#modalHistorialFormulaciones').modal('hide');
-  
-  $.post(BASE_URL+'produccion/Productos/get_detalle_formulacion_ajax', {
+
+  $('#detalleFormulacionBody').html(`
+    <div class="text-center py-5 text-muted">
+      <i class="fas fa-spinner fa-spin fa-2x mb-3"></i><br>Cargando formulación...
+    </div>`);
+
+  setTimeout(function() { $('#modalDetalleFormulacion').modal('show'); }, 150);
+
+  $.post(BASE_URL + 'produccion/Productos/get_detalle_formulacion_ajax', {
     'formulacion_id': formulacionId,
     'peticion': 'ajax',
     [CSRF_TOKEN_NAME]: CSRF_HASH
   }, function(result) {
     result = JSON.parse(result);
-    if(result.success) {
-      const f = result.formulacion;
-      
-      $('#detalleFormulacionTitle').html(`
-        <i class="fas fa-flask"></i> ${f.nombre_version || 'Versión ' + f.version}
-        ${f.es_activa == '1' ? '<span class="badge bg-success ms-2">Activa</span>' : '<span class="badge bg-secondary ms-2">Histórica</span>'}
-      `);
-      
-      // Construir tabla de componentes
-      let html = `
-        <div class="alert alert-info">
-          <strong>Información de la Formulación</strong><br>
-          ${f.descripcion ? `<p class="mb-1">${f.descripcion}</p>` : ''}
-          <p class="mb-0"><strong>Cantidad producida:</strong> ${f.cantidad_producida} ${f.unidad_produccion}</p>
+    if (!result.success) {
+      $('#detalleFormulacionBody').html(`<div class="alert alert-danger">Error al cargar la formulación</div>`);
+      return;
+    }
+
+    const f = result.formulacion;
+
+    // Título del modal
+    $('#detalleFormulacionTitle').html(`
+      <i class="fas fa-flask text-success me-1"></i>${f.nombre_version || ('Versión ' + f.version)}
+      ${f.es_activa == '1'
+        ? '<span class="badge bg-success ms-2"><i class="fas fa-star"></i> Activa</span>'
+        : '<span class="badge bg-secondary ms-2">Histórica</span>'}
+      ${f.cliente_nombre ? `<br><small class="opacity-75 fw-normal"><i class="fas fa-user"></i> ${f.cliente_nombre}</small>` : ''}
+    `);
+
+    // ── Cards de metadatos ────────────────────────────────────────────────
+    let html = `
+      <div class="row mb-3 g-2">
+        <div class="col-6 col-md-3">
+          <div class="rounded border p-2 text-center bg-light">
+            <div class="text-muted small">Por cubeta</div>
+            <div class="fw-bold">${f.cantidad_producida} ${f.unidad_produccion}</div>
+          </div>
         </div>
-        
-        <h6><i class="fas fa-list"></i> Componentes</h6>
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered">
-            <thead class="table-light">
-              <tr>
-                <th width="${PUEDE_VER_COSTOS ? '10%' : '20%'}">Tipo</th>
-                <th width="${PUEDE_VER_COSTOS ? '40%' : '60%'}">Componente</th>
-                <th width="${PUEDE_VER_COSTOS ? '15%' : '20%'}">Cantidad</th>
-                ${PUEDE_VER_COSTOS ? '<th width="15%">Costo Unit.</th>' : ''}
-                ${PUEDE_VER_COSTOS ? '<th width="20%">Subtotal</th>' : ''}
-              </tr>
-            </thead>
-            <tbody>
-      `;
-      
-      if(f.componentes && f.componentes.length > 0) {
-        f.componentes.forEach(c => {
-          const nombre = c.tipo_componente === 'Insumo' ? c.insumo_nombre : c.producto_nombre;
+        <div class="col-6 col-md-3">
+          <div class="rounded border p-2 text-center bg-light">
+            <div class="text-muted small">Rendimiento</div>
+            <div class="fw-bold">${f.rendimiento_m2_por_kg ? f.rendimiento_m2_por_kg + ' m²/kg' : '–'}</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded border p-2 text-center bg-light">
+            <div class="text-muted small">Cliente</div>
+            <div class="fw-bold">${f.cliente_nombre || 'General'}</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded border p-2 text-center bg-light">
+            <div class="text-muted small">Versión</div>
+            <div class="fw-bold">V${f.version}</div>
+          </div>
+        </div>
+      </div>
+      ${f.comentarios ? `<div class="alert alert-light border mb-3 py-2"><i class="fas fa-comment-dots text-muted me-1"></i>${f.comentarios}</div>` : ''}
+      ${f.descripcion ? `<div class="alert alert-light border mb-3 py-2"><i class="fas fa-info-circle text-muted me-1"></i>${f.descripcion}</div>` : ''}
+    `;
+
+    // ── Agrupar componentes ───────────────────────────────────────────────
+    let gruposOrden = [];
+    let grupos = {};
+    let hayGrupos = false;
+
+    if (f.componentes && f.componentes.length > 0) {
+      f.componentes.forEach(c => {
+        let g = (c.grupo_color && c.grupo_color.trim() !== '') ? c.grupo_color.trim() : '__sin_grupo__';
+        if (g !== '__sin_grupo__') hayGrupos = true;
+        if (!grupos[g]) { grupos[g] = []; gruposOrden.push(g); }
+        grupos[g].push(c);
+      });
+    }
+
+    // ── Tabla en formato Excel ────────────────────────────────────────────
+    const colCosto = PUEDE_VER_COSTOS;
+    html += `
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm mb-0" style="font-size:.875rem;">
+          <thead class="table-dark">
+            <tr>
+              <th width="28%">Insumo / Componente</th>
+              <th width="9%" class="text-center">% BOM</th>
+              <th width="12%" class="text-end">kg / cubeta</th>
+              <th width="9%" class="text-center">% F.Acuosa</th>
+              <th width="12%" class="text-end">kg F.Acuosa</th>
+              ${colCosto ? '<th width="12%" class="text-end">Costo Unit.</th>' : ''}
+              ${colCosto ? '<th width="12%" class="text-end">Subtotal</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    let totPct = 0, totKg = 0, totFase = 0, totCosto = 0;
+
+    if (gruposOrden.length === 0) {
+      const cols = colCosto ? 7 : 5;
+      html += `<tr><td colspan="${cols}" class="text-center text-muted py-4">Sin componentes registrados</td></tr>`;
+    } else {
+      gruposOrden.forEach(key => {
+        const grupo = key === '__sin_grupo__' ? '' : key;
+        const items = grupos[key];
+        const cols  = colCosto ? 7 : 5;
+
+        if (hayGrupos) {
+          html += `
+            <tr style="background:#dbeafe; border-left:4px solid #2563eb;">
+              <td colspan="${cols}" class="py-1 ps-3 fw-bold" style="font-size:.8rem;letter-spacing:.04em;">
+                <i class="fas fa-palette text-primary me-1"></i>${grupo || 'Sin grupo'}
+              </td>
+            </tr>`;
+        }
+
+        let subFa = 0, subCosto = 0;
+
+        items.forEach(c => {
+          const nombre = c.tipo_componente === 'Insumo' ? (c.insumo_nombre || '–') : (c.producto_nombre || '–');
+          const pct    = parseFloat(c.porcentaje || 0);
+          const kg     = parseFloat(c.cantidad   || 0);
+          const pct_fa = parseFloat(c.porcentaje_fase_acuosa || 0);
+          const kg_fa  = parseFloat(c.kg_fase_acuosa || 0);
+          const cu     = parseFloat(c.costo_unitario || 0);
+          const sub    = parseFloat(c.costo_total    || 0);
+
+          totPct   += pct;
+          totKg    += kg;
+          totFase  += kg_fa;
+          totCosto += sub;
+          subFa    += kg_fa;
+          subCosto += sub;
+
           html += `
             <tr>
-              <td><span class="badge bg-${c.tipo_componente === 'Insumo' ? 'primary' : 'info'}">${c.tipo_componente}</span></td>
-              <td>${nombre}</td>
-              <td>${c.cantidad} ${c.unidad}</td>
-              ${PUEDE_VER_COSTOS ? `<td>$${parseFloat(c.costo_unitario).toFixed(2)}</td>` : ''}
-              ${PUEDE_VER_COSTOS ? `<td>$${parseFloat(c.costo_total).toFixed(2)}</td>` : ''}
-            </tr>
-          `;
+              <td>
+                <strong>${nombre}</strong>
+                ${c.observaciones ? `<br><small class="text-muted fst-italic">${c.observaciones}</small>` : ''}
+              </td>
+              <td class="text-center">
+                ${pct > 0 ? `<span class="badge bg-light text-dark border">${pct.toFixed(2)}%</span>` : '<span class="text-muted">–</span>'}
+              </td>
+              <td class="text-end">${kg > 0 ? kg.toFixed(4) : '0.0000'}</td>
+              <td class="text-center">
+                ${pct_fa > 0 ? `<span class="badge bg-info bg-opacity-25 text-dark border border-info">${pct_fa.toFixed(2)}%</span>` : '<span class="text-muted">–</span>'}
+              </td>
+              <td class="text-end text-info">${kg_fa > 0 ? kg_fa.toFixed(4) : '<span class="text-muted">–</span>'}</td>
+              ${colCosto ? `<td class="text-end">$${cu.toFixed(2)}</td>` : ''}
+              ${colCosto ? `<td class="text-end">$${sub.toFixed(2)}</td>` : ''}
+            </tr>`;
         });
-      } else {
-        const colspan = PUEDE_VER_COSTOS ? '5' : '3';
-        html += `<tr><td colspan="${colspan}" class="text-center text-muted">No hay componentes registrados</td></tr>`;
-      }
-      
-      html += `
-            </tbody>
-            ${PUEDE_VER_COSTOS ? `
-            <tfoot class="table-light">
-              <tr>
-                <td colspan="4" class="text-end"><strong>Total Insumos:</strong></td>
-                <td><strong>$${parseFloat(f.costo_total_insumos).toFixed(2)}</strong></td>
-              </tr>
-            </tfoot>
-            ` : ''}
-          </table>
-        </div>
-      `;
-      
-      // Sección de costos - solo si tiene permiso
-      if(PUEDE_VER_COSTOS) {
-        html += `
-        <h6><i class="fas fa-calculator"></i> Costos</h6>
-        <table class="table table-sm">
-          <tr>
-            <th width="60%">Costo de Insumos:</th>
-            <td>$${parseFloat(f.costo_total_insumos).toFixed(2)}</td>
-          </tr>
-          <tr>
-            <th>Costo de Mano de Obra:</th>
-            <td>$${parseFloat(f.costo_mano_obra).toFixed(2)}</td>
-          </tr>
-          <tr>
-            <th>Costos Indirectos:</th>
-            <td>$${parseFloat(f.costo_indirecto).toFixed(2)}</td>
-          </tr>
-          <tr class="table-light">
-            <th><strong>COSTO TOTAL:</strong></th>
-            <td><strong>$${parseFloat(f.costo_total).toFixed(2)}</strong></td>
-          </tr>
-        </table>
-        `;
-      }
-      
-      html += `
-        <div class="alert alert-secondary">
-          <small>
-            <i class="fas fa-info-circle"></i> 
-            Esta es una vista de solo lectura. Para modificar la formulación activa, use el botón "Gestionar Formulación" desde la lista de productos.
-          </small>
-        </div>
-      `;
-      
-      $('#detalleFormulacionBody').html(html);
-      
-      // Esperar a que se cierre el modal anterior antes de abrir el nuevo
-      setTimeout(function() {
-        $('#modalDetalleFormulacion').modal('show');
-      }, 300);
+
+        // Subtotal de grupo si hay varios items
+        if (hayGrupos && items.length > 1) {
+          const cols2 = colCosto ? 7 : 5;
+          html += `
+            <tr style="background:#eff6ff; font-size:.8rem;">
+              <td colspan="${colCosto ? 5 : 3}" class="text-end text-muted fst-italic">↳ Subtotal <em>${grupo || 'Sin grupo'}</em>:</td>
+              <td class="text-end fw-bold text-info">${subFa > 0 ? subFa.toFixed(4) : '–'}</td>
+              ${colCosto ? `<td></td><td class="text-end fw-bold text-primary">$${subCosto.toFixed(2)}</td>` : ''}
+            </tr>`;
+        }
+      });
     }
+
+    // Fila de totales
+    html += `
+          </tbody>
+          <tfoot class="table-secondary fw-bold">
+            <tr>
+              <td>TOTALES</td>
+              <td class="text-center">${totPct.toFixed(2)}%</td>
+              <td class="text-end">${totKg.toFixed(4)}</td>
+              <td></td>
+              <td class="text-end text-info">${totFase > 0 ? totFase.toFixed(4) : '–'}</td>
+              ${colCosto ? `<td></td><td class="text-end text-primary">$${totCosto.toFixed(2)}</td>` : ''}
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `;
+
+    // ── Resumen de costos (sólo con permiso) ─────────────────────────────
+    if (colCosto) {
+      const mo  = parseFloat(f.costo_mano_obra  || 0);
+      const ind = parseFloat(f.costo_indirecto  || 0);
+      const tot = parseFloat(f.costo_total      || 0);
+      html += `
+        <div class="row mt-3 g-2">
+          <div class="col-md-4">
+            <div class="rounded border p-2 text-center bg-light">
+              <div class="text-muted small">Insumos</div>
+              <div class="fw-bold">$${totCosto.toFixed(2)}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="rounded border p-2 text-center bg-light">
+              <div class="text-muted small">M.O. + Indirectos</div>
+              <div class="fw-bold">$${(mo + ind).toFixed(2)}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="rounded border p-2 text-center bg-success text-white">
+              <div class="small opacity-75">COSTO TOTAL</div>
+              <div class="fw-bold fs-5">$${tot.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    $('#detalleFormulacionBody').html(html);
   });
 };
 
-// Inicializar cuando jQuery esté disponible
+// Inicializar cuando jQuery esté disponible (scripts.php carga después de app.js)
+function _initPaginaProductos() {
+  limpiarBackdropsModal();
+  // Limpiar backdrop al cerrar cualquier modal de esta página
+  document.querySelectorAll('.modal').forEach(function(modalEl) {
+    modalEl.addEventListener('hidden.bs.modal', limpiarBackdropsModal);
+  });
+  if (typeof initProductos === 'function') initProductos();
+  if (typeof initCalculadoraExcel === 'function') initCalculadoraExcel();
+}
 if (typeof jQuery !== 'undefined') {
-  $(document).ready(initProductos);
+  jQuery(document).ready(_initPaginaProductos);
 } else {
-  // Fallback si jQuery no está cargado aún
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof jQuery !== 'undefined') {
-      $(document).ready(initProductos);
-    } else {
-      console.error('jQuery no está disponible. Asegúrate de que jQuery esté cargado antes de este script.');
+      jQuery(document).ready(_initPaginaProductos);
     }
   });
 }
@@ -1391,8 +1550,8 @@ function initCalculadoraExcel() {
     }
   });
 
-  // OnChange Producto
-  $('#calc_producto_id').on('change', function() {
+  // OnChange Producto (evitar handlers duplicados si se recarga)
+  $('#calc_producto_id').off('change.calc').on('change.calc', function() {
     let prod_id = $(this).val();
     if(!prod_id) {
       $('#calc_formulacion_id').html('<option value="">-- Seleccionar --</option>').prop('disabled', true);
@@ -1418,17 +1577,15 @@ function initCalculadoraExcel() {
   });
 
   // OnChange Formulacion
-  $('#calc_formulacion_id').on('change', function() {
+  $('#calc_formulacion_id').off('change.calc').on('change.calc', function() {
     if($(this).val()) {
       simularProduccion();
     }
   });
 }
 
-// Agregar inicialización al cargar la página
-if (typeof jQuery !== 'undefined') {
-  $(document).ready(initCalculadoraExcel);
-}
+// Agregar inicialización al cargar la página (después de jQuery)
+// initCalculadoraExcel se llama desde _initPaginaProductos()
 
 function simularProduccion() {
   let form_id = $('#calc_formulacion_id').val();
@@ -1463,77 +1620,107 @@ function renderizarTablaExcel(datos) {
   let componentes = datos.componentes;
   
   // Actualizar metadatos
-  $('#lbl_calc_cliente').text(f.cliente_nombre || 'N/A');
-  $('#lbl_calc_rendimiento').text(f.rendimiento_m2_por_kg || 'Global');
-  $('#lbl_calc_fecha').text(f.fecha_creacion);
-  $('#lbl_calc_comentarios').text(f.comentarios || 'Sin comentarios');
+  $('#lbl_calc_cliente').text(f.cliente_nombre || 'General');
+  $('#lbl_calc_rendimiento').text(f.rendimiento_m2_por_kg ? f.rendimiento_m2_por_kg + ' m²/kg' : 'No definido');
+  $('#lbl_calc_fecha').text(f.fecha_creacion ? new Date(f.fecha_creacion).toLocaleDateString('es-MX') : '-');
+  $('#lbl_calc_comentarios').text(f.comentarios || '-');
   $('#alertMetadatosFormulacion').removeClass('d-none');
-  
-  // Agrupar por color
+
+  // Detectar si hay grupos de color definidos
+  let hayGrupos = componentes.some(c => c.grupo_color && c.grupo_color.trim() !== '');
+
+  // Agrupar respetando el orden de aparición
+  let gruposOrden = [];
   let grupos = {};
   componentes.forEach(c => {
-    let grupo = c.grupo_color || 'GENERAL';
-    if(!grupos[grupo]) grupos[grupo] = [];
-    grupos[grupo].push(c);
+    let key = (c.grupo_color && c.grupo_color.trim() !== '') ? c.grupo_color.trim() : '__sin_grupo__';
+    if(!grupos[key]) { grupos[key] = []; gruposOrden.push(key); }
+    grupos[key].push(c);
   });
 
   let html = '';
-  let totalBOM = 0;
-  let totalKgUni = 0;
-  let totalFaseAc = 0;
-  let totalReqKg = 0;
+  let totalBOM = 0, totalKgBase = 0, totalFaseAc = 0, totalReqKg = 0;
 
-  for (let grupo in grupos) {
-    html += `<tr class="table-secondary fw-bold"><td colspan="7"><i class="fas fa-palette"></i> ${grupo}</td></tr>`;
-    let items = grupos[grupo];
-    
-    // Subtotales del grupo
-    let subFaseAc = 0;
-    
+  gruposOrden.forEach(key => {
+    let grupo = key === '__sin_grupo__' ? '' : key;
+    let items = grupos[key];
+
+    // Separador de grupo (sólo si hay grupos definidos)
+    if (hayGrupos) {
+      html += `
+        <tr style="background:#dbeafe; border-left:4px solid #2563eb;">
+          <td colspan="7" class="py-1 ps-3 fw-bold" style="font-size:0.85rem; letter-spacing:.04em;">
+            <i class="fas fa-palette text-primary me-1"></i>${grupo || 'Sin grupo'}
+          </td>
+        </tr>`;
+    }
+
+    let subFaseAc = 0, subReqKg = 0;
+
     items.forEach(c => {
-      let nombre = c.tipo_componente === 'Insumo' ? c.insumo_nombre : c.producto_nombre;
-      let pct = parseFloat(c.porcentaje || 0);
-      let kg_uni = parseFloat(c.cantidad || 0);
-      let pct_fase = parseFloat(c.porcentaje_fase_acuosa || 0);
-      let kg_fase = parseFloat(c.kg_fase_acuosa_escalado || 0);
-      let total_req = parseFloat(c.cantidad_escalada || 0);
+      let nombre = c.tipo_componente === 'Insumo' ? (c.insumo_nombre || c.producto_nombre) : (c.producto_nombre || c.insumo_nombre);
+      let pct     = parseFloat(c.porcentaje || 0);
+      let kg_base = parseFloat(c.cantidad || 0);
+      let pct_fa  = parseFloat(c.porcentaje_fase_acuosa || 0);
+      let kg_fa   = parseFloat(c.kg_fase_acuosa_escalado || 0);
+      let total   = parseFloat(c.cantidad_escalada || 0);
 
-      totalBOM += pct;
-      totalKgUni += kg_uni;
-      subFaseAc += kg_fase;
-      totalFaseAc += kg_fase;
-      totalReqKg += total_req;
+      totalBOM   += pct;
+      totalKgBase+= kg_base;
+      subFaseAc  += kg_fa;
+      totalFaseAc+= kg_fa;
+      totalReqKg += total;
+      subReqKg   += total;
 
       html += `
         <tr data-id="${c.id}" class="fila-componente">
-          <td class="text-muted"><small>${grupo}</small></td>
-          <td>${nombre}</td>
-          <td class="text-center bg-light celda-edit celda-pct" data-val="${pct}">${pct > 0 ? pct.toFixed(2) + '%' : '-'}</td>
-          <td class="text-end celda-edit celda-kg" data-val="${kg_uni}">${kg_uni.toFixed(4)}</td>
-          <td class="text-center bg-light celda-edit celda-pct-fase" data-val="${pct_fase}">${pct_fase > 0 ? pct_fase.toFixed(2) + '%' : '-'}</td>
-          <td class="text-end">${kg_fase > 0 ? kg_fase.toFixed(4) : '-'}</td>
-          <td class="text-end bg-primary bg-opacity-10 fw-bold">${total_req.toFixed(4)}</td>
-        </tr>
-      `;
+          <td class="text-muted small ps-3">${hayGrupos ? '' : '&mdash;'}</td>
+          <td>
+            <strong>${nombre}</strong>
+            ${c.observaciones ? `<br><small class="text-muted fst-italic">${c.observaciones}</small>` : ''}
+          </td>
+          <td class="text-center celda-edit celda-pct" data-val="${pct}">
+            ${pct > 0 ? `<span class="badge bg-light text-dark border">${pct.toFixed(2)}%</span>` : '<span class="text-muted">-</span>'}
+          </td>
+          <td class="text-end celda-edit celda-kg" data-val="${kg_base}">
+            ${kg_base > 0 ? kg_base.toFixed(4) : '0.0000'}
+          </td>
+          <td class="text-center celda-edit celda-pct-fase" data-val="${pct_fa}">
+            ${pct_fa > 0 ? `<span class="badge bg-info bg-opacity-25 text-dark border border-info">${pct_fa.toFixed(2)}%</span>` : '<span class="text-muted">-</span>'}
+          </td>
+          <td class="text-end text-info">
+            ${kg_fa > 0 ? kg_fa.toFixed(4) : '<span class="text-muted">-</span>'}
+          </td>
+          <td class="text-end fw-bold" style="background:rgba(37,99,235,.07); color:#1d4ed8;">
+            ${total.toFixed(4)}
+          </td>
+        </tr>`;
     });
-    
-    // Fila subtotales si hay fase acuosa
-    if (subFaseAc > 0) {
-      html += `<tr><td colspan="5" class="text-end text-muted fst-italic">Total Fase Acuosa (${grupo}):</td><td class="text-end fw-bold">${subFaseAc.toFixed(4)}</td><td></td></tr>`;
+
+    // Subtotales del grupo (sólo si hay grupos Y más de 1 item)
+    if (hayGrupos && items.length > 1) {
+      html += `
+        <tr style="background:#eff6ff; font-size:0.8rem;">
+          <td colspan="2" class="text-end text-muted fst-italic">↳ Subtotal <em>${grupo || 'Sin grupo'}</em>:</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td class="text-end fw-bold text-info">${subFaseAc > 0 ? subFaseAc.toFixed(4) : '-'}</td>
+          <td class="text-end fw-bold text-primary">${subReqKg.toFixed(4)}</td>
+        </tr>`;
     }
-  }
+  });
 
   $('#tbodyExcelSimulador').html(html);
-  
-  // Llenar tfoot
+
+  // Totales en el tfoot
   $('#lbl_total_porcentaje').text(totalBOM.toFixed(2) + '%');
-  $('#lbl_total_kg_unidad').text(totalKgUni.toFixed(4));
+  $('#lbl_total_kg_unidad').text(totalKgBase.toFixed(4));
   $('#lbl_total_kg_fase_acuosa').text(totalFaseAc.toFixed(4));
   $('#lbl_total_requerido_kg').text(totalReqKg.toFixed(4));
-  
   $('#tfootExcelSimulador').show();
-  
-  if(PUEDE_VER_COSTOS) {
+
+  if (PUEDE_VER_COSTOS) {
     $('#accionesEdicionExcel').show();
   }
 }
@@ -1579,10 +1766,196 @@ function cancelarEdicionInline() {
 }
 
 function abrirModalImportacionExcel() {
-  toastr.info("Preparando importación mediante PhpSpreadsheet. En desarrollo.");
+  limpiarBackdropsModal();
+  const form = document.getElementById('formImportacionExcel');
+  const progreso = document.getElementById('importProgress');
+  const resultados = document.getElementById('importResultados');
+  const btn = document.getElementById('btnImportar');
+  if (form) form.reset();
+  if (progreso) progreso.style.display = 'none';
+  if (resultados) { resultados.style.display = 'none'; resultados.innerHTML = ''; }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-upload"></i> Iniciar Importación'; }
+  const modalEl = document.getElementById('modalImportacionExcel');
+  if (modalEl && typeof bootstrap !== 'undefined') {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  } else if (typeof jQuery !== 'undefined') {
+    jQuery('#modalImportacionExcel').modal('show');
+  }
+}
+
+/** Ejecuta la importación Excel vía fetch (sin depender de jQuery) */
+function ejecutarImportacionExcel() {
+  const form = document.getElementById('formImportacionExcel');
+  const fileInput = document.getElementById('excel_file_input');
+  if (!fileInput || !fileInput.files.length) {
+    if (typeof toastr !== 'undefined') toastr.warning('Selecciona un archivo Excel primero');
+    return;
+  }
+
+  const formData = new FormData(form || undefined);
+  if (!form) formData.append('excel_file', fileInput.files[0]);
+  formData.append('peticion', 'ajax');
+  if (typeof CSRF_TOKEN_NAME !== 'undefined' && typeof CSRF_HASH !== 'undefined') {
+    formData.append(CSRF_TOKEN_NAME, CSRF_HASH);
+  }
+
+  const btnImportar = document.getElementById('btnImportar');
+  const progreso = document.getElementById('importProgress');
+  const resultados = document.getElementById('importResultados');
+
+  if (btnImportar) { btnImportar.disabled = true; btnImportar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...'; }
+  if (progreso) progreso.style.display = 'block';
+  if (resultados) { resultados.style.display = 'none'; resultados.innerHTML = ''; }
+
+  fetch((typeof BASE_URL !== 'undefined' ? BASE_URL : '/') + 'produccion/Productos/importar_formulacion_excel_ajax', {
+    method: 'POST',
+    body: formData
+  })
+  .then(function(r) { return r.text(); })
+  .then(function(raw) {
+    let res;
+    try { res = JSON.parse(raw); } catch(ex) {
+      res = { success: false, message: 'Respuesta inesperada del servidor. Revisa los logs.' };
+    }
+    _mostrarResultadoImportacion(res);
+  })
+  .catch(function(err) {
+    console.error('Error importación Excel:', err);
+    if (progreso) progreso.style.display = 'none';
+    if (btnImportar) { btnImportar.disabled = false; btnImportar.innerHTML = '<i class="fas fa-upload"></i> Iniciar Importación'; }
+    if (typeof toastr !== 'undefined') toastr.error('Error de conexión. Intenta de nuevo.');
+  });
+}
+
+function _mostrarResultadoImportacion(res) {
+  const btnImportar = document.getElementById('btnImportar');
+  const progreso = document.getElementById('importProgress');
+  const resultados = document.getElementById('importResultados');
+
+  if (progreso) progreso.style.display = 'none';
+  if (btnImportar) { btnImportar.disabled = false; btnImportar.innerHTML = '<i class="fas fa-upload"></i> Importar otro archivo'; }
+
+  let html = '';
+  if (!res.success) {
+    html = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> <strong>Error:</strong> ' + (res.message || 'Error desconocido') + '</div>';
+    if (resultados) { resultados.innerHTML = html; resultados.style.display = 'block'; }
+    return;
+  }
+
+  const nOk  = (res.importados   || []).length;
+  const nErr = (res.errores      || []).length;
+  const nAdv = (res.advertencias || []).length;
+
+  html += '<div class="row g-2 mb-3">' +
+    '<div class="col-4"><div class="rounded border p-2 text-center bg-success bg-opacity-10">' +
+    '<div class="fw-bold fs-4 text-success">' + nOk + '</div><div class="small text-muted">Importadas</div></div></div>' +
+    '<div class="col-4"><div class="rounded border p-2 text-center bg-warning bg-opacity-10">' +
+    '<div class="fw-bold fs-4 text-warning">' + nAdv + '</div><div class="small text-muted">Advertencias</div></div></div>' +
+    '<div class="col-4"><div class="rounded border p-2 text-center bg-danger bg-opacity-10">' +
+    '<div class="fw-bold fs-4 text-danger">' + nErr + '</div><div class="small text-muted">Errores</div></div></div></div>';
+
+  if (nOk > 0) {
+    html += '<h6 class="text-success"><i class="fas fa-check-circle"></i> Formulaciones importadas</h6>' +
+      '<div class="table-responsive mb-3"><table class="table table-sm table-bordered">' +
+      '<thead class="table-success"><tr><th>Referencia</th><th>Producto</th><th>Versión</th><th>Cliente</th><th>Comp.</th><th>Grupos</th></tr></thead><tbody>';
+    res.importados.forEach(function(d) {
+      const prodBadge = d.producto_creado
+        ? d.producto + ' <span class="badge bg-warning text-dark ms-1">Nuevo</span>'
+        : d.producto;
+      html += '<tr><td><strong>' + d.ref + '</strong></td><td>' + prodBadge + '</td>' +
+        '<td><span class="badge bg-primary">V' + d.version + '</span></td>' +
+        '<td>' + (d.cliente || '<span class="text-muted">—</span>') + '</td>' +
+        '<td><span class="badge bg-secondary">' + d.num_componentes + '</span></td>' +
+        '<td><span class="badge bg-info">' + d.num_grupos + '</span></td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  if (nAdv > 0) {
+    html += '<div class="alert alert-warning"><h6><i class="fas fa-exclamation-triangle"></i> Advertencias</h6><ul class="mb-0 ps-3 small">';
+    res.advertencias.forEach(function(a) { html += '<li>' + a + '</li>'; });
+    html += '</ul></div>';
+  }
+  if (nErr > 0) {
+    html += '<div class="alert alert-danger"><h6><i class="fas fa-times-circle"></i> Errores</h6><ul class="mb-0 ps-3 small">';
+    res.errores.forEach(function(er) { html += '<li>' + er + '</li>'; });
+    html += '</ul></div>';
+  }
+  if (nOk > 0) {
+    html += '<div class="alert alert-secondary small"><i class="fas fa-info-circle"></i> ' +
+      'Las formulaciones se crean como <strong>inactivas</strong>. Actívalas desde el historial de cada producto.</div>';
+  }
+  if (resultados) { resultados.innerHTML = html; resultados.style.display = 'block'; }
+
+  limpiarBackdropsModal();
+
+  if (nOk > 0 && typeof initCalculadoraExcel === 'function') initCalculadoraExcel();
+  if (nOk > 0 && typeof tabla !== 'undefined' && tabla) {
+    try { tabla.ajax.reload(null, false); } catch(ex) {}
+  }
 }
 
 function guardarFormulacionExcel(esNueva) {
-   toastr.success(esNueva ? "Nueva versión guardada correctamente" : "Versión actual actualizada");
-   cancelarEdicionInline();
+  const formulacion_id = $('#calc_formulacion_id').val();
+  const producto_id    = $('#calc_producto_id').val();
+
+  if (!formulacion_id || !producto_id) {
+    toastr.warning('Seleccione producto y formulación primero');
+    return;
+  }
+
+  // Recopilar componentes editados de la tabla
+  let componentes = [];
+  $('#tablaExcelSimulador tbody .fila-componente').each(function() {
+    const id_comp   = $(this).data('id');
+    const pct       = parseFloat($(this).find('.in-pct, .celda-pct').first().val() || $(this).find('.celda-pct').data('val') || 0);
+    const kg        = parseFloat($(this).find('.in-kg, .celda-kg').first().val() || $(this).find('.celda-kg').data('val') || 0);
+    const pct_fa    = parseFloat($(this).find('.in-pct-fase, .celda-pct-fase').first().val() || $(this).find('.celda-pct-fase').data('val') || 0);
+    if (id_comp) {
+      componentes.push({ id: id_comp, porcentaje: pct, cantidad: kg, porcentaje_fase_acuosa: pct_fa });
+    }
+  });
+
+  if (componentes.length === 0) {
+    toastr.warning('No hay componentes para guardar');
+    return;
+  }
+
+  const btnNueva   = $('.btn-edicion-excel').eq(0);
+  const btnActual  = $('.btn-edicion-excel').eq(1);
+  btnNueva.prop('disabled', true);
+  btnActual.prop('disabled', true);
+
+  $.post(BASE_URL + 'produccion/Productos/guardar_excel_ajax', {
+    'formulacion_id' : formulacion_id,
+    'producto_id'    : producto_id,
+    'es_nueva'       : esNueva ? 1 : 0,
+    'componentes'    : JSON.stringify(componentes),
+    'peticion'       : 'ajax',
+    [CSRF_TOKEN_NAME]: CSRF_HASH
+  }, function(res) {
+    let result = JSON.parse(res);
+    btnNueva.prop('disabled', false);
+    btnActual.prop('disabled', false);
+
+    if (result.success) {
+      toastr.success(result.message || (esNueva ? 'Nueva versión guardada' : 'Formulación actualizada'));
+
+      // Si es nueva versión, seleccionarla en el dropdown
+      if (esNueva && result.nueva_formulacion_id) {
+        // Recargar el selector de formulaciones
+        $('#calc_producto_id').trigger('change');
+        setTimeout(function() {
+          $('#calc_formulacion_id').val(result.nueva_formulacion_id).trigger('change');
+        }, 800);
+      } else {
+        cancelarEdicionInline();
+      }
+    } else {
+      toastr.error(result.message || 'Error al guardar');
+    }
+  }).fail(function() {
+    btnNueva.prop('disabled', false);
+    btnActual.prop('disabled', false);
+    toastr.error('Error de conexión al guardar');
+  });
 }

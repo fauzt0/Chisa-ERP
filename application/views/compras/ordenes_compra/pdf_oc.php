@@ -13,6 +13,8 @@
     
     /* Encabezado */
     .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px; }
+    .company-info { display: flex; align-items: center; gap: 16px; }
+    .company-info img { max-height: 70px; max-width: 180px; object-fit: contain; }
     .company-info h1 { font-size: 22px; color: #2c3e50; margin-bottom: 4px; }
     .company-info p { color: #666; font-size: 11px; line-height: 1.5; }
     .document-info { text-align: right; }
@@ -22,11 +24,13 @@
 
     /* Badges de estatus */
     .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-    .badge-pendiente { background: #ffeaa7; color: #fdcb6e; border: 1px solid #fdcb6e; }
-    .badge-aprobada { background: #dfe6e9; color: #636e72; border: 1px solid #b2bec3; }
-    .badge-enviada  { background: #74b9ff44; color: #0984e3; border: 1px solid #74b9ff; }
+    .badge-borrador { background: #dfe6e9; color: #636e72; border: 1px solid #b2bec3; }
+    .badge-enviada { background: #74b9ff44; color: #0984e3; border: 1px solid #74b9ff; }
+    .badge-confirmada { background: #a29bfe44; color: #6c5ce7; border: 1px solid #a29bfe; }
+    .badge-en-tránsito, .badge-en-transito { background: #ffeaa7; color: #d68910; border: 1px solid #fdcb6e; }
+    .badge-recibida-parcial { background: #81ecec44; color: #00cec9; border: 1px solid #81ecec; }
     .badge-recibida { background: #55efc444; color: #00b894; border: 1px solid #55efc4; }
-    .badge-cancelada{ background: #fd79a844; color: #d63031; border: 1px solid #fd79a8; }
+    .badge-cancelada { background: #fd79a844; color: #d63031; border: 1px solid #fd79a8; }
 
     /* Sección de datos */
     .section { margin-bottom: 16px; }
@@ -87,22 +91,25 @@
   <!-- ENCABEZADO -->
   <div class="header">
     <div class="company-info">
-      <h1>Chisa Recubrimientos</h1>
-      <p>
-        Industria de la Pintura y Recubrimientos<br>
-        México
-      </p>
+      <img src="<?=base_url('assets/dist/img/brands/chisa_recubrimientos_logo.jpg')?>" alt="Chisa Recubrimientos">
+      <div>
+        <h1>Chisa Recubrimientos</h1>
+        <p>
+          Industria de la Pintura y Recubrimientos<br>
+          México
+        </p>
+      </div>
     </div>
     <div class="document-info">
       <div class="doc-title">Orden de Compra</div>
-      <div class="folio"><?=$orden->folio?></div>
+      <div class="folio"><?=htmlspecialchars($orden->folio)?></div>
       <div class="doc-date">
         Fecha: <?=date('d/m/Y', strtotime($orden->fecha_orden))?><br>
         <?php
           $estatus = $orden->estatus;
-          $badge_class = strtolower(str_replace(' ', '-', $estatus));
+          $badge_class = strtolower(str_replace([' ', 'á', 'é', 'í', 'ó', 'ú'], ['-', 'a', 'e', 'i', 'o', 'u'], $estatus));
         ?>
-        Estatus: <span class="badge badge-<?=$badge_class?>"><?=$estatus?></span>
+        Estatus: <span class="badge badge-<?=$badge_class?>"><?=htmlspecialchars($estatus)?></span>
       </div>
     </div>
   </div>
@@ -117,7 +124,13 @@
         <p><strong>Nombre Comercial:</strong> <?=$orden->nombre_comercial?></p>
         <?php endif; ?>
         <?php if(!empty($orden->rfc_proveedor)): ?>
-        <p><strong>RFC:</strong> <?=$orden->rfc_proveedor?></p>
+        <p><strong>RFC:</strong> <?=htmlspecialchars($orden->rfc_proveedor)?></p>
+        <?php endif; ?>
+        <?php if(!empty($orden->telefono_proveedor)): ?>
+        <p><strong>Teléfono:</strong> <?=htmlspecialchars($orden->telefono_proveedor)?></p>
+        <?php endif; ?>
+        <?php if(!empty($orden->direccion_proveedor)): ?>
+        <p><strong>Dirección:</strong> <?=htmlspecialchars(trim($orden->direccion_proveedor . ' ' . ($orden->ciudad_proveedor ?? '') . ' ' . ($orden->estado_proveedor ?? '') . ' ' . ($orden->cp_proveedor ?? '')))?></p>
         <?php endif; ?>
       </div>
     </div>
@@ -125,8 +138,8 @@
       <div class="section-title">Datos de la Orden</div>
       <div class="info-block">
         <p><strong>Fecha Orden:</strong> <?=date('d/m/Y', strtotime($orden->fecha_orden))?></p>
-        <?php if(!empty($orden->fecha_entrega_esperada)): ?>
-        <p><strong>Entrega Esperada:</strong> <?=date('d/m/Y', strtotime($orden->fecha_entrega_esperada))?></p>
+        <?php if(!empty($orden->fecha_entrega_estimada)): ?>
+        <p><strong>Entrega Estimada:</strong> <?=date('d/m/Y', strtotime($orden->fecha_entrega_estimada))?></p>
         <?php endif; ?>
         <?php if(!empty($orden->condiciones_pago)): ?>
         <p><strong>Cond. Pago:</strong> <?=$orden->condiciones_pago?></p>

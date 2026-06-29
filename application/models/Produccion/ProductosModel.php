@@ -13,12 +13,27 @@ class ProductosModel extends MY_Model {
     
     protected $tableName = 'productos';
     
-    // Configuración para DataTables
+    // Configuración para DataTables (columnas calificadas por tabla — evita error SQL al buscar/ordenar)
     protected $datatableConfig = [
         'table' => 'productos',
-        'column_order' => ['codigo', 'nombre', 'alias', 'categoria_nombre', 'tipo_producto', 'stock_actual', 'precio_venta', 'estatus', null],
-        'column_search' => ['codigo', 'nombre', 'alias', 'categoria_nombre'],
-        'order' => ['fecha_creacion' => 'DESC']
+        'column_order' => [
+            'productos.codigo',
+            'productos.nombre',
+            'productos.alias',
+            'categorias_productos.nombre',
+            'productos.tipo_producto',
+            'productos.stock_actual',
+            'productos.precio_venta',
+            'productos.estatus',
+            null
+        ],
+        'column_search' => [
+            'productos.codigo',
+            'productos.nombre',
+            'productos.alias',
+            'categorias_productos.nombre'
+        ],
+        'order' => ['productos.fecha_creacion' => 'DESC']
     ];
     
     public function __construct() {
@@ -32,6 +47,21 @@ class ProductosModel extends MY_Model {
         $this->db->select('productos.*, categorias_productos.nombre as categoria_nombre');
         $this->db->from($this->tableName);
         $this->db->join('categorias_productos', 'categorias_productos.id = productos.categoria_id', 'left');
+
+        // Filtros del panel superior
+        if (!empty($_POST['filtro_tipo'])) {
+            $this->db->where('productos.tipo_producto', $_POST['filtro_tipo']);
+        }
+        if (!empty($_POST['filtro_estatus'])) {
+            $this->db->where('productos.estatus', $_POST['filtro_estatus']);
+        }
+        if (!empty($_POST['filtro_stock'])) {
+            if ($_POST['filtro_stock'] === 'bajo') {
+                $this->db->where('productos.stock_actual <= productos.stock_minimo', null, false);
+            } elseif ($_POST['filtro_stock'] === 'ok') {
+                $this->db->where('productos.stock_actual > productos.stock_minimo', null, false);
+            }
+        }
         
         // Búsqueda
         $i = 0;
@@ -79,8 +109,7 @@ class ProductosModel extends MY_Model {
      */
     public function count_filtered() {
         $this->_get_datatables_query();
-        $query = $this->db->get();
-        return $query->num_rows();
+        return $this->db->count_all_results();
     }
     
     /**
@@ -566,6 +595,270 @@ class ProductosModel extends MY_Model {
         }
         
         return $formulacion;
+    }
+
+    // =====================================================
+    // BOM EXPLOSION - CÁLCULO MULTINIVEL DE INSUMOS
+    // =====================================================
+
+    /**
+     * Explosión de BOM (Bill of Materials) multinivel.
+     * Devuelve un árbol con los componentes de la formulación.
+     * Los insumos de tipo 'fabricado' se expanden mostrando sus sub-componentes.
+     *
+     * @param int   $formulacion_id  ID de la formulación a explotar
+     * @param float $cantidad_total  Cantidad en kg del lote a producir
+     * @param int   $nivel           Nivel de anidamiento (0=raíz)
+     * @param array $visitados       IDs de formulaciones ya visitadas (anti-ciclo)
+     * @return array  Árbol de componentes
+     */
+    public function explotar_bom_arbol($formulacion_id, $cantidad_total, $nivel = 0, &$visitados = []) {
+        if ($nivel > 6 || in_array($formulacion_id, $visitados)) {
+            return [];
+        }
+        $visitados[] = $formulacion_id;
+
+        $this->db->select('
+            df.*,
+            i.codigo       AS insumo_codigo,
+            i.nombre_tecnico AS insumo_nombre,
+            i.alias        AS insumo_alias,
+            i.stock_actual AS insumo_stock,
+            i.unidad_medida AS insumo_unidad,
+            i.tipo         AS insumo_tipo,
+            i.producto_id  AS insumo_producto_id,
+            p.codigo       AS prod_codigo,
+            p.nombre       AS prod_nombre
+        ');
+        $this->db->from('detalle_formulacion df');
+        $this->db->join('insumos i',   'i.id = df.insumo_id',    'left');
+        $this->db->join('productos p', 'p.id = df.producto_id',  'left');
+        $this->db->where('df.formulacion_id', $formulacion_id);
+        $this->db->order_by('df.grupo_color ASC, df.orden ASC');
+        $componentes = $this->db->get()->result();
+
+        $arbol = [];
+        foreach ($componentes as $comp) {
+            // porcentaje puede ser NULL (datos legacy sin %); en ese caso escalar por cantidad base
+            $pct = (isset($comp->porcentaje) && $comp->porcentaje !== null && $comp->porcentaje > 0)
+                ? (float)$comp->porcentaje : 0;
+            if ($pct > 0) {
+                $kg_comp = round(($pct / 100) * $cantidad_total, 6);
+            } else {
+                // Sin porcentaje: la cantidad es absoluta (kg para el lote de referencia)
+                // Escalamos proporcionalmente respecto al lote base de la formulación
+                $kg_comp = (float)$comp->cantidad;
+            }
+
+            $nodo = [
+                'id'          => $comp->id,
+                'nivel'       => $nivel,
+                'tipo_comp'   => $comp->tipo_componente,
+                'nombre'      => $comp->tipo_componente === 'Insumo'
+                                    ? ($comp->insumo_alias ?: $comp->insumo_nombre)
+                                    : $comp->prod_nombre,
+                'nombre_tecnico' => $comp->insumo_nombre,
+                'codigo'      => $comp->insumo_codigo ?: $comp->prod_codigo,
+                'porcentaje'  => (float)$comp->porcentaje,
+                'kg'          => $kg_comp,
+                'grupo'       => $comp->grupo_color,
+                'unidad'      => $comp->insumo_unidad ?: 'Kg',
+                'stock'       => (float)$comp->insumo_stock,
+                'tipo_insumo' => $comp->insumo_tipo ?: 'comprado',
+                'pct_fase_acuosa' => (float)$comp->porcentaje_fase_acuosa,
+                'insumo_id'   => $comp->insumo_id,
+                'producto_id_comp' => $comp->producto_id,
+                'sub_componentes' => [],
+                'es_fabricado' => false,
+            ];
+
+            // Si el insumo es fabricado y tiene un producto ligado → explotar
+            if ($comp->tipo_componente === 'Insumo'
+                && $comp->insumo_tipo === 'fabricado'
+                && !empty($comp->insumo_producto_id))
+            {
+                $formulacion_sub = $this->get_formulacion_activa($comp->insumo_producto_id);
+                if ($formulacion_sub) {
+                    $nodo['es_fabricado']    = true;
+                    $nodo['formulacion_sub_id'] = $formulacion_sub->id;
+                    $visitados_copia = $visitados; // no contaminar ramas hermanas
+                    $nodo['sub_componentes'] = $this->explotar_bom_arbol(
+                        $formulacion_sub->id, $kg_comp, $nivel + 1, $visitados_copia
+                    );
+                }
+            }
+
+            $arbol[] = $nodo;
+        }
+
+        // Restaurar para que el padre pueda explotar otras ramas
+        $visitados = array_values(array_diff($visitados, [$formulacion_id]));
+        return $arbol;
+    }
+
+    /**
+     * Versión plana del BOM explosion: retorna sólo las materias primas reales
+     * (sin sub-productos fabricados intermedios), acumulando cantidades.
+     */
+    public function explotar_bom_plano($formulacion_id, $cantidad_total, $nivel = 0, &$visitados = []) {
+        $arbol = $this->explotar_bom_arbol($formulacion_id, $cantidad_total, $nivel, $visitados);
+        $lista = [];
+        $this->_aplanar_bom($arbol, $lista);
+
+        // Acumular por insumo_id
+        $acumulado = [];
+        foreach ($lista as $item) {
+            $key = 'i_' . ($item['insumo_id'] ?: 'p_' . $item['producto_id_comp']);
+            if (!isset($acumulado[$key])) {
+                $acumulado[$key] = $item;
+            } else {
+                $acumulado[$key]['kg'] += $item['kg'];
+            }
+        }
+
+        return array_values($acumulado);
+    }
+
+    /** Recursivo interno para aplanar el árbol BOM */
+    private function _aplanar_bom($arbol, &$lista) {
+        foreach ($arbol as $nodo) {
+            if (!$nodo['es_fabricado']) {
+                $lista[] = $nodo; // hoja = materia prima real
+            } else {
+                // Sub-producto fabricado: incluir la rama de sub-componentes
+                $this->_aplanar_bom($nodo['sub_componentes'], $lista);
+            }
+        }
+    }
+
+    /**
+     * Busca formulaciones activas por nombre de producto o referencia
+     */
+    public function buscar_formulaciones($termino, $limite = 30) {
+        $this->db->select('
+            f.id, f.version, f.nombre_version, f.cantidad_producida, f.unidad_produccion,
+            f.referencia_cliente, f.es_activa, f.fecha_creacion,
+            p.id AS producto_id, p.nombre AS producto_nombre, p.codigo AS producto_codigo,
+            p.imagen AS producto_imagen,
+            c.razon_social AS cliente_nombre
+        ');
+        $this->db->from('formulaciones f');
+        $this->db->join('productos p', 'p.id = f.producto_id', 'left');
+        $this->db->join('clientes c', 'c.id = f.cliente_id', 'left');
+
+        if ($termino && strlen(trim($termino)) > 0) {
+            $this->db->group_start();
+            $this->db->like('p.nombre', $termino);
+            $this->db->or_like('p.codigo', $termino);
+            $this->db->or_like('f.nombre_version', $termino);
+            $this->db->or_like('f.referencia_cliente', $termino);
+            $this->db->group_end();
+        }
+
+        $this->db->order_by('f.es_activa DESC, f.fecha_creacion DESC');
+        $this->db->limit($limite);
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Obtiene catálogo de productos para el panel touchscreen con filtros
+     */
+    public function get_catalogo_touchscreen($categoria_id = null, $termino = null, $limite = 50) {
+        $this->db->select('
+            p.*,
+            cp.nombre AS categoria_nombre,
+            f.id AS formulacion_id,
+            f.nombre_version,
+            f.cantidad_producida,
+            (SELECT COUNT(*) FROM formulaciones WHERE producto_id = p.id) AS num_formulaciones
+        ');
+        $this->db->from('productos p');
+        $this->db->join('categorias_productos cp', 'cp.id = p.categoria_id', 'left');
+        $this->db->join('formulaciones f', 'f.producto_id = p.id AND f.es_activa = 1', 'left');
+        $this->db->where('p.estatus', 'Activo');
+
+        if ($categoria_id) {
+            $this->db->where('p.categoria_id', $categoria_id);
+        }
+        if ($termino && strlen(trim($termino)) > 1) {
+            $this->db->group_start();
+            $this->db->like('p.nombre', $termino);
+            $this->db->or_like('p.codigo', $termino);
+            $this->db->or_like('p.alias', $termino);
+            $this->db->group_end();
+        }
+
+        $this->db->order_by('p.nombre', 'ASC');
+        $this->db->limit($limite);
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Obtiene historial de órdenes completadas para producción.
+     * Columnas reales: ordenes_venta usa 'fecha_entrega_real', obras usa 'fecha_fin_real'.
+     * Estatus reales: ordenes_venta → 'Entregada'; obras → 'Completada'.
+     */
+    public function get_historial_ordenes_produccion($filtros = []) {
+        $limite   = $filtros['limite']   ?? 50;
+        $busqueda = $filtros['busqueda'] ?? '';
+
+        // Órdenes de venta entregadas (el estatus final en ordenes_venta es 'Entregada')
+        $this->db->select('
+            ov.id,
+            ov.folio,
+            ov.estatus,
+            ov.fecha_creacion,
+            ov.fecha_entrega_real AS fecha_completado_produccion,
+            c.razon_social AS cliente,
+            "orden_venta" AS tipo_registro,
+            COUNT(dov.id) AS total_productos
+        ');
+        $this->db->from('ordenes_venta ov');
+        $this->db->join('clientes c', 'c.id = ov.cliente_id', 'left');
+        $this->db->join('detalle_orden_venta dov', 'dov.orden_venta_id = ov.id', 'left');
+        $this->db->where_in('ov.estatus', ['Entregada', 'Cancelada']);
+        if ($busqueda) {
+            $this->db->group_start();
+            $this->db->like('ov.folio', $busqueda);
+            $this->db->or_like('c.razon_social', $busqueda);
+            $this->db->group_end();
+        }
+        $this->db->group_by('ov.id');
+        $this->db->order_by('ov.fecha_creacion', 'DESC');
+        $this->db->limit($limite);
+        $ventas = $this->db->get()->result();
+
+        // Obras completadas (estatus real: 'Completada' o 'Cancelada')
+        $this->db->select('
+            o.id,
+            o.folio,
+            o.estatus,
+            o.fecha_creacion,
+            o.fecha_fin_real AS fecha_completado_produccion,
+            c.razon_social AS cliente,
+            "obra" AS tipo_registro,
+            COUNT(op.id) AS total_productos
+        ');
+        $this->db->from('obras o');
+        $this->db->join('clientes c', 'c.id = o.cliente_id', 'left');
+        $this->db->join('obras_productos op', 'op.obra_id = o.id', 'left');
+        $this->db->where_in('o.estatus', ['Completada', 'Cancelada']);
+        if ($busqueda) {
+            $this->db->group_start();
+            $this->db->like('o.folio', $busqueda);
+            $this->db->or_like('c.razon_social', $busqueda);
+            $this->db->group_end();
+        }
+        $this->db->group_by('o.id');
+        $this->db->order_by('o.fecha_creacion', 'DESC');
+        $this->db->limit($limite);
+        $obras = $this->db->get()->result();
+
+        $todos = array_merge($ventas, $obras);
+        usort($todos, function($a, $b) {
+            return strtotime($b->fecha_creacion) - strtotime($a->fecha_creacion);
+        });
+        return array_slice($todos, 0, $limite);
     }
 
     /**

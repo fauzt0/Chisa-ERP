@@ -59,7 +59,7 @@
     </div>
 
     <!-- Relaciones Proveedor-Insumo -->
-    <div class="col-lg-6 col-xl-4 d-flex">
+    <div class="col-lg-6 col-xl-3 d-flex">
       <div class="card flex-fill">
         <div class="card-header">
           <h5 class="card-title mb-0 mt-2">Relaciones</h5>
@@ -73,6 +73,28 @@
             </div>
           </div>
           <small class="text-muted">Insumos relacionados con proveedores</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Órdenes de Compra -->
+    <div class="col-lg-6 col-xl-3 d-flex">
+      <div class="card flex-fill">
+        <div class="card-header">
+          <h5 class="card-title mb-0 mt-2">Órdenes de Compra</h5>
+        </div>
+        <div class="card-body my-0 pt-0">
+          <div class="row d-flex align-items-center mb-3">
+            <div class="col-8">
+              <h3 class="d-flex align-items-center mb-0 fw-light">
+                <?php echo $response['stats']['total_ordenes'] ?? 0; ?>
+              </h3>
+            </div>
+            <div class="col-4 text-end">
+              <i class="fas fa-file-invoice text-warning" style="font-size: 1.5rem;"></i>
+            </div>
+          </div>
+          <small class="text-muted"><?php echo $response['stats']['proveedores_con_ordenes'] ?? 0; ?> proveedores con OC</small>
         </div>
       </div>
     </div>
@@ -91,44 +113,68 @@
           </div>
         </div>
         <div class="card-body">
-          <!-- Filtros -->
-          <div class="row mb-3">
-            <div class="col-md-3">
-              <label class="form-label">Estatus</label>
-              <select class="form-select form-select-sm" id="filtroEstatus">
-                <option value="">Todos</option>
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-              </select>
+          <!-- Barra CRM -->
+          <div class="crm-toolbar mb-3 p-3 bg-light rounded border">
+            <div class="row g-2 align-items-end">
+              <div class="col-lg-4">
+                <label class="form-label small text-muted mb-1">Búsqueda rápida</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="fas fa-search"></i></span>
+                  <input type="text" class="form-control" id="busquedaProveedores" placeholder="Nombre, RFC, teléfono, email...">
+                  <button class="btn btn-outline-secondary" type="button" id="btnLimpiarBusquedaProv" title="Limpiar"><i class="fas fa-times"></i></button>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Estatus</label>
+                <select class="form-select form-select-sm" id="filtroEstatus">
+                  <option value="">Todos</option>
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                  <option value="Suspendido">Suspendido</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Tipo</label>
+                <select class="form-select form-select-sm" id="filtroTipoProveedor">
+                  <option value="">Todos</option>
+                  <option value="Materia Prima">Materia Prima</option>
+                  <option value="Insumos">Insumos</option>
+                  <option value="Servicios">Servicios</option>
+                  <option value="Mixto">Mixto</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Con órdenes</label>
+                <select class="form-select form-select-sm" id="filtroConOrdenes">
+                  <option value="">Todos</option>
+                  <option value="si">Con OC</option>
+                  <option value="no">Sin OC</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <button type="button" class="btn btn-sm btn-secondary w-100" onclick="limpiarFiltrosProveedores()">
+                  <i class="fas fa-eraser"></i> Limpiar
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- DataTable -->
-          <table id="tablaProveedores" class="table table-striped table-hover" style="width:100%">
-            <thead>
+          <table id="tablaProveedores" class="table table-striped table-hover table-sm" style="width:100%">
+            <thead class="table-light">
               <tr>
                 <th>Código</th>
                 <th>Razón Social</th>
                 <th>RFC</th>
                 <th>Contacto</th>
-                <th>Ciudad</th>
+                <th>Ubicación</th>
+                <th>Tipo</th>
+                <th>Actividad</th>
                 <th>Estatus</th>
-                <th>Acciones</th>
+                <th width="120">Acciones</th>
               </tr>
             </thead>
-            <tbody>              
-            </tbody>
-            <tfoot>
-              <tr>
-                <th>Código</th>
-                <th>Razón Social</th>
-                <th>RFC</th>
-                <th>Contacto</th>
-                <th>Ciudad</th>
-                <th>Estatus</th>
-                <th>Acciones</th>
-              </tr>
-            </tfoot>
+            <tbody></tbody>
           </table>
         </div>
       </div>
@@ -439,7 +485,11 @@
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="oc-ins-tab" data-bs-toggle="tab"
-                data-bs-target="#oc-tab-insumos" type="button" id="oc-tab-insumos-btn">Insumos</button>
+                data-bs-target="#oc-tab-insumos" type="button">Insumos</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="oc-ordenes-tab" data-bs-toggle="tab"
+                data-bs-target="#oc-tab-ordenes" type="button">Órdenes</button>
       </li>
     </ul>
 
@@ -476,6 +526,29 @@
         </div>
       </div>
 
+      <!-- TAB ÓRDENES -->
+      <div class="tab-pane fade" id="oc-tab-ordenes" role="tabpanel">
+        <div class="text-center text-muted py-4" id="oc-ordenes-loading">
+          <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+        <div id="oc-ordenes-container" style="display:none;">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Folio</th>
+                  <th>Fecha</th>
+                  <th class="text-end">Total</th>
+                  <th>Estatus</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="oc-ordenes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -488,21 +561,40 @@
   let tabla;
   let proveedorEditando = null;
   let proveedorInsumosActual = null;
+  let busquedaProvTimer = null;
 
   function initProveedores() {
     inicializarDataTable();
     cargarInsumosSelect();
     
-    // Filtros
-    $('#filtroEstatus').on('change', function() {
+    $('#filtroEstatus, #filtroTipoProveedor, #filtroConOrdenes').on('change', function() {
       tabla.ajax.reload();
     });
+
+    $('#busquedaProveedores').on('keyup', function() {
+      clearTimeout(busquedaProvTimer);
+      busquedaProvTimer = setTimeout(function() {
+        tabla.search($('#busquedaProveedores').val()).draw();
+      }, 350);
+    });
+
+    $('#btnLimpiarBusquedaProv').on('click', function() {
+      $('#busquedaProveedores').val('');
+      tabla.search('').draw();
+    });
   }
+
+  window.limpiarFiltrosProveedores = function() {
+    $('#filtroEstatus, #filtroTipoProveedor, #filtroConOrdenes').val('');
+    $('#busquedaProveedores').val('');
+    tabla.search('').ajax.reload();
+  };
 
   function inicializarDataTable() {
     tabla = $('#tablaProveedores').DataTable({
       processing: true,
       serverSide: true,
+      dom: 'lrtip',
       ajax: {
         url: '<?=base_url();?>compras/Proveedores/lista_ajax',
         type: 'POST',
@@ -510,16 +602,20 @@
           d.peticion = 'ajax';
           d['<?php echo $this->security->get_csrf_token_name();?>'] = '<?php echo $this->security->get_csrf_hash();?>';
           d.filtro_estatus = $('#filtroEstatus').val();
+          d.filtro_tipo_proveedor = $('#filtroTipoProveedor').val();
+          d.filtro_con_ordenes = $('#filtroConOrdenes').val();
         }
       },
       columns: [
-        { data: 0 },  // Código
-        { data: 1 },  // Razón Social
-        { data: 2 },  // RFC
-        { data: 3 },  // Contacto
-        { data: 4 },  // Ciudad
-        { data: 5 },  // Estatus
-        { data: 6, orderable: false }  // Acciones
+        { data: 0 },
+        { data: 1 },
+        { data: 2 },
+        { data: 3 },
+        { data: 4 },
+        { data: 5 },
+        { data: 6 },
+        { data: 7 },
+        { data: 8, orderable: false }
       ],
       language: {
         url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
@@ -846,6 +942,40 @@
     // Cargar insumos cuando el tab se activa
     $('#oc-ins-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
       cargarInsumosOC(id);
+    });
+
+    $('#oc-ordenes-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
+      cargarOrdenesOC(id);
+    });
+  };
+
+  function cargarOrdenesOC(proveedorId) {
+    $('#oc-ordenes-loading').show();
+    $('#oc-ordenes-container').hide();
+
+    $.post('<?=base_url();?>compras/Proveedores/get_ordenes_proveedor_ajax', {
+      'proveedor_id': proveedorId, 'peticion': 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      res = JSON.parse(res);
+      $('#oc-ordenes-loading').hide();
+      var tbody = '';
+      if(res.success && res.ordenes && res.ordenes.length > 0) {
+        res.ordenes.forEach(function(oc) {
+          var pdfUrl = '<?=base_url();?>compras/OrdenesCompra/generar_pdf/' + oc.id;
+          tbody += '<tr>';
+          tbody += '<td><strong>' + oc.folio + '</strong></td>';
+          tbody += '<td>' + (oc.fecha_orden ? new Date(oc.fecha_orden).toLocaleDateString('es-MX') : '-') + '</td>';
+          tbody += '<td class="text-end">$' + parseFloat(oc.total || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
+          tbody += '<td><span class="badge bg-secondary">' + oc.estatus + '</span></td>';
+          tbody += '<td class="text-end"><a href="' + pdfUrl + '" target="_blank" class="btn btn-xs btn-outline-primary btn-sm" title="Ver PDF"><i class="fas fa-file-pdf"></i></a></td>';
+          tbody += '</tr>';
+        });
+      } else {
+        tbody = '<tr><td colspan="5" class="text-center text-muted py-3">Sin órdenes de compra registradas</td></tr>';
+      }
+      $('#oc-ordenes-tbody').html(tbody);
+      $('#oc-ordenes-container').show();
     });
   };
 

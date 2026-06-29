@@ -15,8 +15,8 @@ class OrdenesCompraModel extends MY_Model {
     // Configuración para DataTables
     protected $datatableConfig = [
         'table' => 'ordenes_compra',
-        'column_order' => ['folio', 'fecha_orden', 'razon_social', 'total', 'estatus', null],
-        'column_search' => ['folio', 'razon_social'],
+        'column_order' => ['ordenes_compra.folio', 'ordenes_compra.fecha_orden', 'proveedores.razon_social', 'ordenes_compra.total', 'ordenes_compra.estatus', null],
+        'column_search' => ['ordenes_compra.folio', 'proveedores.razon_social', 'proveedores.rfc'],
         'order' => ['fecha_orden' => 'DESC']
     ];
     
@@ -94,7 +94,11 @@ class OrdenesCompraModel extends MY_Model {
      * Obtiene una orden completa con detalles
      */
     public function get_orden($id) {
-        $this->db->select('ordenes_compra.*, proveedores.razon_social, proveedores.nombre_comercial');
+        $this->db->select('ordenes_compra.*, proveedores.razon_social, proveedores.nombre_comercial,
+            proveedores.rfc AS rfc_proveedor, proveedores.telefono AS telefono_proveedor,
+            proveedores.email AS email_proveedor, proveedores.direccion AS direccion_proveedor,
+            proveedores.ciudad AS ciudad_proveedor, proveedores.estado AS estado_proveedor,
+            proveedores.codigo_postal AS cp_proveedor');
         $this->db->from($this->tableName);
         $this->db->join('proveedores', 'proveedores.id = ordenes_compra.proveedor_id', 'left');
         $this->db->where('ordenes_compra.id', $id);

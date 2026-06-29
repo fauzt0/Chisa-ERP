@@ -620,7 +620,7 @@
 
 <!-- Modal: Detalle de Formulación (Solo Lectura) -->
 <div class="modal fade" id="modalDetalleFormulacion" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="detalleFormulacionTitle">
@@ -670,6 +670,80 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Importación Excel de Formulaciones -->
+<div class="modal fade" id="modalImportacionExcel" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-file-excel"></i> Importar Formulaciones desde Excel
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Instrucciones del formato esperado -->
+        <div class="alert alert-info">
+          <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Formato esperado del Excel</h6>
+          <div class="row mt-2" style="font-size:0.85rem;">
+            <div class="col-md-6">
+              <strong>Fila de producto:</strong>
+              <code class="d-block mt-1 bg-dark text-success p-1 rounded">CHISA GLASS REF PCH11 &nbsp;|&nbsp; KILOS &nbsp;|&nbsp; 19.000</code>
+              <small class="text-muted">Opcionalmente antes: <code>1 CUBETA VENTA [CLIENTE]</code></small>
+            </div>
+            <div class="col-md-6">
+              <strong>Filas de insumo:</strong>
+              <code class="d-block mt-1 bg-dark text-success p-1 rounded">BLANCO &nbsp;|&nbsp; 38.42% &nbsp;|&nbsp; &nbsp;|&nbsp; BLANCO &nbsp;|&nbsp; 0.088</code>
+              <small class="text-muted">Col A=nombre | B=% | C=%FaseAcuosa | D=nombre | E=kg</small>
+            </div>
+          </div>
+          <hr class="my-2">
+          <small>
+            <i class="fas fa-magic text-success"></i>
+            Los <strong>productos</strong> e <strong>insumos</strong> no encontrados se crean automáticamente con datos básicos.<br>
+            Podrás completar sus datos (precios, proveedores, fotos) en el catálogo después de la importación.
+          </small>
+        </div>
+
+        <!-- Formulario de subida (method=post + onsubmit evita recarga si JS falla) -->
+        <form id="formImportacionExcel" method="post" action="#" enctype="multipart/form-data"
+              onsubmit="return false;">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Seleccionar archivo Excel</label>
+            <input type="file" class="form-control" id="excel_file_input" name="excel_file"
+                   accept=".xlsx,.xls" required>
+            <div class="form-text">Formatos aceptados: .xlsx, .xls — Se procesarán todas las hojas del archivo.</div>
+          </div>
+          <div class="d-grid">
+            <button type="button" class="btn btn-success btn-lg" id="btnImportar"
+                    onclick="if(typeof ejecutarImportacionExcel==='function') ejecutarImportacionExcel();">
+              <i class="fas fa-upload"></i> Iniciar Importación
+            </button>
+          </div>
+        </form>
+
+        <!-- Barra de progreso (oculta inicialmente) -->
+        <div id="importProgress" class="mt-3" style="display:none;">
+          <div class="text-center text-muted mb-2">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-2 mb-0">Procesando archivo... esto puede tardar unos segundos.</p>
+          </div>
+          <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:100%"></div>
+          </div>
+        </div>
+
+        <!-- Resultados (ocultos inicialmente) -->
+        <div id="importResultados" class="mt-3" style="display:none;"></div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>

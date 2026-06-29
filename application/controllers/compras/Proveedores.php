@@ -12,6 +12,7 @@ class Proveedores extends MY_Controller {
         parent::__construct();
         $this->load->model('Compras/ProveedoresModel');
         $this->load->model('Compras/InsumosModel');
+        $this->load->model('Compras/OrdenesCompraModel');
     }
     
     /**
@@ -77,13 +78,35 @@ class Proveedores extends MY_Controller {
                 }
             }
             $row[] = $ubicacion ?: '-';
+
+            // Tipo de proveedor
+            $tipo_badges = [
+                'Materia Prima' => 'primary',
+                'Insumos' => 'info',
+                'Servicios' => 'warning',
+                'Mixto' => 'secondary'
+            ];
+            $tb = $tipo_badges[$proveedor->tipo_proveedor] ?? 'secondary';
+            $row[] = '<span class="badge bg-' . $tb . '">' . ($proveedor->tipo_proveedor ?: 'Mixto') . '</span>';
+
+            // Resumen CRM
+            $crm = '<div class="small">';
+            $crm .= '<span class="badge bg-light text-dark me-1" title="Insumos vinculados"><i class="fas fa-boxes"></i> ' . (int)($proveedor->total_insumos ?? 0) . '</span>';
+            $crm .= '<span class="badge bg-light text-dark" title="Órdenes de compra"><i class="fas fa-file-invoice"></i> ' . (int)($proveedor->total_ordenes ?? 0) . '</span>';
+            if(!empty($proveedor->ultima_orden)) {
+                $crm .= '<br><span class="text-muted" style="font-size:0.75rem;">Últ. OC: ' . date('d/m/Y', strtotime($proveedor->ultima_orden)) . '</span>';
+            }
+            $crm .= '</div>';
+            $row[] = $crm;
             
             // Estatus
-            if($proveedor->estatus == 'Activo') {
-                $row[] = '<span class="badge bg-success">Activo</span>';
-            } else {
-                $row[] = '<span class="badge bg-secondary">Inactivo</span>';
-            }
+            $estatus_badges = [
+                'Activo' => 'success',
+                'Inactivo' => 'secondary',
+                'Suspendido' => 'warning'
+            ];
+            $eb = $estatus_badges[$proveedor->estatus] ?? 'secondary';
+            $row[] = '<span class="badge bg-' . $eb . '">' . $proveedor->estatus . '</span>';
             
             // Acciones
             $acciones = '
@@ -334,5 +357,19 @@ class Proveedores extends MY_Controller {
         }
         
         echo json_encode(['success' => true, 'insumos' => $opciones]);
+    }
+
+    /**
+     * Órdenes de compra de un proveedor (AJAX)
+     */
+    public function get_ordenes_proveedor_ajax() {
+        $proveedor_id = $this->input->post('proveedor_id');
+        if(!$proveedor_id) {
+            echo json_encode(['success' => false, 'message' => 'Proveedor requerido']);
+            return;
+        }
+
+        $ordenes = $this->OrdenesCompraModel->get_ordenes_proveedor($proveedor_id);
+        echo json_encode(['success' => true, 'ordenes' => $ordenes]);
     }
 }

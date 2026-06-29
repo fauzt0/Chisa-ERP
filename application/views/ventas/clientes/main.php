@@ -145,69 +145,78 @@ $stats = $response['stats'] ?? [];
 
 <!-- Tabla de Clientes -->
 <div class="card">
-  <div class="card-header">
-    <h3 class="card-title"><i class="fas fa-list"></i> Lista de Clientes</h3>
-    <div class="card-tools">
-      <button type="button" class="btn btn-primary" onclick="mostrarModalNuevo()">
-        <i class="fas fa-plus"></i> Nuevo Cliente
-      </button>
-    </div>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title mb-0"><i class="fas fa-list"></i> Directorio de Clientes</h3>
+    <button type="button" class="btn btn-primary btn-sm" onclick="mostrarModalNuevo()">
+      <i class="fas fa-plus"></i> Nuevo Cliente
+    </button>
   </div>
   <div class="card-body">
-    <!-- Filtros -->
-    <div class="row mb-3">
-      <div class="col-md-3">
-        <label class="form-label">Tipo de Cliente</label>
-        <select class="form-select" id="filtro_tipo_cliente">
-          <option value="">Todos</option>
-          <option value="Regular">Regular</option>
-          <option value="Mostrador">Mostrador</option>
-          <option value="Gobierno">Gobierno</option>
-          <option value="Licitación">Licitación</option>
-          <option value="Distribuidor">Distribuidor</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">Estatus</label>
-        <select class="form-select" id="filtro_estatus">
-          <option value="">Todos</option>
-          <option value="Activo">Activo</option>
-          <option value="Inactivo">Inactivo</option>
-          <option value="Suspendido">Suspendido</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">Con Saldo Pendiente</label>
-        <select class="form-select" id="filtro_saldo">
-          <option value="">Todos</option>
-          <option value="con_saldo">Con Saldo</option>
-          <option value="sin_saldo">Sin Saldo</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">&nbsp;</label>
-        <button type="button" class="btn btn-secondary w-100" onclick="limpiarFiltros()">
-          <i class="fas fa-eraser"></i> Limpiar Filtros
-        </button>
+    <!-- Barra CRM -->
+    <div class="crm-toolbar mb-3 p-3 bg-light rounded border">
+      <div class="row g-2 align-items-end">
+        <div class="col-lg-4">
+          <label class="form-label small text-muted mb-1">Búsqueda rápida</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="busquedaClientes" placeholder="Nombre, RFC, teléfono, ciudad...">
+            <button class="btn btn-outline-secondary" type="button" id="btnLimpiarBusquedaCli" title="Limpiar"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted mb-1">Tipo</label>
+          <select class="form-select form-select-sm" id="filtro_tipo_cliente">
+            <option value="">Todos</option>
+            <option value="Regular">Regular</option>
+            <option value="Mostrador">Mostrador</option>
+            <option value="Gobierno">Gobierno</option>
+            <option value="Licitación">Licitación</option>
+            <option value="Distribuidor">Distribuidor</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted mb-1">Estatus</label>
+          <select class="form-select form-select-sm" id="filtro_estatus">
+            <option value="">Todos</option>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+            <option value="Suspendido">Suspendido</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted mb-1">Saldo</label>
+          <select class="form-select form-select-sm" id="filtro_saldo">
+            <option value="">Todos</option>
+            <option value="con_saldo">Con Saldo</option>
+            <option value="sin_saldo">Sin Saldo</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn btn-sm btn-secondary w-100" onclick="limpiarFiltros()">
+            <i class="fas fa-eraser"></i> Limpiar
+          </button>
+        </div>
       </div>
     </div>
     
-    <table id="tablaClientes" class="table table-bordered table-striped">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Razón Social</th>
-                <th>RFC</th>
-                <th>Contacto</th>
-                <th>Tipo</th>
-                <th>Estatus</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
+    <table id="tablaClientes" class="table table-bordered table-striped table-hover table-sm">
+      <thead class="table-light">
+        <tr>
+          <th>Código</th>
+          <th>Razón Social</th>
+          <th>RFC</th>
+          <th>Contacto</th>
+          <th>Ubicación</th>
+          <th>Saldo</th>
+          <th>Tipo</th>
+          <th>Estatus</th>
+          <th width="110">Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
 
 <!-- Modal: Nuevo/Editar Cliente -->
 <div class="modal fade" id="modalCliente" tabindex="-1">
@@ -344,18 +353,66 @@ $stats = $response['stats'] ?? [];
   </div>
 </div>
 
+<!-- Offcanvas: Detalle del Cliente -->
+<div class="offcanvas offcanvas-end" style="width:520px;" tabindex="-1" id="offcanvasDetalleCliente">
+  <div class="offcanvas-header bg-primary text-white">
+    <h5 class="mb-0"><i class="fas fa-user-tie"></i> <span id="cli-razon-social">Cliente</span></h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body p-0">
+    <div class="px-3 py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+      <span class="text-muted small">Código: <strong id="cli-codigo">—</strong></span>
+      <span id="cli-estatus-badge"></span>
+    </div>
+    <div class="px-3 py-2 border-bottom d-flex gap-2">
+      <button class="btn btn-sm btn-primary" id="cli-btn-editar"><i class="fas fa-edit"></i> Editar</button>
+    </div>
+    <ul class="nav nav-tabs px-3 pt-2" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cli-tab-info" type="button">Información</button></li>
+      <li class="nav-item"><button class="nav-link" id="cli-ordenes-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-ordenes" type="button">Órdenes</button></li>
+    </ul>
+    <div class="tab-content px-3 py-3">
+      <div class="tab-pane fade show active" id="cli-tab-info">
+        <table class="table table-sm"><tbody id="cli-detalles"></tbody></table>
+      </div>
+      <div class="tab-pane fade" id="cli-tab-ordenes">
+        <div id="cli-ordenes-loading" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i></div>
+        <div id="cli-ordenes-container" style="display:none;">
+          <table class="table table-sm table-hover">
+            <thead class="table-light"><tr><th>Folio</th><th>Fecha</th><th class="text-end">Total</th><th>Estatus</th></tr></thead>
+            <tbody id="cli-ordenes-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 let tabla;
+let busquedaCliTimer = null;
 
 function initClientes() {
   inicializarDataTable();
   inicializarFiltros();
+
+  $('#busquedaClientes').on('keyup', function() {
+    clearTimeout(busquedaCliTimer);
+    busquedaCliTimer = setTimeout(function() {
+      tabla.search($('#busquedaClientes').val()).draw();
+    }, 350);
+  });
+  $('#btnLimpiarBusquedaCli').on('click', function() {
+    $('#busquedaClientes').val('');
+    tabla.search('').draw();
+  });
 }
 
 function inicializarDataTable() {
   tabla = $('#tablaClientes').DataTable({
     processing: true,
     serverSide: true,
+    dom: 'lrtip',
     ajax: {
       url: '<?=base_url();?>ventas/Clientes/lista_ajax',
       type: 'POST',
@@ -368,13 +425,15 @@ function inicializarDataTable() {
       }
     },
     columns: [
-      { data: 0 },  // Código
-      { data: 1 },  // Razón Social
-      { data: 2 },  // RFC
-      { data: 3 },  // Contacto
-      { data: 4 },  // Tipo
-      { data: 5 },  // Estatus
-      { data: 6, orderable: false }  // Acciones
+      { data: 0 },
+      { data: 1 },
+      { data: 2 },
+      { data: 3 },
+      { data: 4 },
+      { data: 5 },
+      { data: 6 },
+      { data: 7 },
+      { data: 8, orderable: false }
     ],
     language: {
       url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
@@ -393,7 +452,8 @@ function limpiarFiltros() {
   $('#filtro_tipo_cliente').val('');
   $('#filtro_estatus').val('');
   $('#filtro_saldo').val('');
-  tabla.ajax.reload();
+  $('#busquedaClientes').val('');
+  tabla.search('').ajax.reload();
 }
 
 function mostrarModalNuevo() {
@@ -478,74 +538,83 @@ function guardarCliente() {
 }
 
 window.verCliente = function(id) {
+  var oc = new bootstrap.Offcanvas(document.getElementById('offcanvasDetalleCliente'));
+  oc.show();
+
+  $('#cli-detalles').html('<tr><td colspan="2" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i></td></tr>');
+  $('#cli-ordenes-container').hide();
+  $('#cli-ordenes-loading').show();
+
+  $('#cli-btn-editar').off('click').on('click', function() {
+    bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasDetalleCliente')).hide();
+    editarCliente(id);
+  });
+
+  $('#cli-ordenes-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
+    cargarOrdenesCliente(id);
+  });
+
   $.post('<?=base_url();?>ventas/Clientes/get_cliente_ajax', {
     'id': id,
     'peticion': 'ajax',
     '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
   }, function(result) {
     result = JSON.parse(result);
-    if(result.success) {
-      const c = result.cliente;
-      let html = `
-        <div class="row">
-          <div class="col-md-6">
-            <h6><i class="fas fa-file-invoice"></i> Datos Fiscales</h6>
-            <table class="table table-sm">
-              <tr><th width="40%">Código:</th><td>${c.codigo}</td></tr>
-              <tr><th>Razón Social:</th><td>${c.razon_social}</td></tr>
-              ${c.nombre_comercial ? `<tr><th>Nombre Comercial:</th><td>${c.nombre_comercial}</td></tr>` : ''}
-              <tr><th>RFC:</th><td>${c.rfc}</td></tr>
-              ${c.regimen_fiscal ? `<tr><th>Régimen Fiscal:</th><td>${c.regimen_fiscal}</td></tr>` : ''}
-              <tr><th>Tipo:</th><td><span class="badge bg-primary">${c.tipo_cliente}</span></td></tr>
-            </table>
-            
-            <h6><i class="fas fa-address-book"></i> Contacto</h6>
-            <table class="table table-sm">
-              ${c.contacto_nombre ? `<tr><th width="40%">Contacto:</th><td>${c.contacto_nombre}</td></tr>` : ''}
-              ${c.telefono ? `<tr><th>Teléfono:</th><td>${c.telefono}</td></tr>` : ''}
-              ${c.email ? `<tr><th>Email:</th><td>${c.email}</td></tr>` : ''}
-            </table>
-          </div>
-          
-          <div class="col-md-6">
-            <h6><i class="fas fa-map-marker-alt"></i> Dirección</h6>
-            <p>${c.calle || ''} ${c.numero_exterior || ''} ${c.numero_interior || ''}<br>
-            ${c.colonia || ''}<br>
-            ${c.ciudad || ''}, ${c.estado || ''} ${c.codigo_postal || ''}</p>
-            
-            <h6><i class="fas fa-dollar-sign"></i> Datos Financieros</h6>
-            <table class="table table-sm">
-              <tr><th width="40%">Límite de Crédito:</th><td>$${parseFloat(c.limite_credito).toFixed(2)}</td></tr>
-              <tr><th>Días de Crédito:</th><td>${c.dias_credito} días</td></tr>
-              <tr><th>Saldo Pendiente:</th><td class="${c.saldo_pendiente > 0 ? 'text-danger' : ''}">$${parseFloat(c.saldo_pendiente).toFixed(2)}</td></tr>
-              <tr><th>Estatus:</th><td><span class="badge bg-${c.estatus == 'Activo' ? 'success' : 'secondary'}">${c.estatus}</span></td></tr>
-            </table>
-          </div>
-        </div>
-      `;
-      
-      if($('#modalVerCliente').length === 0) {
-        $('body').append(`
-          <div class="modal fade" id="modalVerCliente" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title">Detalles del Cliente</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="detalleClienteBody"></div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-primary" onclick="$('#modalVerCliente').modal('hide'); editarCliente(${c.id});">Editar</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        `);
-      }
-      
-      $('#detalleClienteBody').html(html);
-      $('#modalVerCliente').modal('show');
+    if(!result.success) return;
+    const c = result.cliente;
+
+    $('#cli-razon-social').text(c.razon_social);
+    $('#cli-codigo').text(c.codigo || '—');
+    var badgeMap = {Activo: 'success', Inactivo: 'secondary', Suspendido: 'danger'};
+    $('#cli-estatus-badge').html('<span class="badge bg-' + (badgeMap[c.estatus] || 'secondary') + '">' + c.estatus + '</span>');
+
+    function fila(label, valor) {
+      return '<tr><th class="text-muted fw-normal" style="width:40%">' + label + '</th><td>' + (valor || '<span class="text-muted">—</span>') + '</td></tr>';
     }
+
+    let html = '';
+    html += fila('Nombre Comercial', c.nombre_comercial);
+    html += fila('RFC', c.rfc);
+    html += fila('Régimen Fiscal', c.regimen_fiscal);
+    html += fila('Tipo', '<span class="badge bg-primary">' + c.tipo_cliente + '</span>');
+    html += fila('Contacto', c.contacto_nombre);
+    html += fila('Teléfono', c.telefono ? '<a href="tel:' + c.telefono + '">' + c.telefono + '</a>' : null);
+    html += fila('Email', c.email ? '<a href="mailto:' + c.email + '">' + c.email + '</a>' : null);
+    html += fila('Dirección', [c.calle, c.numero_exterior, c.numero_interior, c.colonia, c.ciudad, c.estado, c.codigo_postal].filter(Boolean).join(', '));
+    html += fila('Límite Crédito', '$' + parseFloat(c.limite_credito || 0).toLocaleString('es-MX', {minimumFractionDigits:2}));
+    html += fila('Días Crédito', c.dias_credito ? c.dias_credito + ' días' : null);
+    html += fila('Saldo Pendiente', '<span class="' + (parseFloat(c.saldo_pendiente) > 0 ? 'text-danger fw-semibold' : '') + '">$' + parseFloat(c.saldo_pendiente || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</span>');
+
+    $('#cli-detalles').html(html);
+  });
+};
+
+function cargarOrdenesCliente(clienteId) {
+  $('#cli-ordenes-loading').show();
+  $('#cli-ordenes-container').hide();
+
+  $.post('<?=base_url();?>ventas/Clientes/get_ordenes_cliente_ajax', {
+    cliente_id: clienteId,
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(res) {
+    res = JSON.parse(res);
+    $('#cli-ordenes-loading').hide();
+    let tbody = '';
+    if(res.success && res.ordenes && res.ordenes.length) {
+      res.ordenes.forEach(function(ov) {
+        tbody += '<tr>';
+        tbody += '<td><strong>' + ov.folio + '</strong></td>';
+        tbody += '<td>' + (ov.fecha_orden ? new Date(ov.fecha_orden).toLocaleDateString('es-MX') : '—') + '</td>';
+        tbody += '<td class="text-end">$' + parseFloat(ov.total || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
+        tbody += '<td><span class="badge bg-secondary">' + ov.estatus + '</span></td>';
+        tbody += '</tr>';
+      });
+    } else {
+      tbody = '<tr><td colspan="4" class="text-center text-muted py-3">Sin órdenes de venta</td></tr>';
+    }
+    $('#cli-ordenes-tbody').html(tbody);
+    $('#cli-ordenes-container').show();
   });
 };
 

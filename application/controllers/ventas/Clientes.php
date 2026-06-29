@@ -48,9 +48,12 @@ class Clientes extends MY_Controller {
             $row[] = $cliente->codigo;
             
             // Razón Social / Nombre Comercial
-            $nombre = $cliente->razon_social;
+            $nombre = '<strong>' . $cliente->razon_social . '</strong>';
             if($cliente->nombre_comercial) {
                 $nombre .= '<br><small class="text-muted">' . $cliente->nombre_comercial . '</small>';
+            }
+            if((int)($cliente->total_ordenes ?? 0) > 0) {
+                $nombre .= '<br><span class="badge bg-light text-dark mt-1" style="font-size:0.7rem;"><i class="fas fa-shopping-cart"></i> ' . (int)$cliente->total_ordenes . ' órdenes</span>';
             }
             $row[] = $nombre;
             
@@ -66,6 +69,24 @@ class Clientes extends MY_Controller {
                 $contacto .= '<i class="fas fa-envelope"></i> ' . $cliente->email;
             }
             $row[] = $contacto ?: '<span class="text-muted">Sin datos</span>';
+
+            // Ciudad
+            $ubicacion = '';
+            if($cliente->ciudad) {
+                $ubicacion = $cliente->ciudad;
+                if($cliente->estado) {
+                    $ubicacion .= ', ' . $cliente->estado;
+                }
+            }
+            $row[] = $ubicacion ?: '<span class="text-muted">—</span>';
+
+            // Saldo pendiente
+            $saldo = (float) ($cliente->saldo_pendiente ?? 0);
+            if($saldo > 0) {
+                $row[] = '<span class="text-danger fw-semibold">$' . number_format($saldo, 2) . '</span>';
+            } else {
+                $row[] = '<span class="text-muted">$0.00</span>';
+            }
             
             // Tipo de cliente
             $tipo_badges = [
@@ -230,5 +251,19 @@ class Clientes extends MY_Controller {
     public function get_clientes_select_ajax() {
         $clientes = $this->ClientesModel->get_clientes_select();
         echo json_encode(['success' => true, 'clientes' => $clientes]);
+    }
+
+    /**
+     * Órdenes de venta de un cliente (AJAX)
+     */
+    public function get_ordenes_cliente_ajax() {
+        $cliente_id = $this->input->post('cliente_id');
+        if(!$cliente_id) {
+            echo json_encode(['success' => false, 'message' => 'Cliente requerido']);
+            return;
+        }
+
+        $ordenes = $this->ClientesModel->get_ordenes_cliente($cliente_id);
+        echo json_encode(['success' => true, 'ordenes' => $ordenes]);
     }
 }

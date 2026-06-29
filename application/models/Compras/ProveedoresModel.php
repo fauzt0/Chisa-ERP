@@ -15,8 +15,8 @@ class ProveedoresModel extends MY_Model {
     // Configuración para DataTables
     protected $datatableConfig = [
         'table' => 'proveedores',
-        'column_order' => ['codigo', 'razon_social', 'rfc', 'telefono_principal', 'ciudad', 'estatus', null],
-        'column_search' => ['codigo', 'razon_social', 'nombre_comercial', 'rfc', 'email_principal'],
+        'column_order' => ['codigo', 'razon_social', 'rfc', 'telefono', 'ciudad', 'tipo_proveedor', null, 'estatus', null],
+        'column_search' => ['proveedores.codigo', 'proveedores.razon_social', 'proveedores.nombre_comercial', 'proveedores.rfc', 'proveedores.telefono', 'proveedores.email', 'proveedores.contacto_principal', 'proveedores.ciudad'],
         'order' => ['razon_social' => 'ASC']
     ];
     
@@ -28,8 +28,25 @@ class ProveedoresModel extends MY_Model {
      * Override de _get_datatables_query
      */
     protected function _get_datatables_query() {
-        $this->db->select('proveedores.*');
+        $this->db->select('proveedores.*,
+            (SELECT COUNT(*) FROM proveedor_insumo pi WHERE pi.proveedor_id = proveedores.id) AS total_insumos,
+            (SELECT COUNT(*) FROM ordenes_compra oc WHERE oc.proveedor_id = proveedores.id) AS total_ordenes,
+            (SELECT MAX(oc2.fecha_orden) FROM ordenes_compra oc2 WHERE oc2.proveedor_id = proveedores.id) AS ultima_orden', false);
         $this->db->from($this->tableName);
+
+        if(isset($_POST['filtro_estatus']) && $_POST['filtro_estatus'] !== '') {
+            $this->db->where('proveedores.estatus', $_POST['filtro_estatus']);
+        }
+
+        if(isset($_POST['filtro_tipo_proveedor']) && $_POST['filtro_tipo_proveedor'] !== '') {
+            $this->db->where('proveedores.tipo_proveedor', $_POST['filtro_tipo_proveedor']);
+        }
+
+        if(isset($_POST['filtro_con_ordenes']) && $_POST['filtro_con_ordenes'] === 'si') {
+            $this->db->where('(SELECT COUNT(*) FROM ordenes_compra oc WHERE oc.proveedor_id = proveedores.id) >', 0, false);
+        } elseif(isset($_POST['filtro_con_ordenes']) && $_POST['filtro_con_ordenes'] === 'no') {
+            $this->db->where('(SELECT COUNT(*) FROM ordenes_compra oc WHERE oc.proveedor_id = proveedores.id) =', 0, false);
+        }
         
         // Búsqueda
         $i = 0;
@@ -50,13 +67,16 @@ class ProveedoresModel extends MY_Model {
         }
         
         // Ordenamiento
-        if(isset($_POST['order'])) {
+        if(isset($_POST['order']) && isset($_POST['order'][0])) {
             $column_index = $_POST['order'][0]['column'];
-            $column_name = $this->datatableConfig['column_order'][$column_index];
-            $this->db->order_by($column_name, $_POST['order'][0]['dir']);
+            $column_name = $this->datatableConfig['column_order'][$column_index] ?? null;
+            if($column_name) {
+                $orderCol = strpos($column_name, '.') !== false ? $column_name : 'proveedores.' . $column_name;
+                $this->db->order_by($orderCol, $_POST['order'][0]['dir']);
+            }
         } elseif (isset($this->datatableConfig['order'])) {
             $order = $this->datatableConfig['order'];
-            $this->db->order_by(key($order), $order[key($order)]);
+            $this->db->order_by('proveedores.' . key($order), $order[key($order)]);
         }
     }
     
@@ -162,7 +182,7 @@ class ProveedoresModel extends MY_Model {
         $this->db->join('proveedores', 'proveedores.id = proveedor_insumo.proveedor_id');
         $this->db->where('proveedor_insumo.insumo_id', $insumo_id);
         $this->db->where('proveedores.estatus', 'Activo');
-        $this->db->order_by('proveedor_insumo.precio_unitario', 'ASC');
+        $this->db->order_by('proveedor_insumo.precio_compra', 'ASC');
         return $this->db->get()->result();
     }
     
@@ -243,6 +263,13 @@ class ProveedoresModel extends MY_Model {
         
         // Total de relaciones proveedor-insumo
         $stats['total_relaciones'] = $this->db->count_all_results('proveedor_insumo');
+
+        $stats['total_ordenes'] = $this->db->count_all_results('ordenes_compra');
+
+        $this->db->select('COUNT(DISTINCT proveedor_id) AS total');
+        $this->db->from('ordenes_compra');
+        $row = $this->db->get()->row();
+        $stats['proveedores_con_ordenes'] = (int) ($row->total ?? 0);
         
         return $stats;
     }
