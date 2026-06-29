@@ -21,6 +21,12 @@ class RelojModel extends CI_Model {
     {
         parent::__construct();
         $this->load->database();
+        $this->load->model('RH/EmpleadoModel');
+    }
+
+    private function filtro_empleados_laboral_activo($campo = 'estatus')
+    {
+        $this->db->where_in($campo, EmpleadoModel::estatus_laborales_activos());
     }
 
     // ========================================================================
@@ -72,7 +78,7 @@ class RelojModel extends CI_Model {
         if (is_numeric($pin) && $this->db->field_exists('reloj_pin', 'empleados')) {
             $empleado = $this->db
                 ->where('reloj_pin', (int)$pin)
-                ->where('estatus', 1)
+                ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
                 ->get('empleados')
                 ->row();
 
@@ -84,7 +90,7 @@ class RelojModel extends CI_Model {
         // Buscar por numero_empleado (código interno del ERP)
         $empleado = $this->db
             ->where('numero_empleado', $pin)
-            ->where('estatus', 1)
+            ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
             ->get('empleados')
             ->row();
 
@@ -96,7 +102,7 @@ class RelojModel extends CI_Model {
         if (is_numeric($pin)) {
             return $this->db
                 ->where('id', (int)$pin)
-                ->where('estatus', 1)
+                ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
                 ->get('empleados')
                 ->row();
         }
@@ -1136,7 +1142,7 @@ class RelojModel extends CI_Model {
         }
 
         $this->db->from('empleados');
-        $this->db->where('estatus', 1);
+        $this->filtro_empleados_laboral_activo('estatus');
         $this->db->group_start();
         $this->db->where('reloj_pin IS NULL', null, false);
         $this->db->or_where('reloj_pin', '');
@@ -1406,7 +1412,7 @@ class RelojModel extends CI_Model {
         ], false);
         $this->db->from('empleados');
         $this->db->join('departamentos', 'departamentos.id = empleados.departamento_id', 'left');
-        $this->db->where('empleados.estatus', 1);
+        $this->filtro_empleados_laboral_activo('empleados.estatus');
 
         if ($departamento_id) {
             $this->db->where('empleados.departamento_id', (int)$departamento_id);
@@ -1934,7 +1940,7 @@ class RelojModel extends CI_Model {
             FALSE
         );
         $this->db->join('departamentos', 'departamentos.id = empleados.departamento_id', 'left');
-        $this->db->where('empleados.estatus', 1);
+        $this->filtro_empleados_laboral_activo('empleados.estatus');
 
         if ($empleado_id) {
             $this->db->where('empleados.id', $empleado_id);
@@ -1975,7 +1981,7 @@ class RelojModel extends CI_Model {
     public function count_asistencias_mensual_all()
     {
         return $this->db
-            ->where('estatus', 1)
+            ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
             ->count_all_results('empleados');
     }
 
@@ -1995,7 +2001,7 @@ class RelojModel extends CI_Model {
         $departamento_id = !empty($_POST['departamento_id']) ? $_POST['departamento_id'] : null;
 
         $this->db->from('empleados');
-        $this->db->where('empleados.estatus', 1);
+        $this->filtro_empleados_laboral_activo('empleados.estatus');
 
         if ($empleado_id) {
             $this->db->where('empleados.id', $empleado_id);

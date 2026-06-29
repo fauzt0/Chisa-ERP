@@ -12,22 +12,77 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 class EmpleadoModel extends MY_Model {
-    
+
+    const ESTATUS_INACTIVO  = 0;
+    const ESTATUS_ACTIVO    = 1;
+    const ESTATUS_REINGRESO = 2;
+
     protected $tableName = 'empleados';
     
     /**
      * Configuración para DataTables
      */
     protected $datatableConfig = [
-        'column_order' => ['numero_empleado', 'nombre', 'apellido_paterno', 'puesto', 'departamento_id', 'estatus', null],
-        'column_search' => ['numero_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'rfc', 'curp', 'puesto', 'email_personal', 'email_corporativo'],
+        'column_order' => ['numero_empleado', 'nombre', 'apellido_paterno', 'puesto', 'departamento_id', 'telefono', 'email_personal', 'codigo_postal', 'codigo_postal_fiscal', 'estatus', null],
+        'column_search' => ['numero_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'rfc', 'curp', 'puesto', 'telefono', 'email_personal', 'email_corporativo', 'codigo_postal', 'codigo_postal_fiscal'],
         'order' => ['fecha_ingreso' => 'desc']
     ];
     
     public function __construct() {
         parent::__construct();
     }
-    
+
+    /** Estatus que cuentan como empleado laboral activo (nómina, reloj, baja, etc.) */
+    public static function estatus_laborales_activos() {
+        return [self::ESTATUS_ACTIVO, self::ESTATUS_REINGRESO];
+    }
+
+    public static function es_estatus_laboral_activo($estatus) {
+        return in_array((int) $estatus, self::estatus_laborales_activos(), true);
+    }
+
+    public static function etiqueta_estatus($estatus) {
+        switch ((int) $estatus) {
+            case self::ESTATUS_ACTIVO:
+                return 'Activo';
+            case self::ESTATUS_REINGRESO:
+                return 'Reingreso';
+            default:
+                return 'Inactivo';
+        }
+    }
+
+    public static function badge_estatus_html($estatus) {
+        switch ((int) $estatus) {
+            case self::ESTATUS_ACTIVO:
+                return '<span class="badge bg-success">Activo</span>';
+            case self::ESTATUS_REINGRESO:
+                return '<span class="badge bg-info text-white">Reingreso</span>';
+            default:
+                return '<span class="badge bg-danger">Inactivo</span>';
+        }
+    }
+
+    public function get_active($where = [], $order_by = null) {
+        if (!empty($where)) {
+            $this->db->where($where);
+        }
+        $this->db->where_in($this->statusField, self::estatus_laborales_activos());
+        if ($order_by) {
+            if (is_array($order_by)) {
+                $this->db->order_by(key($order_by), $order_by[key($order_by)]);
+            } else {
+                $this->db->order_by($order_by);
+            }
+        }
+        return $this->db->get($this->tableName)->result();
+    }
+
+    public function exists_active($id) {
+        $empleado = $this->get_by_id($id);
+        return $empleado && self::es_estatus_laboral_activo($empleado->estatus);
+    }
+
     // ========================================================================
     // MÉTODOS CRUD
     // ========================================================================
@@ -161,20 +216,20 @@ class EmpleadoModel extends MY_Model {
             return $this->not_found_response("El empleado no existe");
         }
         
-        if ($empleado->estatus == 1) {
+        if (self::es_estatus_laboral_activo($empleado->estatus)) {
             return $this->error_response("El empleado ya está activo");
         }
-        
+
         $data = [
-            'estatus' => 1,
+            'estatus' => self::ESTATUS_REINGRESO,
             'fecha_baja' => null,
             'motivo_baja' => null
         ];
-        
+
         $success = $this->update($id, $data, false);
-        
+
         if ($success) {
-            return $this->success_response("Empleado reactivado correctamente");
+            return $this->success_response("Empleado registrado como reingreso correctamente");
         }
         
         return $this->error_response("Error al reactivar empleado");
@@ -292,7 +347,7 @@ class EmpleadoModel extends MY_Model {
      */
     public function get_lista_empleados_activos() {
         return $this->db->select("id, numero_empleado, nombre, apellido_paterno, apellido_materno, CONCAT(nombre, ' ', apellido_paterno, ' ', apellido_materno) as nombre_completo")
-                        ->where('estatus', 1)
+                        ->where_in('estatus', self::estatus_laborales_activos())
                         ->order_by('nombre', 'ASC')
                         ->get($this->tableName)
                         ->result();
@@ -311,17 +366,20 @@ class EmpleadoModel extends MY_Model {
         // Total de empleados
         $stats['total_empleados'] = $this->db->count_all_results($this->tableName);
         
-        // Empleados activos
-        $stats['empleados_activos'] = $this->db->where('estatus', 1)
+        // Empleados activos (incluye reingreso)
+        $stats['empleados_activos'] = $this->db->where_in('estatus', self::estatus_laborales_activos())
                                                ->count_all_results($this->tableName);
+
+        $stats['empleados_reingreso'] = $this->db->where('estatus', self::ESTATUS_REINGRESO)
+                                                 ->count_all_results($this->tableName);
         
         // Empleados inactivos
-        $stats['empleados_inactivos'] = $this->db->where('estatus', 0)
+        $stats['empleados_inactivos'] = $this->db->where('estatus', self::ESTATUS_INACTIVO)
                                                  ->count_all_results($this->tableName);
         
         // Por tipo de trabajador
         $stats['por_tipo'] = $this->db->select('tipo_trabajador, COUNT(*) as total')
-                                      ->where('estatus', 1)
+                                      ->where_in('estatus', self::estatus_laborales_activos())
                                       ->group_by('tipo_trabajador')
                                       ->get($this->tableName)
                                       ->result();
@@ -329,12 +387,12 @@ class EmpleadoModel extends MY_Model {
         // Nuevos ingresos (30 días)
         $fecha_limite = date('Y-m-d', strtotime('-30 days'));
         $stats['nuevos_ingresos'] = $this->db->where('fecha_ingreso >=', $fecha_limite)
-                                             ->where('estatus', 1)
+                                             ->where_in('estatus', self::estatus_laborales_activos())
                                              ->count_all_results($this->tableName);
         
         // Nómina total mensual
         $nomina = $this->db->select('SUM(salario_base_mensual) as total')
-                          ->where('estatus', 1)
+                          ->where_in('estatus', self::estatus_laborales_activos())
                           ->get($this->tableName)
                           ->row();
         $stats['nomina_total'] = $nomina->total ?? 0;
@@ -354,7 +412,7 @@ class EmpleadoModel extends MY_Model {
         return $this->db->select('departamentos.nombre as departamento, COUNT(empleados.id) as total')
                         ->from($this->tableName)
                         ->join('departamentos', 'departamentos.id = empleados.departamento_id', 'left')
-                        ->where('empleados.estatus', 1)
+                        ->where_in('empleados.estatus', self::estatus_laborales_activos())
                         ->group_by('departamentos.id')
                         ->order_by('total', 'DESC')
                         ->get()
@@ -365,8 +423,8 @@ class EmpleadoModel extends MY_Model {
      * Obtiene empleados activos con datos fiscales faltantes (RFC, CURP, NSS)
      */
     public function get_empleados_datos_faltantes() {
-        $empleados = $this->db->select("id, nombre, apellido_paterno, apellido_materno, rfc, curp, nss, email_corporativo, telefono, fecha_nacimiento, genero")
-                        ->where('estatus', 1)
+        $empleados = $this->db->select("id, nombre, apellido_paterno, apellido_materno, rfc, curp, nss, telefono, email_personal, fecha_nacimiento, genero")
+                        ->where_in('estatus', self::estatus_laborales_activos())
                         ->group_start()
                             ->where('rfc IS NULL', null, false)
                             ->or_where('rfc', '')
@@ -374,8 +432,10 @@ class EmpleadoModel extends MY_Model {
                             ->or_where('curp', '')
                             ->or_where('nss IS NULL', null, false)
                             ->or_where('nss', '')
-                            ->or_where('email_corporativo IS NULL', null, false)
-                            ->or_where('email_corporativo', '')
+                            ->or_where('telefono IS NULL', null, false)
+                            ->or_where('telefono', '')
+                            ->or_where('email_personal IS NULL', null, false)
+                            ->or_where('email_personal', '')
                             ->or_where('fecha_nacimiento IS NULL', null, false)
                             ->or_where('fecha_nacimiento', '')
                         ->group_end()
@@ -387,7 +447,8 @@ class EmpleadoModel extends MY_Model {
             'rfc' => 'RFC',
             'curp' => 'CURP',
             'nss' => 'NSS',
-            'email_corporativo' => 'Email Corp.',
+            'telefono' => 'Tel. contacto',
+            'email_personal' => 'Correo contacto',
             'fecha_nacimiento' => 'Fecha Nac.',
         ];
 
@@ -408,7 +469,8 @@ class EmpleadoModel extends MY_Model {
                     'rfc' => $emp->rfc,
                     'curp' => $emp->curp,
                     'nss' => $emp->nss,
-                    'email' => $emp->email_corporativo,
+                    'telefono' => $emp->telefono,
+                    'email' => $emp->email_personal,
                     'fecha_nacimiento' => $emp->fecha_nacimiento,
                 ];
             }
@@ -447,7 +509,11 @@ class EmpleadoModel extends MY_Model {
 
         // Filtro de Estatus (si existe en POST)
         if (isset($_POST['estatus']) && $_POST['estatus'] !== 'all') {
-            $this->db->where('empleados.estatus', $_POST['estatus']);
+            if ($_POST['estatus'] === 'activos') {
+                $this->db->where_in('empleados.estatus', self::estatus_laborales_activos());
+            } else {
+                $this->db->where('empleados.estatus', $_POST['estatus']);
+            }
         }
 
         // Filtro de Departamento (si existe en POST)

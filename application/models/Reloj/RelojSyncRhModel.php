@@ -26,6 +26,7 @@ class RelojSyncRhModel extends CI_Model {
     {
         parent::__construct();
         $this->load->model('Reloj/RelojModel');
+        $this->load->model('RH/EmpleadoModel');
     }
 
     /**
@@ -165,7 +166,7 @@ class RelojSyncRhModel extends CI_Model {
         return $this->db
             ->select($select)
             ->from('empleados')
-            ->where('estatus', 1)
+            ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
             ->order_by('id', 'ASC')
             ->get()
             ->result();
@@ -285,7 +286,7 @@ class RelojSyncRhModel extends CI_Model {
         if (count($empleados) === 0) {
             return [
                 'success' => false,
-                'message' => 'No hay empleados activos (estatus=1) para sincronizar al reloj',
+                'message' => 'No hay empleados activos o en reingreso para sincronizar al reloj',
             ];
         }
 

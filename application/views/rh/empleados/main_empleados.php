@@ -4,6 +4,19 @@
  * Listado de empleados con DataTables y estadísticas
  */
 ?>
+<style>
+  #datatables-empleados td:last-child,
+  #datatables-empleados th:last-child {
+    min-width: 7.5rem;
+    white-space: nowrap;
+  }
+  #datatables-empleados .empleado-acciones {
+    gap: 0.35rem !important;
+  }
+  #datatables-empleados .empleado-acciones .btn {
+    margin: 0;
+  }
+</style>
 <div class="container-fluid p-0">
 
   <!-- Breadcrumb (Migas de pan) -->
@@ -132,7 +145,7 @@
           <div class="progress progress-sm shadow-sm mb-1">
             <div class="progress-bar bg-primary" role="progressbar" style="width: <?php echo $response['stats']['porcentaje_activos']; ?>%"></div>
           </div>
-          <small class="text-muted">Activos: <?php echo $response['stats']['empleados_activos']; ?> | Inactivos: <?php echo $response['stats']['empleados_inactivos']; ?></small>
+          <small class="text-muted">Activos: <?php echo $response['stats']['empleados_activos']; ?> (incl. reingreso) | Reingreso: <?php echo $response['stats']['empleados_reingreso'] ?? 0; ?> | Inactivos: <?php echo $response['stats']['empleados_inactivos']; ?></small>
         </div>
       </div>
     </div>
@@ -248,7 +261,9 @@
               <label for="filter-estatus" class="form-label">Estatus:</label>
               <select class="form-select" id="filter-estatus">
                 <option value="all">Todos</option>
-                <option value="1" selected>Activos</option>
+                <option value="activos" selected>Activos y reingreso</option>
+                <option value="1">Solo activos</option>
+                <option value="2">Solo reingreso</option>
                 <option value="0">Inactivos</option>
               </select>
             </div>
@@ -273,7 +288,11 @@
                 <th>Nombre</th>
                 <th>Puesto</th>
                 <th>Departamento</th>
-                <th>Estatus</th>                
+                <th>Teléfono</th>
+                <th>Correo contacto</th>
+                <th>C.P. domicilio</th>
+                <th>C.P. fiscal</th>
+                <th>Estatus</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -285,7 +304,11 @@
                 <th>Nombre</th>
                 <th>Puesto</th>
                 <th>Departamento</th>
-                <th>Estatus</th>                
+                <th>Teléfono</th>
+                <th>Correo contacto</th>
+                <th>C.P. domicilio</th>
+                <th>C.P. fiscal</th>
+                <th>Estatus</th>
                 <th>Acciones</th>
               </tr>
             </tfoot>
@@ -1217,6 +1240,7 @@ document.addEventListener("DOMContentLoaded", function() {
       //datatables      
       table = $('#datatables-empleados').DataTable({
           responsive: true,
+          scrollX: true,
           dom: 'Bfrtip',
           "searching": false,
           "order": [],
@@ -1257,6 +1281,12 @@ document.addEventListener("DOMContentLoaded", function() {
           {
               "targets": [ 0 ],
               "orderable": true,
+          },
+          {
+              "targets": [ -1 ],
+              "orderable": false,
+              "searchable": false,
+              "className": "text-nowrap",
           },
           ],
 

@@ -92,6 +92,12 @@ class RecursosHumanos extends MY_Controller {
     foreach ($list as $empleado) {
       $no++;
       $row = array();
+
+      $celda_vacia = '<span class="text-muted">—</span>';
+      $celda_texto = static function ($valor) use ($celda_vacia) {
+        $valor = trim((string) ($valor ?? ''));
+        return $valor !== '' ? htmlspecialchars($valor, ENT_QUOTES, 'UTF-8') : $celda_vacia;
+      };
       
       // Número de empleado
       $row[] = $empleado->numero_empleado;
@@ -119,30 +125,35 @@ class RecursosHumanos extends MY_Controller {
       
       // Departamento
       $row[] = $empleado->departamento_nombre ?? '<span class="text-muted">Sin departamento</span>';
+
+      // Contacto y domicilio fiscal
+      $row[] = $celda_texto($empleado->telefono ?? null);
+      $row[] = $celda_texto($empleado->email_personal ?? null);
+      $row[] = $celda_texto($empleado->codigo_postal ?? null);
+      $row[] = $celda_texto($empleado->codigo_postal_fiscal ?? null);
       
       // Estatus
-      if($empleado->estatus == 1){
-        $row[] = '<span class="badge bg-success">Activo</span>';
-      } else {
-        $row[] = '<span class="badge bg-danger">Inactivo</span>';
-      }
+      $row[] = EmpleadoModel::badge_estatus_html($empleado->estatus);
       
       // Acciones
-      $acciones = '
-        <button type="button" class="btn btn-sm btn-primary" onclick="empleado_detail('.$empleado->id.')">
+      $acciones = '<div class="empleado-acciones d-flex flex-wrap gap-1">';
+      $acciones .= '
+        <button type="button" class="btn btn-sm btn-primary" onclick="empleado_detail('.$empleado->id.')" title="Ver detalle">
           <i class="fas fa-eye"></i>
         </button>
-        <a href="'.base_url('rh/RecursosHumanos/editar/'.$empleado->id).'" class="btn btn-sm btn-warning">
+        <a href="'.base_url('rh/RecursosHumanos/editar/'.$empleado->id).'" class="btn btn-sm btn-warning" title="Editar">
           <i class="fas fa-edit"></i>
         </a>';
       
-      if($empleado->estatus == 1){
+      if(EmpleadoModel::es_estatus_laboral_activo($empleado->estatus)){
         $acciones .= '
-          <button type="button" class="btn btn-sm btn-danger" onclick="delete_empleado('.$empleado->id.')">
+          <button type="button" class="btn btn-sm btn-danger" onclick="delete_empleado('.$empleado->id.')" title="Dar de baja">
             <i class="fas fa-trash"></i>
           </button>';
       }
       
+      $acciones .= '</div>';
+
       $row[] = $acciones;
       
       $data[] = $row;
@@ -218,6 +229,7 @@ class RecursosHumanos extends MY_Controller {
         'numero_interior' => $this->input->post('numero_interior'),
         'colonia' => $this->input->post('colonia'),
         'codigo_postal' => $this->input->post('codigo_postal'),
+        'codigo_postal_fiscal' => $this->input->post('codigo_postal_fiscal'),
         'ciudad' => $this->input->post('ciudad'),
         'estado' => $this->input->post('estado'),
         'pais' => $this->input->post('pais') ?: 'México',
@@ -281,6 +293,7 @@ class RecursosHumanos extends MY_Controller {
       ['field' => 'puesto', 'label' => 'Puesto', 'rules' => 'required|max_length[100]'],
       ['field' => 'tipo_trabajador', 'label' => 'Tipo de Trabajador', 'rules' => 'required'],
       ['field' => 'salario_base_mensual', 'label' => 'Salario Base', 'rules' => 'required|decimal|greater_than[0]'],
+      ['field' => 'estatus', 'label' => 'Estatus', 'rules' => 'required|in_list[0,1,2]'],
     ];
 
     $this->form_validation->set_rules($validation);
@@ -338,6 +351,7 @@ class RecursosHumanos extends MY_Controller {
         'numero_interior' => $this->input->post('numero_interior'),
         'colonia' => $this->input->post('colonia'),
         'codigo_postal' => $this->input->post('codigo_postal'),
+        'codigo_postal_fiscal' => $this->input->post('codigo_postal_fiscal'),
         'ciudad' => $this->input->post('ciudad'),
         'estado' => $this->input->post('estado'),
         'pais' => $this->input->post('pais'),
@@ -418,8 +432,14 @@ class RecursosHumanos extends MY_Controller {
     if ($usuario_vinculado) {
         $usuario_html = '<strong>#' . (int)$usuario_vinculado->id . '</strong> — '
             . htmlspecialchars($usuario_vinculado->nombre . ' ' . $usuario_vinculado->apellidos)
-            . '<br><small class="text-muted">' . htmlspecialchars($usuario_vinculado->username) . '</small>';
+            . '<br><small class="text-muted">Acceso ERP: ' . htmlspecialchars($usuario_vinculado->username) . '</small>';
     }
+
+    $valor_contacto = static function ($valor) {
+        return !empty($valor)
+            ? htmlspecialchars((string) $valor)
+            : '<span class="text-muted">No registrado</span>';
+    };
 
     $tabs['personal'] = [
       'icon' => 'user',
@@ -431,10 +451,10 @@ class RecursosHumanos extends MY_Controller {
         ['label' => 'Estado Civil', 'value' => $empleado->estado_civil ?? 'No especificado', 'icon' => 'heart'],
         ['label' => 'Fecha Nacimiento', 'value' => $empleado->fecha_nacimiento ?? 'N/A', 'icon' => 'calendar'],
         ['label' => 'Nacionalidad', 'value' => $empleado->nacionalidad ?? 'N/A', 'icon' => 'flag'],
-        ['label' => 'Teléfono', 'value' => $empleado->telefono ?? 'N/A', 'icon' => 'phone'],
-        ['label' => 'Tel. Emergencia', 'value' => $empleado->telefono_emergencia ?? 'N/A', 'icon' => 'phone-call'],
-        ['label' => 'Email Personal', 'value' => $empleado->email_personal ?? 'N/A', 'icon' => 'mail'],
-        ['label' => 'Email Corporativo', 'value' => $empleado->email_corporativo ?? 'N/A', 'icon' => 'briefcase'],
+        ['label' => 'Teléfono de contacto', 'value' => $valor_contacto($empleado->telefono ?? null), 'icon' => 'phone'],
+        ['label' => 'Correo de contacto', 'value' => $valor_contacto($empleado->email_personal ?? null), 'icon' => 'mail'],
+        ['label' => 'Tel. emergencia', 'value' => $valor_contacto($empleado->telefono_emergencia ?? null), 'icon' => 'phone-call'],
+        ['label' => 'Dirección', 'value' => !empty($empleado->direccion) ? nl2br(htmlspecialchars($empleado->direccion)) : '<span class="text-muted">No registrada</span>', 'icon' => 'map-pin'],
       ]
     ];
 
@@ -451,6 +471,8 @@ class RecursosHumanos extends MY_Controller {
         ['label' => 'RFC', 'value' => $empleado->rfc ?: '<span class="text-danger fw-bold">FALTANTE</span>', 'icon' => 'credit-card', 'css_class' => $rfc_color],
         ['label' => 'CURP', 'value' => $empleado->curp ?: '<span class="text-danger fw-bold">FALTANTE</span>', 'icon' => 'shield', 'css_class' => $curp_color],
         ['label' => 'NSS', 'value' => $empleado->nss ?: '<span class="text-danger fw-bold">FALTANTE</span>', 'icon' => 'activity', 'css_class' => $nss_color],
+        ['label' => 'C.P. domicilio', 'value' => !empty($empleado->codigo_postal) ? $empleado->codigo_postal : '<span class="text-muted">No registrado</span>', 'icon' => 'map-pin'],
+        ['label' => 'C.P. fiscal', 'value' => !empty($empleado->codigo_postal_fiscal) ? $empleado->codigo_postal_fiscal : '<span class="text-muted">No registrado</span>', 'icon' => 'map'],
         ['label' => 'Afore', 'value' => $empleado->afore ?? 'N/A', 'icon' => 'database'],
         ['label' => 'Cuenta Bancaria', 'value' => $empleado->banco ? ($empleado->banco . ' - Cuenta: ' . ($empleado->cuenta_bancaria ?? 'N/A')) : 'N/A', 'icon' => 'dollar-sign'],
         ['label' => 'Régimen Fiscal', 'value' => $empleado->regimen_fiscal ?? 'N/A', 'icon' => 'bookmark'],
@@ -468,8 +490,9 @@ class RecursosHumanos extends MY_Controller {
         ['label' => 'Tipo Nómina', 'value' => $empleado->tipo_nomina ?? 'N/A', 'icon' => 'dollar-sign'],
         ['label' => 'Salario Mensual', 'value' => '$' . number_format($empleado->salario_base_mensual, 2), 'icon' => 'trending-up'],
         ['label' => 'Fecha Ingreso', 'value' => date('d M Y', strtotime($empleado->fecha_ingreso)), 'icon' => 'calendar'],
-        ['label' => 'Estatus', 'value' => $empleado->estatus == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>', 'icon' => 'check-circle'],
+        ['label' => 'Estatus', 'value' => EmpleadoModel::badge_estatus_html($empleado->estatus), 'icon' => 'check-circle'],
         ['label' => 'Jefe Directo', 'value' => $empleado->jefe_nombre ?? 'N/A', 'icon' => 'user-plus'],
+        ['label' => 'Correo institucional', 'value' => $valor_contacto($empleado->email_corporativo ?? null), 'icon' => 'briefcase'],
       ]
     ];
 
@@ -504,8 +527,8 @@ class RecursosHumanos extends MY_Controller {
     $actions = [
       'editar' => base_url('rh/RecursosHumanos/editar/' . $id),
       'nuevo_contrato' => base_url('rh/RecursosHumanos/nuevo_contrato/' . $id),
-      'mostrar_finiquito' => ($empleado->estatus == 1),
-      'mostrar_baja' => ($empleado->estatus == 1),
+      'mostrar_finiquito' => EmpleadoModel::es_estatus_laboral_activo($empleado->estatus),
+      'mostrar_baja' => EmpleadoModel::es_estatus_laboral_activo($empleado->estatus),
       'empleado_id' => $id,
       'total_documentos' => $total_docs,
       'checklist' => $checklist,

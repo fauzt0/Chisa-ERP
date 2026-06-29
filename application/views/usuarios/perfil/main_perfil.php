@@ -94,8 +94,9 @@ $iniciales = $user ? strtoupper(substr($user->nombre, 0, 1) . substr($user->apel
             <ul class="list-unstyled mb-0">
               <li class="mb-2"><strong>RFC:</strong> <?=htmlspecialchars($empleado->rfc ?? '—')?></li>
               <li class="mb-2"><strong>Ubicación:</strong> <?=htmlspecialchars(trim(($empleado->ciudad ?? '') . ', ' . ($empleado->estado ?? ''), ', '))?></li>
-              <li class="mb-2"><strong>Email corporativo:</strong> <?=htmlspecialchars($empleado->email_corporativo ?: '—')?></li>
-              <li class="mb-2"><strong>Teléfono:</strong> <?=htmlspecialchars($empleado->telefono_celular ?? $empleado->telefono ?? '—')?></li>
+              <li class="mb-2"><strong>Correo de contacto:</strong> <?=htmlspecialchars($empleado->email_personal ?: '—')?></li>
+              <li class="mb-2"><strong>Correo institucional:</strong> <?=htmlspecialchars($empleado->email_corporativo ?: '—')?></li>
+              <li class="mb-2"><strong>Teléfono de contacto:</strong> <?=htmlspecialchars($empleado->telefono ?? '—')?></li>
             </ul>
           </div>
         </div>

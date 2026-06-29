@@ -440,6 +440,46 @@ class UserModel extends MY_Model {
     // ========================================================================
     // MÉTODOS PARA DATATABLES
     // ========================================================================
+
+    /**
+     * DataTables con filtro de estatus (activos por defecto).
+     */
+    protected function _get_datatables_query() {
+        $this->db->from($this->tableName);
+
+        $estatus = $_POST['estatus'] ?? '1';
+        if ($estatus !== 'all') {
+            $this->db->where($this->tableName . '.estatus', (int) $estatus);
+        }
+
+        if (isset($_POST['search']) && $_POST['search'] !== '') {
+            $search = $_POST['search'];
+            if (is_array($search)) {
+                $search = $search['value'] ?? '';
+            }
+            if ($search !== '') {
+                $this->db->group_start();
+                foreach ($this->datatableConfig['column_search'] as $i => $column) {
+                    if ($i === 0) {
+                        $this->db->like($column, $search);
+                    } else {
+                        $this->db->or_like($column, $search);
+                    }
+                }
+                $this->db->group_end();
+            }
+        }
+
+        if (isset($_POST['order'])) {
+            $column_index = $_POST['order'][0]['column'];
+            $column_name = $this->datatableConfig['column_order'][$column_index];
+            $direction = $_POST['order'][0]['dir'];
+            $this->db->order_by($column_name, $direction);
+        } elseif (isset($this->datatableConfig['order'])) {
+            $order = $this->datatableConfig['order'];
+            $this->db->order_by(key($order), $order[key($order)]);
+        }
+    }
     
     /**
      * Busca usuarios para DataTables

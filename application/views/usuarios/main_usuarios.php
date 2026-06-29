@@ -163,9 +163,9 @@
             <div class="col-md-3">
               <label for="filter-estatus" class="form-label">Estatus:</label>
               <select class="form-select" id="filter-estatus">
-                <option value="all">Todos</option>
+                <option value="all">Todos (activos y suspendidos)</option>
                 <option value="1" selected>Activos</option>
-                <option value="0">Inactivos</option>
+                <option value="0">Suspendidos</option>
               </select>
             </div>
             <div class="col-md-3">

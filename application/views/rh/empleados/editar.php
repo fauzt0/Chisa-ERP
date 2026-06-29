@@ -137,14 +137,6 @@ $emp = $response['empleado'];
                     <option value="Union Libre" <?php echo set_select('estado_civil', 'Union Libre', $emp->estado_civil == 'Union Libre'); ?>>Unión Libre</option>
                   </select>
                 </div>
-                <div class="col-md-4 mb-3">
-                  <label class="form-label">Teléfono</label>
-                  <input type="tel" class="form-control" name="telefono" value="<?php echo set_value('telefono', $emp->telefono); ?>">
-                </div>
-                <div class="col-md-4 mb-3">
-                  <label class="form-label">Email Personal</label>
-                  <input type="email" class="form-control" name="email_personal" value="<?php echo set_value('email_personal', $emp->email_personal); ?>">
-                </div>
               </div>
 
               <div class="row">
@@ -188,6 +180,14 @@ $emp = $response['empleado'];
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Número de Cuenta AFORE</label>
                   <input type="text" class="form-control" value="<?php echo $emp->afore_numero_cuenta ?? 'N/A'; ?>" disabled>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">C.P. fiscal</label>
+                  <input type="text" class="form-control" name="codigo_postal_fiscal" value="<?php echo set_value('codigo_postal_fiscal', $emp->codigo_postal_fiscal ?? ''); ?>" maxlength="5" pattern="[0-9]{5}" inputmode="numeric" placeholder="Ej. 08220">
+                  <small class="text-muted">Código postal del domicilio fiscal (SAT)</small>
                 </div>
               </div>
             </div>
@@ -246,9 +246,19 @@ $emp = $response['empleado'];
                 <div class="col-md-4 mb-3">
                   <label class="form-label">Estatus *</label>
                   <select class="form-select" name="estatus" required>
-                    <option value="1" <?php echo set_select('estatus', '1', $emp->estatus == 1); ?>>Activo</option>
-                    <option value="0" <?php echo set_select('estatus', '0', $emp->estatus == 0); ?>>Inactivo</option>
+                    <option value="1" <?php echo set_select('estatus', '1', (int)$emp->estatus === 1); ?>>Activo</option>
+                    <option value="2" <?php echo set_select('estatus', '2', (int)$emp->estatus === 2); ?>>Reingreso</option>
+                    <option value="0" <?php echo set_select('estatus', '0', (int)$emp->estatus === 0); ?>>Inactivo</option>
                   </select>
+                  <small class="text-muted">Reingreso = trabajador que regresó tras una baja previa (sigue activo en nómina y reloj).</small>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Correo institucional</label>
+                  <input type="email" class="form-control" name="email_corporativo" value="<?php echo set_value('email_corporativo', $emp->email_corporativo); ?>" placeholder="nombre@chisarecubrimientos.com">
+                  <small class="text-muted">Opcional. Correo de la empresa. No es el usuario de acceso al ERP.</small>
                 </div>
               </div>
             </div>
@@ -352,15 +362,24 @@ $emp = $response['empleado'];
             <!-- TAB 5: Contacto y Dirección -->
             <div class="tab-pane fade" id="contacto" role="tabpanel">
               <h5 class="mb-3"><i data-lucide="phone"></i> Información de Contacto</h5>
+              <p class="text-muted small mb-3">Datos para comunicarse con el trabajador. El acceso al ERP se configura por separado al vincular un usuario administrador.</p>
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">Teléfono de Emergencia</label>
-                  <input type="tel" class="form-control" name="telefono_emergencia" value="<?php echo set_value('telefono_emergencia', $emp->telefono_emergencia); ?>">
-                  <small class="text-muted">Contacto en caso de emergencia</small>
+                  <label class="form-label">Teléfono de contacto</label>
+                  <input type="tel" class="form-control" name="telefono" value="<?php echo set_value('telefono', $emp->telefono); ?>" maxlength="15" inputmode="tel" placeholder="Ej. 5512345678">
+                  <small class="text-muted">Celular o fijo del trabajador</small>
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">Email Corporativo</label>
-                  <input type="email" class="form-control" name="email_corporativo" value="<?php echo set_value('email_corporativo', $emp->email_corporativo); ?>" placeholder="nombre@chisarecubrimientos.com">
+                  <label class="form-label">Correo de contacto</label>
+                  <input type="email" class="form-control" name="email_personal" value="<?php echo set_value('email_personal', $emp->email_personal); ?>" placeholder="ejemplo@gmail.com">
+                  <small class="text-muted">Correo personal o alternativo. No es el acceso al sistema.</small>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Teléfono de emergencia</label>
+                  <input type="tel" class="form-control" name="telefono_emergencia" value="<?php echo set_value('telefono_emergencia', $emp->telefono_emergencia); ?>" maxlength="15" inputmode="tel">
+                  <small class="text-muted">Familiar o contacto en caso de emergencia</small>
                 </div>
               </div>
 
@@ -387,8 +406,8 @@ $emp = $response['empleado'];
                   <input type="text" class="form-control" name="colonia" value="<?php echo set_value('colonia', $emp->colonia); ?>">
                 </div>
                 <div class="col-md-4 mb-3">
-                  <label class="form-label">Código Postal</label>
-                  <input type="text" class="form-control" name="codigo_postal" value="<?php echo set_value('codigo_postal', $emp->codigo_postal); ?>" maxlength="5">
+                  <label class="form-label">C.P. (domicilio)</label>
+                  <input type="text" class="form-control" name="codigo_postal" value="<?php echo set_value('codigo_postal', $emp->codigo_postal); ?>" maxlength="5" pattern="[0-9]{5}" inputmode="numeric" placeholder="5 dígitos">
                 </div>
                 <div class="col-md-4 mb-3">
                   <label class="form-label">Ciudad</label>
@@ -471,11 +490,11 @@ $emp = $response['empleado'];
                   <div class="card border-0 bg-light">
                     <div class="card-body">
                       <h6 class="mb-3"><i data-lucide="upload"></i> Subir Documento</h6>
-                      <form id="formDocEditar" enctype="multipart/form-data">
+                      <div id="formDocEditar">
                         <input type="hidden" name="empleado_id" value="<?php echo $emp->id; ?>">
                         <div class="mb-3">
                           <label class="form-label">Tipo de Documento</label>
-                          <select class="form-select" name="tipo_documento" required>
+                          <select class="form-select" name="tipo_documento" id="doc_tipo_documento">
                             <option value="">Seleccionar...</option>
                             <?php foreach ($response['tipos_documento'] as $key => $label): ?>
                               <option value="<?php echo $key; ?>"><?php echo $label; ?></option>
@@ -484,17 +503,17 @@ $emp = $response['empleado'];
                         </div>
                         <div class="mb-3">
                           <label class="form-label">Archivo (PDF o imagen)</label>
-                          <input type="file" class="form-control" name="archivo" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" required>
+                          <input type="file" class="form-control" name="archivo" id="doc_archivo" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp">
                           <small class="text-muted">Máximo 10 MB · NSS, acta de nacimiento, CURP, etc.</small>
                         </div>
                         <div class="mb-3">
                           <label class="form-label">Observaciones</label>
-                          <textarea class="form-control" name="observaciones" rows="2"></textarea>
+                          <textarea class="form-control" name="observaciones" id="doc_observaciones" rows="2"></textarea>
                         </div>
                         <button type="button" class="btn btn-primary w-100" onclick="subirDocEditar()">
                           <i data-lucide="upload"></i> Subir Documento
                         </button>
-                      </form>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -597,7 +616,22 @@ function cargarDocsEditar(empleadoId) {
 }
 
 function subirDocEditar() {
-  var formData = new FormData(document.getElementById('formDocEditar'));
+  var tipo = document.getElementById('doc_tipo_documento');
+  var archivo = document.getElementById('doc_archivo');
+  var observaciones = document.getElementById('doc_observaciones');
+  if (!tipo.value) {
+    notifyShow('Selecciona el tipo de documento', 'danger');
+    return;
+  }
+  if (!archivo.files || !archivo.files.length) {
+    notifyShow('Selecciona un archivo para subir', 'danger');
+    return;
+  }
+  var formData = new FormData();
+  formData.append('empleado_id', '<?php echo (int)$emp->id; ?>');
+  formData.append('tipo_documento', tipo.value);
+  formData.append('archivo', archivo.files[0]);
+  formData.append('observaciones', observaciones.value || '');
   formData.append('peticion', 'ajax');
   formData.append('<?php echo $this->security->get_csrf_token_name();?>', '<?php echo $this->security->get_csrf_hash();?>');
   $.ajax({
@@ -607,7 +641,9 @@ function subirDocEditar() {
       result = JSON.parse(result);
       notifyShow(result.message, result.success ? 'success' : 'danger');
       if (result.success) {
-        document.getElementById('formDocEditar').reset();
+        tipo.value = '';
+        archivo.value = '';
+        observaciones.value = '';
         cargarDocsEditar(<?php echo (int)$emp->id; ?>);
       }
     }

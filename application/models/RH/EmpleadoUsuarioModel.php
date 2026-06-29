@@ -177,7 +177,6 @@ class EmpleadoUsuarioModel extends CI_Model {
             'apellido_materno'     => $materno,
             'fecha_nacimiento'     => '1990-01-01',
             'genero'               => 'Otro',
-            'email_corporativo'    => $usuario->username,
             'rfc'                  => 'PEND' . $placeholder,
             'curp'                 => 'PEND' . $placeholder . 'HDFXXX00',
             'tipo_trabajador'      => 'Confianza',

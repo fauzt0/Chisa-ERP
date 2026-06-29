@@ -5,6 +5,7 @@ class NominaModel extends CI_Model {
     
     public function __construct() {
         parent::__construct();
+        $this->load->model('RH/EmpleadoModel');
     }
     
     /**
@@ -73,7 +74,7 @@ class NominaModel extends CI_Model {
     public function get_empleados_activos($tipo_nomina = null) {
         $this->db->select('*');
         $this->db->from('empleados');
-        $this->db->where('estatus', 1);
+        $this->db->where_in('estatus', EmpleadoModel::estatus_laborales_activos());
         
         if($tipo_nomina) {
             $this->db->where('tipo_nomina', $tipo_nomina);

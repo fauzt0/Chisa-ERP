@@ -22,6 +22,11 @@ class DocumentoEmpleadoModel extends CI_Model {
         'otro'                 => 'Otro',
     ];
 
+    public function __construct() {
+        parent::__construct();
+        $this->load->model('RH/EmpleadoModel');
+    }
+
     public function get_por_empleado($empleado_id) {
         return $this->db
             ->where('empleado_id', (int)$empleado_id)
@@ -127,7 +132,7 @@ class DocumentoEmpleadoModel extends CI_Model {
     public function get_empleados_expediente_incompleto($limite = 20) {
         $empleados = $this->db
             ->select('id, numero_empleado, nombre, apellido_paterno, apellido_materno')
-            ->where('estatus', 1)
+            ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
             ->order_by('nombre', 'ASC')
             ->get('empleados')
             ->result();
@@ -153,7 +158,7 @@ class DocumentoEmpleadoModel extends CI_Model {
     }
 
     public function contar_expedientes_incompletos() {
-        $empleados = $this->db->select('id')->where('estatus', 1)->get('empleados')->result();
+        $empleados = $this->db->select('id')->where_in('estatus', EmpleadoModel::estatus_laborales_activos())->get('empleados')->result();
         $total = 0;
         foreach ($empleados as $emp) {
             $check = $this->get_checklist_empleado($emp->id);

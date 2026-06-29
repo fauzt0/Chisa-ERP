@@ -7,6 +7,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  */
 class NominaRhModel extends CI_Model {
 
+    public function __construct() {
+        parent::__construct();
+        $this->load->model('RH/EmpleadoModel');
+    }
+
     public function generar_folio() {
         $ultima = $this->db
             ->select('folio')
@@ -25,7 +30,7 @@ class NominaRhModel extends CI_Model {
         $empleados = $this->db
             ->select('id')
             ->from('empleados')
-            ->where('estatus', 1)
+            ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
             ->where('tipo_nomina', $tipo_nomina)
             ->get()
             ->result();

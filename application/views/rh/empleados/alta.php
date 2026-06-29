@@ -124,17 +124,6 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
               </div>
 
               <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Teléfono</label>
-                  <input type="tel" class="form-control" name="telefono" value="<?php echo set_value('telefono'); ?>">
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Email Personal</label>
-                  <input type="email" class="form-control" name="email_personal" value="<?php echo set_value('email_personal'); ?>">
-                </div>
-              </div>
-
-              <div class="row">
                 <div class="col-md-12 mb-3">
                   <label class="form-label">Beneficiarios (Art. 501 LFT)</label>
                   <textarea class="form-control" name="beneficiarios" rows="3" placeholder="Ej: Maria Perez - Esposa - 50%, Juan Perez - Hijo - 50%"><?php echo set_value('beneficiarios'); ?></textarea>
@@ -186,6 +175,14 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
                   <label class="form-label">Número de Cuenta AFORE</label>
                   <input type="text" class="form-control" name="afore_numero_cuenta" value="<?php echo set_value('afore_numero_cuenta'); ?>" maxlength="20">
                   <small class="text-muted">Cuenta individual</small>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">C.P. fiscal</label>
+                  <input type="text" class="form-control" name="codigo_postal_fiscal" value="<?php echo set_value('codigo_postal_fiscal'); ?>" maxlength="5" pattern="[0-9]{5}" inputmode="numeric" placeholder="Ej. 08220">
+                  <small class="text-muted">Código postal del domicilio fiscal (SAT)</small>
                 </div>
               </div>
             </div>
@@ -240,6 +237,14 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Fecha de Ingreso *</label>
                   <input type="date" class="form-control" name="fecha_ingreso" id="fecha_ingreso" value="<?php echo set_value('fecha_ingreso', date('Y-m-d')); ?>">
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Correo institucional</label>
+                  <input type="email" class="form-control" name="email_corporativo" value="<?php echo set_value('email_corporativo'); ?>" placeholder="nombre@chisarecubrimientos.com">
+                  <small class="text-muted">Opcional. Correo de la empresa. No es el usuario de acceso al ERP.</small>
                 </div>
               </div>
             </div>
@@ -344,15 +349,24 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
             <!-- TAB 5: Contacto y Dirección -->
             <div class="tab-pane fade" id="contacto" role="tabpanel">
               <h5 class="mb-3"><i data-lucide="phone"></i> Información de Contacto</h5>
+              <p class="text-muted small mb-3">Datos para comunicarse con el trabajador. El acceso al ERP se configura por separado al vincular un usuario administrador.</p>
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">Teléfono de Emergencia</label>
-                  <input type="tel" class="form-control" name="telefono_emergencia" value="<?php echo set_value('telefono_emergencia'); ?>">
-                  <small class="text-muted">Contacto en caso de emergencia</small>
+                  <label class="form-label">Teléfono de contacto</label>
+                  <input type="tel" class="form-control" name="telefono" value="<?php echo set_value('telefono'); ?>" maxlength="15" inputmode="tel" placeholder="Ej. 5512345678">
+                  <small class="text-muted">Celular o fijo del trabajador</small>
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">Email Corporativo</label>
-                  <input type="email" class="form-control" name="email_corporativo" value="<?php echo set_value('email_corporativo'); ?>" placeholder="nombre@chisarecubrimientos.com">
+                  <label class="form-label">Correo de contacto</label>
+                  <input type="email" class="form-control" name="email_personal" value="<?php echo set_value('email_personal'); ?>" placeholder="ejemplo@gmail.com">
+                  <small class="text-muted">Correo personal o alternativo. No es el acceso al sistema.</small>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Teléfono de emergencia</label>
+                  <input type="tel" class="form-control" name="telefono_emergencia" value="<?php echo set_value('telefono_emergencia'); ?>" maxlength="15" inputmode="tel">
+                  <small class="text-muted">Familiar o contacto en caso de emergencia</small>
                 </div>
               </div>
 
@@ -379,8 +393,8 @@ $form['apellido_materno'] = ['type' => 'text', 'name' => 'apellido_materno', 'id
                   <input type="text" class="form-control" name="colonia" value="<?php echo set_value('colonia'); ?>">
                 </div>
                 <div class="col-md-4 mb-3">
-                  <label class="form-label">Código Postal</label>
-                  <input type="text" class="form-control" name="codigo_postal" value="<?php echo set_value('codigo_postal'); ?>" maxlength="5">
+                  <label class="form-label">C.P. (domicilio)</label>
+                  <input type="text" class="form-control" name="codigo_postal" value="<?php echo set_value('codigo_postal'); ?>" maxlength="5" pattern="[0-9]{5}" inputmode="numeric" placeholder="5 dígitos">
                 </div>
                 <div class="col-md-4 mb-3">
                   <label class="form-label">Ciudad</label>
