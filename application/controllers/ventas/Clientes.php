@@ -109,7 +109,7 @@ class Clientes extends MY_Controller {
             $row[] = '<span class="badge bg-' . $badge_color . '">' . $cliente->estatus . '</span>';
             
             // Acciones
-            $acciones = '
+            $acciones = '<div class="btn-acciones-crm">
             <button type="button" class="btn btn-sm btn-info" onclick="verCliente('.$cliente->id.')" title="Ver detalles">
                 <i class="fas fa-eye"></i>
             </button>
@@ -118,7 +118,8 @@ class Clientes extends MY_Controller {
             </button>
             <button type="button" class="btn btn-sm btn-danger" onclick="eliminarCliente('.$cliente->id.')" title="Eliminar">
                 <i class="fas fa-trash"></i>
-            </button>';
+            </button>
+            </div>';
             
             $row[] = $acciones;
             

@@ -94,44 +94,48 @@
   </div>
 
   <?php if(!empty($alertas_stock)): ?>
-  <div class="row">
+  <div class="row mb-3">
     <div class="col-12">
-      <div class="card border-danger shadow-sm">
-        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-            <h5 class="card-title text-white mb-0"><i class="fas fa-exclamation-triangle"></i> Alertas de Stock Bajo</h5>
-            <span class="badge bg-white text-danger rounded-pill"><?=count($alertas_stock)?> Insumos</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Código</th>
-                            <th>Insumo</th>
-                            <th>Marca</th>
-                            <th>Stock Actual</th>
-                            <th>Mínimo</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach($alertas_stock as $insumo): ?>
-                        <tr>
-                            <td><strong><?=$insumo->codigo?></strong></td>
-                            <td><?=$insumo->nombre_tecnico?></td>
-                            <td><?=$insumo->marca?></td>
-                            <td class="text-danger fw-bold"><?=$insumo->stock_actual?> <?=$insumo->unidad_medida?></td>
-                            <td><?=$insumo->stock_minimo?> <?=$insumo->unidad_medida?></td>
-                            <td>
-                                <a href="<?=base_url()?>compras/OrdenesCompra" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-shopping-cart"></i> Crear Orden
-                                </a>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+      <div class="dropdown w-100">
+        <button class="btn btn-light border border-danger w-100 d-flex justify-content-between align-items-center py-2 px-3"
+                type="button" id="dropdownStockBajo" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+          <span class="text-danger fw-semibold">
+            <i class="fas fa-exclamation-triangle"></i> Stock bajo: <?=count($alertas_stock)?> insumo<?=count($alertas_stock) !== 1 ? 's' : ''?>
+          </span>
+          <span class="badge bg-danger rounded-pill"><?=count($alertas_stock)?></span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-lg p-0 w-100 shadow border-danger" aria-labelledby="dropdownStockBajo" style="max-height: 380px; overflow-y: auto;">
+          <div class="px-3 py-2 border-bottom bg-light">
+            <small class="text-muted">Insumos por debajo del mínimo — clic fuera para cerrar</small>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th>Código</th>
+                  <th>Insumo</th>
+                  <th>Stock</th>
+                  <th>Mín.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach($alertas_stock as $insumo): ?>
+                <tr>
+                  <td><strong><?=htmlspecialchars($insumo->codigo)?></strong></td>
+                  <td><?=htmlspecialchars($insumo->nombre_tecnico)?></td>
+                  <td class="text-danger fw-bold"><?=$insumo->stock_actual?> <?=$insumo->unidad_medida?></td>
+                  <td><?=$insumo->stock_minimo?></td>
+                  <td>
+                    <a href="<?=base_url()?>compras/OrdenesCompra" class="btn btn-xs btn-outline-danger btn-sm">
+                      <i class="fas fa-shopping-cart"></i>
+                    </a>
+                  </td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

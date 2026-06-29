@@ -282,6 +282,45 @@ class UserModel extends MY_Model {
         
         return $this->success_response("Se ha actualizado al Administrador con el ID: " . $id);
     }
+
+    /**
+     * Actualiza datos básicos del perfil (Mi Perfil) sin tocar permisos
+     */
+    public function update_perfil($id, $data) {
+        if (!$this->exists($id)) {
+            return $this->not_found_response('Usuario no encontrado');
+        }
+
+        $update = [];
+        if (isset($data['nombre'])) {
+            $update['nombre'] = $data['nombre'];
+        }
+        if (isset($data['apellidos'])) {
+            $update['apellidos'] = $data['apellidos'];
+        }
+        if (isset($data['username'])) {
+            $this->db->where('username', $data['username']);
+            $this->db->where('id !=', $id);
+            if ($this->db->count_all_results($this->tableName) > 0) {
+                return $this->error_response('El correo/usuario ya está registrado');
+            }
+            $update['username'] = $data['username'];
+        }
+        if (!empty($data['password'])) {
+            $update['password'] = password_hash($data['password'], PASSWORD_BCRYPT);
+        }
+
+        if (empty($update)) {
+            return $this->error_response('No hay datos para actualizar');
+        }
+
+        $this->update($id, $update);
+        if ($this->has_db_error()) {
+            return $this->error_response('Error al actualizar el perfil');
+        }
+
+        return $this->success_response('Perfil actualizado correctamente');
+    }
     
     /**
      * Elimina un usuario mediante soft delete

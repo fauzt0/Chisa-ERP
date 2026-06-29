@@ -356,7 +356,7 @@ $stats = $response['stats'] ?? [];
 <!-- Offcanvas: Detalle del Cliente -->
 <div class="offcanvas offcanvas-end" style="width:520px;" tabindex="-1" id="offcanvasDetalleCliente">
   <div class="offcanvas-header bg-primary text-white">
-    <h5 class="mb-0"><i class="fas fa-user-tie"></i> <span id="cli-razon-social">Cliente</span></h5>
+    <h5 class="mb-0 text-white"><i class="fas fa-user-tie text-white"></i> <span id="cli-razon-social" class="text-white">Cliente</span></h5>
     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
   </div>
   <div class="offcanvas-body p-0">

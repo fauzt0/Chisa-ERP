@@ -33,12 +33,14 @@
                             ?>
                         </td>
                         <td>
-                            <a href="<?=base_url('usuarios/Roles/editar/'.$role->id)?>" class="btn btn-sm btn-primary">
+                            <div class="btn-acciones-crm">
+                            <a href="<?=base_url('usuarios/Roles/editar/'.$role->id)?>" class="btn btn-sm btn-primary" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <button onclick="eliminarRol(<?=$role->id?>)" class="btn btn-sm btn-danger">
+                            <button onclick="eliminarRol(<?=$role->id?>)" class="btn btn-sm btn-danger" title="Eliminar">
                                 <i class="fas fa-trash"></i>
                             </button>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -62,7 +64,7 @@ function eliminarRol(id) {
             if(resp.success) {
                 location.reload();
             } else {
-                alert('Error al eliminar');
+                alert(resp.message || 'Error al eliminar el rol');
             }
         });
     }

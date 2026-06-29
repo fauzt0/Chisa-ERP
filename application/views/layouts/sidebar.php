@@ -35,6 +35,9 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>usuarios/Roles">
             Roles y Permisos
           </a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>usuarios/GestionUsuarios/empresa">
+            Datos de la Empresa
+          </a></li>
           
         </ul>
       </li>

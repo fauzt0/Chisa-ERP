@@ -59,7 +59,7 @@
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title"><i class="fas fa-history"></i> Bitácora de <span id="usuario-nombre"></span></h5>
+        <h5 class="modal-title text-white"><i class="fas fa-history"></i> Bitácora de <span id="usuario-nombre" class="text-white"></span></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">

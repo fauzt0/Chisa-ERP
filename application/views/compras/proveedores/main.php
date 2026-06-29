@@ -187,8 +187,8 @@
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="modalProveedorTitle">Nuevo Proveedor</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title text-white" id="modalProveedorTitle">Nuevo Proveedor</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="formProveedor">
@@ -345,8 +345,8 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-info text-white">
-        <h5 class="modal-title">Insumos del Proveedor: <span id="nombreProveedorInsumos"></span></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title text-white">Insumos del Proveedor: <span id="nombreProveedorInsumos" class="text-white"></span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="proveedor_insumos_id">
@@ -454,8 +454,8 @@
 <div class="offcanvas offcanvas-end" style="width:500px;" tabindex="-1"
      id="offcanvasDetalleProveedor" aria-labelledby="offcanvasProveedorLabel">
   <div class="offcanvas-header bg-primary text-white">
-    <h5 id="offcanvasProveedorLabel" class="mb-0">
-      <i class="fas fa-truck"></i> <span id="oc-razon-social">Proveedor</span>
+    <h5 id="offcanvasProveedorLabel" class="mb-0 text-white">
+      <i class="fas fa-truck text-white"></i> <span id="oc-razon-social" class="text-white">Proveedor</span>
     </h5>
     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
   </div>
@@ -765,7 +765,7 @@
           html = '<tr><td colspan="6" class="text-center text-muted">No hay insumos relacionados</td></tr>';
         } else {
           result.insumos.forEach(function(ins) {
-            const nombreProv = ins.nombre_proveedor ? `<span class="badge bg-info text-dark">${ins.nombre_proveedor}</span>` : '<span class="text-muted">—</span>';
+            const nombreProv = ins.nombre_proveedor ? `<span class="badge bg-info text-white">${ins.nombre_proveedor}</span>` : '<span class="text-muted">—</span>';
             html += `
               <tr>
                 <td><small>${ins.codigo}</small></td>
@@ -993,7 +993,7 @@
       if(res.success && res.insumos && res.insumos.length > 0) {
         res.insumos.forEach(function(ins) {
           var nomProv = ins.nombre_proveedor
-            ? '<span class="badge bg-info text-dark">' + ins.nombre_proveedor + '</span>'
+            ? '<span class="badge bg-info text-white">' + ins.nombre_proveedor + '</span>'
             : '<span class="text-muted">-</span>';
           tbody += '<tr>';
           tbody += '<td><strong class="small">' + ins.nombre_tecnico + '</strong><br><span class="text-muted" style="font-size:0.75rem;">' + (ins.codigo || '') + '</span></td>';

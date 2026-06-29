@@ -109,7 +109,7 @@ class Proveedores extends MY_Controller {
             $row[] = '<span class="badge bg-' . $eb . '">' . $proveedor->estatus . '</span>';
             
             // Acciones
-            $acciones = '
+            $acciones = '<div class="btn-acciones-crm">
                 <button type="button" class="btn btn-sm btn-secondary" onclick="verDetalleProveedor('.$proveedor->id.')" title="Ver Detalle">
                     <i class="fas fa-eye"></i>
                 </button>
@@ -121,7 +121,8 @@ class Proveedores extends MY_Controller {
                 </button>
                 <button type="button" class="btn btn-sm btn-danger" onclick="eliminarProveedor('.$proveedor->id.')" title="Eliminar">
                     <i class="fas fa-trash"></i>
-                </button>';
+                </button>
+            </div>';
             
             $row[] = $acciones;
             

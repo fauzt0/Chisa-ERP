@@ -722,7 +722,7 @@
     <div class="modal-content">
       <div class="modal-header bg-success text-white">
         <h5 class="modal-title text-white"><i class="fas fa-plus"></i> Registrar Nueva Incidencia</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="formRegistrarIncidencia">
@@ -960,7 +960,7 @@
     <div class="modal-content">
       <div class="modal-header bg-info text-white">
         <h5 class="modal-title text-white"><i class="fas fa-clock"></i> Horario Laboral del Empleado</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="row mb-3">

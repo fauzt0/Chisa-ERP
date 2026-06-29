@@ -18,7 +18,8 @@
 	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
 
 	<link href="<?php echo base_url();?>assets/dist/css/app.css" rel="stylesheet">	
-	<link href="<?php echo base_url();?>assets/dist/css/estilos.css?v=<?php echo time(); ?>" rel="stylesheet">	
+	<link href="<?php echo base_url();?>assets/dist/css/estilos.css?v=<?php echo time(); ?>" rel="stylesheet">
+	<?php $this->load->view('rh/partials/modal_styles'); ?>
   
 </head>
 

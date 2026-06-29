@@ -112,8 +112,8 @@
         <div class="modal-content">
             <div class="modal-header text-white" style="background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);">
                 <div>
-                    <h5 class="modal-title mb-0"><i class="fas fa-fingerprint"></i> Detalle del día</h5>
-                    <small id="modal-detalle-subtitulo" class="opacity-75"></small>
+                    <h5 class="modal-title mb-0 text-white"><i class="fas fa-fingerprint text-white"></i> Detalle del día</h5>
+                    <small id="modal-detalle-subtitulo" class="opacity-75 text-white-50"></small>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>

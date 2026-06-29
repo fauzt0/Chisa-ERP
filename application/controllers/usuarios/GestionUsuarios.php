@@ -17,6 +17,7 @@ class GestionUsuarios extends MY_Controller {
     $this->load->model("Users/UserModel"); 
     $this->load->model("Users/RolesModel");
     $this->load->model("RH/EmpleadoModel");
+    $this->load->model("Config/EmpresaModel");
     $this->config->load('permissions'); 
     
     // El controlador base ya maneja la sesión y los permisos del módulo
@@ -593,6 +594,54 @@ class GestionUsuarios extends MY_Controller {
         redirect('usuarios/GestionUsuarios/importar');
       }
     }
+  }
+
+  /**
+   * Datos fiscales y de contacto de la empresa
+   */
+  public function empresa() {
+    setViewSuccess('Configuración de empresa');
+    $this->viewData['pageTitle'] = 'Datos de la Empresa';
+    $this->viewData['headTitle'] = 'Datos de la Empresa';
+    $this->viewData['breadcrumb'] = 'Inicio > Administradores > Datos de la Empresa';
+    $this->viewData['response'] = [
+      'empresa' => $this->EmpresaModel->get_config(),
+    ];
+    $this->viewData['pageView'] = 'usuarios/empresa/main';
+    $this->load->view('layouts/general_template', $this->viewData);
+  }
+
+  /**
+   * Guarda datos de la empresa (AJAX)
+   */
+  public function guardar_empresa_ajax() {
+    $data = [
+      'razon_social' => trim($this->input->post('razon_social')),
+      'nombre_comercial' => trim($this->input->post('nombre_comercial')),
+      'rfc' => strtoupper(trim($this->input->post('rfc'))),
+      'regimen_fiscal' => trim($this->input->post('regimen_fiscal')),
+      'calle' => trim($this->input->post('calle')),
+      'numero_exterior' => trim($this->input->post('numero_exterior')),
+      'numero_interior' => trim($this->input->post('numero_interior')),
+      'colonia' => trim($this->input->post('colonia')),
+      'ciudad' => trim($this->input->post('ciudad')),
+      'estado' => trim($this->input->post('estado')),
+      'codigo_postal' => trim($this->input->post('codigo_postal')),
+      'telefono' => trim($this->input->post('telefono')),
+      'email' => trim($this->input->post('email')),
+      'sitio_web' => trim($this->input->post('sitio_web')),
+    ];
+
+    if (empty($data['razon_social'])) {
+      echo json_encode(['success' => false, 'message' => 'La razón social es obligatoria.']);
+      return;
+    }
+
+    $ok = $this->EmpresaModel->guardar_config($data, $this->session->userdata('id'));
+    echo json_encode([
+      'success' => (bool) $ok,
+      'message' => $ok ? 'Datos de la empresa guardados correctamente.' : 'Error al guardar.',
+    ]);
   }
 
 }

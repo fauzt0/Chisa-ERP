@@ -150,10 +150,13 @@ class OrdenesCompra extends MY_Controller {
         
         $detalles = $orden->detalles ?? [];
         
-        // Cargar vista standalone (sin layout general)
+        $this->load->model('Config/EmpresaModel');
+        $empresa = $this->EmpresaModel->get_config();
+        
         $this->load->view('compras/ordenes_compra/pdf_oc', [
             'orden'    => $orden,
-            'detalles' => $detalles
+            'detalles' => $detalles,
+            'empresa'  => $empresa,
         ]);
     }
     

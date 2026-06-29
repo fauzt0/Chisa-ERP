@@ -17,7 +17,7 @@ $emp = $response['empleado'];
     <div class="col-md-12">
       <div class="card border-0 shadow-sm">
         <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%);">
-          <h2 class="h4 mb-0"><i data-lucide="user-pen" class="me-2" style="width:24px;height:24px;"></i> Editar Empleado: <?php echo htmlspecialchars($emp->numero_empleado); ?></h2>
+          <h2 class="h4 mb-0 text-white"><i data-lucide="user-pen" class="me-2 text-white" style="width:24px;height:24px;"></i> Editar Empleado: <?php echo htmlspecialchars($emp->numero_empleado); ?></h2>
           <small class="text-white-50"><?php echo htmlspecialchars(trim($emp->nombre . ' ' . $emp->apellido_paterno)); ?></small>
         </div>
         <div class="card-body">

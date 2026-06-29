@@ -1,3 +1,23 @@
+<?php
+$emp = $empresa ?? null;
+$logoUrl = !empty($emp->logo) ? base_url($emp->logo) : base_url('assets/dist/img/brands/chisa_recubrimientos_logo.jpg');
+$nombreEmpresa = $emp->razon_social ?? 'Chisa Recubrimientos';
+$subtituloEmpresa = trim(implode(' | ', array_filter([
+    $emp->nombre_comercial ?? '',
+    $emp->rfc ? 'RFC: ' . $emp->rfc : '',
+])));
+$direccionEmpresa = trim(implode(', ', array_filter([
+    $emp->calle ?? '',
+    $emp->numero_exterior ?? '',
+    $emp->colonia ?? '',
+    $emp->ciudad ?? '',
+    $emp->estado ?? '',
+    $emp->codigo_postal ?? '',
+])));
+if (!$direccionEmpresa) {
+    $direccionEmpresa = 'México';
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -91,12 +111,12 @@
   <!-- ENCABEZADO -->
   <div class="header">
     <div class="company-info">
-      <img src="<?=base_url('assets/dist/img/brands/chisa_recubrimientos_logo.jpg')?>" alt="Chisa Recubrimientos">
+      <img src="<?=$logoUrl?>" alt="<?=htmlspecialchars($nombreEmpresa)?>">
       <div>
-        <h1>Chisa Recubrimientos</h1>
+        <h1><?=htmlspecialchars($nombreEmpresa)?></h1>
         <p>
-          Industria de la Pintura y Recubrimientos<br>
-          México
+          <?php if($subtituloEmpresa): ?><?=htmlspecialchars($subtituloEmpresa)?><br><?php endif; ?>
+          <?=htmlspecialchars($direccionEmpresa)?>
         </p>
       </div>
     </div>
