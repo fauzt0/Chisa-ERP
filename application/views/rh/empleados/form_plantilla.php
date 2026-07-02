@@ -1,3 +1,5 @@
+<div class="container-fluid p-0">
+  <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
 <div class="row">
     <div class="col-md-9">
         <div class="card card-outline card-primary shadow">

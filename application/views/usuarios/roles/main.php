@@ -1,3 +1,5 @@
+<div class="container-fluid p-0">
+  <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
 <div class="row mb-3">
     <div class="col-md-6">
         <h2><i class="fas fa-user-tag"></i> Gestión de Roles</h2>

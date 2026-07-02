@@ -23,9 +23,34 @@ class EmpleadoModel extends MY_Model {
      * Configuración para DataTables
      */
     protected $datatableConfig = [
-        'column_order' => ['numero_empleado', 'nombre', 'apellido_paterno', 'puesto', 'departamento_id', 'telefono', 'email_personal', 'codigo_postal', 'codigo_postal_fiscal', 'estatus', null],
-        'column_search' => ['numero_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'rfc', 'curp', 'puesto', 'telefono', 'email_personal', 'email_corporativo', 'codigo_postal', 'codigo_postal_fiscal'],
-        'order' => ['fecha_ingreso' => 'desc']
+        'column_order' => [
+            'empleados.numero_empleado',
+            'empleados.nombre',
+            'empleados.puesto',
+            'departamentos.nombre',
+            'empleados.telefono',
+            'empleados.email_personal',
+            'empleados.codigo_postal',
+            'empleados.codigo_postal_fiscal',
+            'empleados.estatus',
+            null,
+        ],
+        'column_search' => [
+            'empleados.numero_empleado',
+            'empleados.nombre',
+            'empleados.apellido_paterno',
+            'empleados.apellido_materno',
+            'empleados.rfc',
+            'empleados.curp',
+            'empleados.puesto',
+            'empleados.telefono',
+            'empleados.email_personal',
+            'empleados.email_corporativo',
+            'empleados.codigo_postal',
+            'empleados.codigo_postal_fiscal',
+            'departamentos.nombre',
+        ],
+        'order' => ['empleados.fecha_ingreso' => 'desc'],
     ];
     
     public function __construct() {
@@ -523,10 +548,12 @@ class EmpleadoModel extends MY_Model {
         
         // Ordenamiento
         if (isset($_POST['order'])) {
-            $column_index = $_POST['order'][0]['column'];
-            $column_name = $this->datatableConfig['column_order'][$column_index];
-            $direction = $_POST['order'][0]['dir'];
-            $this->db->order_by($column_name, $direction);
+            $column_index = (int) $_POST['order'][0]['column'];
+            $column_name = $this->datatableConfig['column_order'][$column_index] ?? null;
+            $direction = $_POST['order'][0]['dir'] === 'asc' ? 'asc' : 'desc';
+            if (!empty($column_name)) {
+                $this->db->order_by($column_name, $direction);
+            }
         } elseif (isset($this->datatableConfig['order'])) {
             $order = $this->datatableConfig['order'];
             $this->db->order_by(key($order), $order[key($order)]);

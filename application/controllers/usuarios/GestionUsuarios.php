@@ -28,7 +28,7 @@ class GestionUsuarios extends MY_Controller {
     setViewSuccess('Gestion de usuarios cargado correctamente');
     $this->viewData['pageTitle'] = 'Gestion de usuarios';
     $this->viewData['headTitle'] = 'Gestion de usuarios';
-    $this->viewData['breadcrumb'] = 'Inicio > Gestion de usuarios';
+    $this->viewData['breadcrumb'] = 'Inicio > Gestión de usuarios';
     
     // Obtener estadísticas críticas del sistema
     $stats = $this->UserModel->get_critical_stats();
@@ -230,7 +230,7 @@ class GestionUsuarios extends MY_Controller {
 
     $this->viewData['pageTitle'] = 'Alta de usuarios';
     $this->viewData['headTitle'] = 'Alta de usuarios';
-    $this->viewData['breadcrumb'] = 'Inicio > Gestion de usuarios > Alta de usuarios';
+    $this->viewData['breadcrumb'] = 'Inicio > Gestión de usuarios > Alta de usuarios';
     $this->viewData['response'] = [
       'permissions' => $permissions, //permisos desde archivo de configuracion permissions
       'roles' => $this->RolesModel->get_all_roles(),
@@ -264,7 +264,7 @@ class GestionUsuarios extends MY_Controller {
     
     $this->viewData['pageTitle'] = 'Editar usuario';
     $this->viewData['headTitle'] = 'Editar usuario';
-    $this->viewData['breadcrumb'] = 'Inicio > Gestion de usuarios > Editar usuario';
+    $this->viewData['breadcrumb'] = 'Inicio > Gestión de usuarios > Editar usuario';
     $this->viewData['response'] = [      
       'userData' => $response['user_data'],
       'userPermissions' => $user_permissions,

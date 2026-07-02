@@ -495,30 +495,68 @@ document.addEventListener("DOMContentLoaded", function() {
   }
   
   form.addEventListener('submit', function(e) {
-    let errores = [];
-    
-    // Validar campos obligatorios
-    const nombre = document.querySelector('[name="nombre"]').value.trim();
-    const apellido_paterno = document.querySelector('[name="apellido_paterno"]').value.trim();
-    const rfc = document.querySelector('[name="rfc"]').value.trim();
-    const curp = document.querySelector('[name="curp"]').value.trim();
-    const tipo_trabajador = document.getElementById('tipo_trabajador').value;
-    const puesto = document.getElementById('puesto').value.trim();
-    const fecha_ingreso = document.getElementById('fecha_ingreso').value;
-    const salario = document.getElementById('salario_base_mensual').value;
-    
-    if(!nombre) errores.push('El nombre es obligatorio');
-    if(!apellido_paterno) errores.push('El apellido paterno es obligatorio');
-    if(!rfc) errores.push('El RFC es obligatorio');
-    if(!curp) errores.push('El CURP es obligatorio');
-    if(!tipo_trabajador) errores.push('El tipo de trabajador es obligatorio');
-    if(!puesto) errores.push('El puesto es obligatorio');
-    if(!fecha_ingreso) errores.push('La fecha de ingreso es obligatoria');
-    if(!salario || salario <= 0) errores.push('El salario base mensual es obligatorio');
-    
-    if(errores.length > 0) {
+    form.querySelectorAll('.is-invalid').forEach(function(el) {
+      el.classList.remove('is-invalid');
+    });
+
+    const requeridos = [
+      { sel: '[name="nombre"]', label: 'Nombre', tab: 'personales-tab' },
+      { sel: '[name="apellido_paterno"]', label: 'Apellido paterno', tab: 'personales-tab' },
+      { sel: '[name="rfc"]', label: 'RFC', tab: 'fiscales-tab' },
+      { sel: '[name="curp"]', label: 'CURP', tab: 'fiscales-tab' },
+      { sel: '#tipo_trabajador', label: 'Tipo de trabajador', tab: 'laborales-tab' },
+      { sel: '#puesto', label: 'Puesto', tab: 'laborales-tab' },
+      { sel: '#fecha_ingreso', label: 'Fecha de ingreso', tab: 'laborales-tab' },
+      {
+        sel: '#salario_base_mensual',
+        label: 'Salario base mensual',
+        tab: 'nomina-tab',
+        valid: function(el) { return el.value !== '' && parseFloat(el.value) > 0; }
+      }
+    ];
+
+    const faltantes = [];
+    let primeraTab = null;
+    let primerCampo = null;
+
+    requeridos.forEach(function(campo) {
+      const el = document.querySelector(campo.sel);
+      if (!el) return;
+
+      const valor = (el.tagName === 'SELECT' || el.type === 'number') ? el.value : el.value.trim();
+      const ok = campo.valid ? campo.valid(el) : valor !== '';
+
+      if (!ok) {
+        faltantes.push(campo.label);
+        el.classList.add('is-invalid');
+        if (!primeraTab) {
+          primeraTab = campo.tab;
+          primerCampo = el;
+        }
+      }
+    });
+
+    if (faltantes.length > 0) {
       e.preventDefault();
-      notifyShow('Por favor completa los campos obligatorios.', 'warning');
+
+      if (primeraTab) {
+        const tabBtn = document.getElementById(primeraTab);
+        if (tabBtn && typeof bootstrap !== 'undefined') {
+          bootstrap.Tab.getOrCreateInstance(tabBtn).show();
+        }
+      }
+
+      if (primerCampo) {
+        setTimeout(function() {
+          primerCampo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          primerCampo.focus({ preventScroll: true });
+        }, 150);
+      }
+
+      const mensaje = faltantes.length === 1
+        ? 'Falta completar: ' + faltantes[0]
+        : 'Faltan los siguientes datos: ' + faltantes.join(', ');
+      notifyShow(mensaje, 'warning');
       return false;
     }
   });
@@ -530,7 +568,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // Notificación de errores de validación de CodeIgniter
   <?php if (validation_errors()): ?>
-    notifyShow("Hay errores en el formulario. Por favor revisa los campos marcados.", "danger");
+    <?php
+      $CI =& get_instance();
+      $errores_servidor = array_values($CI->form_validation->error_array());
+      $mensaje_validacion = !empty($errores_servidor)
+        ? 'Revise lo siguiente: ' . implode(' · ', $errores_servidor)
+        : 'Hay errores en el formulario. Por favor revisa los campos marcados.';
+    ?>
+    notifyShow(<?php echo json_encode($mensaje_validacion, JSON_UNESCAPED_UNICODE); ?>, "danger");
   <?php endif; ?>
 });
 </script>

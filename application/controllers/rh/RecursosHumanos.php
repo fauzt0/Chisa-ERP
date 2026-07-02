@@ -1266,7 +1266,7 @@ class RecursosHumanos extends MY_Controller {
     setViewSuccess('Plantillas de Contrato cargadas');
     $this->viewData['pageTitle'] = 'Plantillas de Contrato';
     $this->viewData['headTitle'] = 'Gestión de Contratos';
-    $this->viewData['breadcrumb'] = 'Inicio > RH > Plantillas';
+    $this->viewData['breadcrumb'] = 'Inicio > Recursos Humanos > Plantillas';
     
     $this->load->model('RH/PlantillaModel');
     $this->viewData['plantillas'] = $this->PlantillaModel->get_todas_activas();
@@ -1278,7 +1278,7 @@ class RecursosHumanos extends MY_Controller {
   public function crear_plantilla() {
     $this->viewData['pageTitle'] = 'Nueva Plantilla';
     $this->viewData['headTitle'] = 'Crear Plantilla';
-    $this->viewData['breadcrumb'] = 'Inicio > RH > Plantillas > Nueva';
+    $this->viewData['breadcrumb'] = 'Inicio > Recursos Humanos > Plantillas > Nueva';
     $this->viewData['plantilla'] = null;
     $this->viewData['pageView'] = 'rh/empleados/form_plantilla';
     $this->load->view('layouts/general_template', $this->viewData);
@@ -1297,7 +1297,7 @@ class RecursosHumanos extends MY_Controller {
     
     $this->viewData['pageTitle'] = 'Editar Plantilla';
     $this->viewData['headTitle'] = 'Editar: ' . $plantilla->nombre;
-    $this->viewData['breadcrumb'] = 'Inicio > RH > Plantillas > Editar';
+    $this->viewData['breadcrumb'] = 'Inicio > Recursos Humanos > Plantillas > Editar';
     $this->viewData['plantilla'] = $plantilla;
     $this->viewData['pageView'] = 'rh/empleados/form_plantilla';
     $this->load->view('layouts/general_template', $this->viewData);
@@ -1379,7 +1379,7 @@ class RecursosHumanos extends MY_Controller {
     
     $this->viewData['pageTitle'] = 'Nuevo Contrato';
     $this->viewData['headTitle'] = 'Contrato para: ' . $empleado->nombre;
-    $this->viewData['breadcrumb'] = 'Inicio > RH > Empleados > Nuevo Contrato';
+    $this->viewData['breadcrumb'] = 'Inicio > Recursos Humanos > Nuevo Contrato';
     $this->viewData['empleado'] = $empleado;
     $this->viewData['plantillas'] = $this->PlantillaModel->get_todas_activas();
     

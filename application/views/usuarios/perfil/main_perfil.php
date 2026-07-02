@@ -8,6 +8,9 @@ $mensaje_vinculo = $response['mensaje_vinculo'] ?? '';
 $iniciales = $user ? strtoupper(substr($user->nombre, 0, 1) . substr($user->apellidos, 0, 1)) : '?';
 ?>
 
+<div class="container-fluid p-0">
+  <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
+
 <div class="row mb-2 mb-xl-3">
   <div class="col">
     <h3 class="mb-0"><strong>Mi Perfil</strong></h3>

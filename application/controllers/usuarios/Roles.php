@@ -14,7 +14,7 @@ class Roles extends MY_Controller {
     public function index() {
         $data['pageTitle'] = 'Roles y Permisos';
         $data['headTitle'] = 'Gestión de Roles';
-        $data['breadcrumb'] = 'Inicio > Usuarios > Roles';
+        $data['breadcrumb'] = 'Inicio > Gestión de usuarios > Roles';
         
         $data['roles'] = $this->RolesModel->get_all_roles();
         $data['pageView'] = 'usuarios/roles/main';
@@ -25,7 +25,7 @@ class Roles extends MY_Controller {
     public function crear() {
         $data['pageTitle'] = 'Nuevo Rol';
         $data['headTitle'] = 'Nuevo Rol';
-        $data['breadcrumb'] = 'Inicio > Usuarios > Roles > Nuevo';
+        $data['breadcrumb'] = 'Inicio > Gestión de usuarios > Roles > Nuevo';
         
         $data['permissions'] = $this->config->item('permissions');
         $data['is_edit'] = false;
@@ -43,7 +43,7 @@ class Roles extends MY_Controller {
 
         $data['pageTitle'] = 'Editar Rol';
         $data['headTitle'] = 'Editar Rol';
-        $data['breadcrumb'] = 'Inicio > Usuarios > Roles > Editar';
+        $data['breadcrumb'] = 'Inicio > Gestión de usuarios > Roles > Editar';
         
         $data['role'] = $role;
         $data['selected_permissions'] = json_decode($role->permisos, true) ?? [];

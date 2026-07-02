@@ -1,3 +1,5 @@
+<div class="container-fluid p-0">
+  <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
 <div class="row">
     <div class="col-12 text-end mb-3">
         <a href="<?= base_url('rh/RecursosHumanos/crear_plantilla') ?>" class="btn btn-primary">
@@ -49,6 +51,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <script>
