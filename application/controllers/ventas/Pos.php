@@ -370,6 +370,24 @@ class Pos extends MY_Controller {
     }
     
     /**
+     * Vista de impresión de recibo con selector de template (1=Factura, 2=Remisión, 3=Moderno)
+     */
+    public function imprimir_recibo_template($orden_id, $template = 1) {
+        $orden = $this->VentasModel->get_orden_completa($orden_id);
+        if(!$orden) { show_404(); return; }
+        $template = intval($template);
+        if($template < 1 || $template > 3) $template = 1;
+
+        $this->load->model('Config/EmpresaModel');
+        $empresa = $this->EmpresaModel->get_config();
+
+        $data['orden']    = $orden;
+        $data['template'] = $template;
+        $data['empresa']  = $empresa;
+        $this->load->view('ventas/pos/recibo_template', $data);
+    }
+
+    /**
      * Obtiene formulación específica por ID (AJAX)
      */
     public function get_formulacion_detalle_ajax() {
@@ -388,4 +406,5 @@ class Pos extends MY_Controller {
             echo json_encode(['success' => false, 'message' => 'Formulación no encontrada']);
         }
     }
+    
 }

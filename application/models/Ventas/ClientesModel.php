@@ -107,6 +107,50 @@ class ClientesModel extends MY_Model {
         $this->db->limit($limit);
         return $this->db->get()->result();
     }
+
+    /**
+     * Historial paginado de órdenes de venta de un cliente (excluye cotizaciones)
+     */
+    public function get_historial_ventas($cliente_id, $limit = 10, $offset = 0) {
+        $this->db->select('id, folio, fecha_orden, total, estatus, estatus_pago, tipo_venta');
+        $this->db->from('ordenes_venta');
+        $this->db->where('cliente_id', $cliente_id);
+        $this->db->where('estatus !=', 'Cotización');
+        $this->db->order_by('fecha_orden', 'DESC');
+        $this->db->limit($limit, $offset);
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Cuenta el historial de ventas de un cliente (excluye cotizaciones)
+     */
+    public function count_historial_ventas($cliente_id) {
+        $this->db->where('cliente_id', $cliente_id);
+        $this->db->where('estatus !=', 'Cotización');
+        return $this->db->count_all_results('ordenes_venta');
+    }
+
+    /**
+     * Historial paginado de cotizaciones de un cliente
+     */
+    public function get_historial_cotizaciones($cliente_id, $limit = 10, $offset = 0) {
+        $this->db->select('id, folio, fecha_orden, total, estatus, estatus_pago, tipo_venta');
+        $this->db->from('ordenes_venta');
+        $this->db->where('cliente_id', $cliente_id);
+        $this->db->where('estatus', 'Cotización');
+        $this->db->order_by('fecha_orden', 'DESC');
+        $this->db->limit($limit, $offset);
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Cuenta las cotizaciones de un cliente
+     */
+    public function count_historial_cotizaciones($cliente_id) {
+        $this->db->where('cliente_id', $cliente_id);
+        $this->db->where('estatus', 'Cotización');
+        return $this->db->count_all_results('ordenes_venta');
+    }
     
     /**
      * Override de get_datatables

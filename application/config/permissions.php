@@ -48,11 +48,12 @@ $config['permissions'] = array(
   ),
   
   'Compras' => array(
-    'compras_ordenes_add'     => 'Crear órdenes de compra',
-    'compras_ordenes_edit'    => 'Editar órdenes de compra',
-    'compras_ordenes_consult' => 'Consultar órdenes de compra',
-    'compras_ordenes_delete'  => 'Cancelar órdenes de compra',
-    'compras_recepcion'       => 'Recibir mercancía',
+    'compras_ordenes_add'         => 'Crear órdenes de compra',
+    'compras_ordenes_edit'        => 'Editar órdenes de compra',
+    'compras_ordenes_consult'     => 'Consultar órdenes de compra',
+    'compras_ordenes_delete'      => 'Cancelar órdenes de compra',
+    'compras_recepcion'           => 'Recibir mercancía',
+    'compras_autorizar_preordenes' => 'Autorizar o rechazar pre-órdenes de compra generadas desde Producción',
   ),
   
   'Producción' => array(

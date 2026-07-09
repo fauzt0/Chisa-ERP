@@ -373,4 +373,29 @@ class Proveedores extends MY_Controller {
         $ordenes = $this->OrdenesCompraModel->get_ordenes_proveedor($proveedor_id);
         echo json_encode(['success' => true, 'ordenes' => $ordenes]);
     }
+
+    /**
+     * Historial paginado de órdenes de compra de un proveedor (AJAX)
+     */
+    public function get_historial_ordenes_compra_ajax($proveedor_id = 0, $limit = 10, $offset = 0) {
+        $proveedor_id = (int) ($proveedor_id ?: $this->input->post('proveedor_id'));
+        $limit = (int) ($limit ?: $this->input->post('limit') ?: 10);
+        $offset = (int) ($offset ?: $this->input->post('offset') ?: 0);
+
+        if(!$proveedor_id) {
+            echo json_encode(['success' => false, 'message' => 'Proveedor requerido']);
+            return;
+        }
+
+        $ordenes = $this->OrdenesCompraModel->get_historial_ordenes($proveedor_id, $limit, $offset);
+        $total = $this->OrdenesCompraModel->count_historial_ordenes($proveedor_id);
+
+        echo json_encode([
+            'success' => true,
+            'ordenes' => $ordenes,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset
+        ]);
+    }
 }

@@ -612,6 +612,48 @@ class GestionUsuarios extends MY_Controller {
   }
 
   /**
+   * Sube el logotipo de la empresa (AJAX)
+   * Ruta de administración: usuarios/GestionUsuarios/empresa
+   */
+  public function subir_logo_empresa_ajax() {
+    if (empty($_FILES['logo']['name'])) {
+      echo json_encode(['success' => false, 'message' => 'Selecciona un archivo de imagen.']);
+      return;
+    }
+
+    $upload_path = './assets/uploads/logos/';
+    if (!is_dir($upload_path)) {
+      mkdir($upload_path, 0777, true);
+    }
+
+    $config = [
+      'upload_path'   => $upload_path,
+      'allowed_types' => 'gif|jpg|jpeg|png|webp|svg',
+      'encrypt_name'  => true,
+      'max_size'      => 2048,
+    ];
+
+    $this->load->library('upload', $config);
+
+    if (!$this->upload->do_upload('logo')) {
+      echo json_encode(['success' => false, 'message' => strip_tags($this->upload->display_errors('', ''))]);
+      return;
+    }
+
+    $uploadData = $this->upload->data();
+    $logoPath = 'assets/uploads/logos/' . $uploadData['file_name'];
+
+    $ok = $this->EmpresaModel->guardar_config(['logo' => $logoPath], $this->session->userdata('id'));
+
+    echo json_encode([
+      'success' => (bool) $ok,
+      'message' => $ok ? 'Logotipo actualizado correctamente.' : 'Error al guardar el logotipo.',
+      'logo_url' => base_url($logoPath),
+      'logo_path' => $logoPath,
+    ]);
+  }
+
+  /**
    * Guarda datos de la empresa (AJAX)
    */
   public function guardar_empresa_ajax() {

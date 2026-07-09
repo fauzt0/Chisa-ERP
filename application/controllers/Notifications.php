@@ -126,6 +126,21 @@ class Notifications extends MY_Controller {
       $total_count++;
     }
 
+    // 7. COMPRAS - Pre-órdenes automáticas pendientes de autorización
+    $preordenes_pendientes = $this->_get_preordenes_pendientes();
+    if($preordenes_pendientes > 0) {
+      $notifications[] = [
+        'type' => 'danger',
+        'icon' => 'clipboard-check',
+        'module' => 'Compras',
+        'title' => 'Pre-órdenes pendientes de autorización',
+        'message' => $preordenes_pendientes . ' pre-orden(es) generada(s) desde Producción esperan autorización',
+        'link' => base_url('compras/OrdenesCompra'),
+        'time' => 'Ahora'
+      ];
+      $total_count++;
+    }
+
     // Limitar a las 10 notificaciones más importantes
     $notifications = array_slice($notifications, 0, 10);
 
@@ -227,6 +242,14 @@ class Notifications extends MY_Controller {
     $this->db->where('p.estatus', 'Activo');
     $this->db->limit(5);
     return $this->db->get()->result();
+  }
+
+  /**
+   * Cuenta pre-órdenes de compra (tabla `preordenes`) pendientes de autorización
+   */
+  private function _get_preordenes_pendientes() {
+    $this->db->where('estatus', 'Pendiente');
+    return $this->db->count_all_results('preordenes');
   }
 
   /**

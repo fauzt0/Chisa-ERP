@@ -768,6 +768,49 @@ class Productos extends MY_Controller {
     }
 
     /**
+     * Genera pre-órdenes de compra automáticas a partir de los insumos
+     * faltantes detectados en calcular_insumos_ajax() (AJAX).
+     *
+     * Requiere el permiso 'produccion_preordenes'. Las pre-órdenes quedan en
+     * estatus 'Pendiente' y requieren autorización de un administrador de
+     * Compras antes de convertirse en una Orden de Compra real.
+     */
+    public function generar_preorden_ajax() {
+        if (!tiene_permiso('produccion_preordenes')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para generar pre-órdenes de compra']);
+            return;
+        }
+
+        $formulacion_id   = $this->input->post('formulacion_id');
+        $insumos_json     = $this->input->post('insumos_faltantes');
+        $notas            = $this->input->post('notas');
+        $user_id          = $this->session->userdata('user_id');
+
+        if (!$formulacion_id || !$insumos_json) {
+            echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+            return;
+        }
+
+        $insumos_faltantes = json_decode($insumos_json, true);
+        if (!is_array($insumos_faltantes) || count($insumos_faltantes) === 0) {
+            echo json_encode(['success' => false, 'message' => 'No se recibieron insumos faltantes válidos']);
+            return;
+        }
+
+        $this->load->model('Compras/PreordenesModel');
+
+        $resultado = $this->PreordenesModel->crear_preordenes_desde_faltantes(
+            $insumos_faltantes,
+            'produccion',
+            $formulacion_id,
+            $user_id,
+            $notas ?: ('Generada automáticamente desde el cálculo de insumos de la formulación #' . $formulacion_id)
+        );
+
+        echo json_encode($resultado);
+    }
+
+    /**
      * Guarda los cambios editados inline en la tabla Excel del simulador (AJAX)
      * Puede crear nueva versión o actualizar los componentes de la actual.
      */

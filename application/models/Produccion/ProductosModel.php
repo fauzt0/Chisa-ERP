@@ -38,6 +38,7 @@ class ProductosModel extends MY_Model {
     
     public function __construct() {
         parent::__construct();
+        $this->load->helper('unidades');
     }
     
     /**
@@ -291,6 +292,8 @@ class ProductosModel extends MY_Model {
             insumos.codigo as insumo_codigo,
             insumos.nombre_tecnico as insumo_nombre,
             insumos.stock_actual as insumo_stock,
+            insumos.stock_minimo as insumo_stock_minimo,
+            insumos.unidad_medida as insumo_unidad_medida,
             productos.codigo as producto_codigo,
             productos.nombre as producto_nombre
         ');
@@ -902,6 +905,10 @@ class ProductosModel extends MY_Model {
 
         // Escalar componentes
         $componentes_escalados = [];
+        $insumos_faltantes = [];
+        $hay_insumos_faltantes = false;
+        $hay_insumos_revision_manual = false;
+
         foreach($formulacion->componentes as $comp) {
             $comp_escalado = clone $comp;
             $comp_escalado->cantidad_original = $comp->cantidad;
@@ -915,6 +922,61 @@ class ProductosModel extends MY_Model {
                 $comp_escalado->kg_fase_acuosa_escalado = null;
             }
 
+            // ── Validación de stock vs. faltante (SOLO para componentes tipo Insumo) ──
+            // IMPORTANTE (hallazgo crítico): detalle_formulacion.unidad (unidad de la
+            // fórmula) puede NO coincidir con insumos.unidad_medida (unidad de compra/
+            // stock). Nunca se asume una conversión; solo se compara cuando es segura.
+            $comp_escalado->unidad_coincide         = null;
+            $comp_escalado->conversion_aplicada     = false;
+            $comp_escalado->factor_conversion       = null;
+            $comp_escalado->cantidad_en_unidad_insumo = null;
+            $comp_escalado->insumo_faltante         = null;
+            $comp_escalado->cantidad_faltante       = null;
+            $comp_escalado->requiere_revision_manual = false;
+            $comp_escalado->motivo_revision         = null;
+
+            if ($comp->tipo_componente === 'Insumo' && !empty($comp->insumo_id)) {
+                $unidad_formula = $comp->unidad;
+                $unidad_insumo  = $comp->insumo_unidad_medida;
+
+                $conv = convertir_unidad_insumo($comp_escalado->cantidad_escalada, $unidad_formula, $unidad_insumo);
+
+                $comp_escalado->unidad_coincide     = $conv['unidad_coincide'];
+                $comp_escalado->conversion_aplicada = $conv['success'] && !$conv['unidad_coincide'];
+                $comp_escalado->factor_conversion   = $conv['factor'];
+
+                if ($conv['success']) {
+                    $stock_disponible = (float) ($comp->insumo_stock ?? 0);
+                    $cantidad_necesaria = $conv['cantidad_convertida'];
+
+                    $comp_escalado->cantidad_en_unidad_insumo = $cantidad_necesaria;
+                    $comp_escalado->insumo_faltante = $cantidad_necesaria > $stock_disponible;
+                    $comp_escalado->cantidad_faltante = $comp_escalado->insumo_faltante
+                        ? round($cantidad_necesaria - $stock_disponible, 6)
+                        : 0;
+
+                    if ($comp_escalado->insumo_faltante) {
+                        $hay_insumos_faltantes = true;
+                        $insumos_faltantes[] = [
+                            'detalle_formulacion_id' => $comp->id,
+                            'insumo_id'              => $comp->insumo_id,
+                            'insumo_codigo'          => $comp->insumo_codigo,
+                            'insumo_nombre'          => $comp->insumo_nombre,
+                            'unidad_insumo'          => $unidad_insumo,
+                            'cantidad_requerida'     => $cantidad_necesaria,
+                            'stock_disponible'       => $stock_disponible,
+                            'cantidad_faltante'      => $comp_escalado->cantidad_faltante,
+                        ];
+                    }
+                } else {
+                    // No se pudo comparar de forma segura: NO se marca como faltante,
+                    // se señala para revisión manual del usuario/administrador.
+                    $comp_escalado->requiere_revision_manual = true;
+                    $comp_escalado->motivo_revision = $conv['motivo'];
+                    $hay_insumos_revision_manual = true;
+                }
+            }
+
             $componentes_escalados[] = $comp_escalado;
         }
 
@@ -923,7 +985,10 @@ class ProductosModel extends MY_Model {
             'cubetas_calculadas' => $total_cubetas,
             'kg_necesarios' => $total_kg_necesarios,
             'multiplicador' => $multiplicador,
-            'componentes' => $componentes_escalados
+            'componentes' => $componentes_escalados,
+            'hay_insumos_faltantes' => $hay_insumos_faltantes,
+            'hay_insumos_revision_manual' => $hay_insumos_revision_manual,
+            'insumos_faltantes' => $insumos_faltantes,
         ];
     }
 }

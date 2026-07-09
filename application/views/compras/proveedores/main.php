@@ -540,12 +540,13 @@
                   <th>Fecha</th>
                   <th class="text-end">Total</th>
                   <th>Estatus</th>
-                  <th></th>
+                  <th width="100">Acciones</th>
                 </tr>
               </thead>
               <tbody id="oc-ordenes-tbody"></tbody>
             </table>
           </div>
+          <div id="oc-ordenes-paginacion" class="d-grid gap-2 mt-2"></div>
         </div>
       </div>
 
@@ -553,6 +554,46 @@
   </div>
 </div>
 <!-- /Offcanvas Proveedor -->
+
+<!-- Modal: Detalle de Orden de Compra -->
+<div class="modal fade" id="modalDetalleOrdenCompra" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle de Orden de Compra <span id="det-oc-folio"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="det-oc-loading" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i></div>
+        <div id="det-oc-error" class="alert alert-danger" style="display:none;"></div>
+        <div id="det-oc-content" style="display:none;">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Proveedor:</strong> <span id="det-oc-proveedor"></span></p>
+              <p class="mb-1"><strong>Fecha:</strong> <span id="det-oc-fecha"></span></p>
+              <p class="mb-1"><strong>Estatus:</strong> <span id="det-oc-estatus"></span></p>
+            </div>
+            <div class="col-md-6 text-md-end">
+              <p class="mb-1"><strong>Total:</strong> <span id="det-oc-total"></span></p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+              <thead class="table-light">
+                <tr><th>Insumo</th><th>Código</th><th class="text-center">Cantidad</th><th class="text-end">Precio</th><th class="text-end">Subtotal</th></tr>
+              </thead>
+              <tbody id="det-oc-detalles"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <a href="#" id="det-oc-btn-pdf" target="_blank" class="btn btn-danger"><i class="fas fa-file-pdf"></i> Ver PDF</a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 (function() {
@@ -562,6 +603,20 @@
   let proveedorEditando = null;
   let proveedorInsumosActual = null;
   let busquedaProvTimer = null;
+  let provOrdenesActualId = 0;
+  let provOrdenesLimit = 10;
+  let provOrdenesOffset = 0;
+  let provOrdenesTotal = 0;
+
+  const badgeOrdenCompra = {
+    'Borrador': 'secondary',
+    'Enviada': 'primary',
+    'Confirmada': 'info',
+    'En Tránsito': 'warning',
+    'Recibida Parcial': 'warning',
+    'Recibida': 'success',
+    'Cancelada': 'danger'
+  };
 
   function initProveedores() {
     inicializarDataTable();
@@ -872,12 +927,16 @@
     oc.show();
 
     // Reset UI
+    provOrdenesActualId = id;
+    provOrdenesOffset = 0;
     $('#oc-detalles').html('<tr><td colspan="2" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
     $('#oc-razon-social').text('Proveedor');
     $('#oc-codigo').text('...');
     $('#oc-estatus-badge').html('');
     $('#oc-insumos-loading').show();
     $('#oc-insumos-container').hide();
+    $('#oc-ordenes-tbody').html('');
+    $('#oc-ordenes-paginacion').html('');
 
     // Activar tab Información por defecto
     $('#oc-info-tab').tab('show');
@@ -945,37 +1004,125 @@
     });
 
     $('#oc-ordenes-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
-      cargarOrdenesOC(id);
+      if($('#oc-ordenes-tbody').is(':empty')) cargarOrdenesOC(id);
     });
   };
 
-  function cargarOrdenesOC(proveedorId) {
-    $('#oc-ordenes-loading').show();
-    $('#oc-ordenes-container').hide();
+  function formatearFechaMX(fecha) {
+    if(!fecha) return '-';
+    var d = new Date(fecha);
+    if(isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('es-MX');
+  }
 
-    $.post('<?=base_url();?>compras/Proveedores/get_ordenes_proveedor_ajax', {
-      'proveedor_id': proveedorId, 'peticion': 'ajax',
+  function renderBadgeOC(estatus) {
+    return '<span class="badge bg-' + (badgeOrdenCompra[estatus] || 'secondary') + '">' + estatus + '</span>';
+  }
+
+  function botonCargarMasOC(offset, total, limit) {
+    if(offset + limit >= total) return '';
+    return '<button class="btn btn-outline-secondary btn-sm" onclick="cargarMasOrdenesCompra()"><i class="fas fa-chevron-down"></i> Cargar más (' + (total - offset - limit) + ' restantes)</button>';
+  }
+
+  function cargarOrdenesOC(proveedorId, append) {
+    if(!append) {
+      provOrdenesOffset = 0;
+      $('#oc-ordenes-tbody').html('');
+    }
+    $('#oc-ordenes-loading').show();
+    $('#oc-ordenes-paginacion').html('');
+
+    $.post('<?=base_url();?>compras/Proveedores/get_historial_ordenes_compra_ajax', {
+      proveedor_id: proveedorId,
+      limit: provOrdenesLimit,
+      offset: provOrdenesOffset,
+      peticion: 'ajax',
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
     }, function(res) {
       res = JSON.parse(res);
       $('#oc-ordenes-loading').hide();
+      provOrdenesTotal = res.total || 0;
+
       var tbody = '';
       if(res.success && res.ordenes && res.ordenes.length > 0) {
         res.ordenes.forEach(function(oc) {
           var pdfUrl = '<?=base_url();?>compras/OrdenesCompra/generar_pdf/' + oc.id;
           tbody += '<tr>';
           tbody += '<td><strong>' + oc.folio + '</strong></td>';
-          tbody += '<td>' + (oc.fecha_orden ? new Date(oc.fecha_orden).toLocaleDateString('es-MX') : '-') + '</td>';
+          tbody += '<td>' + formatearFechaMX(oc.fecha_orden) + '</td>';
           tbody += '<td class="text-end">$' + parseFloat(oc.total || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
-          tbody += '<td><span class="badge bg-secondary">' + oc.estatus + '</span></td>';
-          tbody += '<td class="text-end"><a href="' + pdfUrl + '" target="_blank" class="btn btn-xs btn-outline-primary btn-sm" title="Ver PDF"><i class="fas fa-file-pdf"></i></a></td>';
+          tbody += '<td>' + renderBadgeOC(oc.estatus) + '</td>';
+          tbody += '<td>';
+          tbody += '<div class="btn-group btn-group-sm">';
+          tbody += '<button type="button" class="btn btn-info" onclick="verDetalleOrdenCompra(' + oc.id + ')" title="Ver detalle"><i class="fas fa-eye"></i></button>';
+          tbody += '<a href="' + pdfUrl + '" target="_blank" class="btn btn-danger" title="Ver PDF"><i class="fas fa-file-pdf"></i></a>';
+          tbody += '</div>';
+          tbody += '</td>';
           tbody += '</tr>';
         });
-      } else {
+        if(append) {
+          $('#oc-ordenes-tbody').append(tbody);
+        } else {
+          $('#oc-ordenes-tbody').html(tbody);
+        }
+        provOrdenesOffset = res.offset + res.ordenes.length;
+        $('#oc-ordenes-paginacion').html(botonCargarMasOC(provOrdenesOffset, provOrdenesTotal, provOrdenesLimit));
+        $('#oc-ordenes-container').show();
+      } else if(!append) {
         tbody = '<tr><td colspan="5" class="text-center text-muted py-3">Sin órdenes de compra registradas</td></tr>';
+        $('#oc-ordenes-tbody').html(tbody);
+        $('#oc-ordenes-container').show();
       }
-      $('#oc-ordenes-tbody').html(tbody);
-      $('#oc-ordenes-container').show();
+    });
+  }
+
+  window.cargarMasOrdenesCompra = function() {
+    cargarOrdenesOC(provOrdenesActualId, true);
+  };
+
+  window.verDetalleOrdenCompra = function(ordenId) {
+    $('#modalDetalleOrdenCompra').modal('show');
+    $('#det-oc-loading').show();
+    $('#det-oc-content').hide();
+    $('#det-oc-error').hide();
+    $('#det-oc-detalles').html('');
+    $('#det-oc-btn-pdf').attr('href', '<?=base_url();?>compras/OrdenesCompra/generar_pdf/' + ordenId);
+
+    $.post('<?=base_url();?>compras/OrdenesCompra/get_orden_ajax', {
+      id: ordenId,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      res = JSON.parse(res);
+      $('#det-oc-loading').hide();
+      if(!res.success || !res.orden) {
+        $('#det-oc-error').text('No se pudo cargar el detalle de la orden.').show();
+        return;
+      }
+      var oc = res.orden;
+      $('#det-oc-folio').text(oc.folio || '-');
+      $('#det-oc-proveedor').text(oc.razon_social || '-');
+      $('#det-oc-fecha').text(formatearFechaMX(oc.fecha_orden));
+      $('#det-oc-estatus').html(renderBadgeOC(oc.estatus));
+      $('#det-oc-total').html('<strong>$' + parseFloat(oc.total || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</strong>');
+
+      var detHtml = '';
+      if(oc.detalles && oc.detalles.length) {
+        oc.detalles.forEach(function(d) {
+          var subtotal = (parseFloat(d.cantidad_solicitada || d.cantidad || 0) * parseFloat(d.precio_unitario || 0));
+          detHtml += '<tr>';
+          detHtml += '<td>' + (d.nombre_tecnico || d.nombre || '-') + '</td>';
+          detHtml += '<td><small class="text-muted">' + (d.codigo || '-') + '</small></td>';
+          detHtml += '<td class="text-center">' + parseFloat(d.cantidad_solicitada || d.cantidad || 0).toLocaleString('es-MX') + '</td>';
+          detHtml += '<td class="text-end">$' + parseFloat(d.precio_unitario || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
+          detHtml += '<td class="text-end">$' + subtotal.toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
+          detHtml += '</tr>';
+        });
+      } else {
+        detHtml = '<tr><td colspan="5" class="text-center text-muted">Sin insumos registrados</td></tr>';
+      }
+      $('#det-oc-detalles').html(detHtml);
+      $('#det-oc-content').show();
     });
   };
 

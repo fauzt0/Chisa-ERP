@@ -370,6 +370,26 @@ class OrdenesCompraModel extends MY_Model {
         $this->db->order_by('fecha_orden', 'DESC');
         return $this->db->get($this->tableName)->result();
     }
+
+    /**
+     * Historial paginado de órdenes de compra de un proveedor
+     */
+    public function get_historial_ordenes($proveedor_id, $limit = 10, $offset = 0) {
+        $this->db->select('id, folio, fecha_orden, total, estatus');
+        $this->db->from($this->tableName);
+        $this->db->where('proveedor_id', $proveedor_id);
+        $this->db->order_by('fecha_orden', 'DESC');
+        $this->db->limit($limit, $offset);
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Cuenta el historial de órdenes de compra de un proveedor
+     */
+    public function count_historial_ordenes($proveedor_id) {
+        $this->db->where('proveedor_id', $proveedor_id);
+        return $this->db->count_all_results($this->tableName);
+    }
     
     /**
      * Obtiene estadísticas de órdenes

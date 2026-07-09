@@ -267,4 +267,85 @@ class Clientes extends MY_Controller {
         $ordenes = $this->ClientesModel->get_ordenes_cliente($cliente_id);
         echo json_encode(['success' => true, 'ordenes' => $ordenes]);
     }
+
+    /**
+     * Historial paginado de órdenes de venta de un cliente (AJAX)
+     */
+    public function get_historial_ventas_ajax($cliente_id = 0, $limit = 10, $offset = 0) {
+        $cliente_id = (int) ($cliente_id ?: $this->input->post('cliente_id'));
+        $limit = (int) ($limit ?: $this->input->post('limit') ?: 10);
+        $offset = (int) ($offset ?: $this->input->post('offset') ?: 0);
+
+        if(!$cliente_id) {
+            echo json_encode(['success' => false, 'message' => 'Cliente requerido']);
+            return;
+        }
+
+        $ordenes = $this->ClientesModel->get_historial_ventas($cliente_id, $limit, $offset);
+        $total = $this->ClientesModel->count_historial_ventas($cliente_id);
+
+        echo json_encode([
+            'success' => true,
+            'ordenes' => $ordenes,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset
+        ]);
+    }
+
+    /**
+     * Historial paginado de cotizaciones de un cliente (AJAX)
+     */
+    public function get_historial_cotizaciones_ajax($cliente_id = 0, $limit = 10, $offset = 0) {
+        $cliente_id = (int) ($cliente_id ?: $this->input->post('cliente_id'));
+        $limit = (int) ($limit ?: $this->input->post('limit') ?: 10);
+        $offset = (int) ($offset ?: $this->input->post('offset') ?: 0);
+
+        if(!$cliente_id) {
+            echo json_encode(['success' => false, 'message' => 'Cliente requerido']);
+            return;
+        }
+
+        $cotizaciones = $this->ClientesModel->get_historial_cotizaciones($cliente_id, $limit, $offset);
+        $total = $this->ClientesModel->count_historial_cotizaciones($cliente_id);
+
+        echo json_encode([
+            'success' => true,
+            'cotizaciones' => $cotizaciones,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset
+        ]);
+    }
+
+    /**
+     * Convierte una cotización en orden de venta (AJAX)
+     */
+    public function convertir_cotizacion_ajax() {
+        $orden_id = $this->input->post('orden_id');
+        if(!$orden_id) {
+            echo json_encode(['success' => false, 'message' => 'Orden requerida']);
+            return;
+        }
+
+        $this->load->model('Ventas/VentasModel');
+        $orden = $this->VentasModel->get_orden_completa($orden_id);
+
+        if(!$orden) {
+            echo json_encode(['success' => false, 'message' => 'Orden no encontrada']);
+            return;
+        }
+
+        if($orden->estatus != 'Cotización') {
+            echo json_encode(['success' => false, 'message' => 'La orden no está en estatus Cotización']);
+            return;
+        }
+
+        $this->VentasModel->confirmar_orden($orden_id);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Cotización convertida a orden de venta correctamente'
+        ]);
+    }
 }

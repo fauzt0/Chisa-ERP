@@ -186,6 +186,8 @@ $stats = $response['stats'] ?? [];
 <!-- Select2 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+<!-- SweetAlert2 (selector de template de recibo tras venta) -->
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 
 <style>
 .select2-container--bootstrap-5 .select2-selection {
@@ -795,6 +797,7 @@ function usarFormulacionActual() {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script>
 // Inicializar Select2 al cargar
 function initSelect2() {
@@ -1481,10 +1484,30 @@ function procesarVenta(estatus) {
       // Limpiar ticket
       cancelarTicket();
       
-      // Mostrar opción de imprimir
-      if(confirm('¿Deseas imprimir el recibo?')) {
-        window.open('<?=base_url();?>ventas/Pos/imprimir_recibo/' + result.orden_id, '_blank');
-      }
+      // Mostrar selector de template de recibo
+      Swal.fire({
+        title: '¡Venta registrada!',
+        html: `<p class="mb-2">Folio: <strong>${result.folio}</strong></p>
+               <p class="mb-3 text-muted">Selecciona el diseño del recibo:</p>
+               <div class="d-flex justify-content-center gap-2">
+                 <a href="<?=base_url()?>ventas/Pos/imprimir_recibo_template/${result.orden_id}/1" target="_blank"
+                    class="btn btn-outline-dark btn-sm swal2-styled" style="background:none; color:#333; border:1px solid #333; padding:6px 12px;">
+                   <i class="fas fa-file-invoice me-1"></i>Factura
+                 </a>
+                 <a href="<?=base_url()?>ventas/Pos/imprimir_recibo_template/${result.orden_id}/2" target="_blank"
+                    class="btn btn-outline-primary btn-sm swal2-styled" style="background:none; color:#1a237e; border:1px solid #1a237e; padding:6px 12px;">
+                   <i class="fas fa-file-alt me-1"></i>Remisión
+                 </a>
+                 <a href="<?=base_url()?>ventas/Pos/imprimir_recibo_template/${result.orden_id}/3" target="_blank"
+                    class="btn btn-outline-success btn-sm swal2-styled" style="background:none; color:#1b5e20; border:1px solid #1b5e20; padding:6px 12px;">
+                   <i class="fas fa-star me-1"></i>Moderno
+                 </a>
+               </div>`,
+        icon: 'success',
+        showConfirmButton: false,
+        showCloseButton: true,
+        footer: '<a href="#" onclick="Swal.close();" class="text-muted small">Cerrar sin imprimir</a>'
+      });
     }
   });
 }

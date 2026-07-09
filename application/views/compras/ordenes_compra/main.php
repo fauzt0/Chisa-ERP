@@ -97,6 +97,51 @@
     </div>
   </div>
 
+  </div>
+
+  <!-- Pre-órdenes pendientes de autorización -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card border-warning">
+        <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-clipboard-list text-warning me-1"></i> Pre-órdenes Pendientes de Autorización
+            <span class="badge bg-warning text-dark ms-2" id="badgeConteoPreordenes">0</span>
+          </h5>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cargarPreordenesPendientes()" title="Actualizar lista">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0" id="tablaPreordenes">
+              <thead class="table-light">
+                <tr>
+                  <th>Folio</th>
+                  <th>Insumo</th>
+                  <th>Cantidad</th>
+                  <th>Proveedor sugerido</th>
+                  <th>Fecha solicitud</th>
+                  <th>Notas</th>
+                  <?php if (tiene_permiso('compras_autorizar_preordenes')): ?>
+                  <th class="text-end" style="min-width:140px;">Acciones</th>
+                  <?php endif; ?>
+                </tr>
+              </thead>
+              <tbody id="tbodyPreordenes">
+                <tr id="filaPreordenesCargando">
+                  <td colspan="<?php echo tiene_permiso('compras_autorizar_preordenes') ? '7' : '6'; ?>" class="text-center text-muted py-4">
+                    <i class="fas fa-spinner fa-spin me-1"></i> Cargando pre-órdenes...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Tabla de órdenes -->
   <div class="row">
     <div class="col-12">
@@ -371,6 +416,65 @@
   </div>
 </div>
 
+<!-- Modal: Autorizar pre-orden -->
+<div class="modal fade" id="modalAutorizarPreorden" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="fas fa-check-circle me-1"></i> Autorizar pre-orden</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="autorizar_preorden_id">
+        <p class="mb-2"><strong id="autorizar_insumo_label">—</strong></p>
+        <div class="mb-3">
+          <label class="form-label" for="autorizar_cantidad">Cantidad aprobada</label>
+          <input type="number" class="form-control" id="autorizar_cantidad" step="0.0001" min="0.0001">
+          <small class="text-muted">Unidad: <span id="autorizar_unidad">—</span></small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="autorizar_proveedor_id">Proveedor</label>
+          <select class="form-select" id="autorizar_proveedor_id">
+            <option value="">— Seleccionar —</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" id="btnConfirmarAutorizarPreorden" onclick="confirmarAutorizarPreorden()">
+          <i class="fas fa-check me-1"></i> Autorizar y crear OC
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Rechazar pre-orden -->
+<div class="modal fade" id="modalRechazarPreorden" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fas fa-times-circle me-1"></i> Rechazar pre-orden</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="rechazar_preorden_id">
+        <p class="text-muted small mb-2">Pre-orden: <strong id="rechazar_folio_label">—</strong></p>
+        <div class="mb-3">
+          <label class="form-label" for="rechazar_motivo">Motivo del rechazo <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="rechazar_motivo" rows="3" required placeholder="Indique el motivo del rechazo"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarRechazarPreorden" onclick="confirmarRechazarPreorden()">
+          <i class="fas fa-ban me-1"></i> Rechazar pre-orden
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function() {
   'use strict';
@@ -379,10 +483,15 @@
   let ordenEditando = null;
   let detallesTemporales = []; // Para órdenes nuevas
   let insumosProveedor = [];
+  const PUEDE_AUTORIZAR_PREORDENES = <?php echo tiene_permiso('compras_autorizar_preordenes') ? 'true' : 'false'; ?>;
+  const COLSPAN_PREORDENES = PUEDE_AUTORIZAR_PREORDENES ? 7 : 6;
+  let preordenesPendientes = [];
+  let procesandoPreorden = false;
 
   function initOrdenesCompra() {
     inicializarDataTable();
     cargarProveedoresSelect();
+    cargarPreordenesPendientes();
     
     // Filtros
     $('#filtroEstatus').on('change', function() {
@@ -444,9 +553,227 @@
           html += `<option value="${prov.id}">${prov.text}</option>`;
         });
         $('#orden_proveedor_id').html(html);
+        $('#autorizar_proveedor_id').html(html);
       }
     });
   }
+
+  function formatearFechaPreorden(fecha) {
+    if (!fecha) return '—';
+    try {
+      return new Date(fecha).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+      return fecha;
+    }
+  }
+
+  window.cargarPreordenesPendientes = function() {
+    $('#tbodyPreordenes').html(
+      '<tr><td colspan="' + COLSPAN_PREORDENES + '" class="text-center text-muted py-4">' +
+      '<i class="fas fa-spinner fa-spin me-1"></i> Cargando pre-órdenes...</td></tr>'
+    );
+
+    $.post('<?=base_url();?>compras/OrdenesCompra/lista_preordenes_ajax', {
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) {
+        $('#tbodyPreordenes').html('<tr><td colspan="' + COLSPAN_PREORDENES + '" class="text-center text-danger py-3">Error al leer la respuesta.</td></tr>');
+        return;
+      }
+      if (!result.success) {
+        $('#tbodyPreordenes').html('<tr><td colspan="' + COLSPAN_PREORDENES + '" class="text-center text-danger py-3">' + (result.message || 'Error al cargar') + '</td></tr>');
+        return;
+      }
+      preordenesPendientes = result.preordenes || [];
+      renderizarPreordenesPendientes();
+    }).fail(function() {
+      $('#tbodyPreordenes').html('<tr><td colspan="' + COLSPAN_PREORDENES + '" class="text-center text-danger py-3">Error de conexión.</td></tr>');
+    });
+  };
+
+  function renderizarPreordenesPendientes() {
+    $('#badgeConteoPreordenes').text(preordenesPendientes.length);
+
+    if (preordenesPendientes.length === 0) {
+      $('#tbodyPreordenes').html(
+        '<tr><td colspan="' + COLSPAN_PREORDENES + '" class="text-center text-muted py-4">' +
+        '<i class="fas fa-check-circle text-success me-1"></i> No hay pre-órdenes pendientes de autorización.</td></tr>'
+      );
+      return;
+    }
+
+    let html = '';
+    preordenesPendientes.forEach(function(p) {
+      const cantidad = parseFloat(p.cantidad_solicitada || 0).toFixed(4);
+      const insumo = '<strong>' + (p.insumo_codigo || '') + '</strong> — ' + (p.insumo_nombre || '');
+      const proveedor = p.proveedor_sugerido_nombre || '<span class="text-muted">Sin sugerencia</span>';
+      const notas = p.notas ? $('<div>').text(p.notas).html() : '<span class="text-muted">—</span>';
+
+      html += '<tr data-preorden-id="' + p.id + '">';
+      html += '<td><span class="badge bg-secondary">' + (p.folio || p.id) + '</span></td>';
+      html += '<td>' + insumo + '</td>';
+      html += '<td>' + cantidad + ' <small class="text-muted">' + (p.unidad || '') + '</small></td>';
+      html += '<td>' + proveedor + '</td>';
+      html += '<td class="small">' + formatearFechaPreorden(p.fecha_solicitud) + '</td>';
+      html += '<td class="small">' + notas + '</td>';
+
+      if (PUEDE_AUTORIZAR_PREORDENES) {
+        html += '<td class="text-end text-nowrap">';
+        html += '<button type="button" class="btn btn-sm btn-success me-1" onclick="abrirModalAutorizarPreorden(' + p.id + ')" title="Autorizar">';
+        html += '<i class="fas fa-check"></i></button>';
+        html += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="abrirModalRechazarPreorden(' + p.id + ')" title="Rechazar">';
+        html += '<i class="fas fa-times"></i></button>';
+        html += '</td>';
+      }
+      html += '</tr>';
+    });
+    $('#tbodyPreordenes').html(html);
+  }
+
+  window.abrirModalAutorizarPreorden = function(id) {
+    const p = preordenesPendientes.find(function(x) { return String(x.id) === String(id); });
+    if (!p) return;
+
+    $('#autorizar_preorden_id').val(p.id);
+    $('#autorizar_insumo_label').text((p.insumo_codigo || '') + ' — ' + (p.insumo_nombre || ''));
+    $('#autorizar_cantidad').val(parseFloat(p.cantidad_solicitada || 0));
+    $('#autorizar_unidad').text(p.unidad || '—');
+
+    if (p.proveedor_sugerido_id) {
+      $('#autorizar_proveedor_id').val(p.proveedor_sugerido_id);
+    } else {
+      $('#autorizar_proveedor_id').val('');
+    }
+
+    const modalEl = document.getElementById('modalAutorizarPreorden');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+  };
+
+  window.confirmarAutorizarPreorden = function() {
+    if (procesandoPreorden) return;
+
+    const id = $('#autorizar_preorden_id').val();
+    const cantidad = parseFloat($('#autorizar_cantidad').val());
+    if (!id || !cantidad || cantidad <= 0) {
+      showErpToast({ type: 'warning', module: 'Compras', title: 'Datos incompletos', message: 'Indique una cantidad aprobada válida.' });
+      return;
+    }
+
+    procesandoPreorden = true;
+    $('#btnConfirmarAutorizarPreorden').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Procesando...');
+
+    const payload = {
+      id: id,
+      cantidad_aprobada: cantidad,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    };
+    const proveedorId = $('#autorizar_proveedor_id').val();
+    if (proveedorId) payload.proveedor_id = proveedorId;
+
+    $.post('<?=base_url();?>compras/OrdenesCompra/autorizar_preorden_ajax', payload, function(result) {
+      procesandoPreorden = false;
+      $('#btnConfirmarAutorizarPreorden').prop('disabled', false).html('<i class="fas fa-check me-1"></i> Autorizar y crear OC');
+
+      try { result = JSON.parse(result); } catch (e) {
+        showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: 'Respuesta inválida del servidor.' });
+        return;
+      }
+
+      showErpToast({
+        type: result.success ? 'success' : 'danger',
+        module: 'Compras',
+        title: result.success ? 'Pre-orden autorizada' : 'Error al autorizar',
+        message: result.message || (result.success ? 'Se generó la orden de compra.' : 'No se pudo autorizar.')
+      });
+
+      if (result.success) {
+        const modalEl = document.getElementById('modalAutorizarPreorden');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+          bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+        }
+        preordenesPendientes = preordenesPendientes.filter(function(x) { return String(x.id) !== String(id); });
+        renderizarPreordenesPendientes();
+        if (typeof tabla !== 'undefined' && tabla) {
+          tabla.ajax.reload(null, false);
+        }
+        if (result.orden_compra_id && typeof verOrden === 'function') {
+          setTimeout(function() { verOrden(result.orden_compra_id); }, 600);
+        }
+      }
+    }).fail(function() {
+      procesandoPreorden = false;
+      $('#btnConfirmarAutorizarPreorden').prop('disabled', false).html('<i class="fas fa-check me-1"></i> Autorizar y crear OC');
+      showErpToast({ type: 'danger', module: 'Compras', title: 'Error de conexión', message: 'No se pudo contactar al servidor.' });
+    });
+  };
+
+  window.abrirModalRechazarPreorden = function(id) {
+    const p = preordenesPendientes.find(function(x) { return String(x.id) === String(id); });
+    if (!p) return;
+
+    $('#rechazar_preorden_id').val(p.id);
+    $('#rechazar_folio_label').text(p.folio || ('#' + p.id));
+    $('#rechazar_motivo').val('');
+
+    const modalEl = document.getElementById('modalRechazarPreorden');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+  };
+
+  window.confirmarRechazarPreorden = function() {
+    if (procesandoPreorden) return;
+
+    const id = $('#rechazar_preorden_id').val();
+    const motivo = ($('#rechazar_motivo').val() || '').trim();
+    if (!id || !motivo) {
+      showErpToast({ type: 'warning', module: 'Compras', title: 'Motivo requerido', message: 'Debe indicar el motivo del rechazo.' });
+      $('#rechazar_motivo').focus();
+      return;
+    }
+
+    procesandoPreorden = true;
+    $('#btnConfirmarRechazarPreorden').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Procesando...');
+
+    $.post('<?=base_url();?>compras/OrdenesCompra/rechazar_preorden_ajax', {
+      id: id,
+      motivo: motivo,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      procesandoPreorden = false;
+      $('#btnConfirmarRechazarPreorden').prop('disabled', false).html('<i class="fas fa-ban me-1"></i> Rechazar pre-orden');
+
+      try { result = JSON.parse(result); } catch (e) {
+        showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: 'Respuesta inválida del servidor.' });
+        return;
+      }
+
+      showErpToast({
+        type: result.success ? 'success' : 'danger',
+        module: 'Compras',
+        title: result.success ? 'Pre-orden rechazada' : 'Error al rechazar',
+        message: result.message || ''
+      });
+
+      if (result.success) {
+        const modalEl = document.getElementById('modalRechazarPreorden');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+          bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+        }
+        preordenesPendientes = preordenesPendientes.filter(function(x) { return String(x.id) !== String(id); });
+        renderizarPreordenesPendientes();
+      }
+    }).fail(function() {
+      procesandoPreorden = false;
+      $('#btnConfirmarRechazarPreorden').prop('disabled', false).html('<i class="fas fa-ban me-1"></i> Rechazar pre-orden');
+      showErpToast({ type: 'danger', module: 'Compras', title: 'Error de conexión', message: 'No se pudo contactar al servidor.' });
+    });
+  };
 
   window.cargarInsumosProveedor = function() {
     const proveedorId = $('#orden_proveedor_id').val();

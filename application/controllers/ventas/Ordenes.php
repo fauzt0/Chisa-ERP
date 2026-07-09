@@ -200,9 +200,21 @@ class Ordenes extends MY_Controller {
             }
             
             $acciones .= '
-            <a href="'.base_url().'ventas/Pos/imprimir_recibo/'.$orden->id.'" target="_blank" class="btn btn-sm btn-secondary" title="Imprimir">
+            <div class="btn-group btn-group-sm">
+              <a href="'.base_url().'ventas/Pos/imprimir_recibo_template/'.$orden->id.'/1" target="_blank" class="btn btn-outline-info btn-sm" title="Imprimir Recibo">
                 <i class="fas fa-print"></i>
-            </a>';
+              </a>
+              <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="'.base_url().'ventas/Pos/imprimir_recibo_template/'.$orden->id.'/1" target="_blank">
+                  <i class="fas fa-file-invoice me-1"></i> Formato Factura</a></li>
+                <li><a class="dropdown-item" href="'.base_url().'ventas/Pos/imprimir_recibo_template/'.$orden->id.'/2" target="_blank">
+                  <i class="fas fa-file-alt me-1"></i> Nota de Remisión</a></li>
+                <li><a class="dropdown-item" href="'.base_url().'ventas/Pos/imprimir_recibo_template/'.$orden->id.'/3" target="_blank">
+                  <i class="fas fa-star me-1"></i> Formato Moderno</a></li>
+              </ul>
+            </div>';
             
             // Verificar si tiene factura simulada usando el mapa pre-cargado
             if(isset($facturas_map[$orden->id])) {

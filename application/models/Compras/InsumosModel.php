@@ -324,4 +324,24 @@ class InsumosModel extends MY_Model {
         $like = '%' . $termino . '%';
         return $this->db->query($sql, [$like, $like, $like, $like])->result();
     }
+
+    /**
+     * Obtiene los proveedores asociados a un insumo, ordenados por proveedor
+     * principal primero y luego por precio de compra ascendente.
+     *
+     * NOTA: la tabla real de relación es `proveedor_insumo` (singular), NO
+     * `proveedores_insumos`. Corregido en Iteración 4 (el método existía con
+     * el nombre de tabla equivocado y nunca había sido ejecutado con éxito).
+     */
+    public function get_proveedores_por_insumo($insumo_id) {
+        $this->db->select('p.id, p.razon_social, pi.precio_compra, pi.tiempo_entrega_dias, pi.cantidad_minima, pi.es_proveedor_principal');
+        $this->db->from('proveedores p');
+        $this->db->join('proveedor_insumo pi', 'pi.proveedor_id = p.id', 'inner');
+        $this->db->where('pi.insumo_id', $insumo_id);
+        $this->db->where('pi.estatus', 'Activo');
+        $this->db->where('p.estatus', 'Activo');
+        $this->db->order_by('pi.es_proveedor_principal', 'DESC');
+        $this->db->order_by('pi.precio_compra', 'ASC');
+        return $this->db->get()->result();
+    }
 }

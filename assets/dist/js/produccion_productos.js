@@ -1587,17 +1587,24 @@ function initCalculadoraExcel() {
 // Agregar inicialización al cargar la página (después de jQuery)
 // initCalculadoraExcel se llama desde _initPaginaProductos()
 
+let insumosFaltantesActuales = [];
+let generandoPreorden = false;
+
 function simularProduccion() {
   let form_id = $('#calc_formulacion_id').val();
   let cubetas = $('#calc_cubetas').val();
   let m2 = $('#calc_m2').val();
 
   if(!form_id) {
-    toastr.warning('Seleccione una formulación');
+    if (typeof showErpToast === 'function') {
+      showErpToast({type:'warning', module:'Producción', title:'Formulación requerida', message:'Seleccione una formulación para calcular.'});
+    }
     return;
   }
 
   $('#tbodyExcelSimulador').html('<tr><td colspan="7" class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Calculando...</td></tr>');
+  $('#bloqueInsumosFaltantes').hide();
+  $('#erroresPreorden').hide().empty();
 
   $.post(BASE_URL+'produccion/Productos/calcular_insumos_ajax', {
     'formulacion_id': form_id,
@@ -1610,8 +1617,113 @@ function simularProduccion() {
     if(result.success) {
       renderizarTablaExcel(result.datos);
     } else {
-      toastr.error('Error al calcular insumos');
+      if (typeof showErpToast === 'function') {
+        showErpToast({type:'danger', module:'Producción', title:'Error al calcular', message: result.message || 'No se pudieron calcular los insumos.'});
+      }
     }
+  });
+}
+
+function badgesInsumoComponente(c) {
+  if (c.tipo_componente !== 'Insumo') return '';
+  let html = '';
+  if (c.insumo_faltante === true) {
+    let unidad = c.insumo_unidad_medida || '';
+    let faltante = parseFloat(c.cantidad_faltante || 0).toFixed(4);
+    html += ` <span class="badge bg-danger ms-1" style="font-size:0.65rem;" title="Faltan ${faltante} ${unidad}">Falta stock</span>`;
+  }
+  if (c.requiere_revision_manual === true) {
+    let motivo = (c.motivo_revision || 'Revisar unidad de medida').replace(/"/g, '&quot;');
+    html += ` <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;" title="${motivo}">Revisar unidad</span>`;
+  }
+  return html;
+}
+
+function actualizarBloqueInsumosFaltantes(datos) {
+  insumosFaltantesActuales = datos.insumos_faltantes || [];
+
+  if (!datos.hay_insumos_faltantes || insumosFaltantesActuales.length === 0) {
+    $('#bloqueInsumosFaltantes').hide();
+    return;
+  }
+
+  let listaHtml = '';
+  insumosFaltantesActuales.forEach(function(item) {
+    let faltante = parseFloat(item.cantidad_faltante || 0).toFixed(4);
+    listaHtml += `<li><strong>${item.insumo_codigo}</strong> — ${item.insumo_nombre}: falta <strong>${faltante}</strong> ${item.unidad_insumo || ''}</li>`;
+  });
+  $('#listaInsumosFaltantes').html(listaHtml);
+  $('#erroresPreorden').hide().empty();
+
+  if (typeof PUEDE_GENERAR_PREORDEN !== 'undefined' && PUEDE_GENERAR_PREORDEN) {
+    $('#btnGenerarPreorden').prop('disabled', false).html('<i class="fas fa-shopping-cart me-1"></i> Generar pre-orden(es) de compra');
+  }
+  $('#bloqueInsumosFaltantes').show();
+}
+
+function abrirModalGenerarPreorden() {
+  if (!insumosFaltantesActuales.length) return;
+  $('#preorden_notas').val('');
+  const modalEl = document.getElementById('modalGenerarPreorden');
+  if (modalEl && typeof bootstrap !== 'undefined') {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+}
+
+function confirmarGenerarPreorden() {
+  if (generandoPreorden || !insumosFaltantesActuales.length) return;
+
+  let form_id = $('#calc_formulacion_id').val();
+  if (!form_id) return;
+
+  generandoPreorden = true;
+  $('#btnConfirmarGenerarPreorden').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Generando...');
+  $('#btnGenerarPreorden').prop('disabled', true);
+
+  $.post(BASE_URL + 'produccion/Productos/generar_preorden_ajax', {
+    formulacion_id: form_id,
+    insumos_faltantes: JSON.stringify(insumosFaltantesActuales),
+    notas: $('#preorden_notas').val(),
+    peticion: 'ajax',
+    [CSRF_TOKEN_NAME]: CSRF_HASH
+  }, function(res) {
+    generandoPreorden = false;
+    $('#btnConfirmarGenerarPreorden').prop('disabled', false).html('<i class="fas fa-check me-1"></i> Confirmar y generar');
+
+    let result;
+    try { result = JSON.parse(res); } catch(e) {
+      showErpToast({type:'danger', module:'Compras', title:'Error', message:'Respuesta inválida del servidor.'});
+      $('#btnGenerarPreorden').prop('disabled', false);
+      return;
+    }
+
+    let msg = result.message || '';
+    if (result.errores && result.errores.length) {
+      msg += (msg ? ' ' : '') + result.errores.join('; ');
+      $('#erroresPreorden').html('<strong>Detalle:</strong> ' + result.errores.join('<br>')).show();
+    }
+
+    showErpToast({
+      type: result.success ? 'success' : 'danger',
+      module: 'Compras',
+      title: result.success ? 'Pre-orden(es) generada(s)' : 'Error al generar pre-orden',
+      message: msg || (result.success ? 'Las pre-órdenes quedaron pendientes de autorización.' : 'No se pudo completar la operación.')
+    });
+
+    if (result.success) {
+      const modalEl = document.getElementById('modalGenerarPreorden');
+      if (modalEl && typeof bootstrap !== 'undefined') {
+        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+      }
+      $('#btnGenerarPreorden').prop('disabled', true).html('<i class="fas fa-check me-1"></i> Pre-orden(es) enviada(s)');
+    } else {
+      $('#btnGenerarPreorden').prop('disabled', false);
+    }
+  }).fail(function() {
+    generandoPreorden = false;
+    $('#btnConfirmarGenerarPreorden').prop('disabled', false).html('<i class="fas fa-check me-1"></i> Confirmar y generar');
+    $('#btnGenerarPreorden').prop('disabled', false);
+    showErpToast({type:'danger', module:'Compras', title:'Error de conexión', message:'No se pudo contactar al servidor.'});
   });
 }
 
@@ -1676,7 +1788,7 @@ function renderizarTablaExcel(datos) {
         <tr data-id="${c.id}" class="fila-componente">
           <td class="text-muted small ps-3">${hayGrupos ? '' : '&mdash;'}</td>
           <td>
-            <strong>${nombre}</strong>
+            <strong>${nombre}</strong>${badgesInsumoComponente(c)}
             ${c.observaciones ? `<br><small class="text-muted fst-italic">${c.observaciones}</small>` : ''}
           </td>
           <td class="text-center celda-edit celda-pct" data-val="${pct}">
@@ -1723,6 +1835,8 @@ function renderizarTablaExcel(datos) {
   if (PUEDE_VER_COSTOS) {
     $('#accionesEdicionExcel').show();
   }
+
+  actualizarBloqueInsumosFaltantes(datos);
 }
 
 // Edicion Inline (Concepto)
@@ -1899,7 +2013,7 @@ function guardarFormulacionExcel(esNueva) {
   const producto_id    = $('#calc_producto_id').val();
 
   if (!formulacion_id || !producto_id) {
-    toastr.warning('Seleccione producto y formulación primero');
+    showErpToast({type:'warning', module:'Producción', title:'Datos incompletos', message:'Seleccione producto y formulación primero.'});
     return;
   }
 
@@ -1916,7 +2030,7 @@ function guardarFormulacionExcel(esNueva) {
   });
 
   if (componentes.length === 0) {
-    toastr.warning('No hay componentes para guardar');
+    showErpToast({type:'warning', module:'Producción', title:'Sin componentes', message:'No hay componentes para guardar.'});
     return;
   }
 
@@ -1938,7 +2052,7 @@ function guardarFormulacionExcel(esNueva) {
     btnActual.prop('disabled', false);
 
     if (result.success) {
-      toastr.success(result.message || (esNueva ? 'Nueva versión guardada' : 'Formulación actualizada'));
+      showErpToast({type:'success', module:'Producción', title:'Guardado', message: result.message || (esNueva ? 'Nueva versión guardada.' : 'Formulación actualizada.')});
 
       // Si es nueva versión, seleccionarla en el dropdown
       if (esNueva && result.nueva_formulacion_id) {
@@ -1951,11 +2065,11 @@ function guardarFormulacionExcel(esNueva) {
         cancelarEdicionInline();
       }
     } else {
-      toastr.error(result.message || 'Error al guardar');
+      showErpToast({type:'danger', module:'Producción', title:'Error al guardar', message: result.message || 'No se pudo guardar la formulación.'});
     }
   }).fail(function() {
     btnNueva.prop('disabled', false);
     btnActual.prop('disabled', false);
-    toastr.error('Error de conexión al guardar');
+    showErpToast({type:'danger', module:'Producción', title:'Error de conexión', message:'No se pudo contactar al servidor.'});
   });
 }

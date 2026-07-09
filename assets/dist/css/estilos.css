@@ -223,3 +223,23 @@
 #erp-main-footer {
     zoom: var(--erp-font-zoom, 1);
 }
+/* =====================================================
+   ERP TOAST NOTIFICATIONS
+   ===================================================== */
+#erp-toast-container .toast {
+    border-radius: 10px;
+    border-left: 4px solid transparent;
+    animation: erpToastSlide 0.3s ease-out;
+}
+#erp-toast-container .toast .toast-body {
+    font-size: 0.875rem;
+}
+@keyframes erpToastSlide {
+    from { transform: translateX(110%); opacity: 0; }
+    to   { transform: translateX(0);   opacity: 1; }
+}
+/* Colores de borde izquierdo según tipo */
+#erp-toast-container .toast[data-erp-type="danger"]  { border-left-color: #dc3545; }
+#erp-toast-container .toast[data-erp-type="warning"] { border-left-color: #e6a817; }
+#erp-toast-container .toast[data-erp-type="info"]    { border-left-color: #0d9aaf; }
+#erp-toast-container .toast[data-erp-type="success"] { border-left-color: #198754; }

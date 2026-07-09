@@ -16,7 +16,7 @@ $e = $response['empresa'] ?? (object)[];
           <h5 class="card-title text-white mb-0"><i class="fas fa-building"></i> Información fiscal y de contacto</h5>
         </div>
         <div class="card-body">
-          <p class="text-muted small">Estos datos se utilizan en documentos del sistema (órdenes de compra, contratos, etc.).</p>
+          <p class="text-muted small">Estos datos se utilizan en documentos del sistema (recibos de venta, órdenes de compra, contratos, etc.). El logotipo se configura en la vista previa de la derecha.</p>
 
           <form id="formEmpresa">
             <h6 class="text-primary border-bottom pb-2 mb-3">Identificación</h6>
@@ -102,7 +102,14 @@ $e = $response['empresa'] ?? (object)[];
         </div>
         <div class="card-body text-center">
           <?php $logo = !empty($e->logo) ? base_url($e->logo) : base_url('assets/dist/img/brands/chisa_recubrimientos_logo.jpg'); ?>
-          <img src="<?=$logo?>" alt="Logo" class="img-fluid mb-3" style="max-height: 100px;">
+          <img id="previewLogoEmpresa" src="<?=$logo?>" alt="Logo" class="img-fluid mb-3" style="max-height: 100px;">
+          <div class="mb-3">
+            <label class="form-label small text-muted">Logotipo para documentos (recibos, órdenes de compra, etc.)</label>
+            <input type="file" class="form-control form-control-sm" id="inputLogoEmpresa" accept="image/*">
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="subirLogoEmpresa()">
+              <i class="fas fa-upload"></i> Subir logotipo
+            </button>
+          </div>
           <h5 class="mb-1"><?=htmlspecialchars($e->razon_social ?? 'Chisa Recubrimientos', ENT_QUOTES, 'UTF-8')?></h5>
           <?php
             $lineas_previa = [];
@@ -167,4 +174,45 @@ function guardarEmpresa() {
     if (res.success) location.reload();
   });
 }
+
+function subirLogoEmpresa() {
+  var input = document.getElementById('inputLogoEmpresa');
+  if (!input.files || !input.files[0]) {
+    alert('Selecciona una imagen primero.');
+    return;
+  }
+
+  var formData = new FormData();
+  formData.append('logo', input.files[0]);
+  formData.append('<?=$this->security->get_csrf_token_name()?>', '<?=$this->security->get_csrf_hash()?>');
+
+  $.ajax({
+    url: '<?=base_url('usuarios/GestionUsuarios/subir_logo_empresa_ajax')?>',
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    success: function(res) {
+      res = typeof res === 'string' ? JSON.parse(res) : res;
+      if (typeof notifyShow === 'function') {
+        notifyShow(res.message, res.success ? 'success' : 'danger');
+      } else {
+        alert(res.message);
+      }
+      if (res.success && res.logo_url) {
+        $('#previewLogoEmpresa').attr('src', res.logo_url);
+        input.value = '';
+      }
+    },
+    error: function() {
+      alert('Error al subir el logotipo.');
+    }
+  });
+}
+
+document.getElementById('inputLogoEmpresa').addEventListener('change', function() {
+  if (this.files && this.files[0]) {
+    $('#previewLogoEmpresa').attr('src', URL.createObjectURL(this.files[0]));
+  }
+});
 </script>

@@ -13,6 +13,8 @@ class OrdenesCompra extends MY_Controller {
         $this->load->model('Compras/OrdenesCompraModel');
         $this->load->model('Compras/ProveedoresModel');
         $this->load->model('Compras/InsumosModel');
+        $this->load->model('Compras/PreordenesModel');
+        $this->load->helper('permissions');
     }
     
     /**
@@ -409,5 +411,82 @@ class OrdenesCompra extends MY_Controller {
         }
         
         echo json_encode(['success' => true, 'proveedores' => $opciones]);
+    }
+
+    // =====================================================
+    // PRE-ÓRDENES (Iteración 4: Producción → Compras)
+    // =====================================================
+
+    /**
+     * Lista pre-órdenes, opcionalmente filtradas por estatus (AJAX)
+     */
+    public function lista_preordenes_ajax() {
+        $estatus = $this->input->post('estatus') ?: 'Pendiente';
+        $preordenes = $this->PreordenesModel->listar($estatus);
+        echo json_encode(['success' => true, 'preordenes' => $preordenes]);
+    }
+
+    /**
+     * Obtiene el detalle de una pre-orden específica (AJAX)
+     */
+    public function get_preorden_ajax() {
+        $id = $this->input->post('id');
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID requerido']);
+            return;
+        }
+
+        $preorden = $this->PreordenesModel->get_preorden($id);
+        if ($preorden) {
+            echo json_encode(['success' => true, 'preorden' => $preorden]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Pre-orden no encontrada']);
+        }
+    }
+
+    /**
+     * Autoriza una pre-orden y genera la Orden de Compra real en Borrador (AJAX)
+     * Requiere el permiso 'compras_autorizar_preordenes'.
+     */
+    public function autorizar_preorden_ajax() {
+        if (!tiene_permiso('compras_autorizar_preordenes')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para autorizar pre-órdenes de compra']);
+            return;
+        }
+
+        $id = $this->input->post('id');
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID requerido']);
+            return;
+        }
+
+        $cantidad_aprobada = $this->input->post('cantidad_aprobada') ?: null;
+        $proveedor_id = $this->input->post('proveedor_id') ?: null;
+        $user_id = $this->session->userdata('user_id');
+
+        $result = $this->PreordenesModel->aprobar($id, $user_id, $cantidad_aprobada, $proveedor_id);
+        echo json_encode($result);
+    }
+
+    /**
+     * Rechaza una pre-orden (AJAX)
+     * Requiere el permiso 'compras_autorizar_preordenes'.
+     */
+    public function rechazar_preorden_ajax() {
+        if (!tiene_permiso('compras_autorizar_preordenes')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para rechazar pre-órdenes de compra']);
+            return;
+        }
+
+        $id = $this->input->post('id');
+        $motivo = $this->input->post('motivo');
+        if (!$id || !$motivo) {
+            echo json_encode(['success' => false, 'message' => 'ID y motivo de rechazo son requeridos']);
+            return;
+        }
+
+        $user_id = $this->session->userdata('user_id');
+        $result = $this->PreordenesModel->rechazar($id, $user_id, $motivo);
+        echo json_encode($result);
     }
 }

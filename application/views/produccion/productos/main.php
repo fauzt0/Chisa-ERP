@@ -10,6 +10,7 @@ $puede_ver_costos = $response['puede_ver_costos'] ?? false;
 <script>
 // Variables globales inyectadas desde PHP — usadas por produccion_productos.js
 const PUEDE_VER_COSTOS = <?= $puede_ver_costos ? 'true' : 'false' ?>;
+const PUEDE_GENERAR_PREORDEN = <?= tiene_permiso('produccion_preordenes') ? 'true' : 'false' ?>;
 const BASE_URL = '<?= base_url() ?>';
 const CSRF_TOKEN_NAME = '<?= $this->security->get_csrf_token_name() ?>';
 const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
@@ -308,6 +309,20 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
               </tr>
             </tfoot>
           </table>
+        </div>
+
+        <!-- Alerta de insumos faltantes y pre-orden -->
+        <div id="bloqueInsumosFaltantes" class="mt-3" style="display:none;">
+          <div class="alert alert-warning mb-2" id="alertInsumosFaltantes">
+            <h6 class="alert-heading mb-2"><i class="fas fa-exclamation-triangle me-1"></i> Insumos con stock insuficiente</h6>
+            <ul class="mb-0 small" id="listaInsumosFaltantes"></ul>
+          </div>
+          <div id="erroresPreorden" class="alert alert-danger small py-2 mb-2" style="display:none;"></div>
+          <?php if (tiene_permiso('produccion_preordenes')): ?>
+          <button type="button" class="btn btn-warning" id="btnGenerarPreorden" onclick="abrirModalGenerarPreorden()">
+            <i class="fas fa-shopping-cart me-1"></i> Generar pre-orden(es) de compra
+          </button>
+          <?php endif; ?>
         </div>
         
         <!-- Botones de Acción (Edición) -->

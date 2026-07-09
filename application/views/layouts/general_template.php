@@ -56,33 +56,99 @@
 
 
   <script src="<?php echo base_url();?>assets/dist/js/tools.js?v=<?php echo time(); ?>"></script>
+
+  <!-- Contenedor de Toast Notifications (esquina superior derecha) -->
+  <div id="erp-toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index:11000;"></div>
   
-  <!-- Script para cargar notificaciones en tiempo real -->
+  <!-- Script para cargar notificaciones en tiempo real + Toast alerts -->
   <script>
   var notificationsInterval;
-  
-  // Cargar notificaciones
+  var _erpSeenNotifs = null;   // null = primera carga
+  var _erpFirstLoad  = true;
+
+  // Genera una clave única para cada notificación
+  function _erpNotifKey(n) {
+    return (n.module || '') + '|' + (n.title || '') + '|' + (n.message || '');
+  }
+
+  // Muestra un toast Bootstrap 5 para una notificación
+  function showErpToast(notif) {
+    var palette = {
+      danger:  { color: '#dc3545', icon: 'fas fa-exclamation-circle' },
+      warning: { color: '#e6a817', icon: 'fas fa-exclamation-triangle' },
+      info:    { color: '#0d9aaf', icon: 'fas fa-info-circle' },
+      success: { color: '#198754', icon: 'fas fa-check-circle' }
+    };
+    var style = palette[notif.type] || palette.info;
+    var id = 'erptoast-' + Date.now() + '-' + Math.floor(Math.random() * 9999);
+
+    var html =
+      '<div id="' + id + '" class="toast align-items-center border-0 shadow-sm" ' +
+      'role="alert" aria-live="assertive" aria-atomic="true" ' +
+      'data-bs-autohide="true" data-bs-delay="6000" data-erp-type="' + (notif.type||'info') + '" style="min-width:300px;max-width:380px;">' +
+      '<div class="d-flex">' +
+      '<div class="toast-body d-flex align-items-start gap-2 py-3">' +
+      '<i class="' + style.icon + ' mt-1 flex-shrink-0" style="color:' + style.color + ';font-size:1.15rem;"></i>' +
+      '<div>' +
+      '<strong class="d-block lh-sm">' + (notif.module || '') + ': ' + (notif.title || '') + '</strong>' +
+      '<span class="text-muted small">' + (notif.message || '') + '</span>' +
+      '</div>' +
+      '</div>' +
+      '<button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>' +
+      '</div>' +
+      '</div>';
+
+    var $c = $('#erp-toast-container');
+    $c.append(html);
+    var el = document.getElementById(id);
+    var t  = new bootstrap.Toast(el);
+    t.show();
+    el.addEventListener('hidden.bs.toast', function() { el.remove(); });
+  }
+
+  // Detecta notificaciones nuevas y dispara toasts
+  function _erpCheckNewToasts(notifications) {
+    var currentMap = {};
+    notifications.forEach(function(n) { currentMap[_erpNotifKey(n)] = n; });
+
+    if (_erpFirstLoad) {
+      // En la primera carga sólo guardamos el estado; no mostramos toasts
+      _erpSeenNotifs = currentMap;
+      _erpFirstLoad  = false;
+      return;
+    }
+
+    // Mostrar toast sólo para las que no estaban en el ciclo anterior
+    notifications.forEach(function(n) {
+      if (!_erpSeenNotifs || !_erpSeenNotifs[_erpNotifKey(n)]) {
+        showErpToast(n);
+      }
+    });
+
+    _erpSeenNotifs = currentMap;
+  }
+
+  // Cargar notificaciones desde el servidor
   function loadNotifications() {
     $.get('<?= base_url('Notifications/get_notifications') ?>', function(response) {
       try {
         var data = typeof response === 'string' ? JSON.parse(response) : response;
-        
-        if(data.success) {
+        if (data.success) {
           updateNotificationsUI(data);
+          _erpCheckNewToasts(data.notifications || []);
         }
       } catch(e) {
         console.error('Error parsing notifications:', e);
       }
     });
   }
-  
-  // Actualizar UI de notificaciones
+
+  // Actualizar UI del dropdown de notificaciones
   function updateNotificationsUI(data) {
     var total = data.total_count || 0;
     var notifications = data.notifications || [];
     
-    // Actualizar header
-    if(total > 0) {
+    if (total > 0) {
       $('#notifications-header').html(total + ' Notificación' + (total > 1 ? 'es' : ''));
       $('#notifications-badge').text(total > 9 ? '9+' : total).show();
     } else {
@@ -90,9 +156,8 @@
       $('#notifications-badge').hide();
     }
     
-    // Actualizar lista
     var html = '';
-    if(notifications.length === 0) {
+    if (notifications.length === 0) {
       html = '<div class="list-group-item text-center text-muted py-4">' +
              '<i class="fas fa-check-circle fa-2x mb-2"></i><br>' +
              'No hay notificaciones pendientes' +
@@ -100,49 +165,41 @@
     } else {
       notifications.forEach(function(notif) {
         var iconClass = getIconClass(notif.type);
-        var iconName = notif.icon || 'bell';
-        
+        var iconName  = notif.icon || 'bell';
         html += '<a href="' + notif.link + '" class="list-group-item">' +
                 '<div class="row g-0 align-items-center">' +
-                '<div class="col-2">' +
-                '<i class="' + iconClass + ' fas fa-' + iconName + '"></i>' +
-                '</div>' +
+                '<div class="col-2"><i class="' + iconClass + ' fas fa-' + iconName + '"></i></div>' +
                 '<div class="col-10">' +
                 '<div><strong>' + notif.module + ':</strong> ' + notif.title + '</div>' +
                 '<div class="text-muted small mt-1">' + notif.message + '</div>' +
                 '<div class="text-muted small mt-1">' + notif.time + '</div>' +
-                '</div>' +
-                '</div>' +
-                '</a>';
+                '</div></div></a>';
       });
     }
-    
     $('#notifications-list').html(html);
   }
   
-  // Obtener clase de icono según tipo
+  // Clase de color por tipo
   function getIconClass(type) {
     switch(type) {
-      case 'danger': return 'text-danger';
+      case 'danger':  return 'text-danger';
       case 'warning': return 'text-warning';
-      case 'info': return 'text-info';
+      case 'info':    return 'text-info';
       case 'success': return 'text-success';
-      default: return 'text-primary';
+      default:        return 'text-primary';
     }
   }
   
-  // Refrescar notificaciones manualmente
+  // Refrescar manualmente desde el botón del dropdown
   function refreshNotifications() {
     $('#notifications-header').html('<span class="spinner-border spinner-border-sm me-2"></span> Cargando...');
     loadNotifications();
   }
-  
-  // Cargar notificaciones al inicio
+
+  // Arrancar al cargar la página
   $(document).ready(function() {
     loadNotifications();
-    
-    // Actualizar cada 2 minutos
-    notificationsInterval = setInterval(loadNotifications, 120000);
+    notificationsInterval = setInterval(loadNotifications, 120000); // cada 2 min
   });
   </script>
   

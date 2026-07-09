@@ -766,4 +766,28 @@
   </div>
 </div>
 
+<!-- Modal: Generar pre-orden de compra -->
+<div class="modal fade" id="modalGenerarPreorden" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="fas fa-shopping-cart me-1"></i> Generar pre-orden(es) de compra</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">Se crearán pre-órdenes para los insumos faltantes detectados. Un administrador de Compras deberá autorizarlas antes de convertirse en órdenes de compra.</p>
+        <div class="mb-3">
+          <label class="form-label" for="preorden_notas">Notas (opcional)</label>
+          <textarea class="form-control" id="preorden_notas" rows="3" placeholder="Ej: Urgente para pedido del cliente X"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-warning" id="btnConfirmarGenerarPreorden" onclick="confirmarGenerarPreorden()">
+          <i class="fas fa-check me-1"></i> Confirmar y generar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
