@@ -1011,18 +1011,29 @@ class Productos extends MY_Controller {
     /**
      * Lee el archivo Excel y devuelve un array con todos los productos/formulaciones
      * encontrados en todas las hojas.
+     *
+     * Formatos soportados:
+     *   chisa_glass    — A=producto D/E=KILOS; componentes: A=nombre B=% C=%fase D=nombre E=kg
+     *   bases_organicas— A=producto C=KILOS D=kg; componentes: A=nombre B=% C=nombre D=kg
+     *   pintura_pasta  — A=producto C=KILOS E=kg (D vacía); componentes: A=nombre B=% C=nombre E=kg
+     *   pasta_sergio   — B=KILOS D=kg (A vacía); componentes: A=% B=nombre D=kg
+     *   masa_roca      — A=producto R6 D=kg (sin KILOS); componentes: A=nombre B=% D=kg
      */
     private function _leer_excel_formulaciones($ruta, $ext) {
         $readerType = ($ext === 'xlsx') ? 'Xlsx' : 'Xls';
         $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($readerType);
-        // IMPORTANTE: false para evaluar fórmulas y obtener valores calculados
         $reader->setReadDataOnly(false);
         $spreadsheet = $reader->load($ruta);
 
+        $nombre_archivo = basename($ruta);
         $todos = [];
 
         foreach ($spreadsheet->getAllSheets() as $sheet) {
-            $maxRow = $sheet->getHighestRow();
+            $nombre_hoja = $sheet->getTitle();
+            $maxRow      = $sheet->getHighestRow();
+
+            // Saltar hojas vacías o de soporte (Hoja2, Hoja3 sin datos)
+            if ($maxRow < 5) continue;
 
             // Cargar filas con valores calculados (fórmulas resueltas)
             $matrix = [];
@@ -1043,26 +1054,67 @@ class Productos extends MY_Controller {
                 $matrix[$r] = $fila;
             }
 
-            // Detectar bloques de producto por la fila que contiene "KILOS"
+            // ── PERFIL PASTA_SERGIO: B=KILOS (sin nombre en A) ──────────────
+            // Detectar antes del loop general porque usa col B en lugar de C-E
+            $es_pasta_sergio = false;
+            for ($r = 1; $r <= min($maxRow, 10); $r++) {
+                if (strtoupper(trim((string)($matrix[$r][2] ?? ''))) === 'KILOS') {
+                    $es_pasta_sergio = true;
+                    break;
+                }
+            }
+            if ($es_pasta_sergio) {
+                $todos = array_merge($todos, $this->_parsear_pasta_sergio($matrix, $maxRow, $nombre_hoja, $nombre_archivo));
+                continue;
+            }
+
+            // ── PERFIL MASA_ROCA: nombre en A fila 1 o 6, total en D, sin KILOS ─
+            $es_masa_roca = false;
+            $nombre_prod_masa = trim((string)($matrix[1][1] ?? ''));
+            if ($nombre_prod_masa !== '' && !is_numeric($matrix[1][1] ?? null)) {
+                // Verificar que en alguna de las primeras 10 filas col B ≈ 1 (fila de total)
+                for ($r = 2; $r <= min($maxRow, 15); $r++) {
+                    $b = $matrix[$r][2] ?? null;
+                    if (is_numeric($b) && (float)$b >= 0.99 && (float)$b <= 1.01) {
+                        // Y que NO haya ningún KILOS en toda la hoja
+                        $tiene_kilos = false;
+                        for ($rk = 1; $rk <= min($maxRow, 20); $rk++) {
+                            for ($ck = 2; $ck <= 6; $ck++) {
+                                if (strtoupper(trim((string)($matrix[$rk][$ck] ?? ''))) === 'KILOS') {
+                                    $tiene_kilos = true; break 2;
+                                }
+                            }
+                        }
+                        if (!$tiene_kilos) { $es_masa_roca = true; break; }
+                    }
+                }
+            }
+            if ($es_masa_roca) {
+                $todos = array_merge($todos, $this->_parsear_masa_roca($matrix, $maxRow, $nombre_hoja, $nombre_archivo));
+                continue;
+            }
+
+            // ── LOOP GENERAL: formatos chisa_glass / bases_organicas / pintura_pasta ──
             $bloques    = [];
             $cli_nombre = null;
             $cli_cubetas= 1;
+            $refs_vistos = []; // deduplicar bloques con mismo nombre en la misma hoja
 
-            $ultima_col_a_texto = ''; // para unir nombres partidos en 2 filas
+            $ultima_col_a_texto = '';
             for ($r = 1; $r <= $maxRow; $r++) {
                 $col_a_raw = $matrix[$r][1] ?? '';
-                $col_a = trim((string)$col_a_raw);
+                $col_a     = trim((string)$col_a_raw);
                 $col_b_raw = $matrix[$r][2] ?? null;
-                $col_b = trim((string)($col_b_raw ?? ''));
+                $col_b     = trim((string)($col_b_raw ?? ''));
 
-                // Saltar filas donde Col A es un entero > 40000 (serial de fecha Excel)
+                // Saltar filas donde Col A es serial de fecha Excel
                 if (is_int($col_a_raw) && (int)$col_a_raw > 40000) {
                     $ultima_col_a_texto = '';
                     continue;
                 }
 
-                // Detectar "N CUBETA(S) [TEXTO CLIENTE]"
-                if (preg_match('/^(\d+)\s+CUBETAS?\b/i', $col_a, $m)) {
+                // Detectar "N CUBETA(S) [TEXTO CLIENTE]" — solo en col A
+                if (preg_match('/^(\d+)\s+(CUBETAS?|TAMBOS?)\b/i', $col_a, $m)) {
                     $cli_cubetas = (int) $m[1];
                     $resto = trim(substr($col_a, strlen($m[0])));
                     if ($resto !== '') {
@@ -1072,7 +1124,7 @@ class Productos extends MY_Controller {
                     continue;
                 }
 
-                // Detectar fila de producto: "KILOS" en Col C (Bases Orgánicas) o Col D (Chisa Glass)
+                // Detectar fila de producto: "KILOS" en cols 3-5
                 $kilos_col = null;
                 for ($kc = 3; $kc <= 5; $kc++) {
                     if (strtoupper(trim((string)($matrix[$r][$kc] ?? ''))) === 'KILOS') {
@@ -1081,13 +1133,13 @@ class Productos extends MY_Controller {
                     }
                 }
 
-                // Ignorar encabezados de sección ("HOJA Nº 1") o filas sin nombre de producto
+                // Ignorar encabezados de sección ("HOJA Nº 1") o sin nombre
                 $col_a_upper = strtoupper($col_a);
                 if ($kilos_col !== null && (strpos($col_a_upper, 'HOJA') === 0 || $col_a === '')) {
                     $kilos_col = null;
                 }
 
-                // Ignorar si Col B es un serial de fecha (dato corrupto en ese campo)
+                // Ignorar si Col B es serial de fecha
                 if ($kilos_col !== null && is_int($col_b_raw) && (int)$col_b_raw > 40000) {
                     $kilos_col = null;
                 }
@@ -1095,44 +1147,59 @@ class Productos extends MY_Controller {
                 if ($kilos_col !== null) {
                     $total_kg = (float) ($matrix[$r][$kilos_col + 1] ?? 0);
 
-                    // Ignorar bloques con 0 kg (filas de encabezado sin datos reales)
+                    // Perfil pintura_pasta: KILOS en col C pero kg en col E (col D vacía)
+                    $formato = ($kilos_col === 3) ? 'bases_organicas' : 'chisa_glass';
+                    if ($kilos_col === 3 && $total_kg <= 0) {
+                        $total_kg_e = (float) ($matrix[$r][$kilos_col + 2] ?? 0);
+                        if ($total_kg_e > 0) {
+                            $total_kg = $total_kg_e;
+                            $formato  = 'pintura_pasta';
+                        }
+                    }
+
                     if ($total_kg <= 0) {
                         $ultima_col_a_texto = $col_a;
                         continue;
                     }
 
-                    $formato = ($kilos_col === 3) ? 'bases_organicas' : 'chisa_glass';
-
                     // Construir referencia del producto
                     $ref = '';
-                    // Caso: nombre partido en 2 filas → fila anterior tiene inicio, esta tiene "Y …"
                     if ($col_a !== '' && $ultima_col_a_texto !== ''
                         && preg_match('/^[Yy]\s+\S/', $col_a)) {
                         $ref = $ultima_col_a_texto . ' ' . $col_a;
                     } elseif ($formato === 'chisa_glass' && strpos($col_a_upper, 'CHISA') !== false
                               && $col_b !== '' && !is_numeric($col_b_raw)) {
-                        // Caso Chisa Glass antiguo: "CHISA GLASS" | "REF-G04"
                         $ref = $col_a . ' ' . $col_b;
                     } else {
                         $ref = $col_a;
                     }
+                    $ref = trim($ref);
+
+                    // Deduplicar: si ya vimos este mismo producto en esta hoja, omitir
+                    $clave_dedup = strtoupper($ref) . '|' . round($total_kg, 1);
+                    if (isset($refs_vistos[$clave_dedup])) {
+                        $ultima_col_a_texto = '';
+                        continue;
+                    }
+                    $refs_vistos[$clave_dedup] = true;
 
                     $bloques[] = [
-                        'row'         => $r,
-                        'ref'         => trim($ref),
-                        'total_kg'    => $total_kg,
-                        'cliente'     => $cli_nombre,
-                        'cubetas'     => $cli_cubetas,
-                        'descripcion' => '',
-                        'grupos'      => [],
-                        'formato'     => $formato,
-                        'kilos_col'   => $kilos_col,
+                        'row'           => $r,
+                        'ref'           => $ref,
+                        'total_kg'      => $total_kg,
+                        'cliente'       => $cli_nombre,
+                        'cubetas'       => $cli_cubetas,
+                        'descripcion'   => '',
+                        'grupos'        => [],
+                        'formato'       => $formato,
+                        'kilos_col'     => $kilos_col,
+                        'hoja_origen'   => $nombre_hoja,
+                        'archivo_origen'=> $nombre_archivo,
                     ];
                     $cli_nombre  = null;
                     $cli_cubetas = 1;
                     $ultima_col_a_texto = '';
                 } else {
-                    // Guardar el último texto significativo de Col A (para nombres partidos)
                     if ($col_a !== '' && !is_numeric($col_a_raw)) {
                         $ultima_col_a_texto = $col_a;
                     }
@@ -1151,7 +1218,7 @@ class Productos extends MY_Controller {
                 $txt_desc   = trim((string)($fila_desc[1] ?? ''));
                 $val_b_desc = $fila_desc[2] ?? null;
                 $es_texto_puro = $txt_desc !== '' && ($val_b_desc === null || $val_b_desc === '');
-                $es_solo_fecha = is_int($val_b_desc ?? null) && ($val_b_desc ?? 0) > 40000; // serial de fecha Excel
+                $es_solo_fecha = is_int($val_b_desc ?? null) && ($val_b_desc ?? 0) > 40000;
                 if ($es_texto_puro && !$es_solo_fecha) {
                     $bloques[$bi]['descripcion'] = $txt_desc;
                     $r_ini++;
@@ -1161,40 +1228,56 @@ class Productos extends MY_Controller {
                 $grupos       = [];
                 $grupo_actual = '__default__';
                 $fmt          = $bloques[$bi]['formato'] ?? 'chisa_glass';
-                // Formato chisa_glass: B=prop, C=pct_fa, D=nombre, E=kg
-                // Formato bases_organicas: B=prop, C=nombre, D=kg, E=precio
-                $col_nombre_offset = ($fmt === 'bases_organicas') ? 3 : 4; // Col con nombre repetido
-                $col_kg_offset     = ($fmt === 'bases_organicas') ? 4 : 5; // Col con kg
-                $col_fa_offset     = ($fmt === 'bases_organicas') ? null : 3; // Col con pct fase acuosa
+
+                // Offsets por formato:
+                //   chisa_glass:    B=prop, C=%fase, D=nombre_repetido, E=kg
+                //   bases_organicas:B=prop, C=nombre, D=kg (precio en E)
+                //   pintura_pasta:  B=prop, C=nombre, E=kg (D vacía)
+                switch ($fmt) {
+                    case 'bases_organicas':
+                        $col_nombre_offset = 3; $col_kg_offset = 4; $col_fa_offset = null; break;
+                    case 'pintura_pasta':
+                        $col_nombre_offset = 3; $col_kg_offset = 5; $col_fa_offset = null; break;
+                    default: // chisa_glass
+                        $col_nombre_offset = 4; $col_kg_offset = 5; $col_fa_offset = 3;    break;
+                }
 
                 for ($r = $r_ini; $r <= $r_fin; $r++) {
                     $row = $matrix[$r];
 
                     $col_a = trim((string)($row[1] ?? ''));
                     $col_b = $row[2]; // proporción 0-1 (BOM)
-                    $col_c = ($col_fa_offset !== null) ? $row[$col_fa_offset] : null; // proporción fase acuosa
-                    $col_d = trim((string)($row[$col_nombre_offset] ?? '')); // nombre repetido o grupo
-                    $col_e = $row[$col_kg_offset]; // kg/lote (calculado)
+                    $col_c = ($col_fa_offset !== null) ? $row[$col_fa_offset] : null;
+                    $col_d = trim((string)($row[$col_nombre_offset] ?? ''));
+                    $col_e = $row[$col_kg_offset]; // kg/lote
 
-                    // Saltar filas completamente vacías o con solo fecha en B
+                    // Saltar filas completamente vacías
                     if ($col_a === '' && ($col_b === null || $col_b === '') && ($col_e === null || $col_e === '')) {
                         continue;
                     }
-                    // Saltar filas donde Col A tiene fecha (serial Excel > 40000 como int)
+                    // Saltar fechas seriales en Col A
                     if (is_int($row[1] ?? null) && ($row[1] ?? 0) > 40000) continue;
-                    // Saltar filas de info de cliente ("N cubeta(s) [CLIENTE]")
-                    if ($col_a !== '' && preg_match('/^\d+\s+CUBETAS?\b/i', $col_a)) continue;
+                    // Saltar filas de cliente ("N cubeta(s) / N tambo(s) …")
+                    if ($col_a !== '' && preg_match('/^\d+\s+(CUBETAS?|TAMBOS?)\b/i', $col_a)) continue;
 
-                    // Fila de total: Col A vacía, Col B ≈ 1.0 (suma de proporciones)
                     $b_num = is_numeric($col_b) ? (float) $col_b : null;
+
+                    // Fila de total: Col A vacía y Col B ≈ 1.0
                     if ($col_a === '' && $b_num !== null && $b_num >= 0.99 && $b_num <= 1.02) {
                         continue;
                     }
 
-                    // Fila de grupo: Col A tiene texto, Col B vacía/nula, (Col D = Col A o Col D vacía)
+                    // ── CORRECCIÓN BUG BASE ROW ──────────────────────────────────────
+                    // En formato chisa_glass la fila "BLANCO | 1.0 | pct_fa | BLANCO | kg"
+                    // es la referencia al semielaborado BASE, NO un componente de color.
+                    // Si B ≈ 1.0 con texto en A (y no es la fila total) → omitir.
+                    if ($fmt === 'chisa_glass' && $col_a !== '' && $b_num !== null && $b_num >= 0.995) {
+                        continue;
+                    }
+
+                    // Fila de grupo: Col A tiene texto, Col B vacía/nula
                     $b_vacia = ($col_b === null || $col_b === '' || $col_b === 0);
                     if ($col_a !== '' && $b_vacia && ($col_d === $col_a || $col_d === '')) {
-                        // Verificar que no sea un insumo 100% (Col B = 1 = 100%)
                         $grupo_actual = $col_a;
                         if (!isset($grupos[$grupo_actual])) {
                             $grupos[$grupo_actual] = [];
@@ -1202,23 +1285,20 @@ class Productos extends MY_Controller {
                         continue;
                     }
 
-                    // Fila de insumo: Col A tiene nombre, Col B proporción (0-1, no exactamente 1.0), Col E kg > 0
+                    // Fila de insumo: Col A nombre, Col B proporción, Col E kg > 0
                     $pct_raw = is_numeric($col_b) ? (float) $col_b : null;
                     $kg      = is_numeric($col_e) ? (float) $col_e : null;
                     $pct_fa  = is_numeric($col_c) ? (float) $col_c : null;
 
-                    // Excluir filas donde Col B = 1.0 exacto Y Col A es texto (insumo 100% de un grupo)
-                    // En ese caso sí es un insumo real (ej. BLANCO | 1 | 0.03 = BLANCO ocupa el 100% del grupo)
                     if ($col_a !== '' && $pct_raw !== null && $kg !== null && $kg > 0) {
                         if (!isset($grupos[$grupo_actual])) {
                             $grupos[$grupo_actual] = [];
                         }
-                        // Convertir proporción 0-1 a porcentaje 0-100
-                        $pct_pct  = round($pct_raw * 100, 4);
+                        $pct_pct    = round($pct_raw * 100, 4);
                         $pct_fa_pct = ($pct_fa !== null) ? round($pct_fa * 100, 4) : null;
 
                         $grupos[$grupo_actual][] = [
-                            'nombre'    => $col_a,
+                            'nombre'    => $this->_normalizar_nombre_insumo($col_a),
                             'porcentaje'=> $pct_pct,
                             'pct_fase'  => $pct_fa_pct,
                             'kg'        => round($kg, 6),
@@ -1268,11 +1348,14 @@ class Productos extends MY_Controller {
      * Guarda una formulación parseada del Excel en la BD.
      */
     private function _guardar_formulacion_importada($pdata) {
-        $ref         = $pdata['ref'];
-        $total_kg    = $pdata['total_kg'];
-        $cliente_nom = $pdata['cliente'] ?? null;
-        $descripcion = $pdata['descripcion'] ?? '';
-        $grupos      = $pdata['grupos'] ?? [];
+        $ref            = $pdata['ref'];
+        $total_kg       = $pdata['total_kg'];
+        $cliente_nom    = $pdata['cliente'] ?? null;
+        $descripcion    = $pdata['descripcion'] ?? '';
+        $grupos         = $pdata['grupos'] ?? [];
+        $hoja_origen    = $pdata['hoja_origen'] ?? null;
+        $archivo_origen = $pdata['archivo_origen'] ?? null;
+        $rendimiento_m2 = $pdata['rendimiento_m2'] ?? null;
 
         $advertencias = [];
 
@@ -1318,12 +1401,16 @@ class Productos extends MY_Controller {
         $this->db->insert('formulaciones', [
             'producto_id'        => $producto->id,
             'cliente_id'         => $cliente_id,
-            'nombre_version'     => 'V' . $version . ($cliente_nom ? " – $cliente_nom" : ''),
-            'descripcion'        => $descripcion,
-            'comentarios'        => $cliente_nom ? "Importado desde Excel. Cliente: $cliente_nom" : 'Importado desde Excel.',
-            'cantidad_producida'  => $total_kg,
-            'unidad_produccion'  => 'Kg',
-            'rendimiento_m2_por_kg' => null,
+            'nombre_version'        => 'V' . $version . ($cliente_nom ? " – $cliente_nom" : ''),
+            'descripcion'           => $descripcion,
+            'comentarios'           => implode(' | ', array_filter([
+                $cliente_nom ? "Cliente: $cliente_nom" : 'Importado desde Excel.',
+                $archivo_origen ? "Archivo: $archivo_origen" : null,
+                $hoja_origen    ? "Hoja: $hoja_origen"    : null,
+            ])),
+            'cantidad_producida'    => $total_kg,
+            'unidad_produccion'     => 'Kg',
+            'rendimiento_m2_por_kg' => $rendimiento_m2,
             'version'            => $version,
             'es_activa'          => FALSE,
             'usuario_creacion'   => $this->session->userdata('user_id'),
@@ -1432,13 +1519,184 @@ class Productos extends MY_Controller {
     }
 
     /**
-     * Busca un insumo por nombre técnico (case-insensitive).
+     * Normaliza el nombre de un insumo antes de buscarlo/insertarlo:
+     * colapsa espacios múltiples y aplica la tabla de sinónimos conocidos.
+     */
+    private function _normalizar_nombre_insumo($nombre) {
+        // Colapsar espacios internos múltiples y trim
+        $n = trim(preg_replace('/\s{2,}/', ' ', $nombre));
+
+        // Tabla de sinónimos: nombre exacto en Excel → nombre canónico en BD
+        $sinonimos = [
+            'TRPOLIFOSFATO DE POTASIO'   => 'TRIPOLIFOSFATO DE POTASIO',
+            'MONOETILIENGLICOL'          => 'MONOETILENGLICOL',
+            'MONOETILENGLICOL'           => 'MONOETILENGLICOL',
+            'CAOLIN M-325'               => 'CAOLIN M-325',
+            'CAOLIN M 325'               => 'CAOLIN M-325',
+            'CARBONATO M-325'            => 'CARBONATO M-325',
+            'CARBONATO  M-325'           => 'CARBONATO M-325',
+            'CARBONATO M 325'            => 'CARBONATO M-325',
+            'CEMENTOGRIS'                => 'CEMENTO GRIS',
+            'ACRONAL       295-D'        => 'ACRONAL 295-D',
+            'ACRONAL 295 D'              => 'ACRONAL 295-D',
+        ];
+
+        $n_upper = strtoupper($n);
+        foreach ($sinonimos as $raw => $canon) {
+            if (strtoupper(trim(preg_replace('/\s{2,}/', ' ', $raw))) === $n_upper) {
+                return $canon;
+            }
+        }
+        return $n;
+    }
+
+    /**
+     * Busca un insumo por nombre técnico (case-insensitive, con sinónimos).
+     * Primero busca el nombre normalizado exacto, luego LIKE amplio.
      */
     private function _buscar_insumo($nombre) {
+        $nombre = $this->_normalizar_nombre_insumo($nombre);
+
+        // Búsqueda exacta primero (más precisa)
+        $exact = $this->db->where('LOWER(nombre_tecnico)', strtolower($nombre))->get('insumos')->row();
+        if ($exact) return $exact;
+
+        // Fallback: LIKE con el nombre normalizado
         return $this->db
             ->like('nombre_tecnico', $nombre, 'both')
-            ->or_where('nombre_tecnico', $nombre)
             ->get('insumos')->row();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PARSERS ESPECIALIZADOS — Formatos no estándar
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Parser Perfil D — PASTA SERGIO
+     * Header: B=KILOS, D=kg_lote (A vacía)
+     * Componentes: A=% BOM (decimal), B=nombre, D=kg
+     */
+    private function _parsear_pasta_sergio($matrix, $maxRow, $hoja, $archivo) {
+        $todos = [];
+        // Nombre del producto = nombre del archivo (sin extensión) o de la hoja
+        $ref_prod = pathinfo($archivo, PATHINFO_FILENAME);
+
+        for ($r = 1; $r <= $maxRow; $r++) {
+            if (strtoupper(trim((string)($matrix[$r][2] ?? ''))) !== 'KILOS') continue;
+            $total_kg = (float)($matrix[$r][4] ?? 0);
+            if ($total_kg <= 0) continue;
+
+            $grupos  = [];
+            $default = [];
+            for ($ri = $r + 1; $ri <= min($r + 30, $maxRow); $ri++) {
+                $pct_raw = $matrix[$ri][1] ?? null;
+                $nombre  = trim((string)($matrix[$ri][2] ?? ''));
+                $kg_val  = (float)($matrix[$ri][4] ?? 0);
+
+                if (!is_numeric($pct_raw) || $nombre === '') continue;
+                $pct = (float)$pct_raw;
+                if ($pct >= 0.99 && $pct <= 1.01) break; // fila de total
+
+                $default[] = [
+                    'nombre'    => $this->_normalizar_nombre_insumo($nombre),
+                    'porcentaje'=> round($pct * 100, 4),
+                    'pct_fase'  => null,
+                    'kg'        => round($kg_val, 6),
+                ];
+            }
+            if (!empty($default)) {
+                $grupos['__default__'] = $default;
+                $todos[] = [
+                    'ref'           => $ref_prod,
+                    'total_kg'      => $total_kg,
+                    'cliente'       => null,
+                    'cubetas'       => 1,
+                    'descripcion'   => '',
+                    'grupos'        => $grupos,
+                    'formato'       => 'pasta_sergio',
+                    'hoja_origen'   => $hoja,
+                    'archivo_origen'=> $archivo,
+                    'rendimiento_m2'=> null,
+                ];
+            }
+            break; // solo un bloque por hoja
+        }
+        return $todos;
+    }
+
+    /**
+     * Parser Perfil E — MASA ROCA
+     * Header: A=nombre (fila 1 o 6), D=kg_lote (sin marcador KILOS)
+     * Componentes: A=nombre, B=%, D=kg
+     * Extra: línea "M2 X.XX" → rendimiento_m2_por_kg
+     */
+    private function _parsear_masa_roca($matrix, $maxRow, $hoja, $archivo) {
+        $todos = [];
+        $ref_prod   = trim((string)($matrix[1][1] ?? ''));
+        $total_kg   = 0.0;
+        $rendimiento_m2 = null;
+        $r_inicio   = 1;
+
+        // Buscar fila del producto (nombre en A, kg en D)
+        for ($r = 1; $r <= min($maxRow, 10); $r++) {
+            $a = trim((string)($matrix[$r][1] ?? ''));
+            $d = (float)($matrix[$r][4] ?? 0);
+            if ($a !== '' && !is_numeric($matrix[$r][1]) && $d > 0
+                && strtoupper($a) !== 'P.U' && strtoupper($a) !== 'TOTAL') {
+                // Verificar que no sea serial de fecha en A
+                if (is_int($matrix[$r][1] ?? null) && (int)$matrix[$r][1] > 40000) continue;
+                $ref_prod = $a;
+                $total_kg = $d;
+                $r_inicio = $r + 1;
+                break;
+            }
+        }
+        if ($total_kg <= 0) return $todos;
+
+        $default = [];
+        for ($r = $r_inicio; $r <= min($r_inicio + 20, $maxRow); $r++) {
+            $a   = trim((string)($matrix[$r][1] ?? ''));
+            $b   = $matrix[$r][2] ?? null;
+            $kg  = (float)($matrix[$r][4] ?? 0);
+            $b_n = is_numeric($b) ? (float)$b : null;
+
+            // Fila de total: B = 1.0
+            if ($b_n !== null && $b_n >= 0.99 && $b_n <= 1.01) break;
+
+            // Línea de rendimiento m²: "M2 X.XX" o "M2   X.XX"
+            if ($a !== '' && preg_match('/^M\s*2\s+([\d.]+)/i', $a, $mm)) {
+                $rendimiento_m2 = (float)$mm[1] / $total_kg; // m²/kg
+                continue;
+            }
+
+            // Saltar filas auxiliares (KG DE …, MANO, …)
+            if ($a !== '' && preg_match('/^(KG\s+DE|MANO|SELLADOR)/i', $a)) continue;
+
+            if ($a !== '' && $b_n !== null && $b_n > 0 && $kg > 0) {
+                $default[] = [
+                    'nombre'    => $this->_normalizar_nombre_insumo($a),
+                    'porcentaje'=> round($b_n * 100, 4),
+                    'pct_fase'  => null,
+                    'kg'        => round($kg, 6),
+                ];
+            }
+        }
+
+        if (!empty($default)) {
+            $todos[] = [
+                'ref'           => $ref_prod,
+                'total_kg'      => $total_kg,
+                'cliente'       => null,
+                'cubetas'       => 1,
+                'descripcion'   => '',
+                'grupos'        => ['__default__' => $default],
+                'formato'       => 'masa_roca',
+                'hoja_origen'   => $hoja,
+                'archivo_origen'=> $archivo,
+                'rendimiento_m2'=> $rendimiento_m2,
+            ];
+        }
+        return $todos;
     }
 
     /**
@@ -1448,7 +1706,8 @@ class Productos extends MY_Controller {
     private function _auto_crear_producto($ref, $kg_lote = 0) {
         // Determinar categoría por palabras clave en el nombre
         $ref_upper = strtoupper($ref);
-        if (strpos($ref_upper, 'CHISA GLASS') !== false || strpos($ref_upper, 'RECUBRIMIENTO') !== false) {
+        if (strpos($ref_upper, 'CHISA GLASS') !== false || strpos($ref_upper, 'RECUBRIMIENTO') !== false
+            || strpos($ref_upper, 'CHISA MAR') !== false || strpos($ref_upper, 'MASA ROCA') !== false) {
             $categoria_id = 2; // Recubrimientos
         } elseif (strpos($ref_upper, 'ESMALTE') !== false) {
             $categoria_id = 8; // Esmaltes
@@ -1456,8 +1715,14 @@ class Productos extends MY_Controller {
             $categoria_id = 9; // Impermeabilizantes
         } elseif (strpos($ref_upper, 'SELLADOR') !== false || strpos($ref_upper, 'ACABADO') !== false) {
             $categoria_id = 5; // Selladores
-        } elseif (strpos($ref_upper, 'PASTA') !== false) {
-            $categoria_id = 4; // Pastas
+        } elseif (strpos($ref_upper, 'PASTA') !== false || strpos($ref_upper, 'CASCARA') !== false
+               || strpos($ref_upper, 'GRANO') !== false || strpos($ref_upper, 'CERO ') !== false) {
+            $categoria_id = 4; // Pastas/Texturizados
+        } elseif (strpos($ref_upper, 'VINILICA') !== false || strpos($ref_upper, 'VINYL') !== false) {
+            $categoria_id = 7; // Vinílicas
+        } elseif (strpos($ref_upper, 'RUGOSO') !== false || strpos($ref_upper, 'PINTU FLEX') !== false
+               || strpos($ref_upper, 'FLEX') !== false) {
+            $categoria_id = 1; // Pinturas especiales
         } elseif (strpos($ref_upper, 'PREPARADOR') !== false || strpos($ref_upper, 'SOLUCION') !== false
                || strpos($ref_upper, 'SOLUCIÓN') !== false || strpos($ref_upper, 'BASE ORGANICA') !== false) {
             $categoria_id = 3; // Preparadores
