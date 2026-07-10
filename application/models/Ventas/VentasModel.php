@@ -83,6 +83,11 @@ class VentasModel extends MY_Model {
             $this->db->join('productos', 'productos.id = detalle_orden_venta.producto_id');
             $this->db->where('detalle_orden_venta.orden_venta_id', $id);
             $orden->detalles = $this->db->get()->result();
+
+            if ($this->db->field_exists('orden_venta_id', 'obras')) {
+                $this->load->model('Obras/ObrasModel');
+                $orden->obra = $this->ObrasModel->get_obra_por_orden_venta($id);
+            }
         }
         
         return $orden;

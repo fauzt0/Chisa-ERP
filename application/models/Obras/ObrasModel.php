@@ -83,10 +83,18 @@ class ObrasModel extends CI_Model {
             c.razon_social as cliente,
             c.nombre_comercial,
             c.telefono as cliente_telefono,
-            c.email as cliente_email
+            c.telefono,
+            c.email as cliente_email,
+            c.email,
+            c.rfc as cliente_rfc,
+            c.rfc,
+            ov.folio as orden_venta_folio,
+            ov.estatus as orden_venta_estatus,
+            ov.total as orden_venta_total
         ');
         $this->db->from('obras o');
         $this->db->join('clientes c', 'c.id = o.cliente_id', 'left');
+        $this->db->join('ordenes_venta ov', 'ov.id = o.orden_venta_id', 'left');
         $this->db->where('o.id', $obra_id);
         
         $obra = $this->db->get()->row();
@@ -171,6 +179,7 @@ class ObrasModel extends CI_Model {
             op.*,
             p.nombre as producto_nombre,
             p.codigo as producto_codigo,
+            p.foto_producto,
             f.version as formulacion_version,
             f.nombre_version as formulacion_nombre
         ');
@@ -511,5 +520,195 @@ class ObrasModel extends CI_Model {
         }
         
         return $result;
+    }
+
+    /**
+     * Obtiene la obra vinculada a una orden de venta
+     */
+    public function get_obra_por_orden_venta($orden_venta_id) {
+        $this->db->select('id, folio, nombre, estatus');
+        $this->db->from('obras');
+        $this->db->where('orden_venta_id', $orden_venta_id);
+        $this->db->where('activo', 1);
+        $this->db->limit(1);
+        return $this->db->get()->row();
+    }
+
+    /**
+     * Órdenes de venta del cliente disponibles para vincular
+     */
+    public function get_ordenes_venta_disponibles($cliente_id, $obra_id = null) {
+        $this->db->select('ov.id, ov.folio, ov.estatus, ov.total, ov.fecha_orden');
+        $this->db->from('ordenes_venta ov');
+        $this->db->join('obras o', 'o.orden_venta_id = ov.id AND o.activo = 1', 'left');
+        $this->db->where('ov.cliente_id', $cliente_id);
+        $this->db->where_in('ov.estatus', ['Cotización', 'Confirmada', 'En Preparación']);
+        $this->db->group_start();
+        $this->db->where('o.id IS NULL', null, false);
+        if ($obra_id) {
+            $this->db->or_where('o.id', $obra_id);
+        }
+        $this->db->group_end();
+        $this->db->order_by('ov.fecha_creacion', 'DESC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Vincula una orden de venta existente a la obra
+     */
+    public function vincular_orden_venta($obra_id, $orden_venta_id) {
+        $obra = $this->db->where('id', $obra_id)->where('activo', 1)->get('obras')->row();
+        if (!$obra) {
+            return ['success' => false, 'message' => 'Obra no encontrada'];
+        }
+        if (!empty($obra->orden_venta_id)) {
+            return ['success' => false, 'message' => 'La obra ya tiene una orden de venta vinculada'];
+        }
+
+        $orden = $this->db->where('id', $orden_venta_id)->get('ordenes_venta')->row();
+        if (!$orden) {
+            return ['success' => false, 'message' => 'Orden de venta no encontrada'];
+        }
+        if ((int) $orden->cliente_id !== (int) $obra->cliente_id) {
+            return ['success' => false, 'message' => 'La orden de venta pertenece a otro cliente'];
+        }
+
+        $vinculada = $this->db->where('orden_venta_id', $orden_venta_id)
+            ->where('activo', 1)
+            ->where('id !=', $obra_id)
+            ->count_all_results('obras');
+        if ($vinculada > 0) {
+            return ['success' => false, 'message' => 'Esa orden de venta ya está vinculada a otra obra'];
+        }
+
+        $this->db->where('id', $obra_id);
+        $this->db->update('obras', ['orden_venta_id' => $orden_venta_id]);
+
+        return [
+            'success' => true,
+            'message' => 'Orden de venta ' . $orden->folio . ' vinculada correctamente',
+            'orden_venta_id' => $orden_venta_id,
+            'orden_venta_folio' => $orden->folio
+        ];
+    }
+
+    /**
+     * Genera una orden de venta desde los productos calculados de la obra
+     */
+    public function generar_orden_venta_desde_obra($obra_id, $usuario_id) {
+        $obra = $this->get_obra_detalle($obra_id);
+        if (!$obra) {
+            return ['success' => false, 'message' => 'Obra no encontrada'];
+        }
+        if (!empty($obra->orden_venta_id)) {
+            return ['success' => false, 'message' => 'La obra ya tiene una orden de venta vinculada'];
+        }
+        if (empty($obra->productos)) {
+            return ['success' => false, 'message' => 'La obra no tiene productos para generar la orden'];
+        }
+
+        $this->load->model('Ventas/VentasModel');
+
+        $direccion = trim($obra->direccion);
+        if ($obra->ciudad) {
+            $direccion .= ', ' . $obra->ciudad;
+        }
+        if ($obra->estado) {
+            $direccion .= ', ' . $obra->estado;
+        }
+
+        $orden_id = $this->VentasModel->crear_orden([
+            'cliente_id' => $obra->cliente_id,
+            'fecha_orden' => date('Y-m-d'),
+            'fecha_entrega_estimada' => $obra->fecha_fin_estimada,
+            'subtotal' => $obra->subtotal,
+            'iva' => $obra->iva_monto,
+            'total' => $obra->total,
+            'saldo_pendiente' => $obra->total,
+            'estatus' => 'Cotización',
+            'tipo_venta' => 'Pedido',
+            'observaciones' => 'Generada desde obra ' . $obra->folio,
+            'direccion_envio' => $direccion,
+            'condiciones_pago' => $obra->condiciones_pago,
+            'creado_por' => $usuario_id
+        ]);
+
+        $detalles = [];
+        foreach ($obra->productos as $producto) {
+            $cantidad = $producto->cantidad_ajustada ?: $producto->cantidad_calculada;
+            $precio = $producto->precio_unitario ?: 0;
+            $detalles[] = [
+                'producto_id' => $producto->producto_id,
+                'cantidad' => $cantidad,
+                'precio_unitario' => $precio,
+                'subtotal' => $cantidad * $precio,
+                'formulacion_id' => $producto->formulacion_id,
+                'formulacion_version' => $producto->formulacion_version,
+                'observaciones' => $producto->notas
+            ];
+        }
+        $this->VentasModel->agregar_detalle($orden_id, $detalles);
+
+        $this->db->where('id', $obra_id);
+        $this->db->update('obras', ['orden_venta_id' => $orden_id]);
+
+        $orden = $this->VentasModel->get_orden_completa($orden_id);
+        return [
+            'success' => true,
+            'message' => 'Orden de venta ' . $orden->folio . ' generada correctamente',
+            'orden_venta_id' => $orden_id,
+            'orden_venta_folio' => $orden->folio
+        ];
+    }
+
+    /**
+     * Crea solicitudes de producción cuando se aprueba una obra
+     */
+    public function crear_solicitudes_produccion_desde_obra($obra_id) {
+        $obra = $this->get_obra_detalle($obra_id);
+        if (!$obra || empty($obra->productos)) {
+            return false;
+        }
+
+        $CI =& get_instance();
+        $usuario_id = $CI->session->userdata('user_id') ?: 1;
+
+        foreach ($obra->productos as $producto) {
+            $cantidad = $producto->cantidad_ajustada ?: $producto->cantidad_calculada;
+            if ($cantidad <= 0) {
+                continue;
+            }
+
+            $this->db->where('producto_id', $producto->producto_id);
+            $this->db->where('estatus', 'Pendiente');
+            if (!empty($obra->orden_venta_id)) {
+                $this->db->where('orden_venta_id', $obra->orden_venta_id);
+            } else {
+                $this->db->like('observaciones', 'obra_id:' . $obra_id);
+            }
+            if ($this->db->count_all_results('solicitudes_produccion') > 0) {
+                continue;
+            }
+
+            $this->db->query("CALL sp_generar_folio_solicitud_produccion(@nuevo_folio)");
+            $folio = $this->db->query("SELECT @nuevo_folio as folio")->row()->folio;
+
+            $this->db->insert('solicitudes_produccion', [
+                'folio' => $folio,
+                'orden_venta_id' => $obra->orden_venta_id,
+                'producto_id' => $producto->producto_id,
+                'formulacion_id' => $producto->formulacion_id,
+                'cantidad_solicitada' => $cantidad,
+                'fecha_solicitud' => date('Y-m-d'),
+                'fecha_requerida' => $obra->fecha_fin_estimada,
+                'estatus' => 'Pendiente',
+                'prioridad' => 'Media',
+                'observaciones' => 'Solicitud desde obra ' . $obra->folio . '. obra_id:' . $obra_id,
+                'creado_por' => $usuario_id,
+                'fecha_creacion' => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        return true;
     }
 }

@@ -118,46 +118,14 @@ class ObrasVentas extends MY_Controller {
      * Vista de detalle de una obra
      */
     public function detalle($obra_id) {
-        // Obtener datos de la obra
-        $this->db->select('
-            o.*,
-            c.razon_social as cliente,
-            c.nombre_comercial,
-            c.telefono,
-            c.email,
-            c.rfc
-        ');
-        $this->db->from('obras o');
-        $this->db->join('clientes c', 'c.id = o.cliente_id', 'left');
-        $this->db->where('o.id', $obra_id);
-        $obra = $this->db->get()->row();
+        $obra = $this->ObrasModel->get_obra_detalle($obra_id);
         
         if(!$obra) {
             show_404();
             return;
         }
-        
-        // Obtener productos
-        $this->db->select('
-            op.*,
-            p.nombre as producto_nombre,
-            p.codigo as producto_codigo,
-            p.foto_producto,
-            f.version as formulacion_version,
-            f.nombre_version as formulacion_nombre
-        ');
-        $this->db->from('obras_productos op');
-        $this->db->join('productos p', 'p.id = op.producto_id');
-        $this->db->join('formulaciones f', 'f.id = op.formulacion_id', 'left');
-        $this->db->where('op.obra_id', $obra_id);
-        $this->db->order_by('op.fecha_agregado', 'DESC');
-        
-        $obra->productos = $this->db->get()->result();
-        
-        // Obtener pagos
-        $this->db->where('obra_id', $obra_id);
-        $this->db->order_by('fecha_pago', 'DESC');
-        $obra->pagos = $this->db->get('obras_pagos')->result();
+
+        $obra->pagos = $this->ObrasModel->get_pagos_obra($obra_id);
         
         $data['pageTitle'] = 'Detalle de Obra - ' . $obra->folio;
         $data['headTitle'] = 'Detalle de Obra';
@@ -387,5 +355,57 @@ class ObrasVentas extends MY_Controller {
         
         $html = $this->load->view('ventas/obras/recibo', $data, TRUE);
         echo json_encode(['success' => true, 'html' => $html]);
+    }
+
+    /**
+     * Documento PDF profesional de la obra
+     */
+    public function exportar_pdf($obra_id) {
+        redirect('obras/Obras/exportar_pdf/' . $obra_id);
+    }
+
+    public function get_ordenes_venta_disponibles_ajax() {
+        $obra_id = $this->input->get('obra_id');
+        $obra = $this->ObrasModel->get_obra_detalle($obra_id);
+        if (!$obra) {
+            echo json_encode(['success' => false, 'message' => 'Obra no encontrada']);
+            return;
+        }
+        $ordenes = $this->ObrasModel->get_ordenes_venta_disponibles($obra->cliente_id, $obra_id);
+        echo json_encode(['success' => true, 'ordenes' => $ordenes]);
+    }
+
+    public function vincular_orden_venta_ajax() {
+        $obra_id = $this->input->post('obra_id');
+        $orden_venta_id = $this->input->post('orden_venta_id');
+        if (!$obra_id || !$orden_venta_id) {
+            echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+            return;
+        }
+        echo json_encode($this->ObrasModel->vincular_orden_venta($obra_id, $orden_venta_id));
+    }
+
+    public function generar_orden_venta_ajax() {
+        $obra_id = $this->input->post('obra_id');
+        if (!$obra_id) {
+            echo json_encode(['success' => false, 'message' => 'ID de obra no proporcionado']);
+            return;
+        }
+        $usuario_id = $this->session->userdata('user_id') ?: 1;
+        echo json_encode($this->ObrasModel->generar_orden_venta_desde_obra($obra_id, $usuario_id));
+    }
+
+    public function confirmar_orden_venta_ajax() {
+        $obra_id = $this->input->post('obra_id');
+        $obra = $this->ObrasModel->get_obra_detalle($obra_id);
+        if (!$obra || empty($obra->orden_venta_id)) {
+            echo json_encode(['success' => false, 'message' => 'La obra no tiene orden de venta vinculada']);
+            return;
+        }
+        $this->VentasModel->confirmar_orden($obra->orden_venta_id);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Orden ' . $obra->orden_venta_folio . ' confirmada y enviada a producción'
+        ]);
     }
 }

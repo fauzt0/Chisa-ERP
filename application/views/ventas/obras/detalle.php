@@ -53,6 +53,14 @@ switch($obra->estatus) {
         </p>
     </div>
 </div>
+
+<?php
+$this->load->view('obras/partials/vinculo_venta', [
+    'obra' => $obra,
+    'baseUrl' => base_url('ventas/ObrasVentas')
+]);
+?>
+
 <!-- Información General -->
 <div class="row mb-4">
     <div class="col-md-6">

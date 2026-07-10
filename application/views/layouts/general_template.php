@@ -107,6 +107,29 @@
   }
 
   // Detecta notificaciones nuevas y dispara toasts
+  function _erpPlayProductionAlert() {
+    try {
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      var ctx = new AudioCtx();
+      var playTone = function(freq, start, duration) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + duration + 0.05);
+      };
+      playTone(523.25, 0, 0.12);
+      playTone(659.25, 0.14, 0.18);
+    } catch (e) { /* sin audio disponible */ }
+  }
+
   function _erpCheckNewToasts(notifications) {
     var currentMap = {};
     notifications.forEach(function(n) { currentMap[_erpNotifKey(n)] = n; });
@@ -118,12 +141,22 @@
       return;
     }
 
+    var isProduccionPage = window.location.pathname.indexOf('/produccion/') !== -1;
+    var playSound = false;
+
     // Mostrar toast sólo para las que no estaban en el ciclo anterior
     notifications.forEach(function(n) {
       if (!_erpSeenNotifs || !_erpSeenNotifs[_erpNotifKey(n)]) {
         showErpToast(n);
+        if (isProduccionPage && n.module === 'Producción') {
+          playSound = true;
+        }
       }
     });
+
+    if (playSound) {
+      _erpPlayProductionAlert();
+    }
 
     _erpSeenNotifs = currentMap;
   }
@@ -199,7 +232,8 @@
   // Arrancar al cargar la página
   $(document).ready(function() {
     loadNotifications();
-    notificationsInterval = setInterval(loadNotifications, 120000); // cada 2 min
+    var pollMs = window.location.pathname.indexOf('/produccion/') !== -1 ? 60000 : 120000;
+    notificationsInterval = setInterval(loadNotifications, pollMs);
   });
   </script>
   

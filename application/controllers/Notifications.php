@@ -141,6 +141,23 @@ class Notifications extends MY_Controller {
       $total_count++;
     }
 
+    // 8. PRODUCCIÓN - Solicitudes pendientes (incluye órdenes desde obras)
+    $solicitudes_pendientes = $this->_get_solicitudes_produccion_pendientes();
+    if(!empty($solicitudes_pendientes)) {
+      $count = count($solicitudes_pendientes);
+      $ultima = $solicitudes_pendientes[0];
+      $notifications[] = [
+        'type' => 'danger',
+        'icon' => 'industry',
+        'module' => 'Producción',
+        'title' => 'Solicitudes de producción pendientes',
+        'message' => $count . ' solicitud(es) requieren atención' . ($ultima->folio ? ' (última: ' . $ultima->folio . ')' : ''),
+        'link' => base_url('produccion/Dashboard'),
+        'time' => 'Ahora'
+      ];
+      $total_count++;
+    }
+
     // Limitar a las 10 notificaciones más importantes
     $notifications = array_slice($notifications, 0, 10);
 
@@ -250,6 +267,18 @@ class Notifications extends MY_Controller {
   private function _get_preordenes_pendientes() {
     $this->db->where('estatus', 'Pendiente');
     return $this->db->count_all_results('preordenes');
+  }
+
+  /**
+   * Solicitudes de producción pendientes
+   */
+  private function _get_solicitudes_produccion_pendientes() {
+    $this->db->select('id, folio, fecha_solicitud, fecha_creacion');
+    $this->db->from('solicitudes_produccion');
+    $this->db->where('estatus', 'Pendiente');
+    $this->db->order_by('fecha_creacion', 'DESC');
+    $this->db->limit(10);
+    return $this->db->get()->result();
   }
 
   /**

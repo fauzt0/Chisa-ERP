@@ -420,6 +420,18 @@ function renderDetalleOrden(orden) {
       </div>
     </div>
   `;
+
+  if (orden.obra && orden.obra.folio) {
+    html += `
+      <div class="alert alert-warning mb-3">
+        <i class="fas fa-hard-hat"></i>
+        <strong>Obra vinculada:</strong>
+        <a href="<?=base_url('obras/Obras/detalle/')?>${orden.obra.id}" class="alert-link fw-bold">${orden.obra.folio}</a>
+        <span class="badge bg-secondary ms-1">${orden.obra.nombre}</span>
+        <span class="badge bg-info ms-1">${orden.obra.estatus}</span>
+      </div>
+    `;
+  }
   
   // Mostrar información de envío si es un Pedido
   if(orden.tipo_venta === 'Pedido' || orden.direccion_envio) {

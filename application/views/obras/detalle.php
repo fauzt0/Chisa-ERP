@@ -50,6 +50,13 @@ $badgeColor = $badgeColors[$obra->estatus] ?? 'secondary';
     </div>
 </div>
 
+<?php
+$this->load->view('obras/partials/vinculo_venta', [
+    'obra' => $obra,
+    'baseUrl' => base_url('obras/Obras')
+]);
+?>
+
 <!-- Información General -->
 <div class="row mb-4">
     <div class="col-md-6">

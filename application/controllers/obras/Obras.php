@@ -169,6 +169,10 @@ class Obras extends MY_Controller {
      */
     public function actualizar_ajax() {
         $obra_id = $this->input->post('obra_id');
+
+        $this->db->select('estatus');
+        $this->db->where('id', $obra_id);
+        $obra_anterior = $this->db->get('obras')->row();
         
         $data = [
             'nombre' => $this->input->post('nombre'),
@@ -188,6 +192,14 @@ class Obras extends MY_Controller {
         if($result) {
             // Recalcular totales
             $this->ObrasModel->calcular_totales_obra($obra_id);
+
+            $nuevo_estatus = $this->input->post('estatus');
+            if ($obra_anterior && $obra_anterior->estatus !== 'Aprobada' && $nuevo_estatus === 'Aprobada') {
+                $obra_actual = $this->ObrasModel->get_obra_detalle($obra_id);
+                if (empty($obra_actual->orden_venta_id)) {
+                    $this->ObrasModel->crear_solicitudes_produccion_desde_obra($obra_id);
+                }
+            }
             
             echo json_encode([
                 'success' => true,
@@ -582,5 +594,89 @@ class Obras extends MY_Controller {
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar la formulación']);
         }
+    }
+
+    /**
+     * Vista de documento PDF profesional de la obra
+     */
+    public function exportar_pdf($obra_id) {
+        $obra = $this->ObrasModel->get_obra_detalle($obra_id);
+        if (!$obra) {
+            show_404();
+            return;
+        }
+
+        $this->load->model('Config/EmpresaModel');
+        $data['obra'] = $obra;
+        $data['empresa'] = $this->EmpresaModel->get_config();
+        $this->load->view('obras/pdf_resumen', $data);
+    }
+
+    /**
+     * Órdenes de venta del cliente disponibles para vincular (AJAX)
+     */
+    public function get_ordenes_venta_disponibles_ajax() {
+        $obra_id = $this->input->get('obra_id');
+        $obra = $this->ObrasModel->get_obra_detalle($obra_id);
+
+        if (!$obra) {
+            echo json_encode(['success' => false, 'message' => 'Obra no encontrada']);
+            return;
+        }
+
+        $ordenes = $this->ObrasModel->get_ordenes_venta_disponibles($obra->cliente_id, $obra_id);
+        echo json_encode(['success' => true, 'ordenes' => $ordenes]);
+    }
+
+    /**
+     * Vincula una orden de venta existente a la obra (AJAX)
+     */
+    public function vincular_orden_venta_ajax() {
+        $obra_id = $this->input->post('obra_id');
+        $orden_venta_id = $this->input->post('orden_venta_id');
+
+        if (!$obra_id || !$orden_venta_id) {
+            echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+            return;
+        }
+
+        $result = $this->ObrasModel->vincular_orden_venta($obra_id, $orden_venta_id);
+        echo json_encode($result);
+    }
+
+    /**
+     * Genera una orden de venta desde la obra (AJAX)
+     */
+    public function generar_orden_venta_ajax() {
+        $obra_id = $this->input->post('obra_id');
+        if (!$obra_id) {
+            echo json_encode(['success' => false, 'message' => 'ID de obra no proporcionado']);
+            return;
+        }
+
+        $usuario_id = $this->session->userdata('user_id') ?: 1;
+        $result = $this->ObrasModel->generar_orden_venta_desde_obra($obra_id, $usuario_id);
+        echo json_encode($result);
+    }
+
+    /**
+     * Confirma la orden de venta vinculada y envía a producción (AJAX)
+     */
+    public function confirmar_orden_venta_ajax() {
+        $obra_id = $this->input->post('obra_id');
+        $obra = $this->ObrasModel->get_obra_detalle($obra_id);
+
+        if (!$obra || empty($obra->orden_venta_id)) {
+            echo json_encode(['success' => false, 'message' => 'La obra no tiene orden de venta vinculada']);
+            return;
+        }
+
+        $this->load->model('Ventas/VentasModel');
+        $this->VentasModel->confirmar_orden($obra->orden_venta_id);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Orden ' . $obra->orden_venta_folio . ' confirmada y enviada a producción'
+        ]);
     }
 }
