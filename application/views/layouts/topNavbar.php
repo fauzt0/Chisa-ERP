@@ -59,8 +59,24 @@
 
   <div class="navbar-collapse collapse">
     <ul class="navbar-nav navbar-align">
-      
 
+      <li class="nav-item dropdown" id="comunicacion-nav-item" style="display: none;">
+        <a class="nav-icon dropdown-toggle" href="#" id="comunicacionDropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <div class="position-relative">
+            <i class="align-middle fas fa-comments text-body"></i>
+            <span class="indicator" id="comunicacion-badge" style="display: none;"></span>
+          </div>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end py-0" aria-labelledby="comunicacionDropdown">
+          <div class="dropdown-menu-header" id="comunicacion-header">
+            <span class="spinner-border spinner-border-sm me-2"></span> Cargando mensajes...
+          </div>
+          <div class="list-group" id="comunicacion-list"></div>
+          <div class="dropdown-menu-footer">
+            <a href="<?= base_url('rh/Comunicacion') ?>" class="text-muted">Abrir bandeja completa</a>
+          </div>
+        </div>
+      </li>
       
       <li class="nav-item dropdown">
         <a class="nav-icon dropdown-toggle" href="#" id="alertsDropdown" data-bs-toggle="dropdown">

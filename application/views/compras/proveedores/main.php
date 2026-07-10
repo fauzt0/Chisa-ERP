@@ -109,9 +109,17 @@
           <div class="d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Catálogo de Proveedores</h5>
             <?php if (tiene_permiso('proveedores_add')): ?>
-            <button class="btn btn-primary btn-sm" onclick="mostrarModalNuevo()">
-              <i class="fas fa-plus"></i> Nuevo Proveedor
-            </button>
+            <div class="d-flex gap-2">
+              <a class="btn btn-outline-success btn-sm" href="<?= base_url('compras/Proveedores/descargar_plantilla_excel') ?>">
+                <i class="fas fa-file-excel"></i> Plantilla Excel
+              </a>
+              <button class="btn btn-success btn-sm" type="button" onclick="abrirModalImportarProveedores()">
+                <i class="fas fa-file-upload"></i> Carga masiva
+              </button>
+              <button class="btn btn-primary btn-sm" type="button" onclick="mostrarModalNuevo()">
+                <i class="fas fa-plus"></i> Nuevo Proveedor
+              </button>
+            </div>
             <?php endif; ?>
           </div>
         </div>
@@ -455,6 +463,49 @@
   </div>
 </div>
 
+
+<!-- Modal: Carga masiva de proveedores -->
+<div class="modal fade" id="modalImportarProveedores" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-file-upload me-1"></i> Carga masiva de proveedores</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info small mb-3">
+          <strong>Instrucciones:</strong>
+          <ol class="mb-0 ps-3">
+            <li>Descargue la <a href="<?= base_url('compras/Proveedores/descargar_plantilla_excel') ?>" class="alert-link">plantilla Excel</a> con las columnas requeridas.</li>
+            <li>La <strong>fila 2</strong> del Excel es solo ejemplo — reemplácela o elimínela antes de importar.</li>
+            <li>Capture sus proveedores desde la <strong>fila 2</strong> en la hoja «Proveedores» (no modifique el orden de columnas).</li>
+            <li>Campos obligatorios: <strong>Razón social</strong> y <strong>RFC</strong>.</li>
+            <li>Los RFC duplicados (en el archivo o en el sistema) se omiten automáticamente.</li>
+          </ol>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="archivo_importar_proveedores">Archivo Excel (.xlsx / .xls)</label>
+          <input type="file" class="form-control" id="archivo_importar_proveedores" accept=".xlsx,.xls">
+        </div>
+
+        <div id="importar_proveedores_resultado" class="d-none">
+          <div class="border rounded p-3 bg-light small" id="importar_proveedores_resumen"></div>
+          <ul class="small mt-2 mb-0" id="importar_proveedores_detalle" style="max-height: 200px; overflow-y: auto;"></ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-outline-success btn-sm" href="<?= base_url('compras/Proveedores/descargar_plantilla_excel') ?>">
+          <i class="fas fa-download"></i> Descargar plantilla
+        </a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="btnProcesarImportacionProveedores" onclick="procesarImportacionProveedores()">
+          <i class="fas fa-upload"></i> Importar proveedores
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- =====================================================
      Offcanvas: Detalle del Proveedor
@@ -832,6 +883,76 @@
       }
     });
   }
+
+  window.abrirModalImportarProveedores = function() {
+    $('#archivo_importar_proveedores').val('');
+    $('#importar_proveedores_resultado').addClass('d-none');
+    $('#importar_proveedores_resumen').empty();
+    $('#importar_proveedores_detalle').empty();
+    $('#btnProcesarImportacionProveedores').prop('disabled', false).html('<i class="fas fa-upload"></i> Importar proveedores');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImportarProveedores')).show();
+  };
+
+  window.procesarImportacionProveedores = function() {
+    const input = document.getElementById('archivo_importar_proveedores');
+    if (!input || !input.files || !input.files.length) {
+      toastProveedores('warning', 'Archivo requerido', 'Seleccione un archivo Excel (.xlsx o .xls).');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('archivo_excel', input.files[0]);
+    formData.append('peticion', 'ajax');
+    formData.append('<?php echo $this->security->get_csrf_token_name(); ?>', '<?php echo $this->security->get_csrf_hash(); ?>');
+
+    const btn = $('#btnProcesarImportacionProveedores');
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+
+    $.ajax({
+      url: '<?= base_url('compras/Proveedores/importar_excel_ajax') ?>',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      dataType: 'json',
+      success: function(result) {
+        btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Importar proveedores');
+
+        if (!result || typeof result !== 'object') {
+          toastProveedores('danger', 'Error', 'Respuesta inválida del servidor.');
+          return;
+        }
+
+        const res = result.resultado || {};
+        $('#importar_proveedores_resultado').removeClass('d-none');
+        $('#importar_proveedores_resumen').html(
+          '<strong>Resultado:</strong> ' + (result.message || '') +
+          '<br><span class="text-success">Insertados: ' + (res.inserted || 0) + '</span> · ' +
+          '<span class="text-warning">Omitidos: ' + (res.skipped || 0) + '</span> · ' +
+          '<span class="text-danger">Errores: ' + (res.errors || 0) + '</span>'
+        );
+
+        const detalle = (res.messages || []).map(function(msg) {
+          return '<li>' + $('<div>').text(msg).html() + '</li>';
+        }).join('');
+        $('#importar_proveedores_detalle').html(detalle || '<li class="text-muted">Sin detalles adicionales.</li>');
+
+        toastProveedores(
+          result.partial ? 'warning' : (result.success ? 'success' : 'warning'),
+          result.success ? 'Importación completada' : (result.partial ? 'Importación parcial' : 'Importación con observaciones'),
+          result.message || 'Proceso finalizado.'
+        );
+
+        if ((res.inserted || 0) > 0 && typeof tabla !== 'undefined' && tabla) {
+          tabla.ajax.reload(null, false);
+        }
+      },
+      error: function() {
+        btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Importar proveedores');
+        toastProveedores('danger', 'Error de conexión', 'No se pudo procesar el archivo.');
+      }
+    });
+  };
 
   window.mostrarModalNuevo = function() {
     proveedorEditando = null;

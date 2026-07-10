@@ -121,12 +121,21 @@ class ProveedoresModel extends MY_Model {
      * Crea un nuevo proveedor
      */
     public function crear_proveedor($data) {
-        // Generar código si no existe
-        if(empty($data['codigo'])) {
+        if (empty($data['codigo'])) {
             $data['codigo'] = $this->generar_codigo();
         }
-        
-        return $this->db->insert($this->tableName, $data);
+
+        $db_debug = $this->db->db_debug;
+        $this->db->db_debug = false;
+        $ok = $this->db->insert($this->tableName, $data);
+
+        if (!$ok) {
+            $data['codigo'] = $this->generar_codigo();
+            $ok = $this->db->insert($this->tableName, $data);
+        }
+
+        $this->db->db_debug = $db_debug;
+        return $ok;
     }
     
     /**
@@ -243,21 +252,23 @@ class ProveedoresModel extends MY_Model {
      * Genera código único para proveedor
      */
     private function generar_codigo() {
-        $prefijo = 'PROV';
-        $this->db->select('codigo');
-        $this->db->from($this->tableName);
-        $this->db->like('codigo', $prefijo, 'after');
-        $this->db->order_by('id', 'DESC');
-        $this->db->limit(1);
-        $ultimo = $this->db->get()->row();
-        
-        if($ultimo) {
-            $numero = intval(substr($ultimo->codigo, strlen($prefijo))) + 1;
-        } else {
-            $numero = 1;
+        $this->db->select_max('id');
+        $row = $this->db->get($this->tableName)->row();
+        $numero = ((int) ($row->id ?? 0)) + 1;
+        $codigo = 'PROV-' . str_pad($numero, 3, '0', STR_PAD_LEFT);
+
+        $intentos = 0;
+        while ($intentos < 1000) {
+            $this->db->where('codigo', $codigo);
+            if ($this->db->count_all_results($this->tableName) === 0) {
+                return $codigo;
+            }
+            $numero++;
+            $codigo = 'PROV-' . str_pad($numero, 3, '0', STR_PAD_LEFT);
+            $intentos++;
         }
-        
-        return $prefijo . str_pad($numero, 5, '0', STR_PAD_LEFT);
+
+        return 'PROV-' . strtoupper(substr(uniqid(), -6));
     }
     
     /**
@@ -269,6 +280,103 @@ class ProveedoresModel extends MY_Model {
         $this->db->where('estatus', 'Activo');
         $this->db->order_by('razon_social', 'ASC');
         return $this->db->get()->result();
+    }
+
+    /**
+     * Importa proveedores desde filas parseadas del Excel.
+     */
+    public function importar_masivo(array $rows, $usuario_id = null) {
+        $inserted = 0;
+        $errors = 0;
+        $skipped = 0;
+        $messages = [];
+        $tipos_validos = ['Materia Prima', 'Materiales', 'Servicios', 'Mixto'];
+        $rfcs_vistos = [];
+
+        foreach ($rows as $idx => $row) {
+            $linea = (int) ($row['_linea'] ?? ($idx + 2));
+            $razon = trim($row['razon_social'] ?? '');
+            $rfc = strtoupper(preg_replace('/\s+/', '', $row['rfc'] ?? ''));
+
+            if (preg_match('/^\(EJEMPLO\)/i', $razon)) {
+                $skipped++;
+                $messages[] = "Fila {$linea}: fila de ejemplo omitida.";
+                continue;
+            }
+
+            if ($razon === '') {
+                $errors++;
+                $messages[] = "Fila {$linea}: la razón social es obligatoria.";
+                continue;
+            }
+
+            if ($rfc === '') {
+                $errors++;
+                $messages[] = "Fila {$linea}: el RFC es obligatorio.";
+                continue;
+            }
+
+            if (strlen($rfc) < 12 || strlen($rfc) > 13) {
+                $errors++;
+                $messages[] = "Fila {$linea}: RFC «{$rfc}» no tiene formato válido (12–13 caracteres).";
+                continue;
+            }
+
+            if (isset($rfcs_vistos[$rfc])) {
+                $skipped++;
+                $messages[] = "Fila {$linea}: RFC {$rfc} duplicado en el archivo (omitido).";
+                continue;
+            }
+            $rfcs_vistos[$rfc] = true;
+
+            $this->db->where('rfc', $rfc);
+            if ($this->db->count_all_results($this->tableName) > 0) {
+                $skipped++;
+                $messages[] = "Fila {$linea}: RFC {$rfc} ya existe en el sistema (omitido).";
+                continue;
+            }
+
+            $tipo = trim($row['tipo_proveedor'] ?? '');
+            if ($tipo === '' || !in_array($tipo, $tipos_validos, true)) {
+                $tipo = 'Mixto';
+            }
+
+            $data = [
+                'razon_social' => $razon,
+                'nombre_comercial' => trim($row['nombre_comercial'] ?? ''),
+                'rfc' => $rfc,
+                'tipo_proveedor' => $tipo,
+                'contacto_principal' => trim($row['contacto_principal'] ?? ''),
+                'telefono' => trim($row['telefono'] ?? ''),
+                'telefono_alternativo' => trim($row['telefono_alternativo'] ?? ''),
+                'email' => trim($row['email'] ?? ''),
+                'direccion' => trim($row['direccion'] ?? ''),
+                'ciudad' => trim($row['ciudad'] ?? ''),
+                'estado' => trim($row['estado'] ?? ''),
+                'codigo_postal' => trim($row['codigo_postal'] ?? ''),
+                'pais' => trim($row['pais'] ?? '') ?: 'México',
+                'dias_credito' => is_numeric($row['dias_credito'] ?? '') ? (int) $row['dias_credito'] : 0,
+                'limite_credito' => 0,
+                'observaciones' => trim($row['observaciones'] ?? ''),
+                'calificacion' => 3,
+                'estatus' => 'Activo',
+                'registrado_por' => $usuario_id,
+            ];
+
+            if ($this->crear_proveedor($data)) {
+                $inserted++;
+            } else {
+                $errors++;
+                $messages[] = "Fila {$linea}: no se pudo insertar «{$razon}».";
+            }
+        }
+
+        return [
+            'inserted' => $inserted,
+            'errors' => $errors,
+            'skipped' => $skipped,
+            'messages' => $messages,
+        ];
     }
 
     /**

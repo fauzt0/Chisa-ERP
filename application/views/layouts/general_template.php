@@ -230,11 +230,125 @@
     loadNotifications();
   }
 
+  function _erpEscHtml(s) {
+    if (s == null || s === '') return '';
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  function _erpTruncarTexto(s, max) {
+    s = String(s || '').replace(/\s+/g, ' ').trim();
+    if (s.length <= max) return s;
+    return s.substring(0, max - 1) + '…';
+  }
+
+  function _erpFormatoFechaCorta(fecha) {
+    if (!fecha) return '';
+    var d = new Date(String(fecha).replace(' ', 'T'));
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function updateComunicacionNavbarUI(data) {
+    if (!data.linked) {
+      $('#comunicacion-nav-item').hide();
+      return;
+    }
+
+    $('#comunicacion-nav-item').show();
+
+    if (!data.installed) {
+      $('#comunicacion-header').html('Comunicación interna no disponible');
+      $('#comunicacion-list').html(
+        '<div class="list-group-item text-center text-muted py-4">El módulo aún no está instalado en la base de datos.</div>'
+      );
+      $('#comunicacion-badge').hide();
+      return;
+    }
+
+    var resumen = data.resumen || {};
+    var mensajes = data.mensajes || [];
+    var tareas = data.tareas || [];
+    var total = parseInt(data.total_pendiente, 10) || 0;
+    var msgCount = parseInt(resumen.mensajes_no_leidos, 10) || 0;
+    var tareasCount = (parseInt(resumen.tareas_pendientes, 10) || 0) + (parseInt(resumen.tareas_en_proceso, 10) || 0);
+    var url = data.url || '<?= base_url('rh/Comunicacion') ?>';
+
+    if (total > 0) {
+      $('#comunicacion-badge').text(total > 9 ? '9+' : total).show();
+    } else {
+      $('#comunicacion-badge').hide();
+    }
+
+    var headerParts = [];
+    if (msgCount > 0) headerParts.push(msgCount + ' mensaje' + (msgCount > 1 ? 's' : '') + ' sin leer');
+    if (tareasCount > 0) headerParts.push(tareasCount + ' tarea' + (tareasCount > 1 ? 's' : '') + ' pendiente' + (tareasCount > 1 ? 's' : ''));
+    $('#comunicacion-header').html(headerParts.length ? headerParts.join(' · ') : 'Sin mensajes ni tareas pendientes');
+
+    var html = '';
+    if (!mensajes.length && !tareas.length) {
+      html = '<div class="list-group-item text-center text-muted py-4">' +
+             '<i class="fas fa-check-circle fa-2x mb-2"></i><br>' +
+             'Estás al día con tu bandeja' +
+             '</div>';
+    } else {
+      if (mensajes.length) {
+        html += '<div class="list-group-item bg-light py-2 small fw-semibold text-uppercase text-muted">Mensajes sin leer</div>';
+        mensajes.forEach(function(m) {
+          html += '<a href="' + url + '" class="list-group-item list-group-item-action">' +
+            '<div class="d-flex align-items-start gap-2">' +
+              '<div class="text-primary pt-1"><i class="fas fa-envelope"></i></div>' +
+              '<div class="flex-grow-1 min-w-0">' +
+                '<div class="fw-semibold text-truncate">' + _erpEscHtml(m.de_nombre || 'Compañero') + '</div>' +
+                '<div class="text-muted small text-truncate">' + _erpEscHtml(_erpTruncarTexto(m.mensaje, 90)) + '</div>' +
+                '<div class="text-muted small">' + _erpFormatoFechaCorta(m.fecha_envio) + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</a>';
+        });
+      }
+      if (tareas.length) {
+        html += '<div class="list-group-item bg-light py-2 small fw-semibold text-uppercase text-muted">Tareas pendientes</div>';
+        tareas.forEach(function(t) {
+          var badge = t.estatus === 'En proceso' ? 'info' : 'warning';
+          html += '<a href="' + url + '" class="list-group-item list-group-item-action">' +
+            '<div class="d-flex align-items-start gap-2">' +
+              '<div class="text-warning pt-1"><i class="fas fa-tasks"></i></div>' +
+              '<div class="flex-grow-1 min-w-0">' +
+                '<div class="fw-semibold text-truncate">' + _erpEscHtml(t.titulo || 'Tarea') + '</div>' +
+                '<div class="text-muted small">De: ' + _erpEscHtml(t.de_nombre || 'Compañero') +
+                  ' · <span class="badge bg-' + badge + '">' + _erpEscHtml(t.estatus) + '</span></div>' +
+              '</div>' +
+            '</div>' +
+          '</a>';
+        });
+      }
+    }
+
+    $('#comunicacion-list').html(html);
+  }
+
+  function loadComunicacionNavbar() {
+    $.get('<?= base_url('rh/Comunicacion/navbar_ajax') ?>', function(response) {
+      try {
+        var data = typeof response === 'string' ? JSON.parse(response) : response;
+        if (data.success) {
+          updateComunicacionNavbarUI(data);
+        }
+      } catch (e) {
+        console.error('Error parsing comunicacion navbar:', e);
+      }
+    });
+  }
+
   // Arrancar al cargar la página
   $(document).ready(function() {
     loadNotifications();
+    loadComunicacionNavbar();
     var pollMs = window.location.pathname.indexOf('/produccion/') !== -1 ? 60000 : 120000;
     notificationsInterval = setInterval(loadNotifications, pollMs);
+    setInterval(loadComunicacionNavbar, pollMs);
   });
   </script>
   

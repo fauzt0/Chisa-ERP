@@ -1307,6 +1307,7 @@
 
 <!-- Scripts necesarios para exportar tabla excel, pdf -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="<?= base_url('assets/dist/js/rh_contratos_pdf.js') ?>?v=<?= time() ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
@@ -1598,7 +1599,23 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // Ver contrato en modal
   var contratoActual = null;
-  
+  var modalContratoInstance = null;
+  var RH_COLOR_CONTRATO = '#1a3a5c';
+
+  function abrirModalContratoRh() {
+    if (!modalContratoInstance) {
+      modalContratoInstance = RhContratos.abrirModalContrato('modalContrato');
+      if (!modalContratoInstance && window.bootstrap) {
+        modalContratoInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalContrato'));
+      }
+    }
+    if (modalContratoInstance && modalContratoInstance.show) {
+      modalContratoInstance.show();
+    } else if (window.jQuery) {
+      $('#modalContrato').modal('show');
+    }
+  }
+
   function verContrato(contrato_id) {
     $.post('<?=base_url();?>/rh/RecursosHumanos/ver_contrato',
     {
@@ -1607,78 +1624,48 @@ document.addEventListener("DOMContentLoaded", function() {
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
     },
     function(result) {
-      result = JSON.parse(result);
+      try {
+        result = RhContratos.parseJsonResponse(result);
+      } catch (e) {
+        notifyShow('Error al procesar respuesta del contrato', 'danger');
+        return;
+      }
+
       if(result['success']) {
         contratoActual = result['contrato'];
-        
-        var badgeVigente = contratoActual.vigente == 1 ? 
-          '<span class="badge bg-success">● VIGENTE</span>' : 
-          '<span class="badge bg-secondary">○ NO VIGENTE</span>';
-        
-        // Formato profesional basado en ejemplo de recibo
-        var html = '<div class="card">' +
-          '<div class="card-body m-sm-3 m-md-5">' +
-            // Encabezado
-            '<div class="mb-4 text-center">' +
-              '<img src="<?php echo base_url(); ?>assets/dist/img/brands/chisa_recubrimientos_logo.jpg" alt="CHISA" style="max-width: 200px; margin-bottom: 20px;">' +
-              '<h2 style="margin: 0; font-weight: bold; text-transform: uppercase;">Contrato Individual de Trabajo</h2>' +
-              '<p class="text-muted mb-0">CHISA RECUBRIMIENTOS</p>' +
-            '</div>' +
-            
-            // Información del contrato
-            '<div class="row mb-4">' +
-              '<div class="col-md-6">' +
-                '<div class="text-muted">Contrato No.</div>' +
-                '<strong>' + contratoActual.version + '</strong>' +
+
+        var badgeVigente = contratoActual.vigente == 1 ?
+          '<span class="badge bg-success">Vigente</span>' :
+          '<span class="badge bg-secondary">Histórico</span>';
+
+        var metaHtml =
+          '<div class="card border-0 shadow-sm mb-0">' +
+            '<div class="card-body p-4">' +
+              '<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 border-bottom pb-3 mb-3">' +
+                '<div>' +
+                  '<h5 class="mb-1">Contrato Individual de Trabajo</h5>' +
+                  '<div class="text-muted small">Versión ' + contratoActual.version + ' · ' + contratoActual.tipo_contrato + '</div>' +
+                '</div>' +
+                '<div class="text-end">' + badgeVigente +
+                  '<div class="text-muted small mt-1">Inicio: ' + contratoActual.fecha_inicio + '</div>' +
+                '</div>' +
               '</div>' +
-              '<div class="col-md-6 text-md-end">' +
-                '<div class="text-muted">Fecha de Inicio</div>' +
-                '<strong>' + contratoActual.fecha_inicio + '</strong>' +
-              '</div>' +
+              '<div id="contrato-preview-body"></div>' +
             '</div>' +
-            
-            '<hr class="my-4">' +
-            
-            // Información de las partes
-            '<div class="row mb-4">' +
-              '<div class="col-md-6">' +
-                '<div class="text-muted">Empleado</div>' +
-                '<strong>' + (contratoActual.nombre_completo || 'N/A') + '</strong>' +
-                '<p class="mb-0">' +
-                  '<small>Número de Empleado: ' + (contratoActual.numero_empleado || 'N/A') + '</small><br>' +
-                  '<small>Puesto: ' + (contratoActual.puesto || 'N/A') + '</small>' +
-                '</p>' +
-              '</div>' +
-              '<div class="col-md-6 text-md-end">' +
-                '<div class="text-muted">Tipo de Contrato</div>' +
-                '<strong>' + contratoActual.tipo_contrato + '</strong>' +
-                '<p class="mb-0">' +
-                  '<small>Estatus: ' + badgeVigente + '</small><br>' +
-                  '<small>Fecha de Creación: ' + new Date(contratoActual.fecha_creacion).toLocaleDateString('es-MX') + '</small>' +
-                '</p>' +
-              '</div>' +
-            '</div>' +
-            
-            // Contenido del contrato
-            '<div class="mb-4" style="background: #f8f9fa; padding: 25px; border-radius: 8px; border: 1px solid #dee2e6;">' +
-              '<div style="white-space: pre-wrap; text-align: justify; line-height: 1.8; font-size: 14px;">' +
-                contratoActual.contrato_texto +
-              '</div>' +
-            '</div>' +
-            
-            // Pie de página
-            '<div class="text-center mt-4 pt-4" style="border-top: 1px solid #dee2e6;">' +
-              '<p class="text-muted mb-2" style="font-size: 12px; font-style: italic;">Este documento es una representación digital del contrato de trabajo</p>' +
-              '<p class="text-muted mb-0" style="font-size: 11px;">Generado el ' + new Date().toLocaleString('es-MX') + '</p>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-        
-        $('#contrato-content').html(html);
-        $('#modalContrato').modal('show');
+          '</div>';
+
+        $('#contrato-content').html(metaHtml);
+        RhContratos.renderPreview(
+          document.getElementById('contrato-preview-body'),
+          contratoActual.contrato_texto,
+          RH_COLOR_CONTRATO
+        );
+        abrirModalContratoRh();
       } else {
         notifyShow(result['message'], "danger");
       }
+    }).fail(function() {
+      notifyShow('Error de conexión al cargar el contrato', 'danger');
     });
   }
 
@@ -1688,59 +1675,19 @@ document.addEventListener("DOMContentLoaded", function() {
       notifyShow("No hay contrato cargado", "warning");
       return;
     }
-    
-    var html = contratoActual.contrato_texto;
-    
-    // Crear contenedor virtual simulando hoja carta
-    var element = document.createElement('div');
-    element.innerHTML = html;
-    
-    // Estilos para simular un documento profesional
-    Object.assign(element.style, {
-        padding: '20px',
-        fontFamily: '"Times New Roman", serif',
-        fontSize: '12pt',
-        lineHeight: '1.5',
-        textAlign: 'justify',
-        color: '#000000',
-        backgroundColor: '#ffffff',
-        width: '800px', // Ancho fijo para consistencia
-        margin: '0 auto'
-    });
-    
-    // Ajustar imágenes
-    var imgs = element.querySelectorAll('img');
-    imgs.forEach(function(img) {
-        img.style.maxWidth = '100%';
-        img.style.height = 'auto';
-        img.style.display = 'block';
-        img.style.margin = '0 auto';
-    });
-    
-    var opt = {
-      margin:       [15, 15, 15, 15], // Márgenes del PDF (mm)
-      filename:     'Contrato_' + (contratoActual.tipo_contrato || 'Historico') + '.pdf',
-      image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { 
-          scale: 2, // Mayor calidad
-          useCORS: true, 
-          scrollY: 0
-      },
-      jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
-    };
-    
-    // Usar worker para mejor control
-    html2pdf().set(opt).from(element).save().catch(function(err) {
-        console.error(err);
-        alert('Error al generar PDF. Verifique que no haya imágenes bloqueadas.');
-    });
+
+    RhContratos.generarPDF(
+      contratoActual.contrato_texto,
+      'Contrato_' + (contratoActual.tipo_contrato || 'Historico').replace(/\s+/g, '_') + '.pdf',
+      RH_COLOR_CONTRATO
+    );
   }
 
   function descargarPDFDirecto(id) {
     var btn = $(event.target).closest('button');
     var originalText = btn.html();
     btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
-    
+
     $.post('<?=base_url();?>/rh/RecursosHumanos/ver_contrato',
     {
       'contrato_id': id,
@@ -1750,52 +1697,23 @@ document.addEventListener("DOMContentLoaded", function() {
     function(result) {
       btn.prop('disabled', false).html(originalText);
       try {
-          result = JSON.parse(result);
-          if(result['success']) {
-            var contrato = result['contrato'];
-            
-            // Usar solo texto del contrato
-            var html = contrato.contrato_texto;
-            
-            var element = document.createElement('div');
-            element.innerHTML = html;
-            
-            Object.assign(element.style, {
-                padding: '20px',
-                fontFamily: '"Times New Roman", serif',
-                fontSize: '12pt',
-                lineHeight: '1.5',
-                textAlign: 'justify',
-                color: '#000000',
-                backgroundColor: '#ffffff',
-                width: '800px',
-                margin: '0 auto'
-            });
-            
-            var imgs = element.querySelectorAll('img');
-            imgs.forEach(function(img) {
-                img.style.maxWidth = '100%';
-                img.style.height = 'auto';
-                img.style.display = 'block';
-                img.style.margin = '0 auto';
-            });
-            
-            var opt = {
-              margin:       [15, 15, 15, 15],
-              filename:     'Contrato_' + (contrato.tipo_contrato || 'Historico') + '.pdf',
-              image:        { type: 'jpeg', quality: 1 },
-              html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
-              jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
-            };
-            
-            html2pdf().set(opt).from(element).save();
-            
-          } else {
-            notifyShow(result['message'], "danger");
-          }
+        result = RhContratos.parseJsonResponse(result);
+        if(result['success']) {
+          var contrato = result['contrato'];
+          RhContratos.generarPDF(
+            contrato.contrato_texto,
+            'Contrato_' + (contrato.tipo_contrato || 'Historico').replace(/\s+/g, '_') + '.pdf',
+            RH_COLOR_CONTRATO
+          );
+        } else {
+          notifyShow(result['message'], "danger");
+        }
       } catch(e) {
-          notifyShow('Error al procesar respuesta', 'danger');
+        notifyShow('Error al procesar respuesta', 'danger');
       }
+    }).fail(function() {
+      btn.prop('disabled', false).html(originalText);
+      notifyShow('Error de conexión al descargar el contrato', 'danger');
     });
   }
 

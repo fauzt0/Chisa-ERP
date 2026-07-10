@@ -25,6 +25,7 @@ class Perfil extends MY_Controller {
     $vacaciones = null;
     $solicitudes = [];
     $asistencia = null;
+    $comunicacion = null;
     $mensaje_vinculo = '';
 
     if (!empty($user->empleado_id)) {
@@ -33,6 +34,10 @@ class Perfil extends MY_Controller {
             $vacaciones = $this->VacacionesModel->get_balance_actual($user->empleado_id);
             $solicitudes = $this->VacacionesModel->get_solicitudes_empleado($user->empleado_id);
             $asistencia = $this->_get_resumen_asistencia_empleado($user->empleado_id, $solicitudes);
+            if (in_array((int)$empleado->estatus, [1, 2], true)) {
+                $this->load->model('RH/ComunicacionModel');
+                $comunicacion = $this->ComunicacionModel->get_resumen($user->empleado_id);
+            }
         } else {
             $mensaje_vinculo = 'Tu usuario está vinculado a un expediente de empleado que ya no existe. Contacta a RRHH.';
         }
@@ -46,6 +51,7 @@ class Perfil extends MY_Controller {
         'vacaciones' => $vacaciones,
         'solicitudes' => $solicitudes,
         'asistencia' => $asistencia,
+        'comunicacion' => $comunicacion,
         'mensaje_vinculo' => $mensaje_vinculo,
     ];
 

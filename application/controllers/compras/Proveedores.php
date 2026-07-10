@@ -4,6 +4,10 @@
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+
 class Proveedores extends MY_Controller {
     
     protected $modulo = 'Proveedores';
@@ -491,5 +495,211 @@ class Proveedores extends MY_Controller {
             'limit' => $limit,
             'offset' => $offset
         ]);
+    }
+
+    /**
+     * Descarga plantilla Excel para carga masiva de proveedores.
+     */
+    public function descargar_plantilla_excel() {
+        $this->requiere_permiso('proveedores_add', 'No tienes permiso para importar proveedores');
+
+        $headers = [
+            'Razón social *',
+            'Nombre comercial',
+            'RFC *',
+            'Tipo proveedor',
+            'Contacto principal',
+            'Teléfono',
+            'Teléfono alternativo',
+            'Email',
+            'Dirección',
+            'Ciudad',
+            'Estado',
+            'Código postal',
+            'País',
+            'Días crédito',
+            'Observaciones',
+        ];
+
+        $ejemplo = [
+            '(EJEMPLO) Pinturas del Norte SA de CV',
+            'Pinturas Norte',
+            'PDN850101ABC',
+            'Materiales',
+            'Lic. García',
+            '8181234567',
+            '',
+            'ventas@pinturasnorte.mx',
+            'Av. Industrial 100',
+            'Monterrey',
+            'Nuevo León',
+            '64000',
+            'México',
+            '30',
+            'Reemplace o elimine esta fila antes de importar',
+        ];
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Proveedores');
+
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $col++;
+        }
+
+        $col = 'A';
+        foreach ($ejemplo as $valor) {
+            $sheet->setCellValue($col . '2', $valor);
+            $col++;
+        }
+
+        $lastCol = chr(ord('A') + count($headers) - 1);
+        $sheet->getStyle('A1:' . $lastCol . '1')->getFont()->setBold(true);
+        foreach (range('A', $lastCol) as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        $instrucciones = $spreadsheet->createSheet();
+        $instrucciones->setTitle('Instrucciones');
+        $instrucciones->setCellValue('A1', 'Cómo usar esta plantilla');
+        $instrucciones->setCellValue('A3', '1. Capture sus proveedores en la hoja «Proveedores» desde la fila 2.');
+        $instrucciones->setCellValue('A4', '2. La fila 2 es solo un ejemplo — reemplácela o elimínela antes de importar.');
+        $instrucciones->setCellValue('A5', '3. Campos obligatorios: Razón social y RFC.');
+        $instrucciones->setCellValue('A6', '4. Tipo proveedor: Materia Prima | Materiales | Servicios | Mixto (opcional, default Mixto).');
+        $instrucciones->setCellValue('A7', '5. No modifique el orden de las columnas en la fila 1.');
+        $instrucciones->getStyle('A1')->getFont()->setBold(true);
+        $instrucciones->getColumnDimension('A')->setWidth(90);
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $writer = new Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="plantilla_proveedores_erp.xlsx"');
+        header('Cache-Control: max-age=0');
+        $writer->save('php://output');
+        exit;
+    }
+
+    /**
+     * Procesa carga masiva de proveedores desde Excel (AJAX).
+     */
+    public function importar_excel_ajax() {
+        $this->requiere_permiso('proveedores_add', 'No tienes permiso para importar proveedores');
+
+        if (empty($_FILES['archivo_excel']['name'])) {
+            echo json_encode(['success' => false, 'message' => 'Seleccione un archivo Excel (.xlsx o .xls)']);
+            return;
+        }
+
+        $ext = strtolower(pathinfo($_FILES['archivo_excel']['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['xlsx', 'xls'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Solo se aceptan archivos .xlsx o .xls']);
+            return;
+        }
+
+        if (!empty($_FILES['archivo_excel']['size']) && $_FILES['archivo_excel']['size'] > 5 * 1024 * 1024) {
+            echo json_encode(['success' => false, 'message' => 'El archivo excede el tamaño máximo permitido (5 MB)']);
+            return;
+        }
+
+        $tmp = $_FILES['archivo_excel']['tmp_name'];
+        if (!is_uploaded_file($tmp)) {
+            echo json_encode(['success' => false, 'message' => 'No se pudo leer el archivo subido']);
+            return;
+        }
+
+        try {
+            $readerType = ($ext === 'xlsx') ? 'Xlsx' : 'Xls';
+            $reader = IOFactory::createReader($readerType);
+            $spreadsheet = $reader->load($tmp);
+            $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+
+            $rows = [];
+            $totalFilas = count($sheetData);
+            for ($i = 2; $i <= $totalFilas; $i++) {
+                if (empty($sheetData[$i])) {
+                    continue;
+                }
+                $fila = $sheetData[$i];
+                $razon = $this->_normalizar_celda_excel($fila['A'] ?? '');
+                $rfc = strtoupper(preg_replace('/\s+/', '', $this->_normalizar_celda_excel($fila['C'] ?? '')));
+
+                if ($razon === '' && $rfc === '') {
+                    continue;
+                }
+
+                if ($rfc === '') {
+                    continue;
+                }
+
+                if (preg_match('/^\(EJEMPLO\)/i', $razon)) {
+                    continue;
+                }
+
+                $rows[] = [
+                    '_linea' => $i,
+                    'razon_social' => $razon,
+                    'nombre_comercial' => $this->_normalizar_celda_excel($fila['B'] ?? ''),
+                    'rfc' => $rfc,
+                    'tipo_proveedor' => $this->_normalizar_celda_excel($fila['D'] ?? ''),
+                    'contacto_principal' => $this->_normalizar_celda_excel($fila['E'] ?? ''),
+                    'telefono' => $this->_normalizar_celda_excel($fila['F'] ?? ''),
+                    'telefono_alternativo' => $this->_normalizar_celda_excel($fila['G'] ?? ''),
+                    'email' => $this->_normalizar_celda_excel($fila['H'] ?? ''),
+                    'direccion' => $this->_normalizar_celda_excel($fila['I'] ?? ''),
+                    'ciudad' => $this->_normalizar_celda_excel($fila['J'] ?? ''),
+                    'estado' => $this->_normalizar_celda_excel($fila['K'] ?? ''),
+                    'codigo_postal' => $this->_normalizar_celda_excel($fila['L'] ?? ''),
+                    'pais' => $this->_normalizar_celda_excel($fila['M'] ?? ''),
+                    'dias_credito' => $this->_normalizar_celda_excel($fila['N'] ?? ''),
+                    'observaciones' => $this->_normalizar_celda_excel($fila['O'] ?? ''),
+                ];
+            }
+
+            if (empty($rows)) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'No hay proveedores para importar. Reemplace la fila de ejemplo en la plantilla o agregue filas con RFC en la columna C.',
+                ]);
+                return;
+            }
+
+            $usuario_id = $this->session->userdata('id');
+            $result = $this->ProveedoresModel->importar_masivo($rows, $usuario_id);
+
+            if ($result['inserted'] > 0) {
+                $this->registrar_bitacora(
+                    'Carga masiva proveedores: ' . $result['inserted'] . ' insertados, ' . $result['skipped'] . ' omitidos, ' . $result['errors'] . ' errores',
+                    'Proveedores'
+                );
+            }
+
+            echo json_encode([
+                'success' => $result['errors'] === 0 && ($result['inserted'] > 0 || $result['skipped'] > 0),
+                'partial' => $result['inserted'] > 0 && ($result['errors'] > 0 || $result['skipped'] > 0),
+                'message' => 'Carga finalizada: ' . $result['inserted'] . ' insertados, ' . $result['skipped'] . ' omitidos, ' . $result['errors'] . ' errores',
+                'resultado' => $result,
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error al procesar el archivo: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Normaliza valores leídos de Excel (números, notación científica, espacios).
+     */
+    private function _normalizar_celda_excel($valor) {
+        if ($valor === null || $valor === '') {
+            return '';
+        }
+        if (is_float($valor) || is_int($valor)) {
+            if (is_float($valor) && floor($valor) == $valor) {
+                return (string) (int) $valor;
+            }
+            return rtrim(rtrim(sprintf('%.10F', (float) $valor), '0'), '.');
+        }
+        return trim((string) $valor);
     }
 }

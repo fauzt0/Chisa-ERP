@@ -5,6 +5,7 @@ $empleado = $response['empleado'] ?? null;
 $vacaciones = $response['vacaciones'] ?? null;
 $solicitudes = $response['solicitudes'] ?? [];
 $asistencia = $response['asistencia'] ?? null;
+$comunicacion = $response['comunicacion'] ?? null;
 $mensaje_vinculo = $response['mensaje_vinculo'] ?? '';
 $iniciales = $user ? strtoupper(substr($user->nombre, 0, 1) . substr($user->apellidos, 0, 1)) : '?';
 ?>
@@ -192,6 +193,41 @@ $iniciales = $user ? strtoupper(substr($user->nombre, 0, 1) . substr($user->apel
           <i class="fas fa-user-clock"></i> Retardo registrado hoy<?=!empty($hoy['minutos_retardo']) ? ' (' . (int)$hoy['minutos_retardo'] . ' min)' : ''?>.
         </div>
         <?php endif; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Comunicación interna -->
+    <?php if($empleado && $comunicacion !== null): ?>
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="card-title mb-0"><i class="fas fa-comments"></i> Comunicación interna</h5>
+        <a href="<?=base_url('rh/Comunicacion')?>" class="btn btn-outline-primary btn-sm">
+          <i class="fas fa-external-link-alt"></i> Abrir bandeja
+        </a>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-4">
+            <div class="border rounded p-3 text-center h-100">
+              <div class="text-muted small">Mensajes sin leer</div>
+              <div class="fs-4 fw-bold text-primary"><?=(int)($comunicacion['mensajes_no_leidos'] ?? 0)?></div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="border rounded p-3 text-center h-100">
+              <div class="text-muted small">Tareas pendientes</div>
+              <div class="fs-4 fw-bold text-warning"><?=(int)($comunicacion['tareas_pendientes'] ?? 0)?></div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="border rounded p-3 text-center h-100">
+              <div class="text-muted small">Tareas en proceso</div>
+              <div class="fs-4 fw-bold text-info"><?=(int)($comunicacion['tareas_en_proceso'] ?? 0)?></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-muted small mb-0 mt-3">Envía mensajes y asigna tareas sencillas a compañeros de tu equipo (jefe, subordinados o mismo departamento).</p>
       </div>
     </div>
     <?php endif; ?>

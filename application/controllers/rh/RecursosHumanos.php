@@ -921,10 +921,11 @@ class RecursosHumanos extends MY_Controller {
    * Ver contrato específico (AJAX)
    */
   public function ver_contrato(){
-    $contrato_id = $this->input->post('contrato_id');
-    
+    $this->output->set_content_type('application/json', 'utf-8');
+    $contrato_id = (int)$this->input->post('contrato_id');
+
     if(!$contrato_id){
-      echo json_encode(['success' => false, 'message' => 'ID de contrato requerido']);
+      $this->output->set_output(json_encode(['success' => false, 'message' => 'ID de contrato requerido']));
       return;
     }
 
@@ -932,14 +933,14 @@ class RecursosHumanos extends MY_Controller {
     $contrato = $this->ContratoModel->get_contrato_by_id($contrato_id);
 
     if(!$contrato){
-      echo json_encode(['success' => false, 'message' => 'Contrato no encontrado']);
+      $this->output->set_output(json_encode(['success' => false, 'message' => 'Contrato no encontrado']));
       return;
     }
 
-    echo json_encode([
+    $this->output->set_output(json_encode([
       'success' => true,
       'contrato' => $contrato
-    ]);
+    ]));
   }
 
   // ========================================================================
@@ -1388,6 +1389,7 @@ class RecursosHumanos extends MY_Controller {
     $this->viewData['historial'] = $this->ContratoModel->get_historial($empleado_id);
     
     $this->viewData['pageView'] = 'rh/empleados/nuevo_contrato';
+    $this->viewData['pageScript'] = 'rh/empleados/nuevo_contrato_scripts';
     $this->load->view('layouts/general_template', $this->viewData);
   }
   
@@ -1487,13 +1489,22 @@ class RecursosHumanos extends MY_Controller {
   }
 
   public function ajax_get_contrato($id) {
-    if(!$id) return;
+    $this->output->set_content_type('application/json', 'utf-8');
+    $id = (int)$id;
+    if (!$id) {
+      $this->output->set_output(json_encode(['success' => false, 'message' => 'ID requerido']));
+      return;
+    }
     $this->load->model('RH/ContratoModel');
     $contrato = $this->ContratoModel->get_contrato_by_id($id);
-    if($contrato){
-        echo json_encode(['success' => true, 'contenido' => $contrato->contrato_texto]);
+    if ($contrato) {
+      $this->output->set_output(json_encode([
+        'success' => true,
+        'contenido' => $contrato->contrato_texto,
+        'contrato' => $contrato,
+      ]));
     } else {
-        echo json_encode(['success' => false, 'message' => 'Contrato no encontrado']);
+      $this->output->set_output(json_encode(['success' => false, 'message' => 'Contrato no encontrado']));
     }
   }
 
