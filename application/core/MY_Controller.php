@@ -22,12 +22,14 @@ class MY_Controller extends CI_Controller {
         $this->load->library('Init_controller');
         $this->load->model('Users/UserModel');
 
-        // 1. Verificar Sesión
-        $this->init_controller->check_session();
+        // 1. Verificar Sesión (omitir en CLI — importaciones/cron desde terminal)
+        if (!is_cli()) {
+            $this->init_controller->check_session();
 
-        // 2. Verificar Permisos del Módulo (si está definido)
-        if ($this->modulo !== null) {
-            $this->check_permissions();
+            // 2. Verificar Permisos del Módulo (si está definido)
+            if ($this->modulo !== null) {
+                $this->check_permissions();
+            }
         }
 
         // Inicializar ViewData por defecto (estándar del proyecto)

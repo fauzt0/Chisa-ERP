@@ -953,55 +953,219 @@ class Productos extends MY_Controller {
         }
 
         try {
-            $productos_parseados = $this->_leer_excel_formulaciones($tmp, $ext);
-
-            if (empty($productos_parseados)) {
-                echo json_encode(['success' => false, 'message' => 'No se encontraron productos en el archivo (¿falta fila con "KILOS"?)']);
-                return;
-            }
-
-            $importados          = [];
-            $advertencias        = [];
-            $errores             = [];
-            $insumos_creados_cnt = 0;
-
-            foreach ($productos_parseados as $pdata) {
-                $resultado = $this->_guardar_formulacion_importada($pdata);
-                if ($resultado['success']) {
-                    $importados[] = $resultado['detalle'];
-                    if (!empty($resultado['advertencias'])) {
-                        $advertencias = array_merge($advertencias, $resultado['advertencias']);
-                    }
-                    $insumos_creados_cnt += $resultado['insumos_creados'] ?? 0;
-                } else {
-                    $errores[] = $resultado['message'];
-                }
-            }
-
-            // Log de importación (columnas reales de log_importaciones)
-            $this->db->insert('log_importaciones', [
-                'archivo'                => $_FILES['excel_file']['name'],
-                'usuario_id'             => (int)($this->session->userdata('user_id') ?: 0),
-                'formulaciones_creadas'  => count($importados),
-                'productos_importados'   => count(array_unique(array_column($importados, 'producto'))),
-                'insumos_creados'        => $insumos_creados_cnt,
-                'insumos_no_encontrados' => 0,
-                'errores'                => count($errores) > 0 ? json_encode(array_merge($errores, $advertencias)) : null,
-                'estatus'                => count($errores) === 0 ? 'Exitoso' : (count($importados) > 0 ? 'Parcial' : 'Error'),
-                'fecha'                  => date('Y-m-d H:i:s'),
-            ]);
-
-            echo json_encode([
-                'success'      => true,
-                'message'      => count($importados) . ' formulación(es) importada(s) correctamente',
-                'importados'   => $importados,
-                'advertencias' => $advertencias,
-                'errores'      => $errores,
-            ]);
-
+            $resultado = $this->_procesar_importacion_excel($tmp, $_FILES['excel_file']['name'], $ext);
+            echo json_encode($resultado['response']);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => 'Error al procesar el archivo: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Importación masiva desde CLI (carpeta entrenamiento/).
+     * Uso: php index.php produccion/Productos importar_entrenamiento_cli
+     */
+    public function importar_entrenamiento_cli() {
+        if (!is_cli()) {
+            show_error('Este método solo puede ejecutarse desde la línea de comandos.');
+            return;
+        }
+
+        $base = realpath(FCPATH . '../entrenamiento');
+        if (!$base || !is_dir($base)) {
+            echo "ERROR: No se encontró la carpeta entrenamiento/\n";
+            return;
+        }
+
+        $archivos = [
+            ['ruta' => $base . '/PASTA SERGIO.xlsx', 'opciones' => []],
+            ['ruta' => $base . '/ficha masa roca.xlsx', 'opciones' => []],
+            ['ruta' => $base . '/FICHAS DE PINTURA Y PASTA.xlsx', 'opciones' => ['hojas_excluir' => ['Hoja1']]],
+            ['ruta' => $base . '/T034.xls', 'opciones' => [
+                'hojas_solo'        => ['SEMANA 4'],
+                'omitir_duplicados' => true,
+            ]],
+            ['ruta' => $base . '/archivo_principal_entrenamiento.xls', 'opciones' => [
+                'hojas_excluir'     => ['FICHAS CHISA 2014'],
+                'omitir_duplicados' => true,
+            ]],
+        ];
+
+        $totales = ['importados' => 0, 'omitidos' => 0, 'errores' => 0];
+
+        foreach ($archivos as $item) {
+            if (!is_readable($item['ruta'])) {
+                echo "OMITIDO (no existe): " . basename($item['ruta']) . "\n";
+                continue;
+            }
+
+            echo "\n=== Importando: " . basename($item['ruta']) . " ===\n";
+            $ext = strtolower(pathinfo($item['ruta'], PATHINFO_EXTENSION));
+
+            try {
+                $resultado = $this->_procesar_importacion_excel(
+                    $item['ruta'],
+                    basename($item['ruta']),
+                    $ext,
+                    $item['opciones']
+                );
+                $r = $resultado['response'];
+                $totales['importados'] += count($r['importados'] ?? []);
+                $totales['omitidos']   += count($r['omitidos'] ?? []);
+                $totales['errores']    += count($r['errores'] ?? []);
+
+                echo $r['message'] . "\n";
+                if (!empty($r['omitidos'])) {
+                    echo '  Omitidos (duplicados): ' . count($r['omitidos']) . "\n";
+                }
+                if (!empty($r['errores'])) {
+                    foreach (array_slice($r['errores'], 0, 5) as $err) {
+                        echo "  ERROR: $err\n";
+                    }
+                    if (count($r['errores']) > 5) {
+                        echo '  ... y ' . (count($r['errores']) - 5) . " errores más\n";
+                    }
+                }
+            } catch (Exception $e) {
+                echo "ERROR FATAL: " . $e->getMessage() . "\n";
+                $totales['errores']++;
+            }
+        }
+
+        echo "\n=== RESUMEN FINAL ===\n";
+        echo "Importados: {$totales['importados']}\n";
+        echo "Omitidos:   {$totales['omitidos']}\n";
+        echo "Errores:    {$totales['errores']}\n";
+    }
+
+    /**
+     * Procesa un archivo Excel y persiste las formulaciones en BD.
+     */
+    private function _procesar_importacion_excel($ruta, $nombre_archivo, $ext, $opciones = []) {
+        $productos_parseados = $this->_leer_excel_formulaciones($ruta, $ext, $opciones);
+
+        if (empty($productos_parseados)) {
+            return [
+                'response' => [
+                    'success'    => false,
+                    'message'    => 'No se encontraron productos en el archivo (¿falta fila con "KILOS"?)',
+                    'importados' => [],
+                    'omitidos'   => [],
+                    'errores'    => [],
+                ],
+            ];
+        }
+
+        $importados          = [];
+        $omitidos            = [];
+        $advertencias        = [];
+        $errores             = [];
+        $insumos_creados_cnt = 0;
+        $omitir_duplicados   = !empty($opciones['omitir_duplicados']);
+
+        foreach ($productos_parseados as $pdata) {
+            if (empty($pdata['grupos'])) {
+                $omitidos[] = ['ref' => $pdata['ref'], 'motivo' => 'Sin componentes'];
+                continue;
+            }
+
+            if ($omitir_duplicados && $this->_formulacion_ya_existe($pdata)) {
+                $omitidos[] = ['ref' => $pdata['ref'], 'motivo' => 'Duplicado existente'];
+                continue;
+            }
+
+            $resultado = $this->_guardar_formulacion_importada($pdata);
+            if ($resultado['success']) {
+                $importados[] = $resultado['detalle'];
+                if (!empty($resultado['advertencias'])) {
+                    $advertencias = array_merge($advertencias, $resultado['advertencias']);
+                }
+                $insumos_creados_cnt += $resultado['insumos_creados'] ?? 0;
+            } else {
+                $errores[] = $resultado['message'];
+            }
+        }
+
+        $this->db->insert('log_importaciones', [
+            'archivo'                => $nombre_archivo,
+            'usuario_id'             => (int)($this->session->userdata('user_id') ?: 0),
+            'formulaciones_creadas'  => count($importados),
+            'productos_importados'   => count(array_unique(array_column($importados, 'producto'))),
+            'insumos_creados'        => $insumos_creados_cnt,
+            'insumos_no_encontrados' => 0,
+            'errores'                => count($errores) > 0 ? json_encode(array_merge($errores, $advertencias)) : null,
+            'estatus'                => count($errores) === 0 ? 'Exitoso' : (count($importados) > 0 ? 'Parcial' : 'Error'),
+            'fecha'                  => date('Y-m-d H:i:s'),
+        ]);
+
+        return [
+            'response' => [
+                'success'      => count($importados) > 0 || count($omitidos) > 0,
+                'message'      => count($importados) . ' formulación(es) importada(s), ' . count($omitidos) . ' omitida(s)',
+                'importados'   => $importados,
+                'omitidos'     => $omitidos,
+                'advertencias' => $advertencias,
+                'errores'      => $errores,
+            ],
+        ];
+    }
+
+    /**
+     * Detecta si ya existe una formulación idéntica (mismo producto, kg lote y fingerprint BOM).
+     */
+    private function _formulacion_ya_existe($pdata) {
+        $producto = $this->_buscar_producto($pdata['ref']);
+        if (!$producto) {
+            return false;
+        }
+
+        $fingerprint_nueva = $this->_fingerprint_formulacion($pdata);
+
+        $formulaciones = $this->db
+            ->where('producto_id', $producto->id)
+            ->where('ABS(cantidad_producida - ' . (float)$pdata['total_kg'] . ') <', 0.5)
+            ->get('formulaciones')
+            ->result();
+
+        foreach ($formulaciones as $f) {
+            $componentes = $this->db
+                ->select('df.porcentaje, i.nombre_tecnico')
+                ->from('detalle_formulacion df')
+                ->join('insumos i', 'i.id = df.insumo_id', 'left')
+                ->where('df.formulacion_id', $f->id)
+                ->order_by('df.orden', 'ASC')
+                ->get()
+                ->result();
+
+            $items = [];
+            foreach ($componentes as $c) {
+                $items[] = [
+                    'nombre'     => $c->nombre_tecnico,
+                    'porcentaje' => (float)$c->porcentaje,
+                ];
+            }
+
+            if ($this->_fingerprint_formulacion(['grupos' => ['__default__' => $items]]) === $fingerprint_nueva) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Genera un hash de comparación para detectar formulaciones duplicadas.
+     */
+    private function _fingerprint_formulacion($pdata) {
+        $items = [];
+        foreach ($pdata['grupos'] ?? [] as $grupo => $componentes) {
+            foreach ($componentes as $comp) {
+                $nombre = $comp['nombre'] ?? '';
+                if ($nombre === '') continue;
+                $items[] = strtoupper(trim($nombre)) . ':' . round((float)($comp['porcentaje'] ?? 0), 2);
+            }
+        }
+        sort($items);
+        return md5(implode('|', $items));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1019,17 +1183,27 @@ class Productos extends MY_Controller {
      *   pasta_sergio   — B=KILOS D=kg (A vacía); componentes: A=% B=nombre D=kg
      *   masa_roca      — A=producto R6 D=kg (sin KILOS); componentes: A=nombre B=% D=kg
      */
-    private function _leer_excel_formulaciones($ruta, $ext) {
+    private function _leer_excel_formulaciones($ruta, $ext, $opciones = []) {
         $readerType = ($ext === 'xlsx') ? 'Xlsx' : 'Xls';
         $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($readerType);
         $reader->setReadDataOnly(false);
         $spreadsheet = $reader->load($ruta);
 
         $nombre_archivo = basename($ruta);
+        $hojas_solo     = $opciones['hojas_solo'] ?? null;
+        $hojas_excluir  = $opciones['hojas_excluir'] ?? [];
         $todos = [];
 
         foreach ($spreadsheet->getAllSheets() as $sheet) {
             $nombre_hoja = $sheet->getTitle();
+
+            if (is_array($hojas_solo) && !in_array($nombre_hoja, $hojas_solo, true)) {
+                continue;
+            }
+            if (in_array($nombre_hoja, $hojas_excluir, true)) {
+                continue;
+            }
+
             $maxRow      = $sheet->getHighestRow();
 
             // Saltar hojas vacías o de soporte (Hoja2, Hoja3 sin datos)
@@ -1663,14 +1837,8 @@ class Productos extends MY_Controller {
             // Fila de total: B = 1.0
             if ($b_n !== null && $b_n >= 0.99 && $b_n <= 1.01) break;
 
-            // Línea de rendimiento m²: "M2 X.XX" o "M2   X.XX"
-            if ($a !== '' && preg_match('/^M\s*2\s+([\d.]+)/i', $a, $mm)) {
-                $rendimiento_m2 = (float)$mm[1] / $total_kg; // m²/kg
-                continue;
-            }
-
-            // Saltar filas auxiliares (KG DE …, MANO, …)
-            if ($a !== '' && preg_match('/^(KG\s+DE|MANO|SELLADOR)/i', $a)) continue;
+            // Saltar filas auxiliares (KG DE …, MANO, …) — M2 se busca después
+            if ($a !== '' && preg_match('/^(KG\s+DE|MANO|SELLADOR|M\s*2)/i', $a)) continue;
 
             if ($a !== '' && $b_n !== null && $b_n > 0 && $kg > 0) {
                 $default[] = [
@@ -1679,6 +1847,15 @@ class Productos extends MY_Controller {
                     'pct_fase'  => null,
                     'kg'        => round($kg, 6),
                 ];
+            }
+        }
+
+        // Buscar rendimiento m² en cualquier fila de la hoja (suele estar después del total)
+        for ($r = 1; $r <= $maxRow; $r++) {
+            $a = trim((string)($matrix[$r][1] ?? ''));
+            if ($a !== '' && preg_match('/^M\s*2\s+([\d.]+)/i', $a, $mm)) {
+                $rendimiento_m2 = round((float)$mm[1] / $total_kg, 4);
+                break;
             }
         }
 
