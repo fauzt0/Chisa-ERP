@@ -50,6 +50,8 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
   padding: 1rem 1.25rem;
   margin-bottom: 1.25rem;
   color: var(--prod-text);
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 .produccion-productos-page .guia-banner strong { color: #92400e; }
 
@@ -65,7 +67,7 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
   border-bottom: 2px solid var(--prod-bg);
   background: var(--prod-surface);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--prod-text-muted);
@@ -126,7 +128,7 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
 }
 .produccion-productos-page .panel-filtros label {
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--prod-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -149,7 +151,7 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
   font-weight: 500;
 }
 .produccion-productos-page .btn-chip-buscar {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
   border-radius: 20px;
   padding: 0.2rem 0.65rem;
@@ -172,15 +174,15 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
   background: #1e293b !important;
   color: #fff !important;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  padding: 0.75rem 0.5rem;
+  padding: 0.65rem 0.5rem;
   white-space: nowrap;
 }
 .produccion-productos-page #tablaProductos tbody td {
   vertical-align: middle;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--prod-text);
   padding: 0.6rem 0.5rem;
 }
@@ -239,11 +241,11 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
 .produccion-productos-page #tablaExcelSimulador thead th {
   background: #0f172a !important;
   color: #fff !important;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   text-transform: uppercase;
 }
 .produccion-productos-page #tablaExcelSimulador tbody td {
-  font-size: 0.92rem;
+  font-size: 0.9rem;
 }
 .produccion-productos-page #tablaExcelSimulador .celda-edit input {
   min-height: 38px;

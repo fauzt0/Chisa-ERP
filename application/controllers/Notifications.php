@@ -17,6 +17,19 @@ class Notifications extends MY_Controller {
     $notifications = [];
     $total_count = 0;
 
+    // 0. ALERTAS SIMULADAS (solo usuarios con permiso de demo)
+    $this->load->helper('permissions');
+    if (tiene_permiso('admin_simular_alertas')) {
+      $this->load->model('Users/AlertasSimuladasModel');
+      $simuladas = $this->AlertasSimuladasModel->get_para_notificaciones();
+      if (!empty($simuladas)) {
+        foreach ($simuladas as $sim) {
+          $notifications[] = $sim;
+          $total_count++;
+        }
+      }
+    }
+
     // 1. ALMACÉN - Stock bajo
     $stock_bajo = $this->_get_stock_bajo();
     if(!empty($stock_bajo)) {

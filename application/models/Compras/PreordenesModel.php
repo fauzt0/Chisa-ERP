@@ -125,12 +125,19 @@ class PreordenesModel extends MY_Model {
             insumos.nombre_tecnico AS insumo_nombre,
             insumos.unidad_medida AS insumo_unidad_medida,
             insumos.stock_actual AS insumo_stock_actual,
+            insumos.stock_minimo AS insumo_stock_minimo,
             insumos.precio_promedio AS insumo_precio_promedio,
-            proveedores.razon_social AS proveedor_sugerido_nombre
+            proveedores.razon_social AS proveedor_sugerido_nombre,
+            sol.nombre AS usuario_solicita_nombre,
+            apr.nombre AS usuario_aprueba_nombre,
+            oc.folio AS orden_compra_folio
         ');
         $this->db->from($this->tableName);
         $this->db->join('insumos', 'insumos.id = preordenes.insumo_id', 'left');
         $this->db->join('proveedores', 'proveedores.id = preordenes.proveedor_sugerido_id', 'left');
+        $this->db->join('administradores sol', 'sol.id = preordenes.usuario_solicita_id', 'left');
+        $this->db->join('administradores apr', 'apr.id = preordenes.usuario_aprueba_id', 'left');
+        $this->db->join('ordenes_compra oc', 'oc.id = preordenes.orden_compra_id', 'left');
         $this->db->where('preordenes.id', $id);
         return $this->db->get()->row();
     }
@@ -156,6 +163,68 @@ class PreordenesModel extends MY_Model {
         $this->db->order_by('preordenes.fecha_solicitud', 'DESC');
         $this->db->limit($limite);
         return $this->db->get()->result();
+    }
+
+    /**
+     * Lista pre-órdenes ya procesadas (no pendientes).
+     */
+    public function listar_historial($limite = 50) {
+        $this->db->select('
+            preordenes.*,
+            insumos.codigo AS insumo_codigo,
+            insumos.nombre_tecnico AS insumo_nombre,
+            proveedores.razon_social AS proveedor_sugerido_nombre,
+            oc.folio AS orden_compra_folio
+        ');
+        $this->db->from($this->tableName);
+        $this->db->join('insumos', 'insumos.id = preordenes.insumo_id', 'left');
+        $this->db->join('proveedores', 'proveedores.id = preordenes.proveedor_sugerido_id', 'left');
+        $this->db->join('ordenes_compra oc', 'oc.id = preordenes.orden_compra_id', 'left');
+        $this->db->where('preordenes.estatus !=', 'Pendiente');
+        $this->db->order_by('preordenes.fecha_solicitud', 'DESC');
+        $this->db->limit($limite);
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Actualiza una pre-orden en estatus Pendiente (cantidad, proveedor, notas).
+     */
+    public function actualizar_pendiente($preorden_id, $data) {
+        $preorden = $this->get_by_id_raw($preorden_id);
+        if (!$preorden) {
+            return ['success' => false, 'message' => 'Pre-orden no encontrada'];
+        }
+        if ($preorden->estatus !== 'Pendiente') {
+            return ['success' => false, 'message' => 'Solo se pueden editar pre-órdenes en estatus Pendiente'];
+        }
+
+        $update = [];
+        if (isset($data['cantidad_solicitada'])) {
+            $cantidad = (float) $data['cantidad_solicitada'];
+            if ($cantidad <= 0) {
+                return ['success' => false, 'message' => 'La cantidad debe ser mayor a cero'];
+            }
+            $update['cantidad_solicitada'] = $cantidad;
+        }
+        if (array_key_exists('proveedor_sugerido_id', $data)) {
+            $update['proveedor_sugerido_id'] = $data['proveedor_sugerido_id'] ?: null;
+        }
+        if (array_key_exists('notas', $data)) {
+            $update['notas'] = $data['notas'];
+        }
+
+        if (empty($update)) {
+            return ['success' => false, 'message' => 'No hay cambios para guardar'];
+        }
+
+        $this->db->where('id', $preorden_id);
+        $ok = $this->db->update($this->tableName, $update);
+
+        return [
+            'success' => (bool) $ok,
+            'message' => $ok ? 'Pre-orden actualizada correctamente' : 'Error al actualizar la pre-orden',
+            'preorden' => $ok ? $this->get_preorden($preorden_id) : null,
+        ];
     }
 
     /**

@@ -60,6 +60,17 @@ class InsumosModel extends MY_Model {
             $order = $this->datatableConfig['order'];
             $this->db->order_by(key($order), $order[key($order)]);
         }
+
+        if (!empty($_POST['filtro_categoria'])) {
+            $this->db->where('insumos.categoria_id', (int) $_POST['filtro_categoria']);
+        }
+        if (!empty($_POST['filtro_estatus'])) {
+            $this->db->where('insumos.estatus', $_POST['filtro_estatus']);
+        }
+        if (!empty($_POST['filtro_stock_bajo']) && $_POST['filtro_stock_bajo'] === '1') {
+            $this->db->where('insumos.stock_minimo >', 0);
+            $this->db->where('insumos.stock_actual <= insumos.stock_minimo', null, false);
+        }
     }
     
     /**

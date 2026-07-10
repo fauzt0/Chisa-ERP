@@ -1378,7 +1378,7 @@ window.verDetalleFormulacion = function(formulacionId) {
     const colCosto = PUEDE_VER_COSTOS;
     html += `
       <div class="table-responsive">
-        <table class="table table-bordered table-sm mb-0" style="font-size:.875rem;">
+        <table class="table table-bordered table-sm mb-0" style="font-size:.95rem;">
           <thead class="table-dark">
             <tr>
               <th width="28%">Insumo / Componente</th>
@@ -1407,7 +1407,7 @@ window.verDetalleFormulacion = function(formulacionId) {
         if (hayGrupos) {
           html += `
             <tr style="background:#dbeafe; border-left:4px solid #2563eb;">
-              <td colspan="${cols}" class="py-1 ps-3 fw-bold" style="font-size:.8rem;letter-spacing:.04em;">
+              <td colspan="${cols}" class="py-1 ps-3 fw-bold" style="font-size:.95rem;letter-spacing:.04em;">
                 <i class="fas fa-palette text-primary me-1"></i>${grupo || 'Sin grupo'}
               </td>
             </tr>`;
@@ -1454,7 +1454,7 @@ window.verDetalleFormulacion = function(formulacionId) {
         if (hayGrupos && items.length > 1) {
           const cols2 = colCosto ? 7 : 5;
           html += `
-            <tr style="background:#eff6ff; font-size:.8rem;">
+            <tr style="background:#eff6ff; font-size:.95rem;">
               <td colspan="${colCosto ? 5 : 3}" class="text-end text-muted fst-italic">↳ Subtotal <em>${grupo || 'Sin grupo'}</em>:</td>
               <td class="text-end fw-bold text-info">${subFa > 0 ? subFa.toFixed(4) : '–'}</td>
               ${colCosto ? `<td></td><td class="text-end fw-bold text-primary">$${subCosto.toFixed(2)}</td>` : ''}
@@ -1630,11 +1630,11 @@ function badgesInsumoComponente(c) {
   if (c.insumo_faltante === true) {
     let unidad = c.insumo_unidad_medida || '';
     let faltante = parseFloat(c.cantidad_faltante || 0).toFixed(4);
-    html += ` <span class="badge bg-danger ms-1" style="font-size:0.65rem;" title="Faltan ${faltante} ${unidad}">Falta stock</span>`;
+    html += ` <span class="badge bg-danger ms-1" title="Faltan ${faltante} ${unidad}">Falta stock</span>`;
   }
   if (c.requiere_revision_manual === true) {
     let motivo = (c.motivo_revision || 'Revisar unidad de medida').replace(/"/g, '&quot;');
-    html += ` <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;" title="${motivo}">Revisar unidad</span>`;
+    html += ` <span class="badge bg-warning text-dark ms-1" title="${motivo}">Revisar unidad</span>`;
   }
   return html;
 }
@@ -1761,7 +1761,7 @@ function renderizarTablaExcel(datos) {
     if (hayGrupos) {
       html += `
         <tr style="background:#dbeafe; border-left:4px solid #2563eb;">
-          <td colspan="7" class="py-1 ps-3 fw-bold" style="font-size:0.85rem; letter-spacing:.04em;">
+          <td colspan="7" class="py-1 ps-3 fw-bold" style="font-size:0.95rem; letter-spacing:.04em;">
             <i class="fas fa-palette text-primary me-1"></i>${grupo || 'Sin grupo'}
           </td>
         </tr>`;
@@ -1812,7 +1812,7 @@ function renderizarTablaExcel(datos) {
     // Subtotales del grupo (sólo si hay grupos Y más de 1 item)
     if (hayGrupos && items.length > 1) {
       html += `
-        <tr style="background:#eff6ff; font-size:0.8rem;">
+        <tr style="background:#eff6ff; font-size:0.95rem;">
           <td colspan="2" class="text-end text-muted fst-italic">↳ Subtotal <em>${grupo || 'Sin grupo'}</em>:</td>
           <td></td>
           <td></td>

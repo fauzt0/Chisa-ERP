@@ -27,6 +27,7 @@ $breadcrumb_urls = [
     'Bitácora' => base_url('usuarios/GestionUsuarios/bitacora'),
     'Importar' => base_url('usuarios/GestionUsuarios/importar'),
     'Datos de la Empresa' => base_url('usuarios/GestionUsuarios/empresa'),
+    'Simulador de Alertas' => base_url('usuarios/GestionUsuarios/simulador_alertas'),
     'Roles' => base_url('usuarios/Roles'),
     'Mi Perfil' => base_url('usuarios/Perfil'),
 

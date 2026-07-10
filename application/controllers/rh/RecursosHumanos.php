@@ -110,7 +110,7 @@ class RecursosHumanos extends MY_Controller {
       $nombre_html = $empleado->nombre . ' ' . $empleado->apellido_paterno . ' ' . $empleado->apellido_materno;
       if (isset($faltantes_ids[$empleado->id])) {
         $faltantes_str = htmlspecialchars($faltantes_info[$empleado->id], ENT_QUOTES, 'UTF-8');
-        $nombre_html .= ' <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;cursor:pointer;" title="Faltan datos: ' . $faltantes_str . '" onclick="notificarFaltantes(' . $empleado->id . ')">⚠️</span>';
+        $nombre_html .= ' <span class="badge bg-warning text-dark ms-1" style="font-size:0.75rem;cursor:pointer;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Faltan: ' . $faltantes_str . '" onclick="notificarFaltantes(' . $empleado->id . ')"><i class="fas fa-exclamation-triangle me-1"></i>Datos incompletos</span>';
       }
       if (isset($expediente_map[$empleado->id])) {
         $exp_falt = htmlspecialchars(implode(', ', $expediente_map[$empleado->id]['faltantes']), ENT_QUOTES, 'UTF-8');

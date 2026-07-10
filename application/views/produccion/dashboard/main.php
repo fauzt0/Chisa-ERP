@@ -112,10 +112,10 @@ $filtros      = $response['filtros_activos']  ?? [];
 .bom-node.nivel-2 { background:#E8F5E9; border-left:4px solid #388E3C; margin-left:3rem; }
 .bom-node.nivel-3 { background:#FFF8E1; border-left:4px solid #F57F17; margin-left:4.5rem; }
 .bom-node.fabricado { font-weight:700; }
-.bom-badge-fab  { font-size:.7rem; background:#7B1FA2; color:#fff; border-radius:4px; padding:1px 5px; }
-.bom-badge-comp { font-size:.7rem; background:#1565C0; color:#fff; border-radius:4px; padding:1px 5px; }
-.bom-badge-stock-ok  { font-size:.7rem; background:#2E7D32; color:#fff; border-radius:4px; padding:1px 5px; }
-.bom-badge-stock-no  { font-size:.7rem; background:#C62828; color:#fff; border-radius:4px; padding:1px 5px; }
+.bom-badge-fab  { font-size:.8rem; background:#7B1FA2; color:#fff; border-radius:4px; padding:2px 7px; font-weight:600; }
+.bom-badge-comp { font-size:.8rem; background:#1565C0; color:#fff; border-radius:4px; padding:2px 7px; font-weight:600; }
+.bom-badge-stock-ok  { font-size:.8rem; background:#2E7D32; color:#fff; border-radius:4px; padding:2px 7px; font-weight:600; }
+.bom-badge-stock-no  { font-size:.8rem; background:#C62828; color:#fff; border-radius:4px; padding:2px 7px; font-weight:600; }
 
 /* ── Tabla formulación Excel ── */
 .tabla-formula { font-size:.88rem; }
@@ -177,6 +177,7 @@ $filtros      = $response['filtros_activos']  ?? [];
 <!-- ═══════════════════════════════════════════════════════
      HEADER DE PRODUCCIÓN
 ══════════════════════════════════════════════════════════ -->
+<div class="prod-dashboard-presentacion">
 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
   <div class="d-flex align-items-center gap-3">
     <div style="background:var(--prod-blue);border-radius:12px;padding:.55rem .85rem;color:#fff;">
@@ -530,6 +531,8 @@ $filtros      = $response['filtros_activos']  ?? [];
     </div>
   </div>
 </div>
+
+</div><!-- /.prod-dashboard-presentacion -->
 
 <!-- ═══════════════════════════════════════════════════════
      JAVASCRIPT
@@ -949,9 +952,9 @@ function cargarHistorial(busqueda) {
           <div style="width:8px;height:40px;border-radius:4px;background:${color};flex-shrink:0;"></div>
           <div class="hist-folio">${escHtml(h.folio)}</div>
           <div class="hist-cliente">${escHtml(h.cliente || '—')}</div>
-          <div class="text-muted" style="font-size:.8rem;">${h.total_productos} prod.</div>
+          <div class="text-muted" style="font-size:.95rem;">${h.total_productos} prod.</div>
           <div class="hist-fecha">${fecha}</div>
-          <span class="badge bg-success" style="font-size:.72rem;">${h.estatus}</span>
+          <span class="badge bg-success">${h.estatus}</span>
         </div>`;
       lista.appendChild(div);
     });

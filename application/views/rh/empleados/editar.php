@@ -1,6 +1,17 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 $emp = $response['empleado'];
+
+$form['nombre_class'] = 'form-control ';
+$form['apellido_paterno_class'] = 'form-control ';
+$form['apellido_materno_class'] = 'form-control ';
+$form['rfc_class'] = 'form-control ';
+$form['curp_class'] = 'form-control ';
+
+if (form_error('nombre')) { $form['nombre_class'] .= 'is-invalid'; }
+if (form_error('apellido_paterno')) { $form['apellido_paterno_class'] .= 'is-invalid'; }
+if (form_error('rfc')) { $form['rfc_class'] .= 'is-invalid'; }
+if (form_error('curp')) { $form['curp_class'] .= 'is-invalid'; }
 ?>
 
 <style>
@@ -563,6 +574,64 @@ document.addEventListener("DOMContentLoaded", function() {
       } else {
         descuentoContainer.style.display = 'none';
         document.getElementById('descuento_infonavit').value = '';
+      }
+    });
+  }
+
+  var formEditar = document.querySelector('.card-body form');
+  if (formEditar) {
+    formEditar.addEventListener('submit', function(e) {
+      formEditar.querySelectorAll('.is-invalid').forEach(function(el) {
+        el.classList.remove('is-invalid');
+      });
+
+      var requeridos = [
+        { sel: '[name="nombre"]', label: 'Nombre', tab: 'personales-tab' },
+        { sel: '[name="apellido_paterno"]', label: 'Apellido paterno', tab: 'personales-tab' },
+        { sel: '[name="rfc"]', label: 'RFC', tab: 'fiscales-tab' },
+        { sel: '[name="curp"]', label: 'CURP', tab: 'fiscales-tab' },
+        { sel: '#tipo_trabajador', label: 'Tipo de trabajador', tab: 'laborales-tab' },
+        { sel: '#puesto', label: 'Puesto', tab: 'laborales-tab' },
+        { sel: '#fecha_ingreso', label: 'Fecha de ingreso', tab: 'laborales-tab' },
+        {
+          sel: '#salario_base_mensual',
+          label: 'Salario base mensual',
+          tab: 'nomina-tab',
+          valid: function(el) { return el.value !== '' && parseFloat(el.value) > 0; }
+        }
+      ];
+
+      var faltantes = [];
+      var primeraTab = null;
+      var primerCampo = null;
+
+      requeridos.forEach(function(campo) {
+        var el = document.querySelector(campo.sel);
+        if (!el) return;
+        var valor = (el.tagName === 'SELECT' || el.type === 'number') ? el.value : el.value.trim();
+        var ok = campo.valid ? campo.valid(el) : valor !== '';
+        if (!ok) {
+          faltantes.push(campo.label);
+          el.classList.add('is-invalid');
+          if (!primeraTab) {
+            primeraTab = campo.tab;
+            primerCampo = el;
+          }
+        }
+      });
+
+      if (faltantes.length > 0) {
+        e.preventDefault();
+        if (primeraTab) {
+          var tabBtn = document.getElementById(primeraTab);
+          if (tabBtn && typeof bootstrap !== 'undefined') {
+            bootstrap.Tab.getOrCreateInstance(tabBtn).show();
+          }
+        }
+        if (primerCampo) primerCampo.focus();
+        if (typeof notifyShow === 'function') {
+          notifyShow('Completa los campos obligatorios: ' + faltantes.join(', '), 'warning');
+        }
       }
     });
   }

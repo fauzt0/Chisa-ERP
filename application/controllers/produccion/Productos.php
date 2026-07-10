@@ -784,7 +784,7 @@ class Productos extends MY_Controller {
         $formulacion_id   = $this->input->post('formulacion_id');
         $insumos_json     = $this->input->post('insumos_faltantes');
         $notas            = $this->input->post('notas');
-        $user_id          = $this->session->userdata('user_id');
+        $user_id          = $this->session->userdata('id');
 
         if (!$formulacion_id || !$insumos_json) {
             echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
@@ -806,6 +806,15 @@ class Productos extends MY_Controller {
             $user_id,
             $notas ?: ('Generada automáticamente desde el cálculo de insumos de la formulación #' . $formulacion_id)
         );
+
+        if (!empty($resultado['success'])) {
+            $folios = array_map(function ($p) { return $p->folio ?? $p->id; }, $resultado['creadas'] ?? []);
+            $this->init_controller->insert_log(
+                'Pre-órdenes generadas desde producción (formulación #' . $formulacion_id . '): ' . implode(', ', $folios),
+                $this->session->userdata('email') ?: $this->session->userdata('username'),
+                'Compras'
+            );
+        }
 
         echo json_encode($resultado);
     }

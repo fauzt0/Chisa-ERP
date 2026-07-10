@@ -4,6 +4,7 @@ $user = $response['user'] ?? null;
 $empleado = $response['empleado'] ?? null;
 $vacaciones = $response['vacaciones'] ?? null;
 $solicitudes = $response['solicitudes'] ?? [];
+$asistencia = $response['asistencia'] ?? null;
 $mensaje_vinculo = $response['mensaje_vinculo'] ?? '';
 $iniciales = $user ? strtoupper(substr($user->nombre, 0, 1) . substr($user->apellidos, 0, 1)) : '?';
 ?>
@@ -72,8 +73,27 @@ $iniciales = $user ? strtoupper(substr($user->nombre, 0, 1) . substr($user->apel
   <!-- Expediente RH -->
   <div class="col-lg-8 mb-3">
     <?php if(!empty($mensaje_vinculo) && !$empleado): ?>
-    <div class="alert alert-info">
-      <i class="fas fa-info-circle"></i> <?=htmlspecialchars($mensaje_vinculo)?>
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body text-center py-5">
+        <div class="mb-3">
+          <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light text-primary" style="width:72px;height:72px;">
+            <i class="fas fa-id-badge fa-2x"></i>
+          </span>
+        </div>
+        <h5 class="mb-2">Expediente laboral no vinculado</h5>
+        <p class="text-muted mb-4 mx-auto" style="max-width:480px;">
+          <?=htmlspecialchars($mensaje_vinculo)?>
+          Puedes seguir editando tu cuenta de acceso. Para ver vacaciones y datos de RH, solicita la vinculación con tu expediente.
+        </p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+          <a href="<?=base_url('rh/RecursosHumanos')?>" class="btn btn-outline-primary">
+            <i class="fas fa-users"></i> Ir a Recursos Humanos
+          </a>
+          <a href="<?=base_url('usuarios/GestionUsuarios')?>" class="btn btn-light border">
+            <i class="fas fa-user-shield"></i> Contactar administrador
+          </a>
+        </div>
+      </div>
     </div>
     <?php endif; ?>
 
@@ -105,6 +125,76 @@ $iniciales = $user ? strtoupper(substr($user->nombre, 0, 1) . substr($user->apel
         </div>
       </div>
     </div>
+
+    <!-- Asistencia y ausencias (resumen) -->
+    <?php if($asistencia):
+      $hoy = $asistencia['hoy'] ?? [];
+      $estado_hoy = $hoy['estado'] ?? 'Sin checadas';
+      $badge_estado = 'secondary';
+      if (in_array($estado_hoy, ['Asistencia completa', 'Completo'], true)) $badge_estado = 'success';
+      elseif (strpos($estado_hoy, 'Retardo') !== false || !empty($hoy['retardo'])) $badge_estado = 'warning';
+      elseif (in_array($estado_hoy, ['Sin checadas', 'Ausente'], true)) $badge_estado = 'danger';
+      elseif ($estado_hoy === 'Sin horario asignado') $badge_estado = 'info';
+    ?>
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="card-title mb-0"><i class="fas fa-clock"></i> Asistencia y ausencias</h5>
+        <span class="badge bg-<?=$badge_estado?>"><?=htmlspecialchars($estado_hoy)?></span>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6 col-lg-3">
+            <div class="border rounded p-3 h-100 text-center">
+              <div class="text-muted small text-uppercase">Entrada hoy</div>
+              <div class="fs-5 fw-semibold"><?=htmlspecialchars($hoy['entrada'] ?? '—')?></div>
+              <?php if(!empty($hoy['entrada_horario'])): ?>
+              <div class="text-muted small">Horario: <?=htmlspecialchars($hoy['entrada_horario'])?></div>
+              <?php endif; ?>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="border rounded p-3 h-100 text-center">
+              <div class="text-muted small text-uppercase">Salida hoy</div>
+              <div class="fs-5 fw-semibold"><?=htmlspecialchars($hoy['salida'] ?? '—')?></div>
+              <?php if(!empty($hoy['salida_horario'])): ?>
+              <div class="text-muted small">Horario: <?=htmlspecialchars($hoy['salida_horario'])?></div>
+              <?php endif; ?>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="border rounded p-3 h-100 text-center">
+              <div class="text-muted small text-uppercase">Días con registro (mes)</div>
+              <div class="fs-5 fw-semibold"><?=(int)($asistencia['dias_trabajados_mes'] ?? 0)?></div>
+              <div class="text-muted small"><?=(int)($asistencia['total_checadas_30'] ?? 0)?> checadas (30 días)</div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="border rounded p-3 h-100 text-center">
+              <div class="text-muted small text-uppercase">Última checada</div>
+              <div class="fs-6 fw-semibold"><?=htmlspecialchars($asistencia['ultima_checada_fmt'] ?? 'Sin registro')?></div>
+              <?php if(!empty($hoy['horas_trabajadas']) && ($hoy['horas_trabajadas'] ?? '') !== '00:00'): ?>
+              <div class="text-muted small">Horas hoy: <?=htmlspecialchars($hoy['horas_trabajadas'])?></div>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-3 small text-muted">
+          <span><i class="fas fa-exclamation-circle"></i> Incidencias activas este mes: <strong><?=(int)($asistencia['incidencias_mes'] ?? 0)?></strong></span>
+          <span><i class="fas fa-calendar-times"></i> Incidencias activas <?=date('Y')?>: <strong><?=(int)($asistencia['incidencias_anio'] ?? 0)?></strong></span>
+          <?php if((int)($asistencia['solicitudes_pendientes'] ?? 0) > 0): ?>
+          <span><i class="fas fa-hourglass-half"></i> Vacaciones pendientes de aprobación: <strong><?=(int)$asistencia['solicitudes_pendientes']?></strong></span>
+          <?php endif; ?>
+        </div>
+
+        <?php if(!empty($hoy['retardo'])): ?>
+        <div class="alert alert-warning py-2 mt-3 mb-0 small">
+          <i class="fas fa-user-clock"></i> Retardo registrado hoy<?=!empty($hoy['minutos_retardo']) ? ' (' . (int)$hoy['minutos_retardo'] . ' min)' : ''?>.
+        </div>
+        <?php endif; ?>
+      </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Vacaciones -->
     <div class="card mb-3">

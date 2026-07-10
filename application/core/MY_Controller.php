@@ -61,4 +61,29 @@ class MY_Controller extends CI_Controller {
             }
         }
     }
+
+    /**
+     * Exige un permiso granular; responde JSON en AJAX o redirige a deny.
+     */
+    protected function requiere_permiso($permiso, $mensaje = null) {
+        $this->load->helper('permissions');
+        if (!tiene_permiso($permiso)) {
+            $msg = $mensaje ?: 'No tienes permiso para realizar esta acción';
+            if ($this->input->is_ajax_request()) {
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            }
+            redirect('deny');
+        }
+    }
+
+    /**
+     * Registra una acción en la bitácora del sistema.
+     */
+    protected function registrar_bitacora($mensaje, $tipo = 'Acción') {
+        $usuario = $this->session->userdata('email')
+            ?: $this->session->userdata('username')
+            ?: ('usuario#' . (int) $this->session->userdata('id'));
+        $this->init_controller->insert_log($mensaje, $usuario, $tipo);
+    }
 }

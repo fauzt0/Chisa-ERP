@@ -36,7 +36,7 @@
   <?php if(!empty($response['datos_faltantes'])): 
     $total_faltantes = count($response['datos_faltantes']);
   ?>
-  <div class="alert alert-warning border-start border-warning border-4 px-3 py-2 mb-3" role="alert">
+  <div class="alert alert-warning border-start border-warning border-4 px-3 py-2 mb-3" id="alert-datos-faltantes" role="alert" data-rh-dismiss-key="rh_dismiss_datos_faltantes">
     <div class="d-flex align-items-center gap-3">
       <div class="flex-shrink-0">
         <i class="fas fa-exclamation-triangle text-warning" style="font-size:1.3rem;"></i>
@@ -68,7 +68,7 @@
 
   <!-- Alerta de Expedientes Incompletos -->
   <?php if(!empty($response['total_expedientes_incompletos']) && $response['total_expedientes_incompletos'] > 0): ?>
-  <div class="alert alert-danger border-start border-danger border-4 px-3 py-2 mb-3" role="alert">
+  <div class="alert alert-danger border-start border-danger border-4 px-3 py-2 mb-3" id="alert-expedientes" role="alert" data-rh-dismiss-key="rh_dismiss_expedientes">
     <div class="d-flex align-items-center gap-3">
       <div class="flex-shrink-0">
         <i class="fas fa-folder-open text-danger" style="font-size:1.3rem;"></i>
@@ -94,7 +94,7 @@
 
   <!-- Alerta de Vacaciones Pendientes -->
   <?php if(!empty($response['vacaciones_pendientes']) && $response['vacaciones_pendientes'] > 0): ?>
-  <div class="alert alert-info alert-dismissible fade show" role="alert">
+  <div class="alert alert-info alert-dismissible fade show" id="alert-vacaciones" role="alert" data-rh-dismiss-key="rh_dismiss_vacaciones">
     <div class="alert-icon">
       <i class="fas fa-umbrella-beach"></i>
     </div>
@@ -222,6 +222,38 @@
         </div>
       </div>
     </div>
+
+    <?php if(!empty($response['datos_faltantes'])): $total_faltantes_card = count($response['datos_faltantes']); ?>
+    <div class="col-lg-6 col-xl-3 d-flex">
+      <div class="card flex-fill border-warning">
+        <div class="card-header bg-warning bg-opacity-10">
+          <h5 class="card-title mb-0 mt-2 text-warning"><i class="fas fa-exclamation-triangle me-1"></i> Datos Faltantes</h5>
+        </div>
+        <div class="card-body my-0 pt-0">
+          <div class="row d-flex align-items-center mb-2">
+            <div class="col-8">
+              <h3 class="d-flex align-items-center mb-0 fw-light text-warning"><?php echo $total_faltantes_card; ?></h3>
+            </div>
+            <div class="col-4 text-end">
+              <span class="badge bg-warning text-dark">RFC/CURP/NSS</span>
+            </div>
+          </div>
+          <div class="d-flex flex-column gap-1">
+            <?php foreach(array_slice($response['datos_faltantes'], 0, 3) as $emp_card): ?>
+              <a href="<?php echo base_url('rh/RecursosHumanos/editar/'.$emp_card['id']); ?>"
+                 class="small text-decoration-none d-flex justify-content-between align-items-center">
+                <span><?php echo htmlspecialchars($emp_card['nombre']); ?></span>
+                <span class="badge bg-danger"><?php echo (int)$emp_card['total_faltantes']; ?></span>
+              </a>
+            <?php endforeach; ?>
+            <?php if($total_faltantes_card > 3): ?>
+              <small class="text-muted">+<?php echo $total_faltantes_card - 3; ?> empleado(s) más</small>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
   </div>
 
   <div class="row">
@@ -1287,6 +1319,20 @@ var currentEmpleadoId = null;
 var RH_PUEDE_CREAR_USUARIO_ERP = <?php echo !empty($response['puede_crear_usuario_erp']) ? 'true' : 'false'; ?>;
 
 document.addEventListener("DOMContentLoaded", function() {
+      document.querySelectorAll('[data-rh-dismiss-key]').forEach(function(alertEl) {
+        var key = alertEl.getAttribute('data-rh-dismiss-key');
+        if (key && sessionStorage.getItem(key) === '1') {
+          alertEl.remove();
+          return;
+        }
+        var closeBtn = alertEl.querySelector('.btn-close');
+        if (closeBtn && key) {
+          closeBtn.addEventListener('click', function() {
+            sessionStorage.setItem(key, '1');
+          });
+        }
+      });
+
       //datatables      
       table = $('#datatables-empleados').DataTable({
           responsive: true,
@@ -1339,6 +1385,13 @@ document.addEventListener("DOMContentLoaded", function() {
               "className": "text-nowrap",
           },
           ],
+          "drawCallback": function() {
+            if (typeof bootstrap !== 'undefined') {
+              document.querySelectorAll('#datatables-empleados [data-bs-toggle="tooltip"]').forEach(function(el) {
+                bootstrap.Tooltip.getOrCreateInstance(el);
+              });
+            }
+          },
 
       });
       

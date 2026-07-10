@@ -30,8 +30,21 @@
                         <td><?=$role->descripcion?></td>
                         <td>
                             <?php 
-                                $perms = json_decode($role->permisos, true);
-                                echo count($perms) . ' permisos asignados';
+                                $perms = json_decode($role->permisos, true) ?: [];
+                                $labels = $permisos_labels ?? [];
+                                $destacados = $permisos_destacados ?? [];
+                                echo '<span class="badge bg-secondary me-1">' . count($perms) . ' permisos</span>';
+                                foreach ($destacados as $permKey) {
+                                    if (!in_array($permKey, $perms, true)) continue;
+                                    $label = $permKey;
+                                    foreach ($labels as $modPerms) {
+                                        if (isset($modPerms[$permKey])) {
+                                            $label = $modPerms[$permKey];
+                                            break;
+                                        }
+                                    }
+                                    echo '<span class="badge bg-primary me-1 mb-1" title="' . htmlspecialchars($permKey) . '">' . htmlspecialchars($label) . '</span>';
+                                }
                             ?>
                         </td>
                         <td>

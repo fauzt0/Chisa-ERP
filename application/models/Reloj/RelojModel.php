@@ -1062,6 +1062,26 @@ class RelojModel extends CI_Model {
         $stats['empleados_sin_pin'] = $this->count_empleados_sin_pin_reloj();
         $stats['checadas_7_dias'] = $this->get_checadas_ultimos_dias(7);
 
+        $resumen_hoy = $this->get_resumen_diario_empleados($hoy);
+        $presentes = 0;
+        $ausentes = 0;
+        foreach ($resumen_hoy as $fila) {
+            $estado = mb_strtolower((string)($fila->estado ?? ''), 'UTF-8');
+            if ($estado === 'ausente' || (int)($fila->total_checadas ?? 0) === 0) {
+                $ausentes++;
+            } else {
+                $presentes++;
+            }
+        }
+        $stats['presentes_hoy'] = $presentes;
+        $stats['ausentes_hoy'] = $ausentes;
+        if ($presentes === 0 && $ausentes === 0 && (int)$stats['empleados_checaron_hoy'] > 0) {
+            $stats['presentes_hoy'] = (int)$stats['empleados_checaron_hoy'];
+        }
+        $stats['total_esperados_hoy'] = count($resumen_hoy) > 0
+            ? count($resumen_hoy)
+            : max((int)$stats['presentes_hoy'] + (int)$stats['ausentes_hoy'], (int)$stats['empleados_checaron_hoy']);
+
         return $stats;
     }
 

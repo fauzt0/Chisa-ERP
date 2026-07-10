@@ -18,9 +18,24 @@ class GestionUsuarios extends MY_Controller {
     $this->load->model("Users/RolesModel");
     $this->load->model("RH/EmpleadoModel");
     $this->load->model("Config/EmpresaModel");
+    $this->load->model("Users/AlertasSimuladasModel");
+    $this->load->helper('permissions');
     $this->config->load('permissions'); 
     
     // El controlador base ya maneja la sesión y los permisos del módulo
+  }
+
+  /**
+   * Verifica permiso admin_simular_alertas
+   */
+  private function _require_simular_alertas() {
+    if (!tiene_permiso('admin_simular_alertas')) {
+      if ($this->input->is_ajax_request()) {
+        echo json_encode(['success' => false, 'message' => 'No tienes permiso para simular alertas.']);
+        exit;
+      }
+      redirect('deny');
+    }
   }
 
   public function index(){
@@ -447,6 +462,9 @@ class GestionUsuarios extends MY_Controller {
   public function get_user_logs_ajax() {
     $user_id = $this->input->post('user_id');
     $limit = $this->input->post('limit') ?: 50;
+    $fecha_desde = $this->input->post('fecha_desde');
+    $fecha_hasta = $this->input->post('fecha_hasta');
+    $tipo = $this->input->post('tipo');
     
     if(!$user_id) {
       echo json_encode(['success' => false, 'message' => 'ID de usuario no proporcionado']);
@@ -463,8 +481,14 @@ class GestionUsuarios extends MY_Controller {
       return;
     }
     
+    $filters = array_filter([
+      'fecha_desde' => $fecha_desde,
+      'fecha_hasta' => $fecha_hasta,
+      'tipo' => $tipo,
+    ]);
+
     // Obtener logs del usuario
-    $logs = $this->UserModel->last_logs($user->username, $limit);
+    $logs = $this->UserModel->last_logs($user->username, $limit, $filters);
     
     echo json_encode([
       'success' => true,
@@ -594,6 +618,98 @@ class GestionUsuarios extends MY_Controller {
         redirect('usuarios/GestionUsuarios/importar');
       }
     }
+  }
+
+  /**
+   * Simulador de alertas para demostraciones
+   */
+  public function simulador_alertas() {
+    $this->_require_simular_alertas();
+
+    $this->viewData['pageTitle'] = 'Simulador de Alertas';
+    $this->viewData['headTitle'] = 'Simulador de Alertas';
+    $this->viewData['breadcrumb'] = 'Inicio > Administradores > Simulador de Alertas';
+    $this->viewData['response'] = [
+      'tipos' => $this->AlertasSimuladasModel->get_tipos_catalogo(),
+      'activas' => $this->AlertasSimuladasModel->listar(),
+    ];
+    $this->viewData['pageView'] = 'usuarios/simulador_alertas';
+    $this->load->view('layouts/general_template', $this->viewData);
+  }
+
+  /**
+   * Crea una alerta simulada (AJAX)
+   */
+  public function simular_alerta_ajax() {
+    $this->_require_simular_alertas();
+
+    $tipo = trim($this->input->post('tipo'));
+    if (empty($tipo) || !$this->AlertasSimuladasModel->get_tipo($tipo)) {
+      echo json_encode(['success' => false, 'message' => 'Tipo de alerta no válido.']);
+      return;
+    }
+
+    $user_id = $this->session->userdata('id');
+    $registro = $this->AlertasSimuladasModel->crear($tipo, $user_id);
+
+    if (!$registro) {
+      echo json_encode(['success' => false, 'message' => 'No se pudo crear la simulación. Verifique que la tabla alertas_simuladas exista.']);
+      return;
+    }
+
+    $notif = $this->AlertasSimuladasModel->registro_to_notification($registro);
+
+    echo json_encode([
+      'success' => true,
+      'message' => 'Alerta simulada creada.',
+      'notification' => $notif,
+      'total_activas' => count($this->AlertasSimuladasModel->listar()),
+    ]);
+  }
+
+  /**
+   * Lista alertas simuladas activas (AJAX)
+   */
+  public function listar_simulaciones_ajax() {
+    $this->_require_simular_alertas();
+
+    $activas = $this->AlertasSimuladasModel->listar();
+    $items = [];
+    foreach ($activas as $row) {
+      $items[] = [
+        'id' => $row->id,
+        'tipo' => $row->tipo,
+        'modulo' => $row->modulo,
+        'titulo' => $row->titulo,
+        'mensaje' => $row->mensaje,
+        'severidad' => $row->severidad,
+        'creado_en' => $row->creado_en,
+        'notification' => $this->AlertasSimuladasModel->row_to_notification($row),
+      ];
+    }
+
+    echo json_encode([
+      'success' => true,
+      'total' => count($items),
+      'items' => $items,
+    ]);
+  }
+
+  /**
+   * Elimina todas las alertas simuladas (AJAX)
+   */
+  public function limpiar_simulaciones_ajax() {
+    $this->_require_simular_alertas();
+
+    $eliminadas = $this->AlertasSimuladasModel->eliminar_todas();
+
+    echo json_encode([
+      'success' => true,
+      'message' => $eliminadas > 0
+        ? "Se eliminaron {$eliminadas} simulación(es)."
+        : 'No había simulaciones activas.',
+      'eliminadas' => $eliminadas,
+    ]);
   }
 
   /**

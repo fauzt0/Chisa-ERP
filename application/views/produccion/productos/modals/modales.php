@@ -690,7 +690,7 @@
         <!-- Instrucciones del formato esperado -->
         <div class="alert alert-info">
           <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Formato esperado del Excel</h6>
-          <div class="row mt-2" style="font-size:0.85rem;">
+          <div class="row mt-2" style="font-size:0.95rem;">
             <div class="col-md-6">
               <strong>Fila de producto:</strong>
               <code class="d-block mt-1 bg-dark text-success p-1 rounded">CHISA GLASS REF PCH11 &nbsp;|&nbsp; KILOS &nbsp;|&nbsp; 19.000</code>

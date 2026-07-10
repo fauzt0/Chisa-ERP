@@ -17,6 +17,28 @@ class Roles extends MY_Controller {
         $data['breadcrumb'] = 'Inicio > Gestión de usuarios > Roles';
         
         $data['roles'] = $this->RolesModel->get_all_roles();
+        $this->config->load('permissions');
+        $data['permisos_labels'] = $this->config->item('permissions');
+        $data['permisos_destacados'] = [
+            'proveedores_consult',
+            'proveedores_add',
+            'proveedores_edit',
+            'proveedores_insumos',
+            'compras_ordenes_add',
+            'compras_ordenes_consult',
+            'compras_ordenes_edit',
+            'compras_autorizar_preordenes',
+            'compras_preordenes_edit',
+            'compras_recepcion',
+            'reportes_compras',
+            'compras_documentos',
+            'compras_pagos',
+            'compras_servicios_recurrentes',
+            'admin_simular_alertas',
+            'reloj_ver_dashboard',
+            'produccion_preordenes',
+            'rh_empleados_consult',
+        ];
         $data['pageView'] = 'usuarios/roles/main';
         
         $this->load->view('layouts/general_template', $data);

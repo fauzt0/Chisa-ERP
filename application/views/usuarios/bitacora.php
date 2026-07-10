@@ -64,6 +64,32 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
+        <div class="row g-2 mb-3" id="bitacora-filtros">
+          <div class="col-md-3">
+            <label class="form-label small mb-0">Desde</label>
+            <input type="date" class="form-control form-control-sm" id="bitacora-fecha-desde">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-0">Hasta</label>
+            <input type="date" class="form-control form-control-sm" id="bitacora-fecha-hasta">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-0">Tipo</label>
+            <select class="form-select form-select-sm" id="bitacora-tipo">
+              <option value="">Todos</option>
+              <option value="Proveedores">Proveedores</option>
+              <option value="Compras">Compras</option>
+              <option value="Ingreso">Ingreso al sistema</option>
+              <option value="Registro">Usuarios</option>
+              <option value="Seguridad">Seguridad</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-sm btn-primary w-100" onclick="aplicarFiltrosBitacora()">
+              <i class="fas fa-filter"></i> Filtrar
+            </button>
+          </div>
+        </div>
         <div id="bitacora-content">
           <div class="text-center">
             <div class="spinner-border" role="status"></div>
@@ -105,14 +131,33 @@ if (typeof jQuery !== 'undefined') {
 }
 
 // Ver bitácora de usuario
+var bitacoraUserIdActual = null;
+
 function verBitacora(userId, userName) {
+  bitacoraUserIdActual = userId;
   $('#usuario-nombre').text(userName);
-  $('#modalBitacora').modal('show');
-  
-  // Cargar logs del usuario
+  $('#bitacora-fecha-desde').val('');
+  $('#bitacora-fecha-hasta').val('');
+  $('#bitacora-tipo').val('');
+  var modalEl = document.getElementById('modalBitacora');
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  cargarBitacoraUsuario();
+}
+
+function aplicarFiltrosBitacora() {
+  if (!bitacoraUserIdActual) return;
+  cargarBitacoraUsuario();
+}
+
+function cargarBitacoraUsuario() {
+  $('#bitacora-content').html('<div class="text-center"><div class="spinner-border" role="status"></div><p>Cargando...</p></div>');
+
   $.post('<?= base_url('usuarios/GestionUsuarios/get_user_logs_ajax') ?>', {
-    user_id: userId,
+    user_id: bitacoraUserIdActual,
     limit: 100,
+    fecha_desde: $('#bitacora-fecha-desde').val(),
+    fecha_hasta: $('#bitacora-fecha-hasta').val(),
+    tipo: $('#bitacora-tipo').val(),
     '<?= $this->security->get_csrf_token_name() ?>': '<?= $this->security->get_csrf_hash() ?>'
   }, function(result) {
     result = JSON.parse(result);

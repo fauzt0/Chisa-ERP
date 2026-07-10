@@ -34,6 +34,10 @@ $checadas7 = $stats['checadas_7_dias'] ?? [];
             <button type="button" class="btn btn-light btn-sm" id="btn-refresh-dashboard" title="Actualizar">
                 <i class="fas fa-sync-alt"></i>
             </button>
+            <div class="form-check form-switch ms-1 mb-0 d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="toggle-auto-refresh" title="Auto-actualizar cada 30 segundos">
+                <label class="form-check-label small ms-1" for="toggle-auto-refresh">Auto 30s</label>
+            </div>
         </div>
     </div>
 
@@ -49,31 +53,41 @@ $checadas7 = $stats['checadas_7_dias'] ?? [];
     <!-- Cards principales -->
     <div class="row">
         <div class="col-lg-6 col-xl-3 d-flex">
-            <div class="card flex-fill">
+            <div class="card flex-fill border-success">
                 <div class="card-header">
-                    <h5 class="card-title mb-0 mt-2">Asistencias Hoy</h5>
+                    <h5 class="card-title mb-0 mt-2">Resumen del Día</h5>
                 </div>
                 <div class="card-body my-0 pt-0">
-                    <div class="row d-flex align-items-center mb-3">
-                        <div class="col-8">
-                            <h3 class="d-flex align-items-center mb-0 fw-light" id="stat-asistencias-hoy">
-                                <?php echo (int)($stats['asistencias_hoy'] ?? 0); ?>
-                            </h3>
+                    <div class="row text-center g-2 mb-2">
+                        <div class="col-4">
+                            <div class="p-2 rounded bg-success bg-opacity-10">
+                                <div class="h4 mb-0 text-success fw-light" id="stat-presentes-hoy"><?php echo (int)($stats['presentes_hoy'] ?? 0); ?></div>
+                                <small class="text-muted">Presentes</small>
+                            </div>
                         </div>
-                        <div class="col-4 text-end">
-                            <i class="fas fa-fingerprint text-success" style="font-size: 1.5rem;"></i>
+                        <div class="col-4">
+                            <div class="p-2 rounded bg-secondary bg-opacity-10">
+                                <div class="h4 mb-0 text-secondary fw-light" id="stat-ausentes-hoy"><?php echo (int)($stats['ausentes_hoy'] ?? 0); ?></div>
+                                <small class="text-muted">Ausentes</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 rounded bg-warning bg-opacity-10">
+                                <div class="h4 mb-0 text-warning fw-light" id="stat-retardos-resumen"><?php echo (int)($stats['retardos_hoy'] ?? 0); ?></div>
+                                <small class="text-muted">Retardos</small>
+                            </div>
                         </div>
                     </div>
                     <div class="progress progress-sm shadow-sm mb-1">
                         <?php
-                        $pct_empleados = ($stats['asistencias_hoy'] ?? 0) > 0
-                            ? min(100, round((($stats['empleados_checaron_hoy'] ?? 0) / max(1, $stats['asistencias_hoy'])) * 100))
-                            : 0;
+                        $total_dia = max(1, (int)($stats['total_esperados_hoy'] ?? 0));
+                        $pct_presentes = min(100, round(((int)($stats['presentes_hoy'] ?? 0) / $total_dia) * 100));
                         ?>
-                        <div class="progress-bar bg-success" id="bar-asistencias-hoy" style="width: <?php echo $pct_empleados; ?>%"></div>
+                        <div class="progress-bar bg-success" id="bar-presentes-hoy" style="width: <?php echo $pct_presentes; ?>%"></div>
                     </div>
                     <small class="text-muted">
-                        Empleados: <strong id="stat-empleados-hoy"><?php echo (int)($stats['empleados_checaron_hoy'] ?? 0); ?></strong>
+                        Checadas hoy: <strong id="stat-asistencias-hoy"><?php echo (int)($stats['asistencias_hoy'] ?? 0); ?></strong>
+                        · Empleados: <strong id="stat-empleados-hoy"><?php echo (int)($stats['empleados_checaron_hoy'] ?? 0); ?></strong>
                     </small>
                 </div>
             </div>

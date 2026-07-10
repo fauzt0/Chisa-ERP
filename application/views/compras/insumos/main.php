@@ -4,7 +4,7 @@
  * Listado de insumos con DataTables y estadísticas
  */
 ?>
-<div class="container-fluid p-0">
+<div class="container-fluid p-0 compras-page">
 
   <!-- Breadcrumb -->
   <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
@@ -271,6 +271,15 @@
   let tabla;
   let insumoEditando = null;
 
+  function abrirModal(id) {
+    const el = document.getElementById(id);
+    if (el && typeof bootstrap !== 'undefined') bootstrap.Modal.getOrCreateInstance(el).show();
+  }
+  function cerrarModal(id) {
+    const el = document.getElementById(id);
+    if (el && typeof bootstrap !== 'undefined') bootstrap.Modal.getOrCreateInstance(el).hide();
+  }
+
   function initInsumos() {
     cargarCategoriasFiltro();
     cargarCategoriasSelect();
@@ -364,7 +373,7 @@
     $('#formInsumo')[0].reset();
     $('#insumo_id').val('');
     $('#insumo_estatus').val('Activo');
-    $('#modalInsumo').modal('show');
+    abrirModal('modalInsumo');
   };
 
   window.mostrarModalEditar = function(id) {
@@ -392,7 +401,7 @@
         $('#insumo_stock_maximo').val(ins.stock_maximo);
         $('#insumo_estatus').val(ins.estatus);
         
-        $('#modalInsumo').modal('show');
+        abrirModal('modalInsumo');
       }
     });
   };
@@ -409,7 +418,7 @@
         result = JSON.parse(result);
         if(result.success) {
           notifyShow(result.message, 'success');
-          $('#modalInsumo').modal('hide');
+          cerrarModal('modalInsumo');
           tabla.ajax.reload();
         } else {
           notifyShow('Error: ' + result.message, 'danger');

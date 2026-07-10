@@ -4,7 +4,8 @@
  * Listado de proveedores con DataTables
  */
 ?>
-<div class="container-fluid p-0">
+<?php $this->load->helper('permissions'); ?>
+<div class="container-fluid p-0 compras-page">
 
   <!-- Breadcrumb -->
   <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
@@ -107,9 +108,11 @@
         <div class="card-header">
           <div class="d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Catálogo de Proveedores</h5>
+            <?php if (tiene_permiso('proveedores_add')): ?>
             <button class="btn btn-primary btn-sm" onclick="mostrarModalNuevo()">
               <i class="fas fa-plus"></i> Nuevo Proveedor
             </button>
+            <?php endif; ?>
           </div>
         </div>
         <div class="card-body">
@@ -138,7 +141,7 @@
                 <select class="form-select form-select-sm" id="filtroTipoProveedor">
                   <option value="">Todos</option>
                   <option value="Materia Prima">Materia Prima</option>
-                  <option value="Insumos">Insumos</option>
+                  <option value="Materiales">Materiales</option>
                   <option value="Servicios">Servicios</option>
                   <option value="Mixto">Mixto</option>
                 </select>
@@ -409,6 +412,11 @@
                   <textarea class="form-control" id="insumo_observaciones" rows="2"></textarea>
                 </div>
 
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" id="insumo_es_principal" value="1">
+                  <label class="form-check-label" for="insumo_es_principal">Proveedor principal para este insumo</label>
+                </div>
+
                 <div class="text-end">
                   <button type="button" class="btn btn-secondary btn-sm" onclick="cancelarFormInsumo()">Cancelar</button>
                   <button type="button" class="btn btn-success btn-sm" onclick="guardarInsumoProveedor()">
@@ -468,13 +476,27 @@
     </div>
 
     <!-- Botones de acciones rápidas -->
-    <div class="px-3 py-2 border-bottom d-flex gap-2">
+    <div class="px-3 py-2 border-bottom d-flex gap-2 flex-wrap">
+      <?php if (tiene_permiso('proveedores_edit')): ?>
       <button class="btn btn-sm btn-primary" id="oc-btn-editar">
         <i class="fas fa-edit"></i> Editar
       </button>
+      <?php endif; ?>
+      <?php if (tiene_permiso('proveedores_insumos') || tiene_permiso('proveedores_edit')): ?>
       <button class="btn btn-sm btn-info" id="oc-btn-insumos">
         <i class="fas fa-boxes"></i> Ver Insumos
       </button>
+      <?php endif; ?>
+      <?php if (tiene_permiso('compras_servicios_recurrentes')): ?>
+      <a class="btn btn-sm btn-warning" id="oc-btn-servicios" href="<?= base_url('compras/ServiciosRecurrentes') ?>">
+        <i class="fas fa-sync-alt"></i> Servicios
+      </a>
+      <?php endif; ?>
+      <?php if (tiene_permiso('compras_ordenes_add')): ?>
+      <a class="btn btn-sm btn-success" id="oc-btn-nueva-orden" href="#">
+        <i class="fas fa-file-invoice"></i> Nueva OC
+      </a>
+      <?php endif; ?>
     </div>
 
     <!-- Tabs -->
@@ -490,6 +512,10 @@
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="oc-ordenes-tab" data-bs-toggle="tab"
                 data-bs-target="#oc-tab-ordenes" type="button">Órdenes</button>
+      </li>
+      <li class="nav-item" role="presentation" id="oc-servicios-tab-li" style="display:none;">
+        <button class="nav-link" id="oc-servicios-tab" data-bs-toggle="tab"
+                data-bs-target="#oc-tab-servicios" type="button">Servicios</button>
       </li>
     </ul>
 
@@ -540,6 +566,7 @@
                   <th>Fecha</th>
                   <th class="text-end">Total</th>
                   <th>Estatus</th>
+                  <th>Pago</th>
                   <th width="100">Acciones</th>
                 </tr>
               </thead>
@@ -547,6 +574,42 @@
             </table>
           </div>
           <div id="oc-ordenes-paginacion" class="d-grid gap-2 mt-2"></div>
+        </div>
+      </div>
+
+      <!-- TAB SERVICIOS RECURRENTES -->
+      <div class="tab-pane fade" id="oc-tab-servicios" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="small text-muted">Pagos mensuales vinculados al proveedor</span>
+          <?php if (tiene_permiso('compras_servicios_recurrentes')): ?>
+          <button type="button" class="btn btn-sm btn-primary" id="oc-btn-nuevo-servicio" onclick="nuevoServicioDesdeProveedor()">
+            <i class="fas fa-plus"></i> Agregar
+          </button>
+          <?php endif; ?>
+        </div>
+        <div id="oc-servicios-loading" class="text-center text-muted py-4">
+          <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+        <div id="oc-servicios-container" style="display:none;">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Servicio</th>
+                  <th>Monto</th>
+                  <th>Vence</th>
+                  <th>Estatus mes</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="oc-servicios-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="mt-2">
+          <a href="<?= base_url('compras/ServiciosRecurrentes') ?>" class="btn btn-sm btn-outline-secondary w-100">
+            <i class="fas fa-external-link-alt me-1"></i> Ver calendario completo
+          </a>
         </div>
       </div>
 
@@ -580,16 +643,59 @@
           <div class="table-responsive">
             <table class="table table-sm table-bordered">
               <thead class="table-light">
-                <tr><th>Insumo</th><th>Código</th><th class="text-center">Cantidad</th><th class="text-end">Precio</th><th class="text-end">Subtotal</th></tr>
+                <tr><th>Insumo</th><th>Código</th><th class="text-center">Solicitada</th><th class="text-center">Recibida</th><th class="text-end">Precio</th><th class="text-end">Subtotal</th></tr>
               </thead>
               <tbody id="det-oc-detalles"></tbody>
             </table>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer justify-content-between">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <a href="#" id="det-oc-btn-pdf" target="_blank" class="btn btn-danger"><i class="fas fa-file-pdf"></i> Ver PDF</a>
+        <div>
+          <button type="button" class="btn btn-warning me-2" id="det-oc-btn-recibir" style="display:none;" onclick="recibirMercanciaProveedor()">
+            <i class="fas fa-truck-loading"></i> Recibir mercancía
+          </button>
+          <a href="#" id="det-oc-btn-pdf" target="_blank" class="btn btn-danger"><i class="fas fa-file-pdf"></i> Ver PDF</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Recibir mercancía (desde proveedor) -->
+<div class="modal fade" id="modalRecibirProveedor" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">Recibir mercancía: <span id="prov_folio_recibir"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="prov_recibir_orden_id">
+        <div class="alert alert-info small mb-3">
+          <i class="fas fa-info-circle"></i> Al confirmar, el <strong>stock de insumos</strong> se actualiza automáticamente para Producción.
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm" id="tablaRecibirProveedor">
+            <thead class="table-light">
+              <tr>
+                <th>Insumo</th>
+                <th>Solicitada</th>
+                <th>Ya recibida</th>
+                <th>Recibir ahora</th>
+                <th>Pendiente</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-warning" onclick="guardarRecepcionProveedor()">
+          <i class="fas fa-truck-loading"></i> Confirmar recepción
+        </button>
       </div>
     </div>
   </div>
@@ -604,9 +710,16 @@
   let proveedorInsumosActual = null;
   let busquedaProvTimer = null;
   let provOrdenesActualId = 0;
+  let provServiciosActualId = 0;
+  const PUEDE_PAGOS = <?php echo tiene_permiso('compras_pagos') ? 'true' : 'false'; ?>;
+  const PUEDE_SERVICIOS = <?php echo tiene_permiso('compras_servicios_recurrentes') ? 'true' : 'false'; ?>;
+  const PUEDE_RECEPCION = <?php echo tiene_permiso('compras_recepcion') ? 'true' : 'false'; ?>;
+  let detOcActualId = 0;
+  let detOcActual = null;
   let provOrdenesLimit = 10;
   let provOrdenesOffset = 0;
   let provOrdenesTotal = 0;
+  let insumosProveedorCache = {};
 
   const badgeOrdenCompra = {
     'Borrador': 'secondary',
@@ -617,6 +730,30 @@
     'Recibida': 'success',
     'Cancelada': 'danger'
   };
+
+  function abrirModal(id) {
+    const el = document.getElementById(id);
+    if (el && typeof bootstrap !== 'undefined') bootstrap.Modal.getOrCreateInstance(el).show();
+  }
+  function cerrarModal(id) {
+    const el = document.getElementById(id);
+    if (el && typeof bootstrap !== 'undefined') bootstrap.Modal.getOrCreateInstance(el).hide();
+  }
+
+  function toastProveedores(type, title, message) {
+    if (typeof showErpToast === 'function') {
+      showErpToast({ type: type, module: 'Proveedores', title: title, message: message });
+    } else if (typeof notifyShow === 'function') {
+      notifyShow(message, type);
+    }
+  }
+
+  function cerrarOffcanvasProveedor() {
+    const el = document.getElementById('offcanvasDetalleProveedor');
+    if (el && typeof bootstrap !== 'undefined') {
+      bootstrap.Offcanvas.getOrCreateInstance(el).hide();
+    }
+  }
 
   function initProveedores() {
     inicializarDataTable();
@@ -704,7 +841,7 @@
     $('#proveedor_estatus').val('Activo');
     $('#proveedor_pais').val('México');
     $('#proveedor_tipo_proveedor').val('Mixto');
-    $('#modalProveedor').modal('show');
+    abrirModal('modalProveedor');
   };
 
   window.mostrarModalEditar = function(id) {
@@ -716,7 +853,7 @@
       'peticion': 'ajax',
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
     }, function(result) {
-      result = JSON.parse(result);
+      try { result = JSON.parse(result); } catch (e) { return; }
       if(result.success) {
         const p = result.proveedor;
         $('#proveedor_id').val(p.id);
@@ -742,30 +879,45 @@
         $('#proveedor_observaciones').val(p.observaciones);
         $('#proveedor_estatus').val(p.estatus);
         
-        $('#modalProveedor').modal('show');
+        abrirModal('modalProveedor');
+      } else {
+        toastProveedores('danger', 'Error', result.message || 'No se pudo cargar el proveedor.');
       }
+    }).fail(function() {
+      toastProveedores('danger', 'Error de conexión', 'No se pudo cargar el proveedor.');
     });
   };
 
   window.guardarProveedor = function() {
+    const form = document.getElementById('formProveedor');
+    if (form && !form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
     const formData = $('#formProveedor').serialize();
-    const url = proveedorEditando ? 
-      '<?=base_url();?>compras/Proveedores/editar_ajax' : 
+    const url = proveedorEditando ?
+      '<?=base_url();?>compras/Proveedores/editar_ajax' :
       '<?=base_url();?>compras/Proveedores/crear_ajax';
 
-    $.post(url, 
+    $.post(url,
       formData + '&peticion=ajax&<?php echo $this->security->get_csrf_token_name();?>=<?php echo $this->security->get_csrf_hash();?>',
       function(result) {
-        result = JSON.parse(result);
+        try { result = JSON.parse(result); } catch (e) {
+          toastProveedores('danger', 'Error', 'Respuesta inválida del servidor.');
+          return;
+        }
         if(result.success) {
-          notifyShow(result.message, 'success');
-          $('#modalProveedor').modal('hide');
+          toastProveedores('success', proveedorEditando ? 'Proveedor actualizado' : 'Proveedor creado', result.message);
+          cerrarModal('modalProveedor');
           tabla.ajax.reload();
         } else {
-          notifyShow('Error: ' + result.message, 'danger');
+          toastProveedores('danger', 'Error', result.message || 'No se pudo guardar el proveedor.');
         }
       }
-    );
+    ).fail(function() {
+      toastProveedores('danger', 'Error de conexión', 'No se pudo contactar al servidor.');
+    });
   };
 
   window.eliminarProveedor = function(id) {
@@ -776,11 +928,13 @@
       'peticion': 'ajax',
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
     }, function(result) {
-      result = JSON.parse(result);
-      notifyShow(result.message, result.success ? 'success' : 'danger');
+      try { result = JSON.parse(result); } catch (e) { return; }
+      toastProveedores(result.success ? 'success' : 'danger', result.success ? 'Eliminado' : 'Error', result.message || '');
       if(result.success) {
         tabla.ajax.reload();
       }
+    }).fail(function() {
+      toastProveedores('danger', 'Error de conexión', 'No se pudo eliminar el proveedor.');
     });
   };
 
@@ -804,7 +958,7 @@
     });
     
     cargarInsumosProveedor(proveedorId);
-    $('#modalInsumos').modal('show');
+    abrirModal('modalInsumos');
   };
 
   function cargarInsumosProveedor(proveedorId) {
@@ -813,27 +967,33 @@
       'peticion': 'ajax',
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
     }, function(result) {
-      result = JSON.parse(result);
+      try { result = JSON.parse(result); } catch (e) {
+        toastProveedores('danger', 'Error', 'No se pudieron cargar los insumos.');
+        return;
+      }
       if(result.success) {
+        insumosProveedorCache = {};
         let html = '';
         if(result.insumos.length === 0) {
-          html = '<tr><td colspan="6" class="text-center text-muted">No hay insumos relacionados</td></tr>';
+          html = '<tr><td colspan="7" class="text-center text-muted">No hay insumos relacionados</td></tr>';
         } else {
           result.insumos.forEach(function(ins) {
-            const nombreProv = ins.nombre_proveedor ? `<span class="badge bg-info text-white">${ins.nombre_proveedor}</span>` : '<span class="text-muted">—</span>';
+            insumosProveedorCache[ins.insumo_id] = ins;
+            const nombreProv = ins.nombre_proveedor ? `<span class="badge bg-info text-white">${$('<div>').text(ins.nombre_proveedor).html()}</span>` : '<span class="text-muted">—</span>';
+            const principal = ins.es_proveedor_principal == 1 ? ' <span class="badge bg-warning text-dark" title="Principal">★</span>' : '';
             html += `
               <tr>
-                <td><small>${ins.codigo}</small></td>
-                <td><strong>${ins.nombre_tecnico}</strong></td>
+                <td><small>${ins.codigo || ''}</small></td>
+                <td><strong>${ins.nombre_tecnico || ''}</strong>${principal}</td>
                 <td>${nombreProv}</td>
-                <td>$${parseFloat(ins.precio_compra).toFixed(2)}</td>
-                <td><span class="badge bg-light text-dark">${ins.unidad_medida}</span></td>
-                <td>${ins.tiempo_entrega_dias} días</td>
-                <td>
-                  <button class="btn btn-sm btn-primary" onclick="editarInsumoProveedor(${ins.insumo_id}, ${ins.precio_compra}, ${ins.tiempo_entrega_dias}, ${ins.cantidad_minima}, '${ins.codigo_proveedor || ''}', '${(ins.nombre_proveedor || '').replace(/'/g, '\\&apos;')}', '${ins.observaciones || ''}')" title="Editar">
+                <td>$${parseFloat(ins.precio_compra || 0).toFixed(2)}</td>
+                <td><span class="badge bg-light text-dark">${ins.unidad_medida || ''}</span></td>
+                <td>${ins.tiempo_entrega_dias || 0} días</td>
+                <td class="text-nowrap">
+                  <button type="button" class="btn btn-sm btn-primary" onclick="editarInsumoProveedor(${ins.insumo_id})" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button class="btn btn-sm btn-danger" onclick="eliminarInsumoProveedor(${ins.insumo_id})" title="Eliminar">
+                  <button type="button" class="btn btn-sm btn-danger" onclick="eliminarInsumoProveedor(${ins.insumo_id})" title="Eliminar">
                     <i class="fas fa-trash"></i>
                   </button>
                 </td>
@@ -843,6 +1003,8 @@
         }
         $('#tablaInsumosProveedor tbody').html(html);
       }
+    }).fail(function() {
+      toastProveedores('danger', 'Error de conexión', 'No se pudieron cargar los insumos.');
     });
   }
 
@@ -850,6 +1012,7 @@
     $('#tituloFormInsumo').text('Agregar Insumo');
     $('#formInsumoProveedor')[0].reset();
     $('#insumo_editando_id').val('');
+    $('#insumo_es_principal').prop('checked', false);
     $('#insumo_select').prop('disabled', false);
     $('#formAgregarInsumo').slideDown();
   };
@@ -857,47 +1020,70 @@
   window.cancelarFormInsumo = function() {
     $('#formAgregarInsumo').slideUp();
     $('#formInsumoProveedor')[0].reset();
+    $('#insumo_es_principal').prop('checked', false);
   };
 
-  window.editarInsumoProveedor = function(insumoId, precio, tiempoEntrega, cantidadMin, codigoProv, nombreProv, obs) {
+  window.editarInsumoProveedor = function(insumoId) {
+    const ins = insumosProveedorCache[insumoId];
+    if (!ins) {
+      toastProveedores('warning', 'Insumo no encontrado', 'Recargue la lista e intente de nuevo.');
+      return;
+    }
     $('#tituloFormInsumo').text('Editar Insumo del Proveedor');
     $('#insumo_editando_id').val(insumoId);
     $('#insumo_select').val(insumoId).prop('disabled', true);
-    $('#insumo_precio_compra').val(precio);
-    $('#insumo_tiempo_entrega').val(tiempoEntrega);
-    $('#insumo_cantidad_minima').val(cantidadMin);
-    $('#insumo_codigo_proveedor').val(codigoProv);
-    $('#insumo_nombre_proveedor').val(nombreProv);
-    $('#insumo_observaciones').val(obs);
+    $('#insumo_precio_compra').val(ins.precio_compra);
+    $('#insumo_tiempo_entrega').val(ins.tiempo_entrega_dias);
+    $('#insumo_cantidad_minima').val(ins.cantidad_minima);
+    $('#insumo_codigo_proveedor').val(ins.codigo_proveedor || '');
+    $('#insumo_nombre_proveedor').val(ins.nombre_proveedor || '');
+    $('#insumo_observaciones').val(ins.observaciones || '');
+    $('#insumo_es_principal').prop('checked', ins.es_proveedor_principal == 1);
     $('#formAgregarInsumo').slideDown();
   };
 
   window.guardarInsumoProveedor = function() {
     const insumoEditandoId = $('#insumo_editando_id').val();
-    const url = insumoEditandoId ? 
-      '<?=base_url();?>compras/Proveedores/actualizar_precio_insumo_ajax' : 
+    const insumoId = insumoEditandoId || $('#insumo_select').val();
+    const precio = parseFloat($('#insumo_precio_compra').val());
+
+    if (!insumoId) {
+      toastProveedores('warning', 'Insumo requerido', 'Seleccione un insumo de la lista.');
+      return;
+    }
+    if (!precio || precio <= 0) {
+      toastProveedores('warning', 'Precio requerido', 'Indique un precio de compra válido.');
+      return;
+    }
+
+    const url = insumoEditandoId ?
+      '<?=base_url();?>compras/Proveedores/actualizar_precio_insumo_ajax' :
       '<?=base_url();?>compras/Proveedores/agregar_insumo_ajax';
 
     const data = {
       'proveedor_id': proveedorInsumosActual,
-      'insumo_id': insumoEditandoId || $('#insumo_select').val(),
-      'precio_compra': $('#insumo_precio_compra').val(),
-      'tiempo_entrega_dias': $('#insumo_tiempo_entrega').val(),
-      'cantidad_minima': $('#insumo_cantidad_minima').val(),
+      'insumo_id': insumoId,
+      'precio_compra': precio,
+      'tiempo_entrega_dias': $('#insumo_tiempo_entrega').val() || 0,
+      'cantidad_minima': $('#insumo_cantidad_minima').val() || 1,
       'codigo_proveedor': $('#insumo_codigo_proveedor').val(),
       'nombre_proveedor': $('#insumo_nombre_proveedor').val(),
       'observaciones': $('#insumo_observaciones').val(),
+      'es_proveedor_principal': $('#insumo_es_principal').is(':checked') ? 1 : 0,
       'peticion': 'ajax',
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
     };
 
     $.post(url, data, function(result) {
-      result = JSON.parse(result);
-      notifyShow(result.message, result.success ? 'success' : 'danger');
+      try { result = JSON.parse(result); } catch (e) { return; }
+      toastProveedores(result.success ? 'success' : 'danger', result.success ? 'Insumo guardado' : 'Error', result.message || '');
       if(result.success) {
         cancelarFormInsumo();
         cargarInsumosProveedor(proveedorInsumosActual);
+        if (typeof tabla !== 'undefined' && tabla) tabla.ajax.reload(null, false);
       }
+    }).fail(function() {
+      toastProveedores('danger', 'Error de conexión', 'No se pudo guardar el insumo.');
     });
   };
 
@@ -910,11 +1096,14 @@
       'peticion': 'ajax',
       '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
     }, function(result) {
-      result = JSON.parse(result);
-      notifyShow(result.message, result.success ? 'success' : 'danger');
+      try { result = JSON.parse(result); } catch (e) { return; }
+      toastProveedores(result.success ? 'success' : 'danger', result.success ? 'Insumo eliminado' : 'Error', result.message || '');
       if(result.success) {
         cargarInsumosProveedor(proveedorInsumosActual);
+        if (typeof tabla !== 'undefined' && tabla) tabla.ajax.reload(null, false);
       }
+    }).fail(function() {
+      toastProveedores('danger', 'Error de conexión', 'No se pudo eliminar el insumo.');
     });
   };
 
@@ -939,15 +1128,25 @@
     $('#oc-ordenes-paginacion').html('');
 
     // Activar tab Información por defecto
-    $('#oc-info-tab').tab('show');
+    const tabInfo = document.getElementById('oc-info-tab');
+    if (tabInfo && typeof bootstrap !== 'undefined') bootstrap.Tab.getOrCreateInstance(tabInfo).show();
 
     // Botones de acción rápida
-    $('#oc-btn-editar').off('click').on('click', function() {
-      mostrarModalEditar(id);
-    });
-    $('#oc-btn-insumos').off('click').on('click', function() {
-      mostrarModalInsumos(id);
-    });
+    if ($('#oc-btn-editar').length) {
+      $('#oc-btn-editar').off('click').on('click', function() {
+        cerrarOffcanvasProveedor();
+        setTimeout(function() { mostrarModalEditar(id); }, 250);
+      });
+    }
+    if ($('#oc-btn-insumos').length) {
+      $('#oc-btn-insumos').off('click').on('click', function() {
+        cerrarOffcanvasProveedor();
+        setTimeout(function() { mostrarModalInsumos(id); }, 250);
+      });
+    }
+    if ($('#oc-btn-nueva-orden').length) {
+      $('#oc-btn-nueva-orden').attr('href', '<?=base_url('compras/OrdenesCompra');?>?nueva_proveedor=' + id);
+    }
 
     // Cargar datos del proveedor
     $.post('<?=base_url();?>compras/Proveedores/get_proveedor_ajax', {
@@ -996,6 +1195,17 @@
       }
 
       $('#oc-detalles').html(html);
+
+      // Tab servicios para proveedores tipo Servicios o Mixto
+      if (p.tipo_proveedor === 'Servicios' || p.tipo_proveedor === 'Mixto') {
+        $('#oc-servicios-tab-li').show();
+        provServiciosActualId = id;
+        if ($('#oc-btn-servicios').length) {
+          $('#oc-btn-servicios').attr('href', '<?= base_url('compras/ServiciosRecurrentes') ?>?proveedor_id=' + id);
+        }
+      } else {
+        $('#oc-servicios-tab-li').hide();
+      }
     });
 
     // Cargar insumos cuando el tab se activa
@@ -1005,6 +1215,76 @@
 
     $('#oc-ordenes-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
       if($('#oc-ordenes-tbody').is(':empty')) cargarOrdenesOC(id);
+    });
+
+    $('#oc-servicios-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
+      cargarServiciosOC(id);
+    });
+  };
+
+  window.nuevoServicioDesdeProveedor = function() {
+    if (!provServiciosActualId) return;
+    window.location.href = '<?= base_url('compras/ServiciosRecurrentes') ?>?proveedor_id=' + provServiciosActualId + '&nuevo=1';
+  };
+
+  function badgePagoOC(estatus, saldo) {
+    const map = { Pendiente: 'danger', Parcial: 'warning', Pagado: 'success', 'Sin adeudo': 'secondary' };
+    let html = '<span class="badge bg-' + (map[estatus] || 'secondary') + '">' + (estatus || '—') + '</span>';
+    if (parseFloat(saldo || 0) > 0) {
+      html += '<br><small class="text-danger">$' + parseFloat(saldo).toFixed(2) + '</small>';
+    }
+    return html;
+  }
+
+  function cargarServiciosOC(proveedorId) {
+    $('#oc-servicios-loading').show();
+    $('#oc-servicios-container').hide();
+    $.post('<?= base_url('compras/ServiciosRecurrentes/pagos_proveedor_ajax') ?>', {
+      proveedor_id: proveedorId,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      try { res = JSON.parse(res); } catch(e) { return; }
+      $('#oc-servicios-loading').hide();
+      if (!res.success) return;
+      let tbody = '';
+      const pagosMap = {};
+      (res.pagos_mes || []).forEach(function(p) { pagosMap[p.servicio_recurrente_id] = p; });
+      if (!res.servicios || res.servicios.length === 0) {
+        tbody = '<tr><td colspan="5" class="text-center text-muted py-3">Sin servicios recurrentes. <a href="<?= base_url('compras/ServiciosRecurrentes') ?>">Agregar uno</a></td></tr>';
+      } else {
+        res.servicios.forEach(function(s) {
+          const p = pagosMap[s.id];
+          const est = p ? p.estatus : '—';
+          const badge = { Pendiente: 'warning', Pagado: 'success', Vencido: 'danger' };
+          tbody += '<tr><td><strong>' + s.nombre_servicio + '</strong><br><small class="text-muted">' + s.tipo_servicio + '</small></td>';
+          tbody += '<td>$' + parseFloat(s.monto_estimado).toFixed(2) + '</td>';
+          tbody += '<td>Día ' + s.dia_vencimiento + '</td>';
+          tbody += '<td><span class="badge bg-' + (badge[est] || 'secondary') + '">' + est + '</span></td><td>';
+          if (p && PUEDE_PAGOS && (est === 'Pendiente' || est === 'Vencido')) {
+            tbody += '<button class="btn btn-sm btn-success" onclick="pagarServicioProveedor(' + p.id + ', ' + p.monto + ')"><i class="fas fa-check"></i></button>';
+          }
+          tbody += '</td></tr>';
+        });
+      }
+      $('#oc-servicios-tbody').html(tbody);
+      $('#oc-servicios-container').show();
+    });
+  }
+
+  window.pagarServicioProveedor = function(pagoId, monto) {
+    if (!PUEDE_PAGOS || !confirm('¿Registrar pago de $' + parseFloat(monto).toFixed(2) + '?')) return;
+    $.post('<?= base_url('compras/ServiciosRecurrentes/registrar_pago_ajax') ?>', {
+      pago_id: pagoId,
+      monto: monto,
+      fecha_pago: new Date().toISOString().slice(0, 10),
+      referencia: 'Pago desde proveedor',
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      try { res = JSON.parse(res); } catch(e) {}
+      toastProveedores(res.success ? 'success' : 'danger', res.success ? 'Pagado' : 'Error', res.message || '');
+      if (res.success && provServiciosActualId) cargarServiciosOC(provServiciosActualId);
     });
   };
 
@@ -1052,9 +1332,13 @@
           tbody += '<td>' + formatearFechaMX(oc.fecha_orden) + '</td>';
           tbody += '<td class="text-end">$' + parseFloat(oc.total || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
           tbody += '<td>' + renderBadgeOC(oc.estatus) + '</td>';
+          tbody += '<td>' + badgePagoOC(oc.estatus_pago, oc.saldo_pendiente) + '</td>';
           tbody += '<td>';
           tbody += '<div class="btn-group btn-group-sm">';
           tbody += '<button type="button" class="btn btn-info" onclick="verDetalleOrdenCompra(' + oc.id + ')" title="Ver detalle"><i class="fas fa-eye"></i></button>';
+          if (puedeRecibirOC(oc.estatus)) {
+            tbody += '<button type="button" class="btn btn-warning" onclick="recibirMercanciaProveedor(' + oc.id + ')" title="Recibir mercancía"><i class="fas fa-truck-loading"></i></button>';
+          }
           tbody += '<a href="' + pdfUrl + '" target="_blank" class="btn btn-danger" title="Ver PDF"><i class="fas fa-file-pdf"></i></a>';
           tbody += '</div>';
           tbody += '</td>';
@@ -1073,6 +1357,10 @@
         $('#oc-ordenes-tbody').html(tbody);
         $('#oc-ordenes-container').show();
       }
+    }).fail(function() {
+      $('#oc-ordenes-loading').hide();
+      $('#oc-ordenes-tbody').html('<tr><td colspan="5" class="text-center text-danger py-3">Error al cargar órdenes</td></tr>');
+      $('#oc-ordenes-container').show();
     });
   }
 
@@ -1080,8 +1368,98 @@
     cargarOrdenesOC(provOrdenesActualId, true);
   };
 
+  function puedeRecibirOC(estatus) {
+    return PUEDE_RECEPCION && ['Enviada', 'Confirmada', 'En Tránsito', 'Recibida Parcial'].indexOf(estatus) >= 0;
+  }
+
+  function llenarTablaRecibirProveedor(orden) {
+    $('#prov_recibir_orden_id').val(orden.id);
+    $('#prov_folio_recibir').text(orden.folio);
+    let html = '';
+    (orden.detalles || []).forEach(function(det) {
+      const solicitada = parseFloat(det.cantidad_solicitada || 0);
+      const ya = parseFloat(det.cantidad_recibida || 0);
+      const pendiente = Math.max(0, solicitada - ya);
+      if (pendiente <= 0) return;
+      html += '<tr>';
+      html += '<td>' + (det.nombre_tecnico || '-') + ' <small class="text-muted">(' + (det.unidad_medida || '') + ')</small></td>';
+      html += '<td>' + solicitada + '</td><td>' + ya + '</td>';
+      html += '<td><input type="number" class="form-control form-control-sm prov-recibir-cantidad" data-detalle-id="' + det.id + '" data-max="' + pendiente + '" value="' + pendiente + '" min="0" max="' + pendiente + '" step="0.01"></td>';
+      html += '<td class="prov-pendiente-' + det.id + '">' + pendiente.toFixed(2) + '</td>';
+      html += '</tr>';
+    });
+    $('#tablaRecibirProveedor tbody').html(html || '<tr><td colspan="5" class="text-center text-muted">Todo recibido</td></tr>');
+    $('.prov-recibir-cantidad').off('input').on('input', function() {
+      const id = $(this).data('detalle-id');
+      const max = parseFloat($(this).data('max'));
+      const val = parseFloat($(this).val()) || 0;
+      $('.prov-pendiente-' + id).text(Math.max(0, max - val).toFixed(2));
+    });
+  }
+
+  window.recibirMercanciaProveedor = function(ordenId) {
+    const id = ordenId || detOcActualId;
+    if (!id || !PUEDE_RECEPCION) return;
+    $.post('<?=base_url();?>compras/OrdenesCompra/get_orden_ajax', {
+      id: id, peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      try { res = JSON.parse(res); } catch(e) { return; }
+      if (!res.success || !res.orden) {
+        toastProveedores('danger', 'Error', 'No se pudo cargar la orden.');
+        return;
+      }
+      if (!puedeRecibirOC(res.orden.estatus)) {
+        toastProveedores('warning', 'No disponible', 'Esta orden no admite recepción en su estatus actual.');
+        return;
+      }
+      cerrarModal('modalDetalleOrdenCompra');
+      llenarTablaRecibirProveedor(res.orden);
+      abrirModal('modalRecibirProveedor');
+    });
+  };
+
+  window.guardarRecepcionProveedor = function() {
+    const ordenId = $('#prov_recibir_orden_id').val();
+    const detalles = [];
+    $('.prov-recibir-cantidad').each(function() {
+      const cantidad = parseFloat($(this).val()) || 0;
+      if (cantidad > 0) {
+        detalles.push({ detalle_id: $(this).data('detalle-id'), cantidad_recibida: cantidad });
+      }
+    });
+    if (!detalles.length) {
+      toastProveedores('warning', 'Cantidades', 'Indique al menos una cantidad a recibir.');
+      return;
+    }
+    $.ajax({
+      url: '<?=base_url();?>compras/OrdenesCompra/recibir_mercancia_ajax',
+      type: 'POST',
+      data: {
+        orden_id: ordenId,
+        detalles: JSON.stringify(detalles),
+        peticion: 'ajax',
+        '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+      },
+      success: function(result) {
+        try { result = JSON.parse(result); } catch(e) { return; }
+        toastProveedores(result.success ? 'success' : 'danger', result.success ? 'Recepción OK' : 'Error', result.message || '');
+        if (result.success) {
+          cerrarModal('modalRecibirProveedor');
+          if (provOrdenesActualId) {
+            cargarOrdenesOC(provOrdenesActualId);
+          }
+          if (typeof tabla !== 'undefined' && tabla) tabla.ajax.reload(null, false);
+        }
+      },
+      error: function() {
+        toastProveedores('danger', 'Error', 'No se pudo procesar la recepción.');
+      }
+    });
+  };
+
   window.verDetalleOrdenCompra = function(ordenId) {
-    $('#modalDetalleOrdenCompra').modal('show');
+    abrirModal('modalDetalleOrdenCompra');
     $('#det-oc-loading').show();
     $('#det-oc-content').hide();
     $('#det-oc-error').hide();
@@ -1100,29 +1478,49 @@
         return;
       }
       var oc = res.orden;
+      detOcActualId = ordenId;
+      detOcActual = oc;
       $('#det-oc-folio').text(oc.folio || '-');
       $('#det-oc-proveedor').text(oc.razon_social || '-');
       $('#det-oc-fecha').text(formatearFechaMX(oc.fecha_orden));
       $('#det-oc-estatus').html(renderBadgeOC(oc.estatus));
       $('#det-oc-total').html('<strong>$' + parseFloat(oc.total || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</strong>');
 
+      if (puedeRecibirOC(oc.estatus)) {
+        $('#det-oc-btn-recibir').show();
+      } else {
+        $('#det-oc-btn-recibir').hide();
+      }
+
       var detHtml = '';
       if(oc.detalles && oc.detalles.length) {
         oc.detalles.forEach(function(d) {
           var subtotal = (parseFloat(d.cantidad_solicitada || d.cantidad || 0) * parseFloat(d.precio_unitario || 0));
+          var recibida = parseFloat(d.cantidad_recibida || 0);
+          var solicitada = parseFloat(d.cantidad_solicitada || d.cantidad || 0);
           detHtml += '<tr>';
           detHtml += '<td>' + (d.nombre_tecnico || d.nombre || '-') + '</td>';
           detHtml += '<td><small class="text-muted">' + (d.codigo || '-') + '</small></td>';
-          detHtml += '<td class="text-center">' + parseFloat(d.cantidad_solicitada || d.cantidad || 0).toLocaleString('es-MX') + '</td>';
+          detHtml += '<td class="text-center">' + solicitada.toLocaleString('es-MX') + '</td>';
+          detHtml += '<td class="text-center">' + recibida.toLocaleString('es-MX');
+          if (recibida >= solicitada && solicitada > 0) {
+            detHtml += ' <span class="badge bg-success ms-1">✓</span>';
+          } else if (recibida > 0) {
+            detHtml += ' <span class="badge bg-warning ms-1">Parcial</span>';
+          }
+          detHtml += '</td>';
           detHtml += '<td class="text-end">$' + parseFloat(d.precio_unitario || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
           detHtml += '<td class="text-end">$' + subtotal.toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
           detHtml += '</tr>';
         });
       } else {
-        detHtml = '<tr><td colspan="5" class="text-center text-muted">Sin insumos registrados</td></tr>';
+        detHtml = '<tr><td colspan="6" class="text-center text-muted">Sin insumos registrados</td></tr>';
       }
       $('#det-oc-detalles').html(detHtml);
       $('#det-oc-content').show();
+    }).fail(function() {
+      $('#det-oc-loading').hide();
+      $('#det-oc-error').text('Error de conexión al cargar la orden.').show();
     });
   };
 

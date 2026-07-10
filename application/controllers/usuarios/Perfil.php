@@ -24,6 +24,7 @@ class Perfil extends MY_Controller {
     $empleado = null;
     $vacaciones = null;
     $solicitudes = [];
+    $asistencia = null;
     $mensaje_vinculo = '';
 
     if (!empty($user->empleado_id)) {
@@ -31,6 +32,7 @@ class Perfil extends MY_Controller {
         if ($empleado) {
             $vacaciones = $this->VacacionesModel->get_balance_actual($user->empleado_id);
             $solicitudes = $this->VacacionesModel->get_solicitudes_empleado($user->empleado_id);
+            $asistencia = $this->_get_resumen_asistencia_empleado($user->empleado_id, $solicitudes);
         } else {
             $mensaje_vinculo = 'Tu usuario está vinculado a un expediente de empleado que ya no existe. Contacta a RRHH.';
         }
@@ -43,6 +45,7 @@ class Perfil extends MY_Controller {
         'empleado' => $empleado,
         'vacaciones' => $vacaciones,
         'solicitudes' => $solicitudes,
+        'asistencia' => $asistencia,
         'mensaje_vinculo' => $mensaje_vinculo,
     ];
 
@@ -143,5 +146,71 @@ class Perfil extends MY_Controller {
     ];
 
     echo json_encode($this->VacacionesModel->solicitar_vacaciones($data));
+  }
+
+  /**
+   * Resumen de asistencia para Mi Perfil (empleados vinculados al usuario en sesión).
+   */
+  private function _get_resumen_asistencia_empleado($empleado_id, $solicitudes = [])
+  {
+    $this->load->model('Reloj/RelojModel');
+    $this->load->model('RH/HorariosModel');
+    $this->load->model('RH/IncidenciasModel');
+
+    $hoy = date('Y-m-d');
+    $inicio_mes = date('Y-m-01');
+    $inicio_30 = date('Y-m-d', strtotime('-30 days'));
+
+    $mapa_dia = [
+      'Monday' => 'Lunes', 'Tuesday' => 'Martes', 'Wednesday' => 'Miércoles',
+      'Thursday' => 'Jueves', 'Friday' => 'Viernes', 'Saturday' => 'Sábado', 'Sunday' => 'Domingo',
+    ];
+    $dia_es = $mapa_dia[date('l')] ?? '';
+
+    $horario_hoy = null;
+    foreach ($this->HorariosModel->get_horario_empleado($empleado_id) as $h) {
+      if ($h->dia_semana === $dia_es && (int)$h->es_dia_laboral === 1) {
+        $horario_hoy = $h;
+        break;
+      }
+    }
+
+    $hoy_calc = $this->RelojModel->calcular_asistencia_diaria($empleado_id, $hoy, $horario_hoy);
+
+    $checadas_mes = $this->RelojModel->get_asistencias_rango($inicio_mes, $hoy, $empleado_id);
+    $dias_con_checada = [];
+    $ultima = null;
+    foreach ($checadas_mes as $c) {
+      $dias_con_checada[date('Y-m-d', strtotime($c->fecha_hora))] = true;
+      if (!$ultima || strtotime($c->fecha_hora) > strtotime($ultima)) {
+        $ultima = $c->fecha_hora;
+      }
+    }
+
+    $solicitudes_pendientes = 0;
+    foreach ($solicitudes as $s) {
+      if (($s->estatus ?? '') === 'Pendiente') {
+        $solicitudes_pendientes++;
+      }
+    }
+
+    $incidencias_stats = $this->IncidenciasModel->get_estadisticas_empleado($empleado_id);
+    $incidencias_mes = $this->IncidenciasModel->get_incidencias_empleado($empleado_id, [
+      'fecha_desde' => $inicio_mes,
+      'fecha_hasta' => $hoy,
+      'estatus' => 'Activa',
+    ]);
+
+    return [
+      'hoy' => $hoy_calc,
+      'horario_hoy' => $horario_hoy,
+      'dias_trabajados_mes' => count($dias_con_checada),
+      'total_checadas_30' => $this->RelojModel->contar_checadas_empleado($empleado_id, $inicio_30, $hoy),
+      'ultima_checada' => $ultima,
+      'ultima_checada_fmt' => $ultima ? date('d/m/Y H:i', strtotime($ultima)) : null,
+      'incidencias_mes' => count($incidencias_mes),
+      'incidencias_anio' => (int)($incidencias_stats['total'] ?? 0),
+      'solicitudes_pendientes' => $solicitudes_pendientes,
+    ];
   }
 }

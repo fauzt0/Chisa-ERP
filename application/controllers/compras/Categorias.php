@@ -10,6 +10,7 @@ class Categorias extends MY_Controller {
     
     public function __construct() {
         parent::__construct();
+        $this->load->helper('permissions');
         $this->load->model('Compras/CategoriasInsumosModel');
     }
     
@@ -66,6 +67,8 @@ class Categorias extends MY_Controller {
      * Crea una nueva categoría (AJAX)
      */
     public function crear_ajax() {
+        $this->requiere_permiso('compras_categorias', 'No tienes permiso para gestionar categorías');
+
         $data = [
             'nombre' => $this->input->post('nombre'),
             'categoria_padre_id' => $this->input->post('categoria_padre_id') ?: null,
@@ -90,6 +93,7 @@ class Categorias extends MY_Controller {
         $result = $this->CategoriasInsumosModel->crear_categoria($data);
         
         if($result) {
+            $this->registrar_bitacora('Categoría de insumo creada: ' . $data['nombre'], 'Compras');
             echo json_encode(['success' => true, 'message' => 'Categoría creada correctamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al crear categoría']);
@@ -100,6 +104,8 @@ class Categorias extends MY_Controller {
      * Actualiza una categoría (AJAX)
      */
     public function editar_ajax() {
+        $this->requiere_permiso('compras_categorias', 'No tienes permiso para gestionar categorías');
+
         $id = $this->input->post('id');
         if(!$id) {
             echo json_encode(['success' => false, 'message' => 'ID requerido']);
@@ -124,6 +130,7 @@ class Categorias extends MY_Controller {
         $result = $this->CategoriasInsumosModel->actualizar_categoria($id, $data);
         
         if($result) {
+            $this->registrar_bitacora('Categoría de insumo actualizada: ' . $data['nombre'] . ' (#' . $id . ')', 'Compras');
             echo json_encode(['success' => true, 'message' => 'Categoría actualizada correctamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar categoría']);
@@ -134,6 +141,8 @@ class Categorias extends MY_Controller {
      * Elimina una categoría (AJAX)
      */
     public function eliminar_ajax() {
+        $this->requiere_permiso('compras_categorias', 'No tienes permiso para gestionar categorías');
+
         $id = $this->input->post('id');
         if(!$id) {
             echo json_encode(['success' => false, 'message' => 'ID requerido']);
@@ -141,6 +150,9 @@ class Categorias extends MY_Controller {
         }
         
         $result = $this->CategoriasInsumosModel->eliminar_categoria($id);
+        if (!empty($result['success'])) {
+            $this->registrar_bitacora('Categoría de insumo eliminada (#' . $id . ')', 'Compras');
+        }
         echo json_encode($result);
     }
 }

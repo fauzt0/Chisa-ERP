@@ -498,10 +498,21 @@ class UserModel extends MY_Model {
      * @param int $quant Cantidad de logs a obtener
      * @return CI_DB_result Query result
      */
-    public function last_logs($email, $quant = 5) {
+    public function last_logs($email, $quant = 5, $filters = []) {
         $this->db->select('mensaje, tipo, fecha');
         $this->db->from('bitacora');
         $this->db->where('usuario', $email);
+
+        if (!empty($filters['fecha_desde'])) {
+            $this->db->where('DATE(fecha) >=', $filters['fecha_desde']);
+        }
+        if (!empty($filters['fecha_hasta'])) {
+            $this->db->where('DATE(fecha) <=', $filters['fecha_hasta']);
+        }
+        if (!empty($filters['tipo'])) {
+            $this->db->like('tipo', $filters['tipo']);
+        }
+
         $this->db->limit($quant);
         $this->db->order_by('id', 'DESC');
         $result = $this->db->get();

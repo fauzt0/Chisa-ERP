@@ -14,6 +14,7 @@ $config['permissions'] = array(
     'user_consult' => 'Consultar usuarios',
     'user_delete'  => 'Eliminar usuarios',
     'user_bitacora' => 'Ver bitácora',
+    'admin_simular_alertas' => 'Simular alertas del sistema (demo)',
   ),
   
   'Recursos Humanos' => array(
@@ -37,6 +38,7 @@ $config['permissions'] = array(
     'proveedores_edit'    => 'Editar proveedores',
     'proveedores_consult' => 'Consultar proveedores',
     'proveedores_delete'  => 'Eliminar proveedores',
+    'proveedores_insumos' => 'Vincular y gestionar insumos del proveedor',
   ),
   
   'Ventas' => array(
@@ -48,12 +50,17 @@ $config['permissions'] = array(
   ),
   
   'Compras' => array(
-    'compras_ordenes_add'         => 'Crear órdenes de compra',
-    'compras_ordenes_edit'        => 'Editar órdenes de compra',
-    'compras_ordenes_consult'     => 'Consultar órdenes de compra',
-    'compras_ordenes_delete'      => 'Cancelar órdenes de compra',
-    'compras_recepcion'           => 'Recibir mercancía',
-    'compras_autorizar_preordenes' => 'Autorizar o rechazar pre-órdenes de compra generadas desde Producción',
+    'compras_ordenes_add'          => 'Crear órdenes de compra',
+    'compras_ordenes_edit'         => 'Editar órdenes de compra',
+    'compras_ordenes_consult'      => 'Consultar órdenes de compra',
+    'compras_ordenes_delete'       => 'Cancelar órdenes de compra',
+    'compras_recepcion'            => 'Recibir mercancía',
+    'compras_autorizar_preordenes' => 'Autorizar o rechazar pre-órdenes de compra',
+    'compras_preordenes_edit'      => 'Editar pre-órdenes pendientes',
+    'compras_categorias'           => 'Gestionar categorías de insumos',
+    'compras_documentos'           => 'Adjuntar documentos y comentarios en OC',
+    'compras_pagos'                => 'Registrar pagos y marcar adeudos en OC',
+    'compras_servicios_recurrentes' => 'Gestionar servicios recurrentes (internet, soporte, etc.)',
   ),
   
   'Producción' => array(

@@ -10,6 +10,7 @@ class Insumos extends MY_Controller {
     
     public function __construct() {
         parent::__construct();
+        $this->load->helper('permissions');
         $this->load->model('Compras/InsumosModel');
         $this->load->model('Compras/CategoriasInsumosModel');
     }
@@ -131,6 +132,8 @@ class Insumos extends MY_Controller {
      * Crea un nuevo insumo (AJAX)
      */
     public function crear_ajax() {
+        $this->requiere_permiso('almacen_insumos', 'No tienes permiso para gestionar insumos');
+
         $data = [
             'codigo' => $this->input->post('codigo'),
             'nombre_tecnico' => $this->input->post('nombre_tecnico'),
@@ -181,6 +184,7 @@ class Insumos extends MY_Controller {
         $result = $this->InsumosModel->crear_insumo($data);
         
         if($result) {
+            $this->registrar_bitacora('Insumo creado: ' . $data['nombre_tecnico'], 'Compras');
             echo json_encode(['success' => true, 'message' => 'Insumo creado correctamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al crear insumo']);
@@ -191,6 +195,8 @@ class Insumos extends MY_Controller {
      * Actualiza un insumo (AJAX)
      */
     public function editar_ajax() {
+        $this->requiere_permiso('almacen_insumos', 'No tienes permiso para gestionar insumos');
+
         $id = $this->input->post('id');
         if(!$id) {
             echo json_encode(['success' => false, 'message' => 'ID requerido']);
@@ -220,6 +226,7 @@ class Insumos extends MY_Controller {
         $result = $this->InsumosModel->actualizar_insumo($id, $data);
         
         if($result) {
+            $this->registrar_bitacora('Insumo actualizado: ' . $data['nombre_tecnico'] . ' (#' . $id . ')', 'Compras');
             echo json_encode(['success' => true, 'message' => 'Insumo actualizado correctamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar insumo']);
@@ -230,6 +237,8 @@ class Insumos extends MY_Controller {
      * Elimina un insumo (AJAX)
      */
     public function eliminar_ajax() {
+        $this->requiere_permiso('almacen_insumos', 'No tienes permiso para gestionar insumos');
+
         $id = $this->input->post('id');
         if(!$id) {
             echo json_encode(['success' => false, 'message' => 'ID requerido']);
@@ -237,6 +246,9 @@ class Insumos extends MY_Controller {
         }
         
         $result = $this->InsumosModel->eliminar_insumo($id);
+        if (!empty($result['success'])) {
+            $this->registrar_bitacora('Insumo eliminado (#' . $id . ')', 'Compras');
+        }
         echo json_encode($result);
     }
     

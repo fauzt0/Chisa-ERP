@@ -169,6 +169,7 @@ class ProveedoresModel extends MY_Model {
         $this->db->from('proveedor_insumo');
         $this->db->join('insumos', 'insumos.id = proveedor_insumo.insumo_id');
         $this->db->where('proveedor_insumo.proveedor_id', $proveedor_id);
+        $this->db->where('proveedor_insumo.estatus', 'Activo');
         $this->db->order_by('insumos.nombre_tecnico', 'ASC');
         return $this->db->get()->result();
     }
@@ -199,6 +200,12 @@ class ProveedoresModel extends MY_Model {
         
         $data['proveedor_id'] = $proveedor_id;
         $data['insumo_id'] = $insumo_id;
+        $data['estatus'] = 'Activo';
+
+        if (!empty($data['es_proveedor_principal'])) {
+            $this->db->where('insumo_id', $insumo_id);
+            $this->db->update('proveedor_insumo', ['es_proveedor_principal' => 0]);
+        }
         
         $result = $this->db->insert('proveedor_insumo', $data);
         return ['success' => $result, 'message' => $result ? 'Insumo agregado' : 'Error al agregar'];
@@ -208,6 +215,12 @@ class ProveedoresModel extends MY_Model {
      * Actualiza precio/datos de un insumo del proveedor
      */
     public function actualizar_precio_insumo($proveedor_id, $insumo_id, $data) {
+        if (!empty($data['es_proveedor_principal'])) {
+            $this->db->where('insumo_id', $insumo_id);
+            $this->db->where('proveedor_id !=', $proveedor_id);
+            $this->db->update('proveedor_insumo', ['es_proveedor_principal' => 0]);
+        }
+
         $this->db->where('proveedor_id', $proveedor_id);
         $this->db->where('insumo_id', $insumo_id);
         $result = $this->db->update('proveedor_insumo', $data);
@@ -247,6 +260,17 @@ class ProveedoresModel extends MY_Model {
         return $prefijo . str_pad($numero, 5, '0', STR_PAD_LEFT);
     }
     
+    /**
+     * Lista proveedores por tipo (ej. Servicios)
+     */
+    public function listar_por_tipo($tipo) {
+        $this->db->from($this->tableName);
+        $this->db->where('tipo_proveedor', $tipo);
+        $this->db->where('estatus', 'Activo');
+        $this->db->order_by('razon_social', 'ASC');
+        return $this->db->get()->result();
+    }
+
     /**
      * Obtiene estadísticas de proveedores
      */

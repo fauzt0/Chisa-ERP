@@ -10,9 +10,25 @@ class Proveedores extends MY_Controller {
     
     public function __construct() {
         parent::__construct();
+        $this->load->helper('permissions');
         $this->load->model('Compras/ProveedoresModel');
         $this->load->model('Compras/InsumosModel');
         $this->load->model('Compras/OrdenesCompraModel');
+    }
+
+    private function puede_gestionar_insumos_proveedor() {
+        return tiene_permiso('proveedores_insumos') || tiene_permiso('proveedores_edit');
+    }
+
+    private function requiere_gestion_insumos_proveedor() {
+        if (!$this->puede_gestionar_insumos_proveedor()) {
+            $msg = 'No tienes permiso para gestionar insumos del proveedor';
+            if ($this->input->is_ajax_request()) {
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            }
+            redirect('deny');
+        }
     }
     
     /**
@@ -40,7 +56,7 @@ class Proveedores extends MY_Controller {
     public function lista_ajax() {
         $list = $this->ProveedoresModel->get_datatables();
         $data = array();
-        $no = $_POST['start'];
+        $no = (int) ($this->input->post('start') ?? 0);
 
         foreach ($list as $proveedor) {
             $no++;
@@ -82,7 +98,7 @@ class Proveedores extends MY_Controller {
             // Tipo de proveedor
             $tipo_badges = [
                 'Materia Prima' => 'primary',
-                'Insumos' => 'info',
+                'Materiales' => 'info',
                 'Servicios' => 'warning',
                 'Mixto' => 'secondary'
             ];
@@ -108,21 +124,33 @@ class Proveedores extends MY_Controller {
             $eb = $estatus_badges[$proveedor->estatus] ?? 'secondary';
             $row[] = '<span class="badge bg-' . $eb . '">' . $proveedor->estatus . '</span>';
             
-            // Acciones
-            $acciones = '<div class="btn-acciones-crm">
+            // Acciones según permisos
+            $acciones = '<div class="btn-acciones-crm">';
+            if (tiene_permiso('proveedores_consult')) {
+                $acciones .= '
                 <button type="button" class="btn btn-sm btn-secondary" onclick="verDetalleProveedor('.$proveedor->id.')" title="Ver Detalle">
                     <i class="fas fa-eye"></i>
-                </button>
+                </button>';
+            }
+            if (tiene_permiso('proveedores_insumos') || tiene_permiso('proveedores_edit')) {
+                $acciones .= '
                 <button type="button" class="btn btn-sm btn-info" onclick="mostrarModalInsumos('.$proveedor->id.')" title="Insumos">
                     <i class="fas fa-boxes"></i>
-                </button>
+                </button>';
+            }
+            if (tiene_permiso('proveedores_edit')) {
+                $acciones .= '
                 <button type="button" class="btn btn-sm btn-primary" onclick="mostrarModalEditar('.$proveedor->id.')" title="Editar">
                     <i class="fas fa-edit"></i>
-                </button>
+                </button>';
+            }
+            if (tiene_permiso('proveedores_delete')) {
+                $acciones .= '
                 <button type="button" class="btn btn-sm btn-danger" onclick="eliminarProveedor('.$proveedor->id.')" title="Eliminar">
                     <i class="fas fa-trash"></i>
-                </button>
-            </div>';
+                </button>';
+            }
+            $acciones .= '</div>';
             
             $row[] = $acciones;
             
@@ -130,7 +158,7 @@ class Proveedores extends MY_Controller {
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => (int) ($this->input->post('draw') ?? 0),
             "recordsTotal" => $this->ProveedoresModel->count_all(),
             "recordsFiltered" => $this->ProveedoresModel->count_filtered(),
             "data" => $data,
@@ -161,6 +189,8 @@ class Proveedores extends MY_Controller {
      * Crea un nuevo proveedor (AJAX)
      */
     public function crear_ajax() {
+        $this->requiere_permiso('proveedores_add', 'No tienes permiso para agregar proveedores');
+
         $data = [
             'codigo' => $this->input->post('codigo'),
             'razon_social' => $this->input->post('razon_social'),
@@ -196,10 +226,20 @@ class Proveedores extends MY_Controller {
             echo json_encode(['success' => false, 'message' => 'El RFC es requerido']);
             return;
         }
+
+        $this->db->where('rfc', $data['rfc']);
+        if ($this->db->count_all_results('proveedores') > 0) {
+            echo json_encode(['success' => false, 'message' => 'Ya existe un proveedor registrado con ese RFC']);
+            return;
+        }
         
         $result = $this->ProveedoresModel->crear_proveedor($data);
         
         if($result) {
+            $this->registrar_bitacora(
+                'Proveedor creado: ' . $data['razon_social'] . ' (RFC ' . $data['rfc'] . ')',
+                'Proveedores'
+            );
             echo json_encode(['success' => true, 'message' => 'Proveedor creado correctamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al crear proveedor']);
@@ -210,6 +250,8 @@ class Proveedores extends MY_Controller {
      * Actualiza un proveedor (AJAX)
      */
     public function editar_ajax() {
+        $this->requiere_permiso('proveedores_edit', 'No tienes permiso para editar proveedores');
+
         $id = $this->input->post('id');
         if(!$id) {
             echo json_encode(['success' => false, 'message' => 'ID requerido']);
@@ -239,10 +281,24 @@ class Proveedores extends MY_Controller {
             'observaciones' => $this->input->post('observaciones'),
             'estatus' => $this->input->post('estatus')
         ];
+
+        if (!empty($data['rfc'])) {
+            $this->db->where('rfc', $data['rfc']);
+            $this->db->where('id !=', $id);
+            if ($this->db->count_all_results('proveedores') > 0) {
+                echo json_encode(['success' => false, 'message' => 'Ya existe otro proveedor con ese RFC']);
+                return;
+            }
+        }
         
         $result = $this->ProveedoresModel->actualizar_proveedor($id, $data);
         
         if($result) {
+            $prov = $this->ProveedoresModel->get_proveedor($id);
+            $this->registrar_bitacora(
+                'Proveedor actualizado: ' . ($prov->razon_social ?? ('ID ' . $id)),
+                'Proveedores'
+            );
             echo json_encode(['success' => true, 'message' => 'Proveedor actualizado correctamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar proveedor']);
@@ -253,13 +309,22 @@ class Proveedores extends MY_Controller {
      * Elimina un proveedor (AJAX)
      */
     public function eliminar_ajax() {
+        $this->requiere_permiso('proveedores_delete', 'No tienes permiso para eliminar proveedores');
+
         $id = $this->input->post('id');
         if(!$id) {
             echo json_encode(['success' => false, 'message' => 'ID requerido']);
             return;
         }
-        
+
+        $prov = $this->ProveedoresModel->get_proveedor($id);
         $result = $this->ProveedoresModel->eliminar_proveedor($id);
+        if (!empty($result['success'])) {
+            $this->registrar_bitacora(
+                'Proveedor eliminado: ' . ($prov->razon_social ?? ('ID ' . $id)),
+                'Proveedores'
+            );
+        }
         echo json_encode($result);
     }
     
@@ -281,6 +346,8 @@ class Proveedores extends MY_Controller {
      * Agrega un insumo a un proveedor (AJAX)
      */
     public function agregar_insumo_ajax() {
+        $this->requiere_gestion_insumos_proveedor();
+
         $proveedor_id = $this->input->post('proveedor_id');
         $insumo_id = $this->input->post('insumo_id');
         
@@ -290,15 +357,23 @@ class Proveedores extends MY_Controller {
         }
         
         $data = [
-            'precio_compra'       => $this->input->post('precio_compra'),
-            'tiempo_entrega_dias' => $this->input->post('tiempo_entrega_dias') ?: 0,
-            'cantidad_minima'     => $this->input->post('cantidad_minima') ?: 1,
-            'codigo_proveedor'    => $this->input->post('codigo_proveedor'),
-            'nombre_proveedor'    => $this->input->post('nombre_proveedor'),
-            'observaciones'       => $this->input->post('observaciones')
+            'precio_compra'           => $this->input->post('precio_compra'),
+            'tiempo_entrega_dias'     => $this->input->post('tiempo_entrega_dias') ?: 0,
+            'cantidad_minima'         => $this->input->post('cantidad_minima') ?: 1,
+            'codigo_proveedor'        => $this->input->post('codigo_proveedor'),
+            'nombre_proveedor'        => $this->input->post('nombre_proveedor'),
+            'observaciones'           => $this->input->post('observaciones'),
+            'es_proveedor_principal'  => $this->input->post('es_proveedor_principal') ? 1 : 0,
         ];
         
         $result = $this->ProveedoresModel->agregar_insumo($proveedor_id, $insumo_id, $data);
+        if (!empty($result['success'])) {
+            $prov = $this->ProveedoresModel->get_proveedor($proveedor_id);
+            $this->registrar_bitacora(
+                'Insumo vinculado a proveedor ' . ($prov->razon_social ?? $proveedor_id) . ' (insumo #' . $insumo_id . ', $' . number_format((float)$data['precio_compra'], 2) . ')',
+                'Proveedores'
+            );
+        }
         echo json_encode($result);
     }
     
@@ -306,6 +381,8 @@ class Proveedores extends MY_Controller {
      * Actualiza precio de un insumo del proveedor (AJAX)
      */
     public function actualizar_precio_insumo_ajax() {
+        $this->requiere_gestion_insumos_proveedor();
+
         $proveedor_id = $this->input->post('proveedor_id');
         $insumo_id = $this->input->post('insumo_id');
         
@@ -315,15 +392,23 @@ class Proveedores extends MY_Controller {
         }
         
         $data = [
-            'precio_compra'       => $this->input->post('precio_compra'),
-            'tiempo_entrega_dias' => $this->input->post('tiempo_entrega_dias'),
-            'cantidad_minima'     => $this->input->post('cantidad_minima'),
-            'codigo_proveedor'    => $this->input->post('codigo_proveedor'),
-            'nombre_proveedor'    => $this->input->post('nombre_proveedor'),
-            'observaciones'       => $this->input->post('observaciones')
+            'precio_compra'           => $this->input->post('precio_compra'),
+            'tiempo_entrega_dias'     => $this->input->post('tiempo_entrega_dias'),
+            'cantidad_minima'         => $this->input->post('cantidad_minima'),
+            'codigo_proveedor'        => $this->input->post('codigo_proveedor'),
+            'nombre_proveedor'        => $this->input->post('nombre_proveedor'),
+            'observaciones'           => $this->input->post('observaciones'),
+            'es_proveedor_principal'  => $this->input->post('es_proveedor_principal') ? 1 : 0,
         ];
         
         $result = $this->ProveedoresModel->actualizar_precio_insumo($proveedor_id, $insumo_id, $data);
+        if (!empty($result['success'])) {
+            $prov = $this->ProveedoresModel->get_proveedor($proveedor_id);
+            $this->registrar_bitacora(
+                'Insumo actualizado en proveedor ' . ($prov->razon_social ?? $proveedor_id) . ' (insumo #' . $insumo_id . ')',
+                'Proveedores'
+            );
+        }
         echo json_encode($result);
     }
     
@@ -331,6 +416,8 @@ class Proveedores extends MY_Controller {
      * Elimina un insumo de un proveedor (AJAX)
      */
     public function eliminar_insumo_ajax() {
+        $this->requiere_gestion_insumos_proveedor();
+
         $proveedor_id = $this->input->post('proveedor_id');
         $insumo_id = $this->input->post('insumo_id');
         
@@ -340,6 +427,13 @@ class Proveedores extends MY_Controller {
         }
         
         $result = $this->ProveedoresModel->eliminar_insumo($proveedor_id, $insumo_id);
+        if (!empty($result['success'])) {
+            $prov = $this->ProveedoresModel->get_proveedor($proveedor_id);
+            $this->registrar_bitacora(
+                'Insumo desvinculado de proveedor ' . ($prov->razon_social ?? $proveedor_id) . ' (insumo #' . $insumo_id . ')',
+                'Proveedores'
+            );
+        }
         echo json_encode($result);
     }
     

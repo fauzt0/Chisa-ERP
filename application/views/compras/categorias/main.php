@@ -134,6 +134,15 @@
   
   let categoriaEditando = null;
 
+  function abrirModal(id) {
+    const el = document.getElementById(id);
+    if (el && typeof bootstrap !== 'undefined') bootstrap.Modal.getOrCreateInstance(el).show();
+  }
+  function cerrarModal(id) {
+    const el = document.getElementById(id);
+    if (el && typeof bootstrap !== 'undefined') bootstrap.Modal.getOrCreateInstance(el).hide();
+  }
+
   // Función de inicialización
   function initCategorias() {
     cargarArbolCategorias();
@@ -251,7 +260,7 @@
     $('#formCategoria')[0].reset();
     $('#categoria_id').val('');
     cargarSelectPadres();
-    $('#modalCategoria').modal('show');
+    abrirModal('modalCategoria');
   };
 
   window.mostrarModalNuevaSubcategoria = function(padreId, tipo) {
@@ -262,7 +271,7 @@
     $('#categoria_padre_id').val(padreId);
     $('#categoria_tipo').val(tipo);
     cargarSelectPadres();
-    $('#modalCategoria').modal('show');
+    abrirModal('modalCategoria');
   };
 
   window.mostrarModalEditar = function(id) {
@@ -286,7 +295,7 @@
         $('#preview-icono').attr('class', 'fas ' + cat.icono);
         
         cargarSelectPadres(id, cat.categoria_padre_id);
-        $('#modalCategoria').modal('show');
+        abrirModal('modalCategoria');
       }
     });
   };
@@ -321,7 +330,7 @@
         result = JSON.parse(result);
         if(result.success) {
           notifyShow(result.message, 'success');
-          $('#modalCategoria').modal('hide');
+          cerrarModal('modalCategoria');
           cargarArbolCategorias();
         } else {
           notifyShow('Error: ' + result.message, 'danger');

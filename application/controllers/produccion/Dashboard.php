@@ -335,12 +335,21 @@ class Dashboard extends MY_Controller {
     }
 
     /**
-     * Genera pre-órdenes de compra (Borrador) para los insumos faltantes (AJAX)
-     * Agrupa automáticamente por proveedor principal
+     * Genera pre-órdenes de compra para insumos faltantes (AJAX).
+     * Redirigido al flujo canónico PreordenesModel (tabla `preordenes`, estatus Pendiente).
+     *
+     * @deprecated Usar produccion/Productos/generar_preorden_ajax para el simulador de formulaciones.
      */
     public function generar_preorden_compra_ajax() {
-        $orden_id    = $this->input->post('orden_id');
-        $tipo        = $this->input->post('tipo');
+        $this->load->helper('permissions');
+
+        if (!tiene_permiso('produccion_preordenes')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para generar pre-órdenes de compra']);
+            return;
+        }
+
+        $orden_id     = $this->input->post('orden_id');
+        $tipo         = $this->input->post('tipo');
         $folio_origen = $this->input->post('folio_origen');
 
         if (!$orden_id || !$tipo) {
@@ -348,110 +357,45 @@ class Dashboard extends MY_Controller {
             return;
         }
 
-        // Obtener insumos faltantes
         $resultado = $this->ProduccionModel->get_insumos_requeridos_para_orden($orden_id, $tipo);
-        $insumos_faltantes = array_filter($resultado['insumos'], fn($i) => !$i['disponible']);
+        $insumos_faltantes_raw = array_filter($resultado['insumos'], fn($i) => !$i['disponible']);
 
-        if (empty($insumos_faltantes)) {
+        if (empty($insumos_faltantes_raw)) {
             echo json_encode(['success' => false, 'message' => 'No hay insumos faltantes para generar pre-orden']);
             return;
         }
 
-        // Agrupar por proveedor principal
-        $por_proveedor = [];
-        $sin_proveedor = [];
-
-        foreach ($insumos_faltantes as $insumo) {
-            $this->db->select('pi.proveedor_id, pr.razon_social as proveedor_nombre');
-            $this->db->from('proveedor_insumo pi');
-            $this->db->join('proveedores pr', 'pr.id = pi.proveedor_id');
-            $this->db->where('pi.insumo_id', $insumo['insumo_id']);
-            $this->db->where('pi.es_proveedor_principal', 1);
-            $this->db->limit(1);
-            $prov = $this->db->get()->row();
-
-            if ($prov) {
-                $por_proveedor[$prov->proveedor_id]['nombre']   = $prov->proveedor_nombre;
-                $por_proveedor[$prov->proveedor_id]['insumos'][] = $insumo;
-            } else {
-                // Sin proveedor principal, intentar cualquier proveedor
-                $this->db->select('pi.proveedor_id, pr.razon_social as proveedor_nombre');
-                $this->db->from('proveedor_insumo pi');
-                $this->db->join('proveedores pr', 'pr.id = pi.proveedor_id');
-                $this->db->where('pi.insumo_id', $insumo['insumo_id']);
-                $this->db->limit(1);
-                $prov2 = $this->db->get()->row();
-
-                if ($prov2) {
-                    $por_proveedor[$prov2->proveedor_id]['nombre']   = $prov2->proveedor_nombre;
-                    $por_proveedor[$prov2->proveedor_id]['insumos'][] = $insumo;
-                } else {
-                    $sin_proveedor[] = $insumo['insumo_nombre'];
-                }
+        $insumos_canonicos = [];
+        foreach ($insumos_faltantes_raw as $insumo) {
+            $unidad = $insumo['unidad'] ?? ($insumo['unidad_medida'] ?? null);
+            if (empty($insumo['insumo_id']) || ($insumo['faltante'] ?? 0) <= 0 || !$unidad) {
+                continue;
             }
-        }
-
-        // Crear una orden de compra (Borrador) por cada proveedor
-        $ordenes_creadas = [];
-        $this->db->trans_start();
-
-        foreach ($por_proveedor as $proveedor_id => $datos) {
-            // Generar folio
-            $count = $this->db->count_all('ordenes_compra') + 1;
-            $folio = 'OC-' . date('Y') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
-
-            // Calcular total estimado
-            $total = array_sum(array_map(fn($i) => $i['costo_estimado_faltante'], $datos['insumos']));
-
-            // Crear orden de compra en Borrador
-            $oc_data = [
-                'folio'         => $folio,
-                'proveedor_id'  => $proveedor_id,
-                'estatus'       => 'Borrador',
-                'tipo_orden'    => 'Insumos',
-                'total'         => $total,
-                'observaciones' => 'Pre-orden generada automáticamente desde producción. Orden origen: ' . $folio_origen,
-                'origen'        => 'Produccion',
-                'fecha_creacion'=> date('Y-m-d H:i:s'),
-            ];
-
-            $this->db->insert('ordenes_compra', $oc_data);
-            $oc_id = $this->db->insert_id();
-
-            // Agregar los detalles de la orden
-            foreach ($datos['insumos'] as $insumo) {
-                $this->db->insert('detalle_orden_compra', [
-                    'orden_compra_id' => $oc_id,
-                    'insumo_id'       => $insumo['insumo_id'],
-                    'cantidad'        => $insumo['faltante'],
-                    'unidad'          => $insumo['unidad'],
-                    'precio_unitario' => $insumo['precio_promedio'],
-                    'subtotal'        => $insumo['costo_estimado_faltante'],
-                ]);
-            }
-
-            $ordenes_creadas[] = [
-                'id'             => $oc_id,
-                'folio'          => $folio,
-                'proveedor'      => $datos['nombre'],
-                'total'          => $total,
-                'num_insumos'    => count($datos['insumos']),
+            $insumos_canonicos[] = [
+                'insumo_id'         => $insumo['insumo_id'],
+                'cantidad_faltante' => (float) $insumo['faltante'],
+                'unidad_insumo'     => $unidad,
             ];
         }
 
-        $this->db->trans_complete();
-
-        if ($this->db->trans_status() === FALSE) {
-            echo json_encode(['success' => false, 'message' => 'Error al crear las pre-órdenes de compra']);
+        if (empty($insumos_canonicos)) {
+            echo json_encode(['success' => false, 'message' => 'No hay insumos válidos para generar pre-orden']);
             return;
         }
 
-        echo json_encode([
-            'success'         => true,
-            'message'         => count($ordenes_creadas) . ' pre-orden(es) creada(s) correctamente',
-            'ordenes_creadas' => $ordenes_creadas,
-            'sin_proveedor'   => $sin_proveedor,
-        ]);
+        $origen_tipo = ($tipo === 'obra') ? 'obra' : 'venta';
+        $notas = 'Generada desde Dashboard Producción. Orden origen: ' . ($folio_origen ?: $orden_id);
+
+        $this->load->model('Compras/PreordenesModel');
+        $resultado = $this->PreordenesModel->crear_preordenes_desde_faltantes(
+            $insumos_canonicos,
+            $origen_tipo,
+            (int) $orden_id,
+            $this->session->userdata('user_id'),
+            $notas
+        );
+
+        echo json_encode($resultado);
     }
 
     /**

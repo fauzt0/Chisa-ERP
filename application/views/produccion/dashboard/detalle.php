@@ -849,27 +849,48 @@ function confirmarPreOrden() {
         tipo:     ORDEN_TIPO,
         folio_origen: FOLIO
     }, function(res) {
-        if (res.success) {
-            let mensaje = res.message;
-            if (res.ordenes_creadas && res.ordenes_creadas.length > 0) {
-                mensaje += '<ul class="mt-2">';
-                res.ordenes_creadas.forEach(oc => {
-                    mensaje += `<li><strong>${oc.folio}</strong> — ${oc.proveedor} (${oc.num_insumos} insumos, $${parseFloat(oc.total).toFixed(2)})</li>`;
-                });
-                mensaje += '</ul>';
-            }
-            if (res.sin_proveedor && res.sin_proveedor.length > 0) {
-                mensaje += `<br><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Sin proveedor: ${res.sin_proveedor.join(', ')}</small>`;
-            }
-            $('#modalPreOrden').modal('hide');
-            Swal && Swal.fire ? Swal.fire({title: '¡Pre-orden creada!', html: mensaje, icon: 'success'}) : alert(mensaje);
+        const modalEl = document.getElementById('modalPreOrden');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
         } else {
-            notifyShow && notifyShow(res.message, 'danger');
+            $('#modalPreOrden').modal('hide');
+        }
+
+        if (res.success) {
+            let mensaje = res.message || 'Pre-orden(es) generada(s) correctamente';
+            const creadas = res.creadas || res.ordenes_creadas || [];
+            if (creadas.length > 0) {
+                const folios = creadas.map(p => p.folio || ('#' + p.id)).join(', ');
+                mensaje += ' Folios: ' + folios + '. Pendientes de autorización en Compras.';
+            }
+            if (res.errores && res.errores.length > 0) {
+                mensaje += ' Advertencias: ' + res.errores.join('; ');
+            }
+            if (typeof showErpToast === 'function') {
+                showErpToast({ type: 'success', module: 'Producción', title: 'Pre-orden(es) creada(s)', message: mensaje });
+            } else if (typeof notifyShow === 'function') {
+                notifyShow(mensaje, 'success');
+            } else {
+                alert(mensaje);
+            }
+        } else {
+            const errMsg = res.message || 'No se pudo generar la pre-orden';
+            if (typeof showErpToast === 'function') {
+                showErpToast({ type: 'danger', module: 'Producción', title: 'Error', message: errMsg });
+            } else if (typeof notifyShow === 'function') {
+                notifyShow(errMsg, 'danger');
+            } else {
+                alert(errMsg);
+            }
         }
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-check"></i> Confirmar y Crear Pre-Orden(es)';
     }, 'json').fail(function() {
-        notifyShow && notifyShow('Error de servidor', 'danger');
+        if (typeof showErpToast === 'function') {
+            showErpToast({ type: 'danger', module: 'Producción', title: 'Error de conexión', message: 'No se pudo contactar al servidor.' });
+        } else if (typeof notifyShow === 'function') {
+            notifyShow('Error de servidor', 'danger');
+        }
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-check"></i> Confirmar y Crear Pre-Orden(es)';
     });

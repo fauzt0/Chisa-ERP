@@ -19,6 +19,7 @@
 
 	<link href="<?php echo base_url();?>assets/dist/css/app.css" rel="stylesheet">	
 	<link href="<?php echo base_url();?>assets/dist/css/estilos.css?v=<?php echo time(); ?>" rel="stylesheet">
+	<link href="<?php echo base_url();?>assets/dist/css/demo-presentacion.css?v=<?php echo time(); ?>" rel="stylesheet">
 	<?php $this->load->view('rh/partials/modal_styles'); ?>
 	<script>
 	(function () {
@@ -43,7 +44,7 @@
     <div class="main">
       <?php $this->load->view('layouts/topNavbar');?>
 
-      <main class="content erp-font-scalable" id="erp-main-content">        
+      <main class="content erp-font-scalable demo-presentacion" id="erp-main-content">
         <?php $this->load->view($pageView);?>
       </main>
       
