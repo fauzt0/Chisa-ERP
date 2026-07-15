@@ -6,12 +6,25 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  */
 class ServiciosRecurrentesModel extends CI_Model {
 
+    public function get_proveedores_con_servicios() {
+        $this->db->distinct();
+        $this->db->select('p.id, p.razon_social, p.nombre_comercial, p.tipo_proveedor');
+        $this->db->from('servicios_recurrentes sr');
+        $this->db->join('proveedores p', 'p.id = sr.proveedor_id', 'inner');
+        $this->db->where('sr.activo', 1);
+        $this->db->order_by('p.razon_social', 'ASC');
+        return $this->db->get()->result();
+    }
+
     public function listar_servicios($filtros = []) {
         $this->db->select('sr.*, p.razon_social AS proveedor_nombre, p.nombre_comercial AS proveedor_comercial');
         $this->db->from('servicios_recurrentes sr');
         $this->db->join('proveedores p', 'p.id = sr.proveedor_id', 'left');
         if (!empty($filtros['proveedor_id'])) {
             $this->db->where('sr.proveedor_id', (int) $filtros['proveedor_id']);
+        }
+        if (!empty($filtros['tipo_servicio'])) {
+            $this->db->where('sr.tipo_servicio', $filtros['tipo_servicio']);
         }
         if (isset($filtros['activo'])) {
             $this->db->where('sr.activo', (int) $filtros['activo']);
@@ -43,9 +56,54 @@ class ServiciosRecurrentesModel extends CI_Model {
     }
 
     public function actualizar_servicio($id, $data) {
+        $servicio = $this->get_servicio($id);
+        if (!$servicio) {
+            return ['success' => false, 'message' => 'Servicio no encontrado'];
+        }
+
         $this->db->where('id', (int) $id);
         $ok = $this->db->update('servicios_recurrentes', $data);
-        return ['success' => (bool) $ok, 'message' => $ok ? 'Servicio actualizado' : 'Error al actualizar'];
+        if (!$ok) {
+            return ['success' => false, 'message' => 'Error al actualizar'];
+        }
+
+        if (isset($data['monto_estimado']) || isset($data['dia_vencimiento'])) {
+            $this->sincronizar_pagos_pendientes((int) $id);
+        }
+
+        return ['success' => true, 'message' => 'Servicio actualizado'];
+    }
+
+    /**
+     * Actualiza monto y fecha de vencimiento en pagos Pendiente/Vencido del servicio.
+     */
+    public function sincronizar_pagos_pendientes($servicio_id) {
+        $servicio = $this->db->where('id', (int) $servicio_id)->get('servicios_recurrentes')->row();
+        if (!$servicio) {
+            return false;
+        }
+
+        $pagos = $this->db
+            ->where('servicio_recurrente_id', (int) $servicio_id)
+            ->where_in('estatus', ['Pendiente', 'Vencido'])
+            ->get('pagos_servicios_recurrentes')
+            ->result();
+
+        foreach ($pagos as $pago) {
+            $anio = (int) substr($pago->periodo, 0, 4);
+            $mes = (int) substr($pago->periodo, 5, 2);
+            $dia = min((int) $servicio->dia_vencimiento, cal_days_in_month(CAL_GREGORIAN, $mes, $anio));
+            $fecha_vencimiento = sprintf('%04d-%02d-%02d', $anio, $mes, $dia);
+            $estatus = ($fecha_vencimiento < date('Y-m-d')) ? 'Vencido' : 'Pendiente';
+
+            $this->db->where('id', (int) $pago->id)->update('pagos_servicios_recurrentes', [
+                'monto' => round((float) $servicio->monto_estimado, 2),
+                'fecha_vencimiento' => $fecha_vencimiento,
+                'estatus' => $estatus,
+            ]);
+        }
+
+        return true;
     }
 
     public function listar_pagos($periodo = null, $proveedor_id = null, $servicio_id = null) {
@@ -93,12 +151,58 @@ class ServiciosRecurrentesModel extends CI_Model {
             'usuario_registro' => $data['usuario_registro'] ?? null,
         ];
 
+        if (!empty($data['comprobante_ruta'])) {
+            $update['comprobante_ruta'] = $data['comprobante_ruta'];
+            $update['comprobante_nombre'] = $data['comprobante_nombre'] ?? null;
+            $update['comprobante_mime'] = $data['comprobante_mime'] ?? null;
+        }
+
         $this->db->where('id', (int) $pago_id);
         $ok = $this->db->update('pagos_servicios_recurrentes', $update);
         return [
             'success' => (bool) $ok,
             'message' => $ok ? 'Pago de servicio registrado' : 'Error al registrar pago',
         ];
+    }
+
+    public function guardar_comprobante_pago($pago_id, $data) {
+        $pago = $this->db->where('id', (int) $pago_id)->get('pagos_servicios_recurrentes')->row();
+        if (!$pago) {
+            return ['success' => false, 'message' => 'Pago no encontrado'];
+        }
+
+        $update = [
+            'comprobante_ruta' => $data['comprobante_ruta'],
+            'comprobante_nombre' => $data['comprobante_nombre'] ?? null,
+            'comprobante_mime' => $data['comprobante_mime'] ?? null,
+        ];
+        $this->db->where('id', (int) $pago_id);
+        $ok = $this->db->update('pagos_servicios_recurrentes', $update);
+        return [
+            'success' => (bool) $ok,
+            'message' => $ok ? 'Comprobante guardado' : 'No se pudo guardar el comprobante',
+        ];
+    }
+
+    public function eliminar_comprobante_pago($pago_id) {
+        $pago = $this->get_pago($pago_id);
+        if (!$pago || empty($pago->comprobante_ruta)) {
+            return ['success' => false, 'message' => 'No hay comprobante para eliminar'];
+        }
+
+        $ruta = FCPATH . ltrim($pago->comprobante_ruta, '/');
+        if (is_file($ruta)) {
+            @unlink($ruta);
+        }
+
+        $this->db->where('id', (int) $pago_id);
+        $ok = $this->db->update('pagos_servicios_recurrentes', [
+            'comprobante_ruta' => null,
+            'comprobante_nombre' => null,
+            'comprobante_mime' => null,
+        ]);
+
+        return ['success' => (bool) $ok, 'message' => $ok ? 'Comprobante eliminado' : 'Error al eliminar'];
     }
 
     public function marcar_pago_vencidos() {

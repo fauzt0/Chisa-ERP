@@ -283,6 +283,16 @@ class ProveedoresModel extends MY_Model {
     }
 
     /**
+     * Todos los proveedores activos (para asignar servicios recurrentes).
+     */
+    public function listar_activos() {
+        $this->db->from($this->tableName);
+        $this->db->where('estatus', 'Activo');
+        $this->db->order_by('razon_social', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
      * Importa proveedores desde filas parseadas del Excel.
      */
     public function importar_masivo(array $rows, $usuario_id = null) {
