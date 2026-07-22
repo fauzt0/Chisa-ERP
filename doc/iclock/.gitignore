@@ -1,0 +1,9 @@
+# PHP portable (Windows) — no versionar binarios
+php/
+php.exe
+*.zip
+
+# Logs y colas locales
+datos_reloj.txt
+log_comandos.txt
+comandos.json

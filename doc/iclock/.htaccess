@@ -1,0 +1,4 @@
+RewriteEngine On
+# Si buscan cdata o cualquier subruta, responder con index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.php [L,QSA]

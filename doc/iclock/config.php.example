@@ -1,0 +1,24 @@
+<?php
+// Copiar a config.php y ajustar valores desde el ERP (Reloj Checador → Dispositivos)
+
+define('MODO_PRUEBA_LOCAL', false);
+define('RELOJ_SN', 'SERIAL_DEL_RELOJ');
+define('MODO_SYNC_DEBUG', false);
+
+define('ARCHIVO_COLA', __DIR__ . '/comandos.json');
+define('ARCHIVO_LOG', __DIR__ . '/datos_reloj.txt');
+define('ARCHIVO_LOG_CMD', __DIR__ . '/log_comandos.txt');
+define('PIN_ADMIN_RELOJ', 1);
+
+// lib_api.php — mismo token que en reloj_dispositivos del ERP
+// define('API_BASE', 'https://erp.chisarecubrimientos.com.mx/api/reloj/');
+// define('API_TOKEN', '...');
+
+function escribir_log($archivo, $contenido, $append = true) {
+    $flags = $append ? FILE_APPEND | LOCK_EX : LOCK_EX;
+    $ok = @file_put_contents($archivo, $contenido, $flags);
+    if ($ok === false) {
+        error_log("iclock: no se pudo escribir en $archivo");
+    }
+    return $ok !== false;
+}
