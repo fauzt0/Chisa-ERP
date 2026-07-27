@@ -48,7 +48,12 @@ class NominaModel extends CI_Model {
         
         if($nomina) {
             // Detalle con datos de empleados
-            $this->db->select('nd.*, e.numero_empleado, e.nombre, e.apellido_paterno, e.apellido_materno, e.puesto, e.rfc, e.curp, e.nss, e.tipo_nomina as emp_tipo_nomina');
+            $this->db->select('
+                nd.*,
+                e.numero_empleado, e.nombre, e.apellido_paterno, e.apellido_materno,
+                e.puesto, e.rfc, e.curp, e.nss, e.tipo_nomina as emp_tipo_nomina,
+                e.banco, e.cuenta_bancaria
+            ');
             $this->db->from('nominas_detalle nd');
             $this->db->join('empleados e', 'nd.empleado_id = e.id');
             $this->db->where('nd.nomina_id', $id);

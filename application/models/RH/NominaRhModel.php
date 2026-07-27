@@ -28,7 +28,7 @@ class NominaRhModel extends CI_Model {
 
     public function agregar_empleados_nomina($nomina_id, $tipo_nomina) {
         $empleados = $this->db
-            ->select('id')
+            ->select('id, lugar_pago')
             ->from('empleados')
             ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
             ->where('tipo_nomina', $tipo_nomina)
@@ -39,6 +39,7 @@ class NominaRhModel extends CI_Model {
             $this->db->insert('nominas_detalle', [
                 'nomina_id'   => $nomina_id,
                 'empleado_id' => $emp->id,
+                'lugar_origen'=> $emp->lugar_pago ?? '',
             ]);
         }
 
@@ -51,7 +52,15 @@ class NominaRhModel extends CI_Model {
             return ['success' => false, 'message' => 'Nómina no válida para cálculo'];
         }
 
-        $this->db->select('nd.id, nd.empleado_id, e.salario_base_mensual, e.salario_base_diario, e.isr_porcentaje, e.imss_cuota, e.pension_alimenticia_porcentaje, e.pension_alimenticia_monto, e.descuento_infonavit, e.tiene_infonavit');
+        $this->db->select('
+            nd.id, nd.empleado_id,
+            e.salario_base_mensual, e.salario_base_diario,
+            e.isr_porcentaje, e.imss_cuota,
+            e.pension_alimenticia_porcentaje, e.pension_alimenticia_monto,
+            e.descuento_infonavit, e.tiene_infonavit, e.infonavit_aportacion,
+            e.costo_hora_extra,
+            e.lugar_pago
+        ');
         $this->db->from('nominas_detalle nd');
         $this->db->join('empleados e', 'nd.empleado_id = e.id');
         $this->db->where('nd.nomina_id', (int)$nomina_id);
@@ -83,12 +92,20 @@ class NominaRhModel extends CI_Model {
             }), 'monto'));
             $neto = $percepciones - $deducciones;
 
+            $infonavit_calculado = 0;
+            if (!empty($det->tiene_infonavit) && (float)$det->descuento_infonavit > 0) {
+                $infonavit_calculado = round((float)$det->descuento_infonavit, 2);
+            }
+
             $this->db->where('id', $det->id)->update('nominas_detalle', [
-                'dias_trabajados' => $dias,
-                'sueldo_base'     => $sueldo,
-                'percepciones'    => $percepciones,
-                'deducciones'     => $deducciones,
-                'neto'            => $neto,
+                'dias_trabajados'     => $dias,
+                'sueldo_base'         => $sueldo,
+                'sueldo_diario'       => round((float)$det->salario_base_diario, 2),
+                'lugar_origen'        => $det->lugar_pago ?? '',
+                'percepciones'        => $percepciones,
+                'deducciones'         => $deducciones,
+                'infonavit_descuento' => $infonavit_calculado,
+                'neto'                => $neto,
             ]);
 
             $this->db->where('nomina_detalle_id', $det->id)->delete('nominas_conceptos');
@@ -129,6 +146,334 @@ class NominaRhModel extends CI_Model {
                 'neto'         => $total_neto,
             ],
         ];
+    }
+
+    /**
+     * Obtiene detalle completo de nómina con las nuevas columnas para el modal informativo.
+     * @param int $nomina_id
+     * @return object|null
+     */
+    public function get_nomina_detalle_completo($nomina_id) {
+        $this->db->select('
+        n.*,
+        nd.id as detalle_id, nd.empleado_id, nd.lugar_origen,
+        nd.dias_trabajados, nd.sueldo_base, nd.sueldo_diario,
+        nd.horas_extras, nd.costo_hora_extra, nd.monto_horas_extras,
+        nd.comidas, nd.viaticos_pasajes, nd.prima, nd.otros_bonos, nd.otros_ingresos,
+        nd.percepciones, nd.deducciones,
+        nd.infonavit_descuento, nd.prestamo_personal, nd.otros_descuentos,
+        nd.neto, nd.monto_pagado, nd.estatus,
+        e.numero_empleado, e.nombre, e.apellido_paterno, e.apellido_materno,
+        e.puesto, e.rfc, e.curp, e.nss,
+        e.banco, e.cuenta_bancaria
+    ');
+        $this->db->from('nominas_detalle nd');
+        $this->db->join('nominas n', 'n.id = nd.nomina_id');
+        $this->db->join('empleados e', 'e.id = nd.empleado_id');
+        $this->db->where('nd.nomina_id', (int)$nomina_id);
+        $this->db->order_by('e.nombre', 'ASC');
+        $result = $this->db->get()->result();
+
+        // Adjuntar cuentas bancarias múltiples a cada empleado
+        foreach ($result as &$row) {
+            $row->cuentas_bancarias = $this->get_cuentas_empleado($row->empleado_id);
+        }
+        unset($row);
+
+        return $result;
+    }
+
+    /**
+     * Obtiene cuentas bancarias de un empleado.
+     */
+    public function get_cuentas_empleado($empleado_id) {
+        return $this->db
+            ->select('ecb.*, cb.banco')
+            ->from('empleados_cuentas_bancarias ecb')
+            ->join('cuentas_bancarias cb', 'cb.id = ecb.cuenta_bancaria_id', 'left')
+            ->where('ecb.empleado_id', (int)$empleado_id)
+            ->where('ecb.estatus', 1)
+            ->get()
+            ->result();
+    }
+
+    /**
+     * Guarda o actualiza cuenta bancaria de empleado.
+     */
+    public function guardar_cuenta_empleado($data) {
+        if (!empty($data['id'])) {
+            $this->db->where('id', (int)$data['id'])
+                     ->update('empleados_cuentas_bancarias', $data);
+            return (int)$data['id'];
+        }
+        $this->db->insert('empleados_cuentas_bancarias', $data);
+        return $this->db->insert_id();
+    }
+
+    /**
+     * Elimina cuenta bancaria de empleado.
+     */
+    public function eliminar_cuenta_empleado($id) {
+        return $this->db->where('id', (int)$id)
+                        ->update('empleados_cuentas_bancarias', ['estatus' => 0]);
+    }
+
+    /**
+     * Establece cuenta default para depósito.
+     */
+    public function set_cuenta_default($empleado_id, $cuenta_id) {
+        $this->db->where('empleado_id', (int)$empleado_id)
+                 ->update('empleados_cuentas_bancarias', ['es_default' => 0]);
+        $this->db->where('id', (int)$cuenta_id)
+                 ->update('empleados_cuentas_bancarias', ['es_default' => 1]);
+        return true;
+    }
+
+    /**
+     * Actualiza campos editables de un detalle de nómina.
+     * Se llama vía AJAX desde el modal.
+     */
+    public function actualizar_detalle_nomina($detalle_id, $data) {
+        $allowed = [
+            'lugar_origen', 'horas_extras', 'costo_hora_extra', 'monto_horas_extras',
+            'comidas', 'viaticos_pasajes', 'prima', 'otros_bonos', 'otros_ingresos',
+            'prestamo_personal', 'otros_descuentos',
+        ];
+        $update = [];
+        foreach ($allowed as $field) {
+            if (array_key_exists($field, $data)) {
+                $update[$field] = $data[$field];
+            }
+        }
+        if (empty($update)) {
+            return ['success' => false, 'message' => 'Sin cambios'];
+        }
+
+        // Recalcular totales
+        $det = $this->db->get_where('nominas_detalle', ['id' => (int)$detalle_id])->row();
+        if (!$det) {
+            return ['success' => false, 'message' => 'Detalle no encontrado'];
+        }
+
+        $percepciones = round(
+            (float)($update['monto_horas_extras'] ?? $det->monto_horas_extras) +
+            (float)($update['comidas'] ?? $det->comidas) +
+            (float)($update['viaticos_pasajes'] ?? $det->viaticos_pasajes) +
+            (float)($update['prima'] ?? $det->prima) +
+            (float)($update['otros_bonos'] ?? $det->otros_bonos) +
+            (float)($update['otros_ingresos'] ?? $det->otros_ingresos) +
+            (float)$det->sueldo_base,
+        2);
+
+        $deducciones = round(
+            (float)($update['prestamo_personal'] ?? $det->prestamo_personal) +
+            (float)($update['otros_descuentos'] ?? $det->otros_descuentos) +
+            (float)$det->infonavit_descuento +
+            (float)($det->deducciones - $det->infonavit_descuento - $det->prestamo_personal - $det->otros_descuentos),  // ISR+IMSS+pensión existentes
+        2);
+
+        $update['percepciones'] = $percepciones;
+        $update['deducciones'] = $deducciones;
+        $update['neto'] = round($percepciones - $deducciones, 2);
+
+        // Recalcular monto_horas_extras si se editaron horas o costo
+        if (array_key_exists('horas_extras', $update) || array_key_exists('costo_hora_extra', $update)) {
+            $h = (float)($update['horas_extras'] ?? $det->horas_extras);
+            $c = (float)($update['costo_hora_extra'] ?? $det->costo_hora_extra);
+            $update['monto_horas_extras'] = round($h * $c, 2);
+        }
+
+        $this->db->where('id', (int)$detalle_id)->update('nominas_detalle', $update);
+
+        // Actualizar totales de la cabecera de nómina
+        $this->actualizar_totales_nomina($det->nomina_id);
+
+        return ['success' => true, 'message' => 'Actualizado'];
+    }
+
+    /**
+     * Recalcula totales de la cabecera nominas.
+     */
+    public function actualizar_totales_nomina($nomina_id) {
+        $totales = $this->db
+            ->select('SUM(percepciones) as p, SUM(deducciones) as d, SUM(neto) as n')
+            ->from('nominas_detalle')
+            ->where('nomina_id', (int)$nomina_id)
+            ->get()->row();
+
+        $this->db->where('id', (int)$nomina_id)->update('nominas', [
+            'total_percepciones' => round((float)$totales->p, 2),
+            'total_deducciones'  => round((float)$totales->d, 2),
+            'total_neto'         => round((float)$totales->n, 2),
+        ]);
+    }
+
+    /**
+     * Obtiene configuración de automatización de nóminas.
+     */
+    public function get_configuracion_automatizacion() {
+        return $this->db->order_by('id', 'DESC')->limit(1)
+                        ->get('nomina_configuracion')->row();
+    }
+
+    /**
+     * Guarda configuración de automatización.
+     */
+    public function guardar_configuracion_automatizacion($data) {
+        $config = $this->db->order_by('id', 'DESC')->limit(1)->get('nomina_configuracion')->row();
+        if ($config) {
+            $this->db->where('id', $config->id)->update('nomina_configuracion', $data);
+        } else {
+            $this->db->insert('nomina_configuracion', $data);
+        }
+        return true;
+    }
+
+    /**
+     * Verifica si corresponde crear una nómina automáticamente.
+     * Respeta `crear_dias_antes`: crea N días antes del inicio del periodo.
+     * Retorna array con los datos para crear la nómina o null si no corresponde.
+     *
+     * @param string|null $fecha_ref Fecha de referencia Y-m-d (para pruebas). Default: hoy.
+     */
+    public function verificar_creacion_automatica($fecha_ref = null) {
+        $config = $this->get_configuracion_automatizacion();
+        if (!$config || !$config->auto_crear || !$config->activo) {
+            return null;
+        }
+
+        $hoy = $fecha_ref ? date('Y-m-d', strtotime($fecha_ref)) : date('Y-m-d');
+        $dias_antes = max(0, (int)$config->crear_dias_antes);
+
+        // Fecha de inicio del periodo objetivo = hoy + días de anticipación
+        $inicio_objetivo = date('Y-m-d', strtotime($hoy . ' +' . $dias_antes . ' days'));
+        $periodo = $this->_periodo_para_fecha_inicio($config->frecuencia, $inicio_objetivo);
+        if (!$periodo) {
+            return null;
+        }
+
+        // Solo crear si hoy está en la ventana [inicio - dias_antes, inicio]
+        // (con dias_antes=0 solo el día de inicio; con 1, el día anterior o el de inicio)
+        $inicio_ventana = date('Y-m-d', strtotime($periodo['inicio'] . ' -' . $dias_antes . ' days'));
+        if ($hoy < $inicio_ventana || $hoy > $periodo['inicio']) {
+            return null;
+        }
+
+        $existe = $this->db
+            ->where('periodo_inicio', $periodo['inicio'])
+            ->where('periodo_fin', $periodo['fin'])
+            ->where('tipo_nomina', $config->frecuencia)
+            ->count_all_results('nominas');
+
+        if ($existe > 0) {
+            return null;
+        }
+
+        return [
+            'periodo_inicio' => $periodo['inicio'],
+            'periodo_fin'    => $periodo['fin'],
+            'tipo_nomina'    => $config->frecuencia,
+            'fecha_pago'     => $periodo['fin'],
+        ];
+    }
+
+    /**
+     * Calcula inicio/fin de periodo si $fecha es exactamente el día de inicio
+     * de un periodo según la frecuencia.
+     */
+    private function _periodo_para_fecha_inicio($frecuencia, $fecha) {
+        $ts = strtotime($fecha);
+        $dia = (int)date('d', $ts);
+
+        switch ($frecuencia) {
+            case 'Semanal':
+                // El periodo semanal inicia en lunes
+                if ((int)date('N', $ts) !== 1) {
+                    return null;
+                }
+                return [
+                    'inicio' => date('Y-m-d', $ts),
+                    'fin'    => date('Y-m-d', strtotime('sunday this week', $ts)),
+                ];
+            case 'Quincenal':
+                if ($dia === 1) {
+                    return [
+                        'inicio' => date('Y-m-01', $ts),
+                        'fin'    => date('Y-m-15', $ts),
+                    ];
+                }
+                if ($dia === 16) {
+                    return [
+                        'inicio' => date('Y-m-16', $ts),
+                        'fin'    => date('Y-m-t', $ts),
+                    ];
+                }
+                return null;
+            case 'Mensual':
+                if ($dia !== 1) {
+                    return null;
+                }
+                return [
+                    'inicio' => date('Y-m-01', $ts),
+                    'fin'    => date('Y-m-t', $ts),
+                ];
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Crea nómina automática.
+     *
+     * @param string|null $fecha_ref Fecha de referencia Y-m-d (para pruebas).
+     * @return int|null ID de nómina creada o null
+     */
+    public function crear_nomina_automatica($fecha_ref = null) {
+        $datos = $this->verificar_creacion_automatica($fecha_ref);
+        if (!$datos) {
+            return null;
+        }
+
+        $datos['folio'] = $this->generar_folio();
+        $datos['usuario_creacion'] = 1; // sistema
+        $datos['estatus'] = 'Borrador';
+        $datos['observaciones'] = 'Generada automáticamente';
+
+        $this->db->insert('nominas', $datos);
+        $nomina_id = $this->db->insert_id();
+
+        if ($nomina_id) {
+            $this->agregar_empleados_nomina($nomina_id, $datos['tipo_nomina']);
+
+            $this->db->update('nomina_configuracion', [
+                'ultima_ejecucion' => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->_crear_alerta_nomina_automatica($nomina_id, $datos);
+        }
+
+        return $nomina_id;
+    }
+
+    /**
+     * Crea alerta interna al crear nómina automática.
+     */
+    private function _crear_alerta_nomina_automatica($nomina_id, $datos) {
+        if (!$this->db->table_exists('alertas_internas')) return;
+
+        $nomina = $this->db->get_where('nominas', ['id' => (int)$nomina_id])->row();
+        if (!$nomina) return;
+
+        $this->db->insert('alertas_internas', [
+            'tipo'        => 'nomina_creada',
+            'titulo'      => 'Nómina generada automáticamente',
+            'mensaje'     => "Se generó la nómina {$nomina->folio} ({$datos['tipo_nomina']}) para el periodo {$datos['periodo_inicio']} al {$datos['periodo_fin']}. Estatus: Pendiente de cálculo.",
+            'modulo'      => 'Recursos Humanos',
+            'url'         => 'rh/Nomina',
+            'icono'       => 'fa-money-bill-wave',
+            'fecha'       => date('Y-m-d H:i:s'),
+            'leida'       => 0,
+        ]);
     }
 
     private function tiene_pago_parcial() {

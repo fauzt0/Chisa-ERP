@@ -14,9 +14,12 @@ class Nomina extends MY_Controller {
         parent::__construct();
         $this->load->model('RH/NominaRhModel');
         $this->load->model('Contabilidad/NominaModel');
+        $this->load->helper('permissions');
+        $this->config->load('permissions');
     }
 
     public function index() {
+        $this->requiere_permiso('rh_nomina', 'No tienes permiso para gestionar nóminas.');
         setViewSuccess('Nómina cargada correctamente');
         $this->viewData['pageTitle'] = 'Nómina';
         $this->viewData['headTitle'] = 'Pago de Nómina';
@@ -28,6 +31,7 @@ class Nomina extends MY_Controller {
     }
 
     public function lista_ajax() {
+        $this->requiere_permiso('rh_nomina');
         header('Content-Type: application/json; charset=utf-8');
 
         $this->db->select('*');
@@ -106,6 +110,7 @@ class Nomina extends MY_Controller {
     }
 
     public function crear_ajax() {
+        $this->requiere_permiso('rh_nomina');
         $data = [
             'folio'            => $this->NominaRhModel->generar_folio(),
             'periodo_inicio'   => $this->input->post('periodo_inicio'),
@@ -138,12 +143,14 @@ class Nomina extends MY_Controller {
     }
 
     public function calcular_ajax() {
+        $this->requiere_permiso('rh_nomina');
         $nomina_id = (int)$this->input->post('id');
         $result = $this->NominaRhModel->calcular_nomina($nomina_id);
         echo json_encode($result);
     }
 
     public function pagar_ajax() {
+        $this->requiere_permiso('rh_nomina');
         $nomina_id = (int)$this->input->post('id');
         $pagos = $this->input->post('pagos');
         if (is_string($pagos)) {
@@ -169,6 +176,7 @@ class Nomina extends MY_Controller {
     }
 
     public function detalle_pago_ajax() {
+        $this->requiere_permiso('rh_nomina');
         $id = (int)$this->input->post('id');
         $data = $this->NominaRhModel->get_detalle_para_pago($id);
         if (!$data) {
@@ -183,6 +191,7 @@ class Nomina extends MY_Controller {
     }
 
     public function get_nomina_ajax() {
+        $this->requiere_permiso('rh_nomina');
         $id = (int)$this->input->post('id');
         $nomina = $this->NominaModel->get_nomina_completa($id);
 
@@ -195,6 +204,7 @@ class Nomina extends MY_Controller {
     }
 
     public function eliminar_ajax() {
+        $this->requiere_permiso('rh_nomina');
         $id = (int)$this->input->post('id');
         $nomina = $this->db->get_where('nominas', ['id' => $id])->row();
 
@@ -214,6 +224,7 @@ class Nomina extends MY_Controller {
     }
 
     public function imprimir_recibos($id = null, $detalle_id = null) {
+        $this->requiere_permiso('rh_nomina');
         $data = $this->preparar_datos_recibos($id, $this->filtros_recibos_desde_request(true, $detalle_id));
         if (!$data) {
             show_404();
@@ -224,6 +235,7 @@ class Nomina extends MY_Controller {
     }
 
     public function get_recibos_ajax() {
+        $this->requiere_permiso('rh_nomina');
         $id = (int)$this->input->post('id');
         if ($id <= 0) {
             $this->responder_json(['success' => false, 'message' => 'Nómina no especificada']);
@@ -378,6 +390,7 @@ class Nomina extends MY_Controller {
      * Exporta nómina a Excel compatible con Aspel NOI / importación de nómina.
      */
     public function exportar_excel($id = null) {
+        $this->requiere_permiso('rh_nomina_exportar');
         $id = (int)$id;
         $datos = $this->NominaRhModel->get_datos_exportacion_noi($id);
         if (!$datos || empty($datos['filas'])) {
@@ -524,5 +537,257 @@ class Nomina extends MY_Controller {
         }
         return '<button type="button" class="btn btn-sm ' . $class . '" onclick="' . $onclick . '" title="' . htmlspecialchars($title) . '">'
             . '<i class="fas ' . $icon . '"></i>' . $label . '</button>';
+    }
+
+    public function get_nomina_detalle_completo_ajax() {
+        $this->requiere_permiso('rh_nomina');
+        $id = (int)$this->input->post('id');
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+        $detalle = $this->NominaRhModel->get_nomina_detalle_completo($id);
+        $nomina = $this->db->get_where('nominas', ['id' => $id])->row();
+        echo json_encode([
+            'success' => true,
+            'nomina'  => $nomina,
+            'detalle' => $detalle,
+        ]);
+    }
+
+    public function get_nomina_cuentas_ajax() {
+        $this->requiere_permiso('rh_nomina_cuentas');
+        $empleado_id = (int)$this->input->post('empleado_id');
+        $cuentas = $this->NominaRhModel->get_cuentas_empleado($empleado_id);
+        echo json_encode(['success' => true, 'cuentas' => $cuentas]);
+    }
+
+    public function guardar_cuenta_empleado_ajax() {
+        $this->requiere_permiso('rh_nomina_cuentas');
+        $data = [
+            'id'                => $this->input->post('id') ? (int)$this->input->post('id') : null,
+            'empleado_id'       => (int)$this->input->post('empleado_id'),
+            'cuenta_bancaria_id'=> $this->input->post('cuenta_bancaria_id') ? (int)$this->input->post('cuenta_bancaria_id') : null,
+            'numero_cuenta'     => $this->input->post('numero_cuenta'),
+            'clabe'             => $this->input->post('clabe'),
+            'es_default'        => (int)$this->input->post('es_default'),
+        ];
+        if (empty($data['empleado_id']) || empty($data['numero_cuenta'])) {
+            echo json_encode(['success' => false, 'message' => 'Complete los campos requeridos']);
+            return;
+        }
+        $id = $this->NominaRhModel->guardar_cuenta_empleado($data);
+        echo json_encode(['success' => true, 'id' => $id, 'message' => 'Cuenta guardada']);
+    }
+
+    public function eliminar_cuenta_empleado_ajax() {
+        $this->requiere_permiso('rh_nomina_cuentas');
+        $id = (int)$this->input->post('id');
+        $this->NominaRhModel->eliminar_cuenta_empleado($id);
+        echo json_encode(['success' => true, 'message' => 'Cuenta eliminada']);
+    }
+
+    public function set_cuenta_default_ajax() {
+        $this->requiere_permiso('rh_nomina_cuentas');
+        $empleado_id = (int)$this->input->post('empleado_id');
+        $cuenta_id   = (int)$this->input->post('cuenta_id');
+        $this->NominaRhModel->set_cuenta_default($empleado_id, $cuenta_id);
+        echo json_encode(['success' => true, 'message' => 'Cuenta principal actualizada']);
+    }
+
+    public function actualizar_detalle_ajax() {
+        $this->requiere_permiso('rh_nomina_editar_detalle');
+        $detalle_id = (int)$this->input->post('detalle_id');
+        $data = $this->input->post();
+        unset($data['detalle_id']);
+        $result = $this->NominaRhModel->actualizar_detalle_nomina($detalle_id, $data);
+        echo json_encode($result);
+    }
+
+    public function get_configuracion_ajax() {
+        $this->requiere_permiso('rh_nomina_configurar');
+        $config = $this->NominaRhModel->get_configuracion_automatizacion();
+        echo json_encode(['success' => true, 'config' => $config]);
+    }
+
+    public function guardar_configuracion_ajax() {
+        $this->requiere_permiso('rh_nomina_configurar', 'No tienes permiso para configurar la automatización.');
+        $data = [
+            'frecuencia'     => $this->input->post('frecuencia'),
+            'auto_crear'     => (int)$this->input->post('auto_crear'),
+            'crear_dias_antes'=> (int)$this->input->post('crear_dias_antes'),
+        ];
+        $this->NominaRhModel->guardar_configuracion_automatizacion($data);
+        echo json_encode(['success' => true, 'message' => 'Configuración guardada']);
+    }
+
+    /**
+     * Verifica/crea nómina automática (AJAX o CRON CLI).
+     * Cron sugerido:
+     *   0 7 * * * php index.php rh/Nomina verificar_auto_nomina_ajax
+     * Prueba con fecha:
+     *   php index.php rh/Nomina verificar_auto_nomina_ajax 2026-07-26
+     */
+    public function verificar_auto_nomina_ajax($fecha_ref = null) {
+        if (!is_cli()) {
+            $this->requiere_permiso('rh_nomina');
+            $fecha_ref = $this->input->post('fecha_ref') ?: $fecha_ref;
+        }
+
+        $id = $this->NominaRhModel->crear_nomina_automatica($fecha_ref ?: null);
+        $payload = $id
+            ? ['success' => true, 'creada' => true, 'nomina_id' => $id, 'message' => 'Nómina automática creada']
+            : ['success' => true, 'creada' => false, 'message' => 'No corresponde crear nómina hoy'];
+
+        if (is_cli()) {
+            echo json_encode($payload, JSON_UNESCAPED_UNICODE) . PHP_EOL;
+            return;
+        }
+        echo json_encode($payload);
+    }
+
+    public function get_catalogo_bancos_ajax() {
+        $this->requiere_permiso('rh_nomina');
+        $bancos = $this->db
+            ->select('id, banco')
+            ->from('cuentas_bancarias')
+            ->where('estatus', 'Activa')
+            ->group_by('banco')
+            ->order_by('banco', 'ASC')
+            ->get()->result();
+        echo json_encode(['success' => true, 'bancos' => $bancos]);
+    }
+
+    public function exportar_detalle_excel($id = null) {
+        $this->requiere_permiso('rh_nomina_exportar');
+        $id = (int)$id;
+        $detalle = $this->NominaRhModel->get_nomina_detalle_completo($id);
+        $nomina = $this->db->get_where('nominas', ['id' => $id])->row();
+
+        if (!$detalle || !$nomina) {
+            setViewError('Nómina no encontrada');
+            redirect('rh/Nomina');
+            return;
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Nómina ' . $nomina->folio);
+
+        // Título
+        $sheet->mergeCells('A1:R1');
+        $sheet->setCellValue('A1', 'NÓMINA ' . $nomina->folio . ' — ' . $nomina->tipo_nomina);
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+        $sheet->setCellValue('A2', 'Periodo: ' . $nomina->periodo_inicio . ' al ' . $nomina->periodo_fin);
+        $sheet->setCellValue('A3', 'Fecha de pago: ' . $nomina->fecha_pago);
+        $sheet->setCellValue('A4', 'Estatus: ' . $nomina->estatus);
+
+        // Headers (fila 6)
+        $headers = [
+            'Lugar u origen', 'Nombre del trabajador', 'Sueldo diario', 'Sueldo neto',
+            'Horas extras (cant.)', 'Costo x hora', 'Monto horas extras',
+            'Comidas', 'Viáticos / Pasajes', 'Prima', 'Otros bonos', 'Otros',
+            'Total Percepciones', 'INFONAVIT', 'Préstamo personal', 'Otros descuentos',
+            'Total Deducciones', 'Total Sueldo Neto'
+        ];
+        $col = 'A';
+        foreach ($headers as $h) {
+            $sheet->setCellValue($col . '6', $h);
+            $col++;
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E3A5F']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A6:R6')->applyFromArray($headerStyle);
+
+        // Datos
+        $row = 7;
+        $totales = array_fill_keys(['sueldo_diario','sueldo_neto','h_extras','monto_he','comidas','viaticos','prima','bonos','otros','percepciones','infonavit','prestamo','otros_desc','deducciones','neto'], 0);
+
+        foreach ($detalle as $d) {
+            $sheet->setCellValue('A'.$row, $d->lugar_origen);
+            $sheet->setCellValue('B'.$row, trim($d->nombre . ' ' . $d->apellido_paterno . ' ' . ($d->apellido_materno ?? '')));
+            $sheet->setCellValue('C'.$row, (float)$d->sueldo_diario);
+            $sheet->setCellValue('D'.$row, (float)$d->sueldo_base);
+            $sheet->setCellValue('E'.$row, (float)$d->horas_extras);
+            $sheet->setCellValue('F'.$row, (float)$d->costo_hora_extra);
+            $sheet->setCellValue('G'.$row, (float)$d->monto_horas_extras);
+            $sheet->setCellValue('H'.$row, (float)$d->comidas);
+            $sheet->setCellValue('I'.$row, (float)$d->viaticos_pasajes);
+            $sheet->setCellValue('J'.$row, (float)$d->prima);
+            $sheet->setCellValue('K'.$row, (float)$d->otros_bonos);
+            $sheet->setCellValue('L'.$row, (float)$d->otros_ingresos);
+            $sheet->setCellValue('M'.$row, (float)$d->percepciones);
+            $sheet->setCellValue('N'.$row, (float)$d->infonavit_descuento);
+            $sheet->setCellValue('O'.$row, (float)$d->prestamo_personal);
+            $sheet->setCellValue('P'.$row, (float)$d->otros_descuentos);
+            $sheet->setCellValue('Q'.$row, (float)$d->deducciones);
+            $sheet->setCellValue('R'.$row, (float)$d->neto);
+
+            // Acumular
+            $totales['sueldo_diario'] += (float)$d->sueldo_diario;
+            $totales['sueldo_neto'] += (float)$d->sueldo_base;
+            $totales['h_extras'] += (float)$d->horas_extras;
+            $totales['monto_he'] += (float)$d->monto_horas_extras;
+            $totales['comidas'] += (float)$d->comidas;
+            $totales['viaticos'] += (float)$d->viaticos_pasajes;
+            $totales['prima'] += (float)$d->prima;
+            $totales['bonos'] += (float)$d->otros_bonos;
+            $totales['otros'] += (float)$d->otros_ingresos;
+            $totales['percepciones'] += (float)$d->percepciones;
+            $totales['infonavit'] += (float)$d->infonavit_descuento;
+            $totales['prestamo'] += (float)$d->prestamo_personal;
+            $totales['otros_desc'] += (float)$d->otros_descuentos;
+            $totales['deducciones'] += (float)$d->deducciones;
+            $totales['neto'] += (float)$d->neto;
+
+            // Formato pesos para columnas numéricas
+            foreach (range('C','R') as $c) {
+                $sheet->getStyle($c.$row)->getNumberFormat()->setFormatCode('#,##0.00');
+            }
+            $row++;
+        }
+
+        // Fila de totales
+        $sheet->setCellValue('A'.$row, 'TOTALES');
+        $sheet->setCellValue('C'.$row, $totales['sueldo_diario']);
+        $sheet->setCellValue('D'.$row, $totales['sueldo_neto']);
+        $sheet->setCellValue('E'.$row, $totales['h_extras']);
+        $sheet->setCellValue('G'.$row, $totales['monto_he']);
+        $sheet->setCellValue('H'.$row, $totales['comidas']);
+        $sheet->setCellValue('I'.$row, $totales['viaticos']);
+        $sheet->setCellValue('J'.$row, $totales['prima']);
+        $sheet->setCellValue('K'.$row, $totales['bonos']);
+        $sheet->setCellValue('L'.$row, $totales['otros']);
+        $sheet->setCellValue('M'.$row, $totales['percepciones']);
+        $sheet->setCellValue('N'.$row, $totales['infonavit']);
+        $sheet->setCellValue('O'.$row, $totales['prestamo']);
+        $sheet->setCellValue('P'.$row, $totales['otros_desc']);
+        $sheet->setCellValue('Q'.$row, $totales['deducciones']);
+        $sheet->setCellValue('R'.$row, $totales['neto']);
+
+        $totalStyle = ['font' => ['bold' => true], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D4E6F1']]];
+        $sheet->getStyle('A'.$row.':R'.$row)->applyFromArray($totalStyle);
+        foreach (range('C','R') as $c) {
+            $sheet->getStyle($c.$row)->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+
+        // Auto-size
+        foreach (range('A','R') as $c) {
+            $sheet->getColumnDimension($c)->setAutoSize(true);
+        }
+
+        // Download
+        $filename = 'Nomina_' . $nomina->folio . '_' . date('Ymd') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

@@ -24,6 +24,10 @@ $config['permissions'] = array(
     'rh_empleados_delete'  => 'Eliminar empleados',
     'rh_departamentos'     => 'Gestionar departamentos',
     'rh_nomina'            => 'Gestionar nómina',
+    'rh_nomina_configurar'     => 'Configurar automatización de nóminas',
+    'rh_nomina_editar_detalle' => 'Editar detalle de nómina',
+    'rh_nomina_cuentas'        => 'Gestionar cuentas bancarias de empleados',
+    'rh_nomina_exportar'       => 'Exportar nómina a Excel',
   ),
   
   'Clientes (CRM)' => array(

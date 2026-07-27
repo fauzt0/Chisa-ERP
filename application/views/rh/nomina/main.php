@@ -12,6 +12,9 @@
       <a href="<?= base_url('rh/RecursosHumanos') ?>" class="btn btn-outline-secondary">
         <i data-lucide="users" style="width:16px;height:16px;"></i> Empleados
       </a>
+      <button class="btn btn-outline-secondary" onclick="abrirModalConfiguracion()">
+        <i class="fas fa-cog"></i> Configurar Automatización
+      </button>
       <button type="button" class="btn btn-primary" onclick="mostrarModalNuevo()">
         <i data-lucide="plus" style="width:16px;height:16px;"></i> Nueva Nómina
       </button>
@@ -156,14 +159,26 @@
               <option value="Aguinaldo">Aguinaldo</option>
             </select>
           </div>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Periodo Inicio <span class="text-danger">*</span></label>
-              <input type="date" class="form-control" id="nomina_periodo_inicio" name="periodo_inicio" required>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Selección rápida de periodo</label>
+            <div class="d-flex flex-wrap gap-1" id="botonesPeriodoRapido">
+              <button type="button" class="btn btn-sm btn-outline-secondary periodo-btn" data-rango="semana">Esta semana</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary periodo-btn" data-rango="semana_anterior">Semana anterior</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary periodo-btn" data-rango="quincena1">1ra Quincena</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary periodo-btn" data-rango="quincena2">2da Quincena</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary periodo-btn" data-rango="mes_actual">Mes actual</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary periodo-btn" data-rango="mes_anterior">Mes anterior</button>
             </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Periodo Fin <span class="text-danger">*</span></label>
-              <input type="date" class="form-control" id="nomina_periodo_fin" name="periodo_fin" required>
+            <small class="text-muted">O seleccione manualmente:</small>
+          </div>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label">Periodo inicio</label>
+              <input type="date" id="periodoInicio" name="periodo_inicio" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Periodo fin</label>
+              <input type="date" id="periodoFin" name="periodo_fin" class="form-control" required>
             </div>
           </div>
           <div class="mb-3">
@@ -186,23 +201,77 @@
   </div>
 </div>
 
-<!-- Modal Detalle -->
-<div class="modal fade rh-modal" id="modalDetalleNomina" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content border-0 shadow">
-      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
-        <h5 class="modal-title text-white"><i data-lucide="receipt" style="width:20px;height:20px;"></i> Detalle de Nómina</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<!-- Modal: Detalle Completo de Nómina (formato tabla nuevo) -->
+<div class="modal fade" id="modalDetalleNomina" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-fullscreen-xl-down">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-file-invoice-dollar me-2"></i>
+          Nómina <span id="detalleFolio">—</span>
+        </h5>
+        <div>
+          <button class="btn btn-sm btn-light me-1" onclick="exportarDetalleExcel()" title="Exportar Excel">
+            <i class="fas fa-file-excel text-success"></i> Exportar
+          </button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
       </div>
-      <div class="modal-body" id="detalleNominaBody"></div>
+      <div class="modal-body p-0">
+        <!-- Info de cabecera: Periodo, Tipo, Fecha Pago -->
+        <div class="p-3 bg-light border-bottom">
+          <div class="row g-2 small">
+            <div class="col-md-3"><strong>Periodo:</strong> <span id="detallePeriodo">—</span></div>
+            <div class="col-md-3"><strong>Tipo:</strong> <span id="detalleTipo">—</span></div>
+            <div class="col-md-3"><strong>Fecha Pago:</strong> <span id="detalleFechaPago">—</span></div>
+            <div class="col-md-3"><strong>Estatus:</strong> <span id="detalleEstatus">—</span></div>
+          </div>
+        </div>
+
+        <!-- Tabla scrolling horizontal con el formato exacto de las imágenes -->
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+          <table class="table table-sm table-bordered table-hover mb-0" id="tablaDetalleNomina"
+                 style="font-size: 0.78rem; white-space: nowrap; min-width: 2200px;">
+            <thead class="table-dark text-center align-middle" style="position: sticky; top: 0; z-index: 2;">
+              <tr>
+                <th rowspan="2" style="min-width:100px;">Lugar u origen</th>
+                <th rowspan="2" style="min-width:180px;">Nombre del trabajador</th>
+                <th rowspan="2" style="min-width:80px;">Sueldo diario</th>
+                <th rowspan="2" style="min-width:80px;">Sueldo neto</th>
+                <th colspan="3" class="bg-success">Horas extras</th>
+                <th rowspan="2" style="min-width:70px;">Comidas</th>
+                <th rowspan="2" style="min-width:80px;">Viáticos / Pasajes</th>
+                <th rowspan="2" style="min-width:70px;">Prima</th>
+                <th rowspan="2" style="min-width:70px;">Otros bonos</th>
+                <th rowspan="2" style="min-width:70px;">Otros</th>
+                <th rowspan="2" class="bg-success text-white" style="min-width:90px;">Total de Percepciones</th>
+                <th rowspan="2" class="bg-danger text-white" style="min-width:80px;">Desglose INFONAVIT</th>
+                <th rowspan="2" style="min-width:80px;">Préstamo personal</th>
+                <th rowspan="2" style="min-width:80px;">Otros descuentos</th>
+                <th rowspan="2" class="bg-danger text-white" style="min-width:90px;">Total Deducciones</th>
+                <th rowspan="2" class="bg-primary text-white" style="min-width:90px;">Total Sueldo Neto</th>
+                <th rowspan="2" style="min-width:120px;">Banco / Cuenta</th>
+              </tr>
+              <tr>
+                <th class="bg-success-subtle" style="min-width:60px;">Cantidad</th>
+                <th class="bg-success-subtle" style="min-width:70px;">Costo x hora</th>
+                <th class="bg-success-subtle" style="min-width:70px;">Monto</th>
+              </tr>
+            </thead>
+            <tbody id="detalleNominaBody">
+              <!-- Se llena vía AJAX -->
+            </tbody>
+            <tfoot class="table-secondary fw-bold text-end" style="position: sticky; bottom: 0; z-index: 2;">
+              <tr id="detalleNominaFooter">
+                <!-- Se llena vía JS con totales -->
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
       <div class="modal-footer">
+        <small class="text-muted me-auto">Los campos resaltados son editables. Haga clic para modificar.</small>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-outline-secondary d-none" id="btnDetalleImprimirRecibos">
-          <i class="fas fa-file-pdf"></i> Ver recibos
-        </button>
-        <button type="button" class="btn btn-success d-none" id="btnDetalleProcesarPago">
-          <i data-lucide="banknote" style="width:16px;height:16px;"></i> Procesar Pago
-        </button>
       </div>
     </div>
   </div>
@@ -328,6 +397,91 @@
   </div>
 </div>
 
+<!-- Modal: Configuración de Automatización -->
+<div class="modal fade" id="modalConfiguracion" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title"><i class="fas fa-robot me-2"></i>Automatización de Nóminas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-bold">Frecuencia de generación</label>
+          <select id="configFrecuencia" class="form-select">
+            <option value="Semanal">Semanal (cada lunes)</option>
+            <option value="Quincenal">Quincenal (días 1 y 16)</option>
+            <option value="Mensual">Mensual (día 1 del mes)</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Días de anticipación</label>
+          <input type="number" id="configDiasAntes" class="form-control" min="0" max="30" value="1" placeholder="0 = mismo día">
+          <small class="text-muted">Días antes del inicio del periodo para crear la nómina</small>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="configAutoCrear">
+          <label class="form-check-label fw-bold" for="configAutoCrear">Crear nómina automáticamente</label>
+        </div>
+        <div class="alert alert-info mt-3" id="configAlerta" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarConfiguracion()"><i class="fas fa-save me-1"></i>Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cuentas Bancarias del Empleado -->
+<div class="modal fade" id="modalCuentasEmpleado" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title"><i class="fas fa-university me-2"></i>Cuentas Bancarias — <span id="cuentasEmpleadoNombre">—</span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover" id="tablaCuentasEmpleado">
+            <thead class="table-light">
+              <tr>
+                <th>Banco</th>
+                <th>Número de Cuenta</th>
+                <th>CLABE</th>
+                <th>Default</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cuentasEmpleadoBody"></tbody>
+          </table>
+        </div>
+        <hr>
+        <h6 class="fw-bold">Agregar cuenta</h6>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <select id="nuevoBancoId" class="form-select form-select-sm">
+              <option value="">Seleccionar banco...</option>
+              <!-- Llenado vía AJAX desde cuentas_bancarias -->
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input type="text" id="nuevoNumeroCuenta" class="form-control form-control-sm" placeholder="No. Cuenta">
+          </div>
+          <div class="col-md-3">
+            <input type="text" id="nuevoClabe" class="form-control form-control-sm" placeholder="CLABE (18 dígitos)">
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-sm btn-success w-100" onclick="agregarCuentaEmpleado()">
+              <i class="fas fa-plus"></i> Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 var tablaNominas;
@@ -341,6 +495,16 @@ document.addEventListener('DOMContentLoaded', function() {
     return;
   }
   initTablaNominas();
+  // Lazy-check: si toca, crea nómina automática (también cubierto por cron CLI)
+  $.post('<?= base_url('rh/Nomina/verificar_auto_nomina_ajax') ?>', {
+    peticion: 'ajax',
+    [csrfName]: csrfHash
+  }, function(r) {
+    if (r && r.creada && r.nomina_id) {
+      notifyShow('Nómina automática creada (#' + r.nomina_id + ').', 'success');
+      if (tablaNominas) tablaNominas.ajax.reload(null, false);
+    }
+  }, 'json');
 });
 
 function initTablaNominas() {
@@ -418,15 +582,16 @@ function sugerirPeriodo() {
     inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
   } else if (tipo === 'Semanal') {
-    var day = hoy.getDay() || 7;
+    var diaSemana = hoy.getDay();
     inicio = new Date(hoy);
-    inicio.setDate(hoy.getDate() - day + 1);
+    inicio.setDate(hoy.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
     fin = new Date(inicio);
     fin.setDate(inicio.getDate() + 6);
   }
   if (inicio && fin) {
-    $('#nomina_periodo_inicio').val(inicio.toISOString().slice(0, 10));
-    $('#nomina_periodo_fin').val(fin.toISOString().slice(0, 10));
+    $('#periodoInicio').val(formatDate(inicio));
+    $('#periodoFin').val(formatDate(fin));
+    $('.periodo-btn').removeClass('active btn-primary').addClass('btn-outline-secondary');
   }
 }
 
@@ -480,75 +645,26 @@ function calcularNominaSilencioso(id, callback) {
 }
 
 function verNomina(id) {
-  $.post('<?= base_url('rh/Nomina/get_nomina_ajax') ?>', {
+  $.post('<?= base_url('rh/Nomina/get_nomina_detalle_completo_ajax') ?>', {
     id: id, peticion: 'ajax', [csrfName]: csrfHash
-  }, function(result) {
-    result = JSON.parse(result);
-    if (!result.success) { notifyShow(result.message, 'danger'); return; }
-    var n = result.nomina;
-    var html = '';
-    if (n.estatus === 'Borrador') {
-      html += '<div class="alert alert-warning py-2 small mb-3"><i data-lucide="info" style="width:14px;height:14px;"></i> Esta nómina está en <strong>Borrador</strong>. Calcúlela primero para habilitar <strong>Procesar Pago</strong>.</div>';
-    } else if (n.estatus === 'Calculada' || n.estatus === 'Parcial') {
-      html += '<div class="alert alert-success py-2 small mb-3"><i data-lucide="banknote" style="width:14px;height:14px;"></i> Lista para pago. Use el botón <strong>Procesar Pago</strong> al pie de esta ventana.</div>';
+  }, function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) {
+      notifyShow('Error al procesar la respuesta del servidor', 'danger');
+      return;
     }
-    html += '<div class="row mb-3">' +
-      '<div class="col-md-6"><table class="table table-sm table-borderless">' +
-      '<tr><th width="120">Folio:</th><td><strong>' + n.folio + '</strong></td></tr>' +
-      '<tr><th>Tipo:</th><td>' + n.tipo_nomina + '</td></tr>' +
-      '<tr><th>Periodo:</th><td>' + n.periodo_inicio + ' — ' + n.periodo_fin + '</td></tr>' +
-      '<tr><th>Fecha Pago:</th><td>' + n.fecha_pago + '</td></tr></table></div>' +
-      '<div class="col-md-6"><table class="table table-sm table-borderless">' +
-      '<tr><th width="120">Percepciones:</th><td class="text-success">$' + parseFloat(n.total_percepciones).toFixed(2) + '</td></tr>' +
-      '<tr><th>Deducciones:</th><td class="text-danger">$' + parseFloat(n.total_deducciones).toFixed(2) + '</td></tr>' +
-      '<tr><th>Neto:</th><td><strong class="fs-5">$' + parseFloat(n.total_neto).toFixed(2) + '</strong></td></tr>' +
-      '<tr><th>Estatus:</th><td>' + n.estatus + '</td></tr></table></div></div>';
-    if (n.poliza_id) {
-      html += '<div class="alert alert-info py-2 small"><i data-lucide="book-open" style="width:14px;height:14px;"></i> Póliza contable vinculada: <strong>#' + n.poliza_id + '</strong> · <a href="<?= base_url('contabilidad/Polizas') ?>">Ver en Contabilidad</a></div>';
-    }
-    html += '<h6 class="border-bottom pb-2">Detalle por Empleado</h6>' +
-      '<div class="table-responsive"><table class="table table-sm table-bordered table-hover">' +
-      '<thead class="table-light"><tr><th>Empleado</th><th>Puesto</th><th>Días</th><th>Neto</th><th>% Pagado</th><th>Estatus</th><th width="80">Recibo</th></tr></thead><tbody>';
+    if (!r.success) { notifyShow(r.message || 'Error al cargar el detalle', 'danger'); return; }
 
-    if (n.detalle && n.detalle.length) {
-      n.detalle.forEach(function(d) {
-        var pagado = parseFloat(d.monto_pagado || 0);
-        var neto = parseFloat(d.neto || 0);
-        var pct = neto > 0 ? ((pagado / neto) * 100).toFixed(1) : '0';
-        var badge = d.estatus === 'Pagado' ? 'success' : (d.estatus === 'Parcial' ? 'info' : 'warning');
-        var recibo = pagado > 0
-          ? '<button type="button" class="btn btn-sm btn-outline-secondary py-0" onclick="verRecibosNomina(' + n.id + ', null, null, ' + d.id + ')" title="Ver recibo de pago"><i class="fas fa-file-pdf"></i></button>'
-          : '<span class="text-muted small">—</span>';
-        html += '<tr><td>' + d.nombre + ' ' + d.apellido_paterno + '</td><td>' + (d.puesto || '—') + '</td>' +
-          '<td>' + (d.dias_trabajados || 0) + '</td><td><strong>$' + neto.toFixed(2) + '</strong></td>' +
-          '<td>' + pct + '%</td><td><span class="badge bg-' + badge + '">' + (d.estatus || 'Pendiente') + '</span></td>' +
-          '<td>' + recibo + '</td></tr>';
-      });
-    } else {
-      html += '<tr><td colspan="7" class="text-center text-muted">Sin empleados</td></tr>';
-    }
-    html += '</tbody></table></div>';
+    $('#detalleFolio').text(r.nomina.folio);
+    $('#detallePeriodo').text(r.nomina.periodo_inicio + ' — ' + r.nomina.periodo_fin);
+    $('#detalleTipo').text(r.nomina.tipo_nomina);
+    $('#detalleFechaPago').text(r.nomina.fecha_pago);
+    $('#detalleEstatus').html(renderBadgeEstatus(r.nomina.estatus));
 
-    $('#detalleNominaBody').html(html);
-    var $btnPago = $('#btnDetalleProcesarPago');
-    var $btnRecibos = $('#btnDetalleImprimirRecibos');
-    if (n.estatus === 'Calculada' || n.estatus === 'Parcial') {
-      $btnPago.removeClass('d-none').off('click').on('click', function() {
-        $('#modalDetalleNomina').modal('hide');
-        abrirModalPago(n.id);
-      });
-    } else {
-      $btnPago.addClass('d-none').off('click');
-    }
-    if (n.estatus === 'Parcial' || n.estatus === 'Pagada') {
-      $btnRecibos.removeClass('d-none').off('click').on('click', function() {
-        verRecibosNomina(n.id);
-      });
-    } else {
-      $btnRecibos.addClass('d-none').off('click');
-    }
+    $('#modalDetalleNomina').data('nomina-id', id);
+
+    renderTablaDetalle(r.detalle);
+
     $('#modalDetalleNomina').modal('show');
-    refreshLucideIcons();
   });
 }
 
@@ -888,5 +1004,349 @@ function imprimirRecibosModal() {
 /** Compatibilidad: abre previsualización en modal (antes abría pestaña directa). */
 function imprimirRecibos(id, detalleIds, montosLote) {
   verRecibosNomina(id, detalleIds, montosLote);
+}
+
+// --- Configuración de automatización ---
+
+function abrirModalConfiguracion() {
+  $.post('<?= base_url('rh/Nomina/get_configuracion_ajax') ?>', {
+    peticion: 'ajax', [csrfName]: csrfHash
+  }, function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) { return; }
+    if (r.success && r.config) {
+      $('#configFrecuencia').val(r.config.frecuencia);
+      $('#configDiasAntes').val(r.config.crear_dias_antes || 1);
+      $('#configAutoCrear').prop('checked', r.config.auto_crear == 1);
+    }
+    $('#modalConfiguracion').modal('show');
+  });
+}
+
+function guardarConfiguracion() {
+  $.post('<?= base_url('rh/Nomina/guardar_configuracion_ajax') ?>', {
+    frecuencia: $('#configFrecuencia').val(),
+    crear_dias_antes: $('#configDiasAntes').val(),
+    auto_crear: $('#configAutoCrear').is(':checked') ? 1 : 0,
+    peticion: 'ajax',
+    [csrfName]: csrfHash
+  }, function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) {
+      notifyShow('Error al procesar la respuesta', 'danger');
+      return;
+    }
+    if (r.success) {
+      notifyShow(r.message || 'Configuración guardada', 'success');
+      $('#modalConfiguracion').modal('hide');
+    } else {
+      notifyShow(r.message || 'Error al guardar', 'danger');
+    }
+  });
+}
+
+// --- Modal de detalle (formato tabla nuevo) ---
+
+function renderTablaDetalle(detalle) {
+  var html = '';
+  var totales = {
+    sueldo_diario: 0, sueldo_neto: 0, horas_extras: 0, monto_horas_extras: 0,
+    comidas: 0, viaticos: 0, prima: 0, bonos: 0, otros: 0,
+    percepciones: 0, infonavit: 0, prestamo: 0, otros_desc: 0,
+    deducciones: 0, neto: 0
+  };
+
+  (detalle || []).forEach(function(d) {
+    html += '<tr data-detalle-id="' + d.detalle_id + '">';
+    html += '<td class="editable text-center" data-field="lugar_origen">' + esc(d.lugar_origen) + '</td>';
+    html += '<td>' + esc(d.nombre + ' ' + d.apellido_paterno + ' ' + (d.apellido_materno || '')) + '</td>';
+    html += '<td class="text-end">' + fmt(d.sueldo_diario) + '</td>';
+    html += '<td class="text-end">' + fmt(d.sueldo_base) + '</td>';
+    html += '<td class="editable text-center" data-field="horas_extras" data-type="number">' + fmtNum(d.horas_extras) + '</td>';
+    html += '<td class="editable text-end" data-field="costo_hora_extra" data-type="money">' + fmt(d.costo_hora_extra) + '</td>';
+    html += '<td class="text-end fw-bold">' + fmt(d.monto_horas_extras) + '</td>';
+    html += '<td class="editable text-end" data-field="comidas" data-type="money">' + fmt(d.comidas) + '</td>';
+    html += '<td class="editable text-end" data-field="viaticos_pasajes" data-type="money">' + fmt(d.viaticos_pasajes) + '</td>';
+    html += '<td class="editable text-end" data-field="prima" data-type="money">' + fmt(d.prima) + '</td>';
+    html += '<td class="editable text-end" data-field="otros_bonos" data-type="money">' + fmt(d.otros_bonos) + '</td>';
+    html += '<td class="editable text-end" data-field="otros_ingresos" data-type="money">' + fmt(d.otros_ingresos) + '</td>';
+    html += '<td class="text-end bg-success text-white fw-bold">' + fmt(d.percepciones) + '</td>';
+    html += '<td class="text-end bg-danger text-white fw-bold">' + fmt(d.infonavit_descuento) + '</td>';
+    html += '<td class="editable text-end" data-field="prestamo_personal" data-type="money">' + fmt(d.prestamo_personal) + '</td>';
+    html += '<td class="editable text-end" data-field="otros_descuentos" data-type="money">' + fmt(d.otros_descuentos) + '</td>';
+    html += '<td class="text-end bg-danger text-white fw-bold">' + fmt(d.deducciones) + '</td>';
+    html += '<td class="text-end bg-primary text-white fw-bold">' + fmt(d.neto) + '</td>';
+    html += '<td class="text-center">';
+    html += '<button class="btn btn-sm btn-outline-secondary" onclick="verCuentasEmpleado(' + d.empleado_id + ',\'' + escJS(d.nombre) + '\')" title="Gestionar cuentas">';
+    html += '<i class="fas fa-university"></i> ' + esc(d.banco || 'Sin banco') + ' / ' + esc(d.cuenta_bancaria || '—');
+    html += '</button></td>';
+    html += '</tr>';
+
+    totales.sueldo_diario += parseFloat(d.sueldo_diario) || 0;
+    totales.sueldo_neto += parseFloat(d.sueldo_base) || 0;
+    totales.horas_extras += parseFloat(d.horas_extras) || 0;
+    totales.monto_horas_extras += parseFloat(d.monto_horas_extras) || 0;
+    totales.comidas += parseFloat(d.comidas) || 0;
+    totales.viaticos += parseFloat(d.viaticos_pasajes) || 0;
+    totales.prima += parseFloat(d.prima) || 0;
+    totales.bonos += parseFloat(d.otros_bonos) || 0;
+    totales.otros += parseFloat(d.otros_ingresos) || 0;
+    totales.percepciones += parseFloat(d.percepciones) || 0;
+    totales.infonavit += parseFloat(d.infonavit_descuento) || 0;
+    totales.prestamo += parseFloat(d.prestamo_personal) || 0;
+    totales.otros_desc += parseFloat(d.otros_descuentos) || 0;
+    totales.deducciones += parseFloat(d.deducciones) || 0;
+    totales.neto += parseFloat(d.neto) || 0;
+  });
+
+  $('#detalleNominaBody').html(html);
+
+  var footer = '<td class="text-center fw-bold">TOTALES</td>';
+  footer += '<td></td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.sueldo_diario) + '</td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.sueldo_neto) + '</td>';
+  footer += '<td class="text-center">' + fmtNum(totales.horas_extras) + '</td>';
+  footer += '<td></td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.monto_horas_extras) + '</td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.comidas) + '</td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.viaticos) + '</td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.prima) + '</td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.bonos) + '</td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.otros) + '</td>';
+  footer += '<td class="text-end bg-success text-white fw-bold">' + fmt(totales.percepciones) + '</td>';
+  footer += '<td class="text-end bg-danger text-white fw-bold">' + fmt(totales.infonavit) + '</td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.prestamo) + '</td>';
+  footer += '<td class="text-end fw-bold">' + fmt(totales.otros_desc) + '</td>';
+  footer += '<td class="text-end bg-danger text-white fw-bold">' + fmt(totales.deducciones) + '</td>';
+  footer += '<td class="text-end bg-primary text-white fw-bold">' + fmt(totales.neto) + '</td>';
+  footer += '<td></td>';
+  $('#detalleNominaFooter').html(footer);
+
+  activarEdicionInline();
+}
+
+function activarEdicionInline() {
+  $('#detalleNominaBody .editable').off('dblclick').on('dblclick', function() {
+    var td = $(this);
+    if (td.find('input').length > 0) return;
+
+    var valActual = td.text().replace(/[$,]/g, '').trim();
+    var field = td.data('field');
+    var type = td.data('type') || 'text';
+    var detalleId = td.closest('tr').data('detalle-id');
+    var textoOriginal = td.text();
+
+    var input = $('<input type="' + (type === 'number' || type === 'money' ? 'number' : 'text') + '" class="form-control form-control-sm" style="width:100%;min-width:80px;">')
+      .val(valActual)
+      .on('blur', function() {
+        var nuevoVal = $(this).val();
+        td.text(type === 'money' ? fmt(parseFloat(nuevoVal) || 0) : nuevoVal);
+        $(this).remove();
+
+        var data = { detalle_id: detalleId, peticion: 'ajax', [csrfName]: csrfHash };
+        data[field] = (type === 'number' || type === 'money') ? (parseFloat(nuevoVal) || 0) : nuevoVal;
+        $.post('<?= base_url('rh/Nomina/actualizar_detalle_ajax') ?>', data, function(r) {
+          try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) {
+            notifyShow('Error al procesar la respuesta', 'danger');
+            return;
+          }
+          if (r.success) {
+            var nominaId = $('#modalDetalleNomina').data('nomina-id');
+            verNomina(nominaId);
+          } else {
+            notifyShow(r.message || 'Error al guardar', 'danger');
+            td.text(textoOriginal);
+          }
+        });
+      })
+      .on('keydown', function(e) {
+        if (e.key === 'Enter') $(this).blur();
+        if (e.key === 'Escape') { td.text(textoOriginal); $(this).remove(); }
+      });
+
+    td.empty().append(input);
+    input.focus().select();
+  });
+}
+
+// --- Cuentas bancarias del empleado ---
+
+function verCuentasEmpleado(empleadoId, nombre) {
+  $('#cuentasEmpleadoNombre').text(nombre);
+  $('#modalCuentasEmpleado').data('empleado-id', empleadoId);
+  cargarCuentasEmpleado(empleadoId);
+  cargarCatalogoBancos();
+  $('#modalCuentasEmpleado').modal('show');
+}
+
+function cargarCuentasEmpleado(empleadoId) {
+  $.post('<?= base_url('rh/Nomina/get_nomina_cuentas_ajax') ?>', {
+    empleado_id: empleadoId, peticion: 'ajax', [csrfName]: csrfHash
+  }, function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) { return; }
+    var html = '';
+    if (r.cuentas && r.cuentas.length > 0) {
+      r.cuentas.forEach(function(c) {
+        html += '<tr>';
+        html += '<td>' + esc(c.banco || '—') + '</td>';
+        html += '<td>' + esc(c.numero_cuenta) + '</td>';
+        html += '<td>' + esc(c.clabe || '—') + '</td>';
+        html += '<td>' + (c.es_default == 1 ? '<span class="badge bg-success">Principal</span>' :
+          '<button class="btn btn-sm btn-outline-success" onclick="setCuentaDefault(' + empleadoId + ',' + c.id + ')">Establecer</button>') + '</td>';
+        html += '<td class="text-end"><button class="btn btn-sm btn-outline-danger" onclick="eliminarCuentaEmpleado(' + c.id + ',' + empleadoId + ')"><i class="fas fa-trash"></i></button></td>';
+        html += '</tr>';
+      });
+    } else {
+      html = '<tr><td colspan="5" class="text-center text-muted">Sin cuentas registradas</td></tr>';
+    }
+    $('#cuentasEmpleadoBody').html(html);
+  });
+}
+
+function cargarCatalogoBancos() {
+  $.get('<?= base_url('rh/Nomina/get_catalogo_bancos_ajax') ?>', function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) { return; }
+    var opts = '<option value="">Seleccionar banco...</option>';
+    if (r.bancos) {
+      r.bancos.forEach(function(b) {
+        opts += '<option value="' + b.id + '">' + esc(b.banco) + '</option>';
+      });
+    }
+    $('#nuevoBancoId').html(opts);
+  });
+}
+
+function agregarCuentaEmpleado() {
+  var empleadoId = $('#modalCuentasEmpleado').data('empleado-id');
+  $.post('<?= base_url('rh/Nomina/guardar_cuenta_empleado_ajax') ?>', {
+    empleado_id: empleadoId,
+    cuenta_bancaria_id: $('#nuevoBancoId').val(),
+    numero_cuenta: $('#nuevoNumeroCuenta').val(),
+    clabe: $('#nuevoClabe').val(),
+    es_default: 0,
+    peticion: 'ajax',
+    [csrfName]: csrfHash
+  }, function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) {
+      notifyShow('Error al procesar la respuesta', 'danger');
+      return;
+    }
+    if (r.success) {
+      $('#nuevoNumeroCuenta, #nuevoClabe').val('');
+      cargarCuentasEmpleado(empleadoId);
+      notifyShow(r.message || 'Cuenta agregada', 'success');
+    } else {
+      notifyShow(r.message || 'Error al agregar cuenta', 'danger');
+    }
+  });
+}
+
+function setCuentaDefault(empleadoId, cuentaId) {
+  $.post('<?= base_url('rh/Nomina/set_cuenta_default_ajax') ?>', {
+    empleado_id: empleadoId, cuenta_id: cuentaId, peticion: 'ajax', [csrfName]: csrfHash
+  }, function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) { return; }
+    if (r.success) {
+      cargarCuentasEmpleado(empleadoId);
+      notifyShow(r.message || 'Cuenta principal actualizada', 'success');
+    }
+  });
+}
+
+function eliminarCuentaEmpleado(cuentaId, empleadoId) {
+  if (!confirm('¿Eliminar esta cuenta?')) return;
+  $.post('<?= base_url('rh/Nomina/eliminar_cuenta_empleado_ajax') ?>', {
+    id: cuentaId, peticion: 'ajax', [csrfName]: csrfHash
+  }, function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) { return; }
+    if (r.success) {
+      cargarCuentasEmpleado(empleadoId);
+      notifyShow(r.message || 'Cuenta eliminada', 'info');
+    }
+  });
+}
+
+function exportarDetalleExcel() {
+  var id = $('#modalDetalleNomina').data('nomina-id');
+  if (!id) {
+    notifyShow('No hay nómina seleccionada para exportar', 'warning');
+    return;
+  }
+  window.location.href = '<?= base_url('rh/Nomina/exportar_detalle_excel/') ?>' + id;
+}
+
+// --- Selector inteligente de fechas ---
+
+$(document).on('click', '.periodo-btn', function() {
+  var rango = $(this).data('rango');
+  var inicio, fin;
+  var hoy = new Date();
+
+  switch (rango) {
+    case 'semana':
+      var diaSemana = hoy.getDay();
+      var lunes = new Date(hoy);
+      lunes.setDate(hoy.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
+      inicio = lunes;
+      fin = new Date(lunes);
+      fin.setDate(lunes.getDate() + 6);
+      break;
+    case 'semana_anterior':
+      var diaSemana2 = hoy.getDay();
+      var lunesAnt = new Date(hoy);
+      lunesAnt.setDate(hoy.getDate() - (diaSemana2 === 0 ? 6 : diaSemana2 - 1) - 7);
+      inicio = lunesAnt;
+      fin = new Date(lunesAnt);
+      fin.setDate(lunesAnt.getDate() + 6);
+      break;
+    case 'quincena1':
+      inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      fin = new Date(hoy.getFullYear(), hoy.getMonth(), 15);
+      break;
+    case 'quincena2':
+      inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 16);
+      fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+      break;
+    case 'mes_actual':
+      inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+      break;
+    case 'mes_anterior':
+      inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+      fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+      break;
+    default: return;
+  }
+
+  $('#periodoInicio').val(formatDate(inicio));
+  $('#periodoFin').val(formatDate(fin));
+
+  $('.periodo-btn').removeClass('active btn-primary').addClass('btn-outline-secondary');
+  $(this).removeClass('btn-outline-secondary').addClass('active btn-primary');
+});
+
+// --- Helpers ---
+
+function formatDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function fmt(val) {
+  return '$' + parseFloat(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtNum(val) {
+  return parseFloat(val || 0).toFixed(2);
+}
+
+function esc(str) {
+  return $('<span>').text(str || '').html();
+}
+
+function escJS(str) {
+  return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function renderBadgeEstatus(estatus) {
+  var map = { Borrador: 'secondary', Calculada: 'warning', Parcial: 'info', Pagada: 'success', Cancelada: 'danger' };
+  return '<span class="badge bg-' + (map[estatus] || 'secondary') + '">' + estatus + '</span>';
 }
 </script>

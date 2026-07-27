@@ -71,6 +71,8 @@
 - [ ] Mejorar botónes en las tablas de resultados y mejorar color de textos en alertas con fondos de colores y modals (se pierden las letras con color negro y fondos de color) 
 - [ ] Agregar módulo para cargar logo del sistema, el cual se usará en todos los pdf, tickets, recibos, etc.
 - [ ] Mejorar contrato de usuario, homogeneizarlo con los pdf que genera el sistema.
+- [ ] Sweet alerts y notify shows funcionan, pero algunas alertas como warning, presentan contrastes de colores extraños o de poco contraste que dificultan la visión. Es necesario verificar y corregir
+
 
 
 ## ✅ Completado (Última sesión: 2025-12-27)
