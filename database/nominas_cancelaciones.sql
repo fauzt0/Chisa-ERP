@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS nominas_cancelaciones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nomina_id INT NOT NULL,
+    motivo VARCHAR(500) NOT NULL,
+    usuario_id INT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (nomina_id) REFERENCES nominas(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

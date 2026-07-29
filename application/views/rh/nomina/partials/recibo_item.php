@@ -21,11 +21,46 @@ $nombre = trim(implode(' ', array_filter([
 $fecha_pago_det = !empty($det->fecha_pago)
     ? date('d/m/Y H:i', strtotime((string)$det->fecha_pago))
     : (!empty($nomina->fecha_pago) ? date('d/m/Y', strtotime((string)$nomina->fecha_pago)) : date('d/m/Y'));
+
+$emp = $empresa ?? null;
+$logoUrl = !empty($emp->logo) ? base_url($emp->logo) : base_url('assets/dist/img/brands/chisa_recubrimientos_logo.jpg');
+$nombreEmpresa = $emp->razon_social ?? 'CHISA Recubrimientos S.A. de C.V.';
+$rfcEmpresa = trim($emp->rfc ?? '');
+$emailEmpresa = trim($emp->email ?? '');
+$telefonoEmpresa = trim($emp->telefono ?? '');
+$direccionEmpresa = trim(implode(', ', array_filter([
+    $emp->calle ?? '',
+    $emp->numero_exterior ?? '',
+    $emp->colonia ?? '',
+    $emp->ciudad ?? '',
+    $emp->estado ?? '',
+    $emp->codigo_postal ?? '',
+], 'strlen')));
 ?>
 <div class="recibo">
   <div class="folio-recibo">Recibo: <strong><?= htmlspecialchars($folio_recibo) ?></strong></div>
   <div class="header">
-    <h1>CHISA RECUBRIMIENTOS S.A. DE C.V.</h1>
+    <div class="header-brand">
+      <img src="<?= htmlspecialchars($logoUrl) ?>" alt="<?= htmlspecialchars($nombreEmpresa) ?>" class="header-logo">
+      <div class="header-empresa">
+        <h1><?= htmlspecialchars(mb_strtoupper($nombreEmpresa, 'UTF-8')) ?></h1>
+        <?php if ($rfcEmpresa !== ''): ?>
+          <p class="emp-meta">RFC: <?= htmlspecialchars($rfcEmpresa) ?></p>
+        <?php endif; ?>
+        <?php if ($direccionEmpresa !== ''): ?>
+          <p class="emp-meta"><?= htmlspecialchars($direccionEmpresa) ?></p>
+        <?php endif; ?>
+        <?php
+          $contacto = array_filter([
+              $telefonoEmpresa !== '' ? ('Tel: ' . $telefonoEmpresa) : null,
+              $emailEmpresa !== '' ? $emailEmpresa : null,
+          ]);
+          if ($contacto):
+        ?>
+          <p class="emp-meta"><?= htmlspecialchars(implode(' · ', $contacto)) ?></p>
+        <?php endif; ?>
+      </div>
+    </div>
     <h2>RECIBO DE PAGO DE NÓMINA</h2>
     <p>Nómina <?= htmlspecialchars($nomina->folio) ?> · <?= htmlspecialchars($nomina->tipo_nomina) ?></p>
   </div>

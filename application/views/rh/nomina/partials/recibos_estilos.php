@@ -6,10 +6,14 @@
   page-break-after: always;
 }
 .recibos-nomina-wrap .recibo:last-child { page-break-after: auto; margin-bottom: 0; }
-.recibos-nomina-wrap .header { text-align: center; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; margin-bottom: 16px; }
-.recibos-nomina-wrap .header h1 { margin: 0; font-size: 15pt; color: #1e3a5f; letter-spacing: .5px; }
-.recibos-nomina-wrap .header h2 { margin: 6px 0 0; font-size: 12pt; font-weight: 600; color: #333; }
-.recibos-nomina-wrap .header p { margin: 4px 0 0; font-size: 9pt; color: #666; }
+.recibos-nomina-wrap .header { border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; margin-bottom: 16px; }
+.recibos-nomina-wrap .header-brand { display: flex; align-items: flex-start; gap: 16px; text-align: left; margin-bottom: 10px; }
+.recibos-nomina-wrap .header-logo { max-height: 64px; max-width: 160px; object-fit: contain; flex-shrink: 0; }
+.recibos-nomina-wrap .header-empresa { flex: 1; min-width: 0; }
+.recibos-nomina-wrap .header-empresa h1 { margin: 0; font-size: 13pt; color: #1e3a5f; letter-spacing: .3px; }
+.recibos-nomina-wrap .header-empresa .emp-meta { margin: 2px 0 0; font-size: 8.5pt; color: #666; line-height: 1.35; }
+.recibos-nomina-wrap .header h2 { margin: 6px 0 0; font-size: 12pt; font-weight: 600; color: #333; text-align: center; }
+.recibos-nomina-wrap .header > p { margin: 4px 0 0; font-size: 9pt; color: #666; text-align: center; }
 .recibos-nomina-wrap .folio-recibo { text-align: right; font-size: 9pt; color: #555; margin-bottom: 12px; }
 .recibos-nomina-wrap .meta { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 14px; font-size: 10pt; flex-wrap: wrap; }
 .recibos-nomina-wrap .meta table td { padding: 2px 8px 2px 0; vertical-align: top; }

@@ -165,18 +165,37 @@ class NominaRhModel extends CI_Model {
         nd.neto, nd.monto_pagado, nd.estatus,
         e.numero_empleado, e.nombre, e.apellido_paterno, e.apellido_materno,
         e.puesto, e.rfc, e.curp, e.nss,
-        e.banco, e.cuenta_bancaria
+        e.forma_pago, e.banco, e.cuenta_bancaria
     ');
         $this->db->from('nominas_detalle nd');
         $this->db->join('nominas n', 'n.id = nd.nomina_id');
         $this->db->join('empleados e', 'e.id = nd.empleado_id');
         $this->db->where('nd.nomina_id', (int)$nomina_id);
+        $this->db->order_by('nd.lugar_origen', 'ASC');
         $this->db->order_by('e.nombre', 'ASC');
         $result = $this->db->get()->result();
 
-        // Adjuntar cuentas bancarias múltiples a cada empleado
+        // Adjuntar cuentas bancarias múltiples + cuenta default efectiva
         foreach ($result as &$row) {
             $row->cuentas_bancarias = $this->get_cuentas_empleado($row->empleado_id);
+            $row->cuenta_default = null;
+            foreach ($row->cuentas_bancarias as $cta) {
+                if ((int)$cta->es_default === 1) {
+                    $row->cuenta_default = $cta;
+                    break;
+                }
+            }
+            if (!$row->cuenta_default && !empty($row->cuentas_bancarias)) {
+                $row->cuenta_default = $row->cuentas_bancarias[0];
+            }
+            // Preferir datos de cuenta default sobre campos legacy del empleado
+            if ($row->cuenta_default) {
+                $row->banco_pago = $row->cuenta_default->banco ?: $row->banco;
+                $row->cuenta_pago = $row->cuenta_default->numero_cuenta ?: $row->cuenta_bancaria;
+            } else {
+                $row->banco_pago = $row->banco;
+                $row->cuenta_pago = $row->cuenta_bancaria;
+            }
         }
         unset($row);
 
@@ -330,30 +349,71 @@ class NominaRhModel extends CI_Model {
     }
 
     /**
-     * Verifica si corresponde crear una nómina automáticamente.
-     * Respeta `crear_dias_antes`: crea N días antes del inicio del periodo.
-     * Retorna array con los datos para crear la nómina o null si no corresponde.
+     * Verifica si corresponde crear nómina(s) automática(s).
+     * Evalúa Semanal, Quincenal y Mensual según calendario; solo crea un tipo
+     * si hay empleados activos con ese tipo_nomina y le corresponde el periodo.
      *
      * @param string|null $fecha_ref Fecha de referencia Y-m-d (para pruebas). Default: hoy.
+     * @return array<int, array> Lista de payloads para insert (puede estar vacía).
      */
-    public function verificar_creacion_automatica($fecha_ref = null) {
+    public function verificar_creaciones_automaticas($fecha_ref = null) {
         $config = $this->get_configuracion_automatizacion();
         if (!$config || !$config->auto_crear || !$config->activo) {
-            return null;
+            return [];
         }
 
         $hoy = $fecha_ref ? date('Y-m-d', strtotime($fecha_ref)) : date('Y-m-d');
         $dias_antes = max(0, (int)$config->crear_dias_antes);
+        $creaciones = [];
 
-        // Fecha de inicio del periodo objetivo = hoy + días de anticipación
+        foreach (['Semanal', 'Quincenal', 'Mensual'] as $tipo) {
+            $datos = $this->_verificar_creacion_por_tipo($tipo, $hoy, $dias_antes);
+            if ($datos && $this->contar_empleados_activos_tipo($tipo) > 0) {
+                $creaciones[] = $datos;
+            }
+        }
+
+        return $creaciones;
+    }
+
+    /**
+     * @deprecated Use verificar_creaciones_automaticas(). Retorna la primera creación pendiente.
+     */
+    public function verificar_creacion_automatica($fecha_ref = null) {
+        $lista = $this->verificar_creaciones_automaticas($fecha_ref);
+        return $lista[0] ?? null;
+    }
+
+    /**
+     * Cuenta empleados activos con un tipo de nómina dado.
+     */
+    public function contar_empleados_activos_tipo($tipo_nomina) {
+        return (int)$this->db
+            ->from('empleados')
+            ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
+            ->where('tipo_nomina', $tipo_nomina)
+            ->count_all_results();
+    }
+
+    /**
+     * ¿Le corresponde pago en este periodo a un empleado según su tipo_nomina?
+     * (Usado al agregar empleados: la cabecera y el tipo del trabajador deben coincidir.)
+     */
+    public function tipo_nomina_corresponde_periodo($tipo_nomina, $periodo_inicio, $periodo_fin) {
+        $periodo = $this->_periodo_para_fecha_inicio($tipo_nomina, $periodo_inicio);
+        if (!$periodo) {
+            return false;
+        }
+        return $periodo['inicio'] === $periodo_inicio && $periodo['fin'] === $periodo_fin;
+    }
+
+    private function _verificar_creacion_por_tipo($tipo_nomina, $hoy, $dias_antes) {
         $inicio_objetivo = date('Y-m-d', strtotime($hoy . ' +' . $dias_antes . ' days'));
-        $periodo = $this->_periodo_para_fecha_inicio($config->frecuencia, $inicio_objetivo);
+        $periodo = $this->_periodo_para_fecha_inicio($tipo_nomina, $inicio_objetivo);
         if (!$periodo) {
             return null;
         }
 
-        // Solo crear si hoy está en la ventana [inicio - dias_antes, inicio]
-        // (con dias_antes=0 solo el día de inicio; con 1, el día anterior o el de inicio)
         $inicio_ventana = date('Y-m-d', strtotime($periodo['inicio'] . ' -' . $dias_antes . ' days'));
         if ($hoy < $inicio_ventana || $hoy > $periodo['inicio']) {
             return null;
@@ -362,7 +422,7 @@ class NominaRhModel extends CI_Model {
         $existe = $this->db
             ->where('periodo_inicio', $periodo['inicio'])
             ->where('periodo_fin', $periodo['fin'])
-            ->where('tipo_nomina', $config->frecuencia)
+            ->where('tipo_nomina', $tipo_nomina)
             ->count_all_results('nominas');
 
         if ($existe > 0) {
@@ -372,7 +432,7 @@ class NominaRhModel extends CI_Model {
         return [
             'periodo_inicio' => $periodo['inicio'],
             'periodo_fin'    => $periodo['fin'],
-            'tipo_nomina'    => $config->frecuencia,
+            'tipo_nomina'    => $tipo_nomina,
             'fecha_pago'     => $periodo['fin'],
         ];
     }
@@ -423,51 +483,104 @@ class NominaRhModel extends CI_Model {
     }
 
     /**
-     * Crea nómina automática.
+     * Crea nómina(s) automática(s), agrega empleados y calcula.
      *
      * @param string|null $fecha_ref Fecha de referencia Y-m-d (para pruebas).
-     * @return int|null ID de nómina creada o null
+     * @return array|null
      */
     public function crear_nomina_automatica($fecha_ref = null) {
-        $datos = $this->verificar_creacion_automatica($fecha_ref);
-        if (!$datos) {
+        $pendientes = $this->verificar_creaciones_automaticas($fecha_ref);
+        if (empty($pendientes)) {
             return null;
         }
 
+        $creadas = [];
+        foreach ($pendientes as $datos) {
+            $resultado = $this->_insertar_nomina_automatica($datos);
+            if ($resultado) {
+                $creadas[] = $resultado;
+            }
+        }
+
+        if (empty($creadas)) {
+            return null;
+        }
+
+        if (count($creadas) === 1) {
+            return $creadas[0];
+        }
+
+        return [
+            'multiple' => true,
+            'creadas'  => $creadas,
+            'nomina_id' => $creadas[0]['nomina_id'],
+            'estatus'   => $creadas[0]['estatus'],
+            'calculada' => !empty($creadas[0]['calculada']),
+            'message'   => count($creadas) . ' nóminas automáticas creadas',
+        ];
+    }
+
+    /**
+     * Inserta una nómina automática individual.
+     */
+    private function _insertar_nomina_automatica(array $datos) {
         $datos['folio'] = $this->generar_folio();
-        $datos['usuario_creacion'] = 1; // sistema
+        $datos['usuario_creacion'] = 1;
         $datos['estatus'] = 'Borrador';
         $datos['observaciones'] = 'Generada automáticamente';
 
         $this->db->insert('nominas', $datos);
-        $nomina_id = $this->db->insert_id();
-
-        if ($nomina_id) {
-            $this->agregar_empleados_nomina($nomina_id, $datos['tipo_nomina']);
-
-            $this->db->update('nomina_configuracion', [
-                'ultima_ejecucion' => date('Y-m-d H:i:s'),
-            ]);
-
-            $this->_crear_alerta_nomina_automatica($nomina_id, $datos);
+        $nomina_id = (int)$this->db->insert_id();
+        if (!$nomina_id) {
+            return null;
         }
 
-        return $nomina_id;
+        $this->agregar_empleados_nomina($nomina_id, $datos['tipo_nomina']);
+
+        $calc = $this->calcular_nomina($nomina_id);
+        $calculada = !empty($calc['success']);
+        $estatus = $calculada ? 'Calculada' : 'Borrador';
+
+        $this->db->update('nomina_configuracion', [
+            'ultima_ejecucion' => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->_crear_alerta_nomina_automatica($nomina_id, $datos, $calculada, $calc);
+
+        return [
+            'nomina_id'   => $nomina_id,
+            'tipo_nomina' => $datos['tipo_nomina'],
+            'periodo'     => $datos['periodo_inicio'] . ' — ' . $datos['periodo_fin'],
+            'estatus'     => $estatus,
+            'calculada'   => $calculada,
+            'totales'     => $calc['totales'] ?? null,
+            'message'     => $calculada
+                ? ('Nómina ' . $datos['tipo_nomina'] . ' automática creada y calculada')
+                : ('Nómina ' . $datos['tipo_nomina'] . ' automática creada; cálculo pendiente'),
+        ];
     }
 
     /**
      * Crea alerta interna al crear nómina automática.
      */
-    private function _crear_alerta_nomina_automatica($nomina_id, $datos) {
+    private function _crear_alerta_nomina_automatica($nomina_id, $datos, $calculada = false, $calc = []) {
         if (!$this->db->table_exists('alertas_internas')) return;
 
         $nomina = $this->db->get_where('nominas', ['id' => (int)$nomina_id])->row();
         if (!$nomina) return;
 
+        $neto = isset($calc['totales']['neto'])
+            ? '$' . number_format((float)$calc['totales']['neto'], 2)
+            : '—';
+
+        $mensaje = $calculada
+            ? "Se generó y calculó la nómina {$nomina->folio} ({$datos['tipo_nomina']}) para el periodo {$datos['periodo_inicio']} al {$datos['periodo_fin']}. Neto: {$neto}. Revise y procese el pago."
+            : "Se generó la nómina {$nomina->folio} ({$datos['tipo_nomina']}) para el periodo {$datos['periodo_inicio']} al {$datos['periodo_fin']}. Estatus: Pendiente de cálculo.";
+
         $this->db->insert('alertas_internas', [
-            'tipo'        => 'nomina_creada',
-            'titulo'      => 'Nómina generada automáticamente',
-            'mensaje'     => "Se generó la nómina {$nomina->folio} ({$datos['tipo_nomina']}) para el periodo {$datos['periodo_inicio']} al {$datos['periodo_fin']}. Estatus: Pendiente de cálculo.",
+            'tipo'        => $calculada ? 'nomina_calculada' : 'nomina_creada',
+            'titulo'      => $calculada ? 'Nómina automática lista para revisar' : 'Nómina generada automáticamente',
+            'mensaje'     => $mensaje,
             'modulo'      => 'Recursos Humanos',
             'url'         => 'rh/Nomina',
             'icono'       => 'fa-money-bill-wave',
@@ -1285,5 +1398,56 @@ class NominaRhModel extends CI_Model {
         }
 
         return ['nomina' => $nomina, 'filas' => $filas];
+    }
+
+    public function cancelar_nomina($nomina_id, $motivo) {
+        $nomina = $this->db->get_where('nominas', ['id' => (int)$nomina_id])->row();
+        if (!$nomina) {
+            return ['success' => false, 'message' => 'Nómina no encontrada'];
+        }
+        if (in_array($nomina->estatus, ['Pagada', 'Parcial'])) {
+            return ['success' => false, 'message' => 'No se puede cancelar una nómina con pagos procesados. Use el sistema de notas de ajuste.'];
+        }
+        if ($nomina->estatus === 'Cancelada') {
+            return ['success' => false, 'message' => 'La nómina ya está cancelada'];
+        }
+
+        $this->db->trans_start();
+        $this->db->where('id', (int)$nomina_id)->update('nominas', ['estatus' => 'Cancelada']);
+        $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
+        $this->db->insert('nominas_cancelaciones', [
+            'nomina_id' => (int)$nomina_id,
+            'motivo' => substr(trim($motivo), 0, 500),
+            'usuario_id' => $usuario_id ?: null,
+        ]);
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            return ['success' => false, 'message' => 'Error al cancelar la nómina'];
+        }
+        return ['success' => true, 'message' => 'Nómina cancelada correctamente'];
+    }
+
+    public function get_notas_nomina($nomina_id) {
+        return $this->db
+            ->select('nn.*, u.nombre as usuario_nombre')
+            ->from('nominas_notas nn')
+            ->join('usuarios u', 'u.id = nn.usuario_id', 'left')
+            ->where('nn.nomina_id', (int)$nomina_id)
+            ->order_by('nn.created_at', 'DESC')
+            ->get()
+            ->result();
+    }
+
+    public function agregar_nota_nomina($nomina_id, $data) {
+        $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
+        $this->db->insert('nominas_notas', [
+            'nomina_id' => (int)$nomina_id,
+            'tipo' => in_array($data['tipo'] ?? '', ['Ajuste','Corrección','Reclasificación']) ? $data['tipo'] : 'Ajuste',
+            'descripcion' => trim($data['descripcion'] ?? ''),
+            'monto' => isset($data['monto']) && $data['monto'] !== '' ? round((float)$data['monto'], 2) : null,
+            'usuario_id' => $usuario_id ?: null,
+        ]);
+        return ['success' => true, 'message' => 'Nota agregada correctamente', 'id' => $this->db->insert_id()];
     }
 }

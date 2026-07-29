@@ -356,6 +356,7 @@ if (form_error('curp')) { $form['curp_class'] .= 'is-invalid'; }
                     <option value="Transferencia" <?php echo set_select('forma_pago', 'Transferencia', $emp->forma_pago == 'Transferencia'); ?>>Transferencia</option>
                     <option value="Efectivo" <?php echo set_select('forma_pago', 'Efectivo', $emp->forma_pago == 'Efectivo'); ?>>Efectivo</option>
                     <option value="Cheque" <?php echo set_select('forma_pago', 'Cheque', $emp->forma_pago == 'Cheque'); ?>>Cheque</option>
+                    <option value="Depósito" <?php echo set_select('forma_pago', 'Depósito', $emp->forma_pago == 'Depósito'); ?>>Depósito</option>
                   </select>
                 </div>
                 <div class="col-md-4 mb-3">

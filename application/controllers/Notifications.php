@@ -171,6 +171,44 @@ class Notifications extends MY_Controller {
       $total_count++;
     }
 
+    // 8. RECURSOS HUMANOS - Nóminas pendientes de revisión/pago
+    if (tiene_permiso('rh_nomina') && $this->db->table_exists('nominas')) {
+      $this->db->select('id, folio, tipo_nomina, periodo_inicio, periodo_fin, fecha_pago, estatus, total_neto');
+      $this->db->from('nominas');
+      $this->db->where_in('estatus', ['Borrador', 'Calculada', 'Parcial']);
+      $this->db->order_by('fecha_pago', 'ASC');
+      $this->db->limit(5);
+      $nominas_pendientes = $this->db->get()->result();
+
+      foreach ($nominas_pendientes as $nom) {
+        $dias = (int)floor((strtotime($nom->fecha_pago) - strtotime(date('Y-m-d'))) / 86400);
+        if ($dias < -3) {
+          $type = 'danger';
+          $time = abs($dias) . 'd vencida';
+        } elseif ($dias <= 0) {
+          $type = 'warning';
+          $time = 'Hoy';
+        } elseif ($dias <= 3) {
+          $type = 'info';
+          $time = 'En ' . $dias . 'd';
+        } else {
+          continue; // aún lejos de la fecha de pago
+        }
+        $notifications[] = [
+          'type' => $type,
+          'icon' => 'money-bill-wave',
+          'module' => 'RH',
+          'title' => 'Nómina ' . $nom->estatus,
+          'message' => $nom->folio . ' (' . $nom->tipo_nomina . ') · ' .
+            date('d/m', strtotime($nom->periodo_inicio)) . '–' . date('d/m', strtotime($nom->periodo_fin)) .
+            ' · Neto $' . number_format((float)$nom->total_neto, 2),
+          'link' => base_url('rh/Nomina'),
+          'time' => $time
+        ];
+        $total_count++;
+      }
+    }
+
     // Limitar a las 10 notificaciones más importantes
     $notifications = array_slice($notifications, 0, 10);
 

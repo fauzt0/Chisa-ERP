@@ -5,6 +5,8 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
 class Nomina extends MY_Controller {
 
@@ -34,9 +36,33 @@ class Nomina extends MY_Controller {
         $this->requiere_permiso('rh_nomina');
         header('Content-Type: application/json; charset=utf-8');
 
+        $filtro_folio = trim((string)$this->input->post('filtro_folio'));
+        $filtro_tipo = trim((string)$this->input->post('filtro_tipo'));
+        $filtro_estatus = trim((string)$this->input->post('filtro_estatus'));
+        $filtro_periodo_desde = trim((string)$this->input->post('filtro_periodo_desde'));
+        $filtro_periodo_hasta = trim((string)$this->input->post('filtro_periodo_hasta'));
+
         $this->db->select('*');
         $this->db->from('nominas');
-        $this->db->order_by('fecha_pago', 'DESC');
+
+        if ($filtro_folio !== '') {
+            $this->db->like('folio', $filtro_folio);
+        }
+        if ($filtro_tipo !== '') {
+            $this->db->where('tipo_nomina', $filtro_tipo);
+        }
+        if ($filtro_estatus !== '') {
+            $this->db->where('estatus', $filtro_estatus);
+        }
+        if ($filtro_periodo_desde !== '') {
+            $this->db->where('periodo_fin >=', $filtro_periodo_desde);
+        }
+        if ($filtro_periodo_hasta !== '') {
+            $this->db->where('periodo_inicio <=', $filtro_periodo_hasta);
+        }
+
+        $this->db->order_by('periodo_inicio', 'DESC');
+        $this->db->order_by('id', 'DESC');
         $nominas = $this->db->get()->result();
 
         $data = [];
@@ -67,37 +93,45 @@ class Nomina extends MY_Controller {
             }
 
             $acciones = '<div class="btn-group btn-group-sm flex-nowrap" role="group">';
-            $acciones .= $this->btn_tabla('verNomina(' . $id . ')', 'btn-outline-primary', 'fa-eye', 'Ver detalle');
+            $acciones .= $this->btn_tabla('verNomina(' . $id . ')', 'btn-outline-primary', 'fa-eye', 'Ver / editar detalle');
 
             if ($nomina->estatus === 'Borrador') {
-                $acciones .= $this->btn_tabla('calcularNomina(' . $id . ')', 'btn-outline-success', 'fa-calculator', 'Calcular');
-                $acciones .= $this->btn_tabla('eliminarNomina(' . $id . ')', 'btn-outline-danger', 'fa-trash', 'Eliminar');
+                $acciones .= $this->btn_tabla('eliminarNomina(' . $id . ')', 'btn-outline-danger', 'fa-trash', 'Eliminar borrador');
+            } elseif ($nomina->estatus === 'Calculada') {
+                $folio_js = str_replace("'", "\\'", $nomina->folio);
+                $acciones .= $this->btn_tabla('pedirCancelarNomina(' . $id . ', \'' . $folio_js . '\')', 'btn-outline-warning', 'fa-ban', 'Cancelar nómina');
+            } elseif (in_array($nomina->estatus, ['Parcial', 'Pagada'], true)) {
+                $acciones .= $this->btn_tabla('verNomina(' . $id . ', true)', 'btn-outline-warning', 'fa-sticky-note', 'Notas de ajuste');
             }
-            if ($puede_pagar) {
-                $acciones .= $this->btn_tabla('exportarExcel(' . $id . ')', 'btn-outline-success', 'fa-file-excel', 'Exportar Excel NOI');
+            if (in_array($nomina->estatus, ['Calculada', 'Parcial', 'Pagada'], true)) {
+                $acciones .= $this->btn_tabla('exportarExcel(' . $id . ')', 'btn-outline-success', 'fa-file-excel', 'Exportar Excel');
             }
             if (in_array($nomina->estatus, ['Parcial', 'Pagada'], true)) {
                 $acciones .= $this->btn_tabla('verRecibosNomina(' . $id . ')', 'btn-outline-secondary', 'fa-print', 'Recibos de pago');
             }
-            if ($nomina->estatus === 'Pagada') {
-                $acciones .= $this->btn_tabla('exportarExcel(' . $id . ')', 'btn-outline-success', 'fa-file-excel', 'Exportar Excel NOI');
-                if (!empty($nomina->poliza_id)) {
-                    $acciones .= '<a href="' . base_url('contabilidad/Polizas') . '" class="btn btn-outline-info" title="Póliza #' . (int)$nomina->poliza_id . '"><i class="fas fa-book"></i></a>';
-                }
+            if ($nomina->estatus === 'Pagada' && !empty($nomina->poliza_id)) {
+                $acciones .= '<a href="' . base_url('contabilidad/Polizas') . '" class="btn btn-outline-info" title="Ver póliza #' . (int)$nomina->poliza_id . '"><i class="fas fa-book"></i></a>';
             }
             $acciones .= '</div>';
+
+            $periodoSortKey = (int)date('Ymd', strtotime($nomina->periodo_inicio));
+            $periodoHtml = date('d/m/Y', strtotime($nomina->periodo_inicio))
+                . ' — '
+                . date('d/m/Y', strtotime($nomina->periodo_fin));
+            $fechaPagoHtml = date('d/m/Y', strtotime($nomina->fecha_pago));
 
             $data[] = [
                 '<strong>' . htmlspecialchars($nomina->folio) . '</strong>',
                 '<span class="badge bg-' . $badge_tipo . '">' . htmlspecialchars($nomina->tipo_nomina) . '</span>',
-                date('d/m/Y', strtotime($nomina->periodo_inicio)) . ' — ' . date('d/m/Y', strtotime($nomina->periodo_fin)),
-                date('d/m/Y', strtotime($nomina->fecha_pago)),
-                '<span class="text-end d-block">$' . number_format((float)($nomina->total_percepciones ?? 0), 2) . '</span>',
-                '<span class="text-end d-block text-danger">$' . number_format((float)($nomina->total_deducciones ?? 0), 2) . '</span>',
-                '<strong class="text-end d-block">$' . number_format((float)($nomina->total_neto ?? 0), 2) . '</strong>',
+                $periodoHtml,
+                $fechaPagoHtml,
+                '<span class="text-end d-block" data-order="' . (float)($nomina->total_percepciones ?? 0) . '">$' . number_format((float)($nomina->total_percepciones ?? 0), 2) . '</span>',
+                '<span class="text-end d-block text-danger" data-order="' . (float)($nomina->total_deducciones ?? 0) . '">$' . number_format((float)($nomina->total_deducciones ?? 0), 2) . '</span>',
+                '<strong class="text-end d-block" data-order="' . (float)($nomina->total_neto ?? 0) . '">$' . number_format((float)($nomina->total_neto ?? 0), 2) . '</strong>',
                 '<span class="badge bg-' . $badge_estatus . '">' . htmlspecialchars($nomina->estatus) . '</span>',
                 $btn_pago,
                 $acciones,
+                $periodoSortKey,
             ];
         }
 
@@ -207,20 +241,58 @@ class Nomina extends MY_Controller {
         $this->requiere_permiso('rh_nomina');
         $id = (int)$this->input->post('id');
         $nomina = $this->db->get_where('nominas', ['id' => $id])->row();
-
-        if (!$nomina || $nomina->estatus !== 'Borrador') {
-            echo json_encode(['success' => false, 'message' => 'Solo se pueden eliminar nóminas en borrador']);
+        if (!$nomina) {
+            echo json_encode(['success' => false, 'message' => 'Nómina no encontrada']);
             return;
         }
-
-        $detalle_ids = $this->db->select('id')->from('nominas_detalle')->where('nomina_id', $id)->get()->result();
-        foreach ($detalle_ids as $det) {
-            $this->db->where('nomina_detalle_id', $det->id)->delete('nominas_conceptos');
+        // Borrador → hard delete (igual que antes)
+        if ($nomina->estatus === 'Borrador') {
+            $detalle_ids = $this->db->select('id')->from('nominas_detalle')->where('nomina_id', $id)->get()->result();
+            foreach ($detalle_ids as $det) {
+                $this->db->where('nomina_detalle_id', $det->id)->delete('nominas_conceptos');
+            }
+            $this->db->where('nomina_id', $id)->delete('nominas_detalle');
+            $this->db->where('nomina_id', $id)->delete('nominas_pagos_log');
+            $this->db->where('id', $id)->delete('nominas');
+            echo json_encode(['success' => true, 'message' => 'Nómina eliminada permanentemente']);
+            return;
         }
-        $this->db->where('nomina_id', $id)->delete('nominas_detalle');
-        $this->db->where('id', $id)->delete('nominas');
+        // Calculada → soft delete (cancelar)
+        if ($nomina->estatus === 'Calculada') {
+            $motivo = trim((string)$this->input->post('motivo'));
+            if (strlen($motivo) < 10) {
+                echo json_encode(['success' => false, 'message' => 'El motivo de cancelación debe tener al menos 10 caracteres']);
+                return;
+            }
+            $result = $this->NominaRhModel->cancelar_nomina($id, $motivo);
+            echo json_encode($result);
+            return;
+        }
+        // Pagada / Parcial → no permitir
+        echo json_encode(['success' => false, 'message' => 'No se puede cancelar una nómina con pagos procesados. Use el sistema de notas de ajuste.']);
+    }
 
-        echo json_encode(['success' => true, 'message' => 'Nómina eliminada']);
+    public function get_notas_ajax() {
+        $this->requiere_permiso('rh_nomina');
+        $nomina_id = (int)$this->input->post('nomina_id');
+        $notas = $this->NominaRhModel->get_notas_nomina($nomina_id);
+        echo json_encode(['success' => true, 'notas' => $notas]);
+    }
+
+    public function agregar_nota_ajax() {
+        $this->requiere_permiso('rh_nomina');
+        $nomina_id = (int)$this->input->post('nomina_id');
+        $data = [
+            'tipo' => $this->input->post('tipo'),
+            'descripcion' => $this->input->post('descripcion'),
+            'monto' => $this->input->post('monto'),
+        ];
+        if (empty($data['descripcion'])) {
+            echo json_encode(['success' => false, 'message' => 'La descripción es requerida']);
+            return;
+        }
+        $result = $this->NominaRhModel->agregar_nota_nomina($nomina_id, $data);
+        echo json_encode($result);
     }
 
     public function imprimir_recibos($id = null, $detalle_id = null) {
@@ -274,6 +346,50 @@ class Nomina extends MY_Controller {
                 'message' => 'Error al generar los recibos. Intente de nuevo o contacte al administrador.',
             ]);
         }
+    }
+
+    public function get_recibo_individual_ajax() {
+        $this->requiere_permiso('rh_nomina');
+        $detalle_id = (int)$this->input->post('detalle_id');
+
+        $this->db->select('nd.*, n.folio, n.periodo_inicio, n.periodo_fin, n.fecha_pago, n.tipo_nomina,
+            e.nombre, e.apellido_paterno, e.apellido_materno, e.puesto, e.numero_empleado, e.rfc, e.curp, e.nss,
+            e.forma_pago, e.banco, e.cuenta_bancaria');
+        $this->db->from('nominas_detalle nd');
+        $this->db->join('nominas n', 'n.id = nd.nomina_id');
+        $this->db->join('empleados e', 'e.id = nd.empleado_id');
+        $this->db->where('nd.id', $detalle_id);
+        $detalle = $this->db->get()->row();
+
+        if (!$detalle) {
+            $this->responder_json(['success' => false, 'message' => 'Detalle no encontrado']);
+            return;
+        }
+
+        $conceptos = $this->db->get_where('nominas_conceptos', ['nomina_detalle_id' => $detalle_id])->result();
+        $empresa = $this->_get_empresa_config();
+
+        $nomina = (object)[
+            'folio'          => $detalle->folio,
+            'tipo_nomina'    => $detalle->tipo_nomina,
+            'periodo_inicio' => $detalle->periodo_inicio,
+            'periodo_fin'    => $detalle->periodo_fin,
+            'fecha_pago'     => $detalle->fecha_pago,
+        ];
+        $det = $detalle;
+        $det->conceptos = $conceptos;
+
+        $html = $this->load->view('rh/nomina/partials/recibos_estilos', [], true);
+        $html .= '<div class="recibos-nomina-wrap">';
+        $html .= $this->load->view('rh/nomina/partials/recibo_item', [
+            'det'         => $det,
+            'nomina'      => $nomina,
+            'empresa'     => $empresa,
+            'montos_lote' => [],
+        ], true);
+        $html .= '</div>';
+
+        $this->responder_json(['success' => true, 'html' => $html]);
     }
 
     /**
@@ -383,7 +499,47 @@ class Nomina extends MY_Controller {
             'nomina'       => $nomina,
             'sin_pagos'    => empty($detalle),
             'montos_lote'  => $filtros['montos_lote'] ?? [],
+            'empresa'      => $this->_get_empresa_config(),
         ];
+    }
+
+    /**
+     * Datos de empresa (logo, razón social, RFC, etc.) desde configuracion_empresa.
+     */
+    private function _get_empresa_config() {
+        $this->load->model('Config/EmpresaModel');
+        return $this->EmpresaModel->get_config();
+    }
+
+    /**
+     * Ruta absoluta del logo de empresa (fallback a marca CHISA).
+     */
+    private function _get_logo_abs_path($empresa = null) {
+        $empresa = $empresa ?: $this->_get_empresa_config();
+        $rel = !empty($empresa->logo)
+            ? $empresa->logo
+            : 'assets/dist/img/brands/chisa_recubrimientos_logo.jpg';
+        $rel = ltrim(str_replace(['\\'], '/', $rel), '/');
+        $abs = rtrim(FCPATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+        if (!is_file($abs)) {
+            $fallback = rtrim(FCPATH, '/\\') . DIRECTORY_SEPARATOR
+                . 'assets' . DIRECTORY_SEPARATOR . 'dist' . DIRECTORY_SEPARATOR . 'img'
+                . DIRECTORY_SEPARATOR . 'brands' . DIRECTORY_SEPARATOR . 'chisa_recubrimientos_logo.jpg';
+            return is_file($fallback) ? $fallback : null;
+        }
+        return $abs;
+    }
+
+    private function _empresa_direccion($empresa) {
+        return trim(implode(', ', array_filter([
+            $empresa->calle ?? '',
+            $empresa->numero_exterior ?? '',
+            !empty($empresa->numero_interior) ? ('Int. ' . $empresa->numero_interior) : '',
+            $empresa->colonia ?? '',
+            $empresa->ciudad ?? '',
+            $empresa->estado ?? '',
+            $empresa->codigo_postal ?? '',
+        ], 'strlen')));
     }
 
     /**
@@ -634,10 +790,27 @@ class Nomina extends MY_Controller {
             $fecha_ref = $this->input->post('fecha_ref') ?: $fecha_ref;
         }
 
-        $id = $this->NominaRhModel->crear_nomina_automatica($fecha_ref ?: null);
-        $payload = $id
-            ? ['success' => true, 'creada' => true, 'nomina_id' => $id, 'message' => 'Nómina automática creada']
-            : ['success' => true, 'creada' => false, 'message' => 'No corresponde crear nómina hoy'];
+        $resultado = $this->NominaRhModel->crear_nomina_automatica($fecha_ref ?: null);
+        if ($resultado && is_array($resultado)) {
+            $payload = [
+                'success'   => true,
+                'creada'    => true,
+                'nomina_id' => $resultado['nomina_id'],
+                'calculada' => !empty($resultado['calculada']),
+                'estatus'   => $resultado['estatus'] ?? null,
+                'totales'   => $resultado['totales'] ?? null,
+                'message'   => $resultado['message'] ?? 'Nómina automática creada',
+            ];
+            if (!empty($resultado['multiple'])) {
+                $payload['multiple'] = true;
+                $payload['creadas'] = $resultado['creadas'];
+            }
+        } elseif ($resultado) {
+            // Compatibilidad si algún entorno aún devolviera solo el ID
+            $payload = ['success' => true, 'creada' => true, 'nomina_id' => (int)$resultado, 'message' => 'Nómina automática creada'];
+        } else {
+            $payload = ['success' => true, 'creada' => false, 'message' => 'No corresponde crear nómina hoy'];
+        }
 
         if (is_cli()) {
             echo json_encode($payload, JSON_UNESCAPED_UNICODE) . PHP_EOL;
@@ -658,6 +831,11 @@ class Nomina extends MY_Controller {
         echo json_encode(['success' => true, 'bancos' => $bancos]);
     }
 
+    /**
+     * Exporta nómina a Excel (diseño mejorado, multi-hoja).
+     * Contiene la misma información operativa que los reportes del contador
+     * (relación, transferencias por banco, resumen de pago), sin clonar celdas exactas.
+     */
     public function exportar_detalle_excel($id = null) {
         $this->requiere_permiso('rh_nomina_exportar');
         $id = (int)$id;
@@ -670,118 +848,30 @@ class Nomina extends MY_Controller {
             return;
         }
 
+        $periodoTxt = date('d/m/Y', strtotime($nomina->periodo_inicio))
+            . ' al ' . date('d/m/Y', strtotime($nomina->periodo_fin));
+        $fechaPagoTxt = date('d/m/Y', strtotime($nomina->fecha_pago));
+        $empresa = $this->_get_empresa_config();
+
         $spreadsheet = new Spreadsheet();
+
+        // —— Hoja 1: Relación de nómina (agrupada por obra) ——
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Nómina ' . $nomina->folio);
+        $sheet->setTitle('Relacion Nomina');
+        $this->_excel_hoja_relacion($sheet, $nomina, $detalle, $periodoTxt, $fechaPagoTxt, $empresa);
 
-        // Título
-        $sheet->mergeCells('A1:R1');
-        $sheet->setCellValue('A1', 'NÓMINA ' . $nomina->folio . ' — ' . $nomina->tipo_nomina);
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        // —— Hoja 2: Transferencias / depósitos (por banco) ——
+        $sheet2 = $spreadsheet->createSheet();
+        $sheet2->setTitle('Transferencias');
+        $this->_excel_hoja_transferencias($sheet2, $nomina, $detalle, $periodoTxt, $fechaPagoTxt, $empresa);
 
-        $sheet->setCellValue('A2', 'Periodo: ' . $nomina->periodo_inicio . ' al ' . $nomina->periodo_fin);
-        $sheet->setCellValue('A3', 'Fecha de pago: ' . $nomina->fecha_pago);
-        $sheet->setCellValue('A4', 'Estatus: ' . $nomina->estatus);
+        // —— Hoja 3: Resumen de desembolso ——
+        $sheet3 = $spreadsheet->createSheet();
+        $sheet3->setTitle('Resumen Pago');
+        $this->_excel_hoja_resumen_pago($sheet3, $nomina, $detalle, $periodoTxt, $fechaPagoTxt, $empresa);
 
-        // Headers (fila 6)
-        $headers = [
-            'Lugar u origen', 'Nombre del trabajador', 'Sueldo diario', 'Sueldo neto',
-            'Horas extras (cant.)', 'Costo x hora', 'Monto horas extras',
-            'Comidas', 'Viáticos / Pasajes', 'Prima', 'Otros bonos', 'Otros',
-            'Total Percepciones', 'INFONAVIT', 'Préstamo personal', 'Otros descuentos',
-            'Total Deducciones', 'Total Sueldo Neto'
-        ];
-        $col = 'A';
-        foreach ($headers as $h) {
-            $sheet->setCellValue($col . '6', $h);
-            $col++;
-        }
+        $spreadsheet->setActiveSheetIndex(0);
 
-        $headerStyle = [
-            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E3A5F']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'wrapText' => true],
-        ];
-        $sheet->getStyle('A6:R6')->applyFromArray($headerStyle);
-
-        // Datos
-        $row = 7;
-        $totales = array_fill_keys(['sueldo_diario','sueldo_neto','h_extras','monto_he','comidas','viaticos','prima','bonos','otros','percepciones','infonavit','prestamo','otros_desc','deducciones','neto'], 0);
-
-        foreach ($detalle as $d) {
-            $sheet->setCellValue('A'.$row, $d->lugar_origen);
-            $sheet->setCellValue('B'.$row, trim($d->nombre . ' ' . $d->apellido_paterno . ' ' . ($d->apellido_materno ?? '')));
-            $sheet->setCellValue('C'.$row, (float)$d->sueldo_diario);
-            $sheet->setCellValue('D'.$row, (float)$d->sueldo_base);
-            $sheet->setCellValue('E'.$row, (float)$d->horas_extras);
-            $sheet->setCellValue('F'.$row, (float)$d->costo_hora_extra);
-            $sheet->setCellValue('G'.$row, (float)$d->monto_horas_extras);
-            $sheet->setCellValue('H'.$row, (float)$d->comidas);
-            $sheet->setCellValue('I'.$row, (float)$d->viaticos_pasajes);
-            $sheet->setCellValue('J'.$row, (float)$d->prima);
-            $sheet->setCellValue('K'.$row, (float)$d->otros_bonos);
-            $sheet->setCellValue('L'.$row, (float)$d->otros_ingresos);
-            $sheet->setCellValue('M'.$row, (float)$d->percepciones);
-            $sheet->setCellValue('N'.$row, (float)$d->infonavit_descuento);
-            $sheet->setCellValue('O'.$row, (float)$d->prestamo_personal);
-            $sheet->setCellValue('P'.$row, (float)$d->otros_descuentos);
-            $sheet->setCellValue('Q'.$row, (float)$d->deducciones);
-            $sheet->setCellValue('R'.$row, (float)$d->neto);
-
-            // Acumular
-            $totales['sueldo_diario'] += (float)$d->sueldo_diario;
-            $totales['sueldo_neto'] += (float)$d->sueldo_base;
-            $totales['h_extras'] += (float)$d->horas_extras;
-            $totales['monto_he'] += (float)$d->monto_horas_extras;
-            $totales['comidas'] += (float)$d->comidas;
-            $totales['viaticos'] += (float)$d->viaticos_pasajes;
-            $totales['prima'] += (float)$d->prima;
-            $totales['bonos'] += (float)$d->otros_bonos;
-            $totales['otros'] += (float)$d->otros_ingresos;
-            $totales['percepciones'] += (float)$d->percepciones;
-            $totales['infonavit'] += (float)$d->infonavit_descuento;
-            $totales['prestamo'] += (float)$d->prestamo_personal;
-            $totales['otros_desc'] += (float)$d->otros_descuentos;
-            $totales['deducciones'] += (float)$d->deducciones;
-            $totales['neto'] += (float)$d->neto;
-
-            // Formato pesos para columnas numéricas
-            foreach (range('C','R') as $c) {
-                $sheet->getStyle($c.$row)->getNumberFormat()->setFormatCode('#,##0.00');
-            }
-            $row++;
-        }
-
-        // Fila de totales
-        $sheet->setCellValue('A'.$row, 'TOTALES');
-        $sheet->setCellValue('C'.$row, $totales['sueldo_diario']);
-        $sheet->setCellValue('D'.$row, $totales['sueldo_neto']);
-        $sheet->setCellValue('E'.$row, $totales['h_extras']);
-        $sheet->setCellValue('G'.$row, $totales['monto_he']);
-        $sheet->setCellValue('H'.$row, $totales['comidas']);
-        $sheet->setCellValue('I'.$row, $totales['viaticos']);
-        $sheet->setCellValue('J'.$row, $totales['prima']);
-        $sheet->setCellValue('K'.$row, $totales['bonos']);
-        $sheet->setCellValue('L'.$row, $totales['otros']);
-        $sheet->setCellValue('M'.$row, $totales['percepciones']);
-        $sheet->setCellValue('N'.$row, $totales['infonavit']);
-        $sheet->setCellValue('O'.$row, $totales['prestamo']);
-        $sheet->setCellValue('P'.$row, $totales['otros_desc']);
-        $sheet->setCellValue('Q'.$row, $totales['deducciones']);
-        $sheet->setCellValue('R'.$row, $totales['neto']);
-
-        $totalStyle = ['font' => ['bold' => true], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D4E6F1']]];
-        $sheet->getStyle('A'.$row.':R'.$row)->applyFromArray($totalStyle);
-        foreach (range('C','R') as $c) {
-            $sheet->getStyle($c.$row)->getNumberFormat()->setFormatCode('#,##0.00');
-        }
-
-        // Auto-size
-        foreach (range('A','R') as $c) {
-            $sheet->getColumnDimension($c)->setAutoSize(true);
-        }
-
-        // Download
         $filename = 'Nomina_' . $nomina->folio . '_' . date('Ymd') . '.xlsx';
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -789,5 +879,510 @@ class Nomina extends MY_Controller {
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
+    }
+
+    /** Estilos base reutilizables para exportación de nómina. */
+    private function _excel_styles() {
+        return [
+            'title' => [
+                'font' => ['bold' => true, 'size' => 16, 'color' => ['rgb' => '1E3A5F']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
+            ],
+            'subtitle' => [
+                'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => '2D5A8E']],
+            ],
+            'meta' => [
+                'font' => ['size' => 10, 'color' => ['rgb' => '555555']],
+            ],
+            'header' => [
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 9],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E3A5F']],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                    'wrapText' => true,
+                ],
+            ],
+            'header_perc' => [
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 9],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '198754']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'wrapText' => true],
+            ],
+            'header_ded' => [
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 9],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'DC3545']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'wrapText' => true],
+            ],
+            'group' => [
+                'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => '1E3A5F']],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8EEF5']],
+            ],
+            'subtotal' => [
+                'font' => ['bold' => true, 'size' => 9],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F0F4F8']],
+            ],
+            'total' => [
+                'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => 'FFFFFF']],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E3A5F']],
+            ],
+            'money' => ['numberFormat' => ['formatCode' => '#,##0.00']],
+            'thin' => [
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['rgb' => 'CCCCCC'],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    private function _excel_nombre_empleado($d) {
+        return trim(($d->nombre ?? '') . ' ' . ($d->apellido_paterno ?? '') . ' ' . ($d->apellido_materno ?? ''));
+    }
+
+    private function _excel_forma_pago($d) {
+        $f = trim($d->forma_pago ?? '');
+        return $f !== '' ? $f : 'Sin definir';
+    }
+
+    private function _excel_banco($d) {
+        return trim($d->banco_pago ?? $d->banco ?? '') ?: '—';
+    }
+
+    private function _excel_cuenta($d) {
+        return trim($d->cuenta_pago ?? $d->cuenta_bancaria ?? '') ?: '—';
+    }
+
+    /**
+     * Cabecera con logo + datos de empresa (mismo origen que recibos/POS).
+     * @return int Fila donde deben iniciar los encabezados de tabla
+     */
+    private function _excel_cabecera_empresa($sheet, $titulo, $periodoTxt, $fechaPagoTxt, $nomina, $lastCol, $empresa = null) {
+        $s = $this->_excel_styles();
+        $empresa = $empresa ?: $this->_get_empresa_config();
+        $razon = strtoupper($empresa->razon_social ?: ($empresa->nombre_comercial ?: 'CHISA RECUBRIMIENTOS, SA DE CV'));
+        $rfc = trim($empresa->rfc ?? '');
+        $tel = trim($empresa->telefono ?? '');
+        $email = trim($empresa->email ?? '');
+        $web = trim($empresa->sitio_web ?? '');
+        $dir = $this->_empresa_direccion($empresa);
+
+        $sheet->getRowDimension(1)->setRowHeight(22);
+        $sheet->getRowDimension(2)->setRowHeight(18);
+        $sheet->getRowDimension(3)->setRowHeight(16);
+        $sheet->getColumnDimension('A')->setWidth(14);
+        $sheet->getColumnDimension('B')->setWidth(12);
+
+        $logoAbs = $this->_get_logo_abs_path($empresa);
+        if ($logoAbs) {
+            try {
+                $drawing = new Drawing();
+                $drawing->setName('Logo ' . ($empresa->nombre_comercial ?: 'Empresa'));
+                $drawing->setDescription($razon);
+                $drawing->setPath($logoAbs);
+                $drawing->setHeight(58);
+                $drawing->setCoordinates('A1');
+                $drawing->setOffsetX(4);
+                $drawing->setOffsetY(4);
+                $drawing->setWorksheet($sheet);
+            } catch (\Throwable $e) {
+                log_message('error', 'Excel nómina: no se pudo incrustar logo: ' . $e->getMessage());
+            }
+        }
+
+        $infoStart = 'C';
+        $sheet->mergeCells($infoStart . '1:' . $lastCol . '1');
+        $sheet->setCellValue($infoStart . '1', $razon);
+        $sheet->getStyle($infoStart . '1')->applyFromArray($s['title']);
+
+        $linea2 = array_filter([
+            $rfc !== '' ? ('RFC: ' . $rfc) : null,
+            $tel !== '' ? ('Tel: ' . $tel) : null,
+            $email !== '' ? $email : null,
+            $web !== '' ? $web : null,
+        ]);
+        $sheet->mergeCells($infoStart . '2:' . $lastCol . '2');
+        $sheet->setCellValue($infoStart . '2', implode('  ·  ', $linea2));
+        $sheet->getStyle($infoStart . '2')->applyFromArray($s['meta']);
+
+        $sheet->mergeCells($infoStart . '3:' . $lastCol . '3');
+        $sheet->setCellValue($infoStart . '3', $dir !== '' ? $dir : '');
+        $sheet->getStyle($infoStart . '3')->applyFromArray($s['meta']);
+
+        $sheet->mergeCells('A4:' . $lastCol . '4');
+        $sheet->setCellValue('A4', $titulo);
+        $sheet->getStyle('A4')->applyFromArray($s['subtitle']);
+        $sheet->getRowDimension(4)->setRowHeight(20);
+
+        $sheet->setCellValue('A5', 'Periodo: ' . $periodoTxt);
+        $sheet->setCellValue('C5', 'Fecha pago: ' . $fechaPagoTxt);
+        $sheet->setCellValue('E5', 'Folio: ' . $nomina->folio . ' · ' . $nomina->tipo_nomina . ' · ' . $nomina->estatus);
+        $sheet->getStyle('A5:E5')->applyFromArray($s['meta']);
+        $sheet->getRowDimension(6)->setRowHeight(8);
+
+        return 7;
+    }
+
+    /** Hoja principal: relación agrupada por obra/lugar. */
+    private function _excel_hoja_relacion($sheet, $nomina, $detalle, $periodoTxt, $fechaPagoTxt, $empresa = null) {
+        $s = $this->_excel_styles();
+        $lastCol = 'R';
+        $headerRow = $this->_excel_cabecera_empresa(
+            $sheet, 'RELACIÓN DE NÓMINA', $periodoTxt, $fechaPagoTxt, $nomina, $lastCol, $empresa
+        );
+
+        $headers = [
+            'A' => 'Obra / Origen', 'B' => 'No.', 'C' => 'Nombre del trabajador',
+            'D' => 'Sueldo diario', 'E' => 'Sueldo periodo', 'F' => 'Horas extras',
+            'G' => 'Monto H.E.', 'H' => 'Comidas', 'I' => 'Pasajes / Viáticos',
+            'J' => 'Prima', 'K' => 'Otros bonos', 'L' => 'Otros',
+            'M' => 'Total percepciones', 'N' => 'INFONAVIT', 'O' => 'Préstamo',
+            'P' => 'Otros desc.', 'Q' => 'Total deducciones', 'R' => 'Sueldo neto',
+        ];
+        foreach ($headers as $col => $label) {
+            $sheet->setCellValue($col . $headerRow, $label);
+        }
+        $sheet->getStyle('A' . $headerRow . ':E' . $headerRow)->applyFromArray($s['header']);
+        $sheet->getStyle('F' . $headerRow . ':M' . $headerRow)->applyFromArray($s['header_perc']);
+        $sheet->getStyle('N' . $headerRow . ':Q' . $headerRow)->applyFromArray($s['header_ded']);
+        $sheet->getStyle('R' . $headerRow)->applyFromArray($s['header']);
+        $sheet->getRowDimension($headerRow)->setRowHeight(32);
+        $sheet->freezePane('D' . ($headerRow + 1));
+
+        $grupos = [];
+        foreach ($detalle as $d) {
+            $key = trim($d->lugar_origen ?? '') ?: 'SIN ASIGNAR';
+            $grupos[$key][] = $d;
+        }
+        ksort($grupos, SORT_NATURAL | SORT_FLAG_CASE);
+
+        $row = $headerRow + 1;
+        $granTotal = array_fill_keys(
+            ['diario','periodo','he','mhe','comidas','pasajes','prima','bonos','otros','perc','inf','prest','odesc','ded','neto'],
+            0
+        );
+        $nGlobal = 0;
+
+        foreach ($grupos as $obra => $empleados) {
+            $sheet->mergeCells('A' . $row . ':' . $lastCol . $row);
+            $sheet->setCellValue('A' . $row, strtoupper($obra) . '  (' . count($empleados) . ')');
+            $sheet->getStyle('A' . $row . ':' . $lastCol . $row)->applyFromArray($s['group']);
+            $row++;
+
+            $sub = array_fill_keys(array_keys($granTotal), 0);
+            $n = 0;
+            foreach ($empleados as $d) {
+                $n++;
+                $nGlobal++;
+                $vals = [
+                    'diario'  => (float)$d->sueldo_diario,
+                    'periodo' => (float)$d->sueldo_base,
+                    'he'      => (float)$d->horas_extras,
+                    'mhe'     => (float)$d->monto_horas_extras,
+                    'comidas' => (float)$d->comidas,
+                    'pasajes' => (float)$d->viaticos_pasajes,
+                    'prima'   => (float)$d->prima,
+                    'bonos'   => (float)$d->otros_bonos,
+                    'otros'   => (float)$d->otros_ingresos,
+                    'perc'    => (float)$d->percepciones,
+                    'inf'     => (float)$d->infonavit_descuento,
+                    'prest'   => (float)$d->prestamo_personal,
+                    'odesc'   => (float)$d->otros_descuentos,
+                    'ded'     => (float)$d->deducciones,
+                    'neto'    => (float)$d->neto,
+                ];
+                foreach ($vals as $k => $v) {
+                    $sub[$k] += $v;
+                    $granTotal[$k] += $v;
+                }
+
+                $sheet->setCellValue('A' . $row, $obra);
+                $sheet->setCellValue('B' . $row, $n);
+                $sheet->setCellValue('C' . $row, $this->_excel_nombre_empleado($d));
+                $sheet->setCellValue('D' . $row, $vals['diario']);
+                $sheet->setCellValue('E' . $row, $vals['periodo']);
+                $sheet->setCellValue('F' . $row, $vals['he']);
+                $sheet->setCellValue('G' . $row, $vals['mhe']);
+                $sheet->setCellValue('H' . $row, $vals['comidas']);
+                $sheet->setCellValue('I' . $row, $vals['pasajes']);
+                $sheet->setCellValue('J' . $row, $vals['prima']);
+                $sheet->setCellValue('K' . $row, $vals['bonos']);
+                $sheet->setCellValue('L' . $row, $vals['otros']);
+                $sheet->setCellValue('M' . $row, $vals['perc']);
+                $sheet->setCellValue('N' . $row, $vals['inf']);
+                $sheet->setCellValue('O' . $row, $vals['prest']);
+                $sheet->setCellValue('P' . $row, $vals['odesc']);
+                $sheet->setCellValue('Q' . $row, $vals['ded']);
+                $sheet->setCellValue('R' . $row, $vals['neto']);
+                $sheet->getStyle('D' . $row . ':R' . $row)->applyFromArray($s['money']);
+                if ($n % 2 === 0) {
+                    $sheet->getStyle('A' . $row . ':R' . $row)->getFill()
+                        ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FAFBFC');
+                }
+                $row++;
+            }
+
+            $sheet->setCellValue('C' . $row, 'Subtotal ' . strtoupper($obra));
+            $sheet->setCellValue('D' . $row, $sub['diario']);
+            $sheet->setCellValue('E' . $row, $sub['periodo']);
+            $sheet->setCellValue('F' . $row, $sub['he']);
+            $sheet->setCellValue('G' . $row, $sub['mhe']);
+            $sheet->setCellValue('H' . $row, $sub['comidas']);
+            $sheet->setCellValue('I' . $row, $sub['pasajes']);
+            $sheet->setCellValue('J' . $row, $sub['prima']);
+            $sheet->setCellValue('K' . $row, $sub['bonos']);
+            $sheet->setCellValue('L' . $row, $sub['otros']);
+            $sheet->setCellValue('M' . $row, $sub['perc']);
+            $sheet->setCellValue('N' . $row, $sub['inf']);
+            $sheet->setCellValue('O' . $row, $sub['prest']);
+            $sheet->setCellValue('P' . $row, $sub['odesc']);
+            $sheet->setCellValue('Q' . $row, $sub['ded']);
+            $sheet->setCellValue('R' . $row, $sub['neto']);
+            $sheet->getStyle('A' . $row . ':R' . $row)->applyFromArray($s['subtotal']);
+            $sheet->getStyle('D' . $row . ':R' . $row)->applyFromArray($s['money']);
+            $row++;
+        }
+
+        $sheet->setCellValue('C' . $row, 'TOTAL NÓMINA (' . $nGlobal . ' empleados)');
+        $sheet->setCellValue('D' . $row, $granTotal['diario']);
+        $sheet->setCellValue('E' . $row, $granTotal['periodo']);
+        $sheet->setCellValue('F' . $row, $granTotal['he']);
+        $sheet->setCellValue('G' . $row, $granTotal['mhe']);
+        $sheet->setCellValue('H' . $row, $granTotal['comidas']);
+        $sheet->setCellValue('I' . $row, $granTotal['pasajes']);
+        $sheet->setCellValue('J' . $row, $granTotal['prima']);
+        $sheet->setCellValue('K' . $row, $granTotal['bonos']);
+        $sheet->setCellValue('L' . $row, $granTotal['otros']);
+        $sheet->setCellValue('M' . $row, $granTotal['perc']);
+        $sheet->setCellValue('N' . $row, $granTotal['inf']);
+        $sheet->setCellValue('O' . $row, $granTotal['prest']);
+        $sheet->setCellValue('P' . $row, $granTotal['odesc']);
+        $sheet->setCellValue('Q' . $row, $granTotal['ded']);
+        $sheet->setCellValue('R' . $row, $granTotal['neto']);
+        $sheet->getStyle('A' . $row . ':R' . $row)->applyFromArray($s['total']);
+        $sheet->getStyle('D' . $row . ':R' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('A' . $headerRow . ':R' . $row)->applyFromArray($s['thin']);
+
+        foreach (range('A', 'R') as $c) {
+            if (!in_array($c, ['A', 'B'], true)) {
+                $sheet->getColumnDimension($c)->setAutoSize(true);
+            }
+        }
+        $sheet->getColumnDimension('C')->setWidth(32);
+    }
+
+    /** Hoja de transferencias/depósitos: listado por banco. */
+    private function _excel_hoja_transferencias($sheet, $nomina, $detalle, $periodoTxt, $fechaPagoTxt, $empresa = null) {
+        $s = $this->_excel_styles();
+        $headerRow = $this->_excel_cabecera_empresa(
+            $sheet, 'RELACIÓN DE TRANSFERENCIAS / DEPÓSITOS', $periodoTxt, $fechaPagoTxt, $nomina, 'E', $empresa
+        );
+
+        $filas = [];
+        foreach ($detalle as $d) {
+            $banco = $this->_excel_banco($d);
+            $cuenta = $this->_excel_cuenta($d);
+            if ($banco === '—' && $cuenta === '—') {
+                continue;
+            }
+            $filas[] = [
+                'nombre' => $this->_excel_nombre_empleado($d),
+                'banco'  => $banco,
+                'cuenta' => $cuenta,
+                'forma'  => $this->_excel_forma_pago($d),
+                'neto'   => (float)$d->neto,
+            ];
+        }
+
+        usort($filas, function ($a, $b) {
+            $c = strcasecmp($a['banco'], $b['banco']);
+            return $c !== 0 ? $c : strcasecmp($a['nombre'], $b['nombre']);
+        });
+
+        $headers = ['No.', 'Empleado', 'Banco', 'Cuenta o tarjeta', 'Total'];
+        foreach (['A', 'B', 'C', 'D', 'E'] as $i => $col) {
+            $sheet->setCellValue($col . $headerRow, $headers[$i]);
+        }
+        $sheet->getStyle('A' . $headerRow . ':E' . $headerRow)->applyFromArray($s['header']);
+        $sheet->freezePane('A' . ($headerRow + 1));
+
+        $row = $headerRow + 1;
+        $bancoActual = null;
+        $subBanco = 0;
+        $n = 0;
+        $granTotal = 0;
+
+        $flushSubtotal = function () use (&$sheet, &$row, &$subBanco, &$bancoActual, $s) {
+            if ($bancoActual === null) return;
+            $sheet->setCellValue('B' . $row, 'Subtotal ' . $bancoActual);
+            $sheet->setCellValue('E' . $row, $subBanco);
+            $sheet->getStyle('A' . $row . ':E' . $row)->applyFromArray($s['subtotal']);
+            $sheet->getStyle('E' . $row)->applyFromArray($s['money']);
+            $row++;
+            $subBanco = 0;
+        };
+
+        foreach ($filas as $f) {
+            if ($bancoActual !== null && strcasecmp($bancoActual, $f['banco']) !== 0) {
+                $flushSubtotal();
+            }
+            if ($bancoActual === null || strcasecmp($bancoActual, $f['banco']) !== 0) {
+                $bancoActual = $f['banco'];
+                $sheet->mergeCells('A' . $row . ':E' . $row);
+                $sheet->setCellValue('A' . $row, strtoupper($bancoActual));
+                $sheet->getStyle('A' . $row . ':E' . $row)->applyFromArray($s['group']);
+                $row++;
+            }
+
+            $n++;
+            $sheet->setCellValue('A' . $row, $n);
+            $sheet->setCellValue('B' . $row, $f['nombre']);
+            $sheet->setCellValue('C' . $row, $f['banco']);
+            $sheet->setCellValue('D' . $row, $f['cuenta']);
+            $sheet->setCellValue('E' . $row, $f['neto']);
+            $sheet->getStyle('E' . $row)->applyFromArray($s['money']);
+            $subBanco += $f['neto'];
+            $granTotal += $f['neto'];
+            $row++;
+        }
+        $flushSubtotal();
+
+        if ($n === 0) {
+            $sheet->setCellValue('A' . $row, 'Sin empleados con transferencia/cuenta registrada en esta nómina.');
+            $sheet->mergeCells('A' . $row . ':E' . $row);
+            $row++;
+        } else {
+            $sheet->setCellValue('B' . $row, 'TOTAL TRANSFERENCIAS (' . $n . ')');
+            $sheet->setCellValue('E' . $row, $granTotal);
+            $sheet->getStyle('A' . $row . ':E' . $row)->applyFromArray($s['total']);
+            $sheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        $sheet->getStyle('A' . $headerRow . ':E' . max($headerRow, $row - 1))->applyFromArray($s['thin']);
+
+        $sheet->getColumnDimension('A')->setWidth(14);
+        $sheet->getColumnDimension('B')->setWidth(36);
+        $sheet->getColumnDimension('C')->setWidth(18);
+        $sheet->getColumnDimension('D')->setWidth(24);
+        $sheet->getColumnDimension('E')->setWidth(14);
+    }
+
+    /** Resumen de desembolso: cheque vs transferencia vs efectivo. */
+    private function _excel_hoja_resumen_pago($sheet, $nomina, $detalle, $periodoTxt, $fechaPagoTxt, $empresa = null) {
+        $s = $this->_excel_styles();
+        $headerRow = $this->_excel_cabecera_empresa(
+            $sheet, 'RESUMEN DE DESEMBOLSO', $periodoTxt, $fechaPagoTxt, $nomina, 'D', $empresa
+        );
+
+        $porForma = [];
+        $porBanco = [];
+        $totalNeto = 0;
+        foreach ($detalle as $d) {
+            $forma = $this->_excel_forma_pago($d);
+            $banco = $this->_excel_banco($d);
+            $neto = (float)$d->neto;
+            if (!isset($porForma[$forma])) $porForma[$forma] = ['count' => 0, 'neto' => 0];
+            $porForma[$forma]['count']++;
+            $porForma[$forma]['neto'] += $neto;
+            if (!isset($porBanco[$banco])) $porBanco[$banco] = ['count' => 0, 'neto' => 0];
+            $porBanco[$banco]['count']++;
+            $porBanco[$banco]['neto'] += $neto;
+            $totalNeto += $neto;
+        }
+
+        $row = $headerRow;
+        $sheet->setCellValue('A' . $row, 'Por forma de pago');
+        $sheet->getStyle('A' . $row)->applyFromArray($s['subtitle']);
+        $row++;
+        $hdrForma = $row;
+        $sheet->setCellValue('A' . $row, 'Forma de pago');
+        $sheet->setCellValue('B' . $row, 'Empleados');
+        $sheet->setCellValue('C' . $row, 'Monto');
+        $sheet->setCellValue('D' . $row, '% del total');
+        $sheet->getStyle('A' . $row . ':D' . $row)->applyFromArray($s['header']);
+        $row++;
+
+        ksort($porForma);
+        foreach ($porForma as $forma => $info) {
+            $sheet->setCellValue('A' . $row, $forma);
+            $sheet->setCellValue('B' . $row, $info['count']);
+            $sheet->setCellValue('C' . $row, $info['neto']);
+            $pct = $totalNeto > 0 ? round(($info['neto'] / $totalNeto) * 100, 1) : 0;
+            $sheet->setCellValue('D' . $row, $pct . '%');
+            $sheet->getStyle('C' . $row)->applyFromArray($s['money']);
+            $row++;
+        }
+        $sheet->setCellValue('A' . $row, 'TOTAL');
+        $sheet->setCellValue('B' . $row, count($detalle));
+        $sheet->setCellValue('C' . $row, $totalNeto);
+        $sheet->setCellValue('D' . $row, '100%');
+        $sheet->getStyle('A' . $row . ':D' . $row)->applyFromArray($s['total']);
+        $sheet->getStyle('C' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('A' . $hdrForma . ':D' . $row)->applyFromArray($s['thin']);
+
+        $row += 2;
+        $sheet->setCellValue('A' . $row, 'Por banco / medio de depósito');
+        $sheet->getStyle('A' . $row)->applyFromArray($s['subtitle']);
+        $row++;
+        $hdr = $row;
+        $sheet->setCellValue('A' . $row, 'Banco');
+        $sheet->setCellValue('B' . $row, 'Empleados');
+        $sheet->setCellValue('C' . $row, 'Monto');
+        $sheet->setCellValue('D' . $row, '% del total');
+        $sheet->getStyle('A' . $row . ':D' . $row)->applyFromArray($s['header']);
+        $row++;
+
+        uasort($porBanco, function ($a, $b) { return $b['neto'] <=> $a['neto']; });
+        foreach ($porBanco as $banco => $info) {
+            $sheet->setCellValue('A' . $row, $banco);
+            $sheet->setCellValue('B' . $row, $info['count']);
+            $sheet->setCellValue('C' . $row, $info['neto']);
+            $pct = $totalNeto > 0 ? round(($info['neto'] / $totalNeto) * 100, 1) : 0;
+            $sheet->setCellValue('D' . $row, $pct . '%');
+            $sheet->getStyle('C' . $row)->applyFromArray($s['money']);
+            $row++;
+        }
+        $sheet->getStyle('A' . $hdr . ':D' . ($row - 1))->applyFromArray($s['thin']);
+
+        $row += 2;
+        $sheet->setCellValue('A' . $row, 'Guía de desembolso sugerida');
+        $sheet->getStyle('A' . $row)->applyFromArray($s['subtitle']);
+        $row++;
+        $cheque = $porForma['Cheque']['neto'] ?? 0;
+        $transfer = $porForma['Transferencia']['neto'] ?? 0;
+        $efectivo = $porForma['Efectivo']['neto'] ?? 0;
+        $otros = $totalNeto - $cheque - $transfer - $efectivo;
+
+        $guia = [
+            ['CHEQUE (sueldos en cheque)', $cheque],
+            ['TRANSFERENCIA BANCARIA', $transfer],
+            ['EFECTIVO', $efectivo],
+        ];
+        if ($otros > 0.009) {
+            $guia[] = ['OTROS / SIN DEFINIR', $otros];
+        }
+        $guia[] = ['TOTAL A DESEMBOLSAR', $totalNeto];
+
+        $sheet->setCellValue('A' . $row, 'Concepto');
+        $sheet->setCellValue('B' . $row, 'Monto');
+        $sheet->getStyle('A' . $row . ':B' . $row)->applyFromArray($s['header']);
+        $row++;
+        $startGuia = $row;
+        foreach ($guia as $i => $g) {
+            $sheet->setCellValue('A' . $row, $g[0]);
+            $sheet->setCellValue('B' . $row, $g[1]);
+            $sheet->getStyle('B' . $row)->applyFromArray($s['money']);
+            if ($i === count($guia) - 1) {
+                $sheet->getStyle('A' . $row . ':B' . $row)->applyFromArray($s['total']);
+                $sheet->getStyle('B' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            }
+            $row++;
+        }
+        $sheet->getStyle('A' . ($startGuia - 1) . ':B' . ($row - 1))->applyFromArray($s['thin']);
+
+        $sheet->getColumnDimension('A')->setWidth(36);
+        $sheet->getColumnDimension('B')->setWidth(14);
+        $sheet->getColumnDimension('C')->setWidth(14);
+        $sheet->getColumnDimension('D')->setWidth(12);
     }
 }
