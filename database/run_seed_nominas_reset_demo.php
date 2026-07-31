@@ -128,7 +128,7 @@ function cargar_empleados_semanal(mysqli $db): array
         SELECT id, salario_base_diario, lugar_pago, costo_hora_extra,
                tiene_infonavit, descuento_infonavit
         FROM empleados
-        WHERE estatus = 'Activo' AND tipo_nomina = 'Semanal'
+        WHERE estatus IN (1, 2) AND tipo_nomina = 'Semanal'
         ORDER BY id
     ");
     $empleados = [];
@@ -161,7 +161,7 @@ function cargar_empleados_quincenal(mysqli $db): array
         SELECT id, salario_base_diario, lugar_pago, costo_hora_extra,
                tiene_infonavit, descuento_infonavit
         FROM empleados
-        WHERE estatus = 'Activo' AND tipo_nomina = 'Quincenal'
+        WHERE estatus IN (1, 2) AND tipo_nomina = 'Quincenal'
         ORDER BY id
     ");
     $empleados = [];

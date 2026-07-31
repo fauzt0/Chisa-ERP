@@ -847,7 +847,7 @@ class OrdenesCompra extends MY_Controller {
 
         $config = [
             'upload_path'   => $upload_path,
-            'allowed_types' => 'pdf|jpg|jpeg|png|webp|doc|docx|xls|xlsx',
+            'allowed_types' => 'pdf|xml|jpg|jpeg|png|webp|doc|docx|xls|xlsx',
             'max_size'      => 10240,
             'encrypt_name'  => true,
         ];
