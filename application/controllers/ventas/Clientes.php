@@ -6,6 +6,10 @@
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+
 class Clientes extends MY_Controller {
     
     protected $modulo = 'Clientes (CRM)';
@@ -347,5 +351,207 @@ class Clientes extends MY_Controller {
             'success' => true,
             'message' => 'Cotización convertida a orden de venta correctamente'
         ]);
+    }
+
+    /**
+     * Descarga plantilla Excel para carga masiva de clientes
+     */
+    public function descargar_plantilla_excel() {
+        $headers = [
+            'Razón social *',
+            'Nombre comercial',
+            'RFC *',
+            'Régimen fiscal',
+            'Contacto',
+            'Teléfono',
+            'Email',
+            'Calle',
+            'Núm. Ext.',
+            'Núm. Int.',
+            'Colonia',
+            'Ciudad',
+            'Estado',
+            'Código postal',
+            'Límite crédito',
+            'Días crédito',
+            'Tipo cliente',
+            'Estatus',
+        ];
+
+        $ejemplo = [
+            '(EJEMPLO) Construcciones del Norte SA de CV',
+            'ConstruNorte',
+            'CDN850101ABC',
+            '601',
+            'Lic. García López',
+            '8181234567',
+            'contacto@constructora.mx',
+            'Av. Industrial 100',
+            '100',
+            'A',
+            'Centro',
+            'Monterrey',
+            'Nuevo León',
+            '64000',
+            '50000',
+            '30',
+            'Regular',
+            'Activo',
+        ];
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Clientes');
+
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $col++;
+        }
+
+        $col = 'A';
+        foreach ($ejemplo as $valor) {
+            $sheet->setCellValue($col . '2', $valor);
+            $col++;
+        }
+
+        $lastCol = chr(ord('A') + count($headers) - 1);
+        $sheet->getStyle('A1:' . $lastCol . '1')->getFont()->setBold(true);
+        foreach (range('A', $lastCol) as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        $instrucciones = $spreadsheet->createSheet();
+        $instrucciones->setTitle('Instrucciones');
+        $instrucciones->setCellValue('A1', 'Cómo usar esta plantilla');
+        $instrucciones->setCellValue('A3', '1. Capture sus clientes en la hoja «Clientes» desde la fila 2.');
+        $instrucciones->setCellValue('A4', '2. La fila 2 es solo un ejemplo — reemplácela o elimínela antes de importar.');
+        $instrucciones->setCellValue('A5', '3. Campos obligatorios: Razón social y RFC.');
+        $instrucciones->setCellValue('A6', '4. Tipo cliente: Regular | Mostrador | Gobierno | Licitación | Distribuidor (opcional, default Regular).');
+        $instrucciones->setCellValue('A7', '5. Estatus: Activo | Inactivo | Suspendido (opcional, default Activo).');
+        $instrucciones->setCellValue('A8', '6. Los RFC duplicados (en el archivo o en el sistema) se omiten automáticamente.');
+        $instrucciones->setCellValue('A9', '7. No modifique el orden de las columnas en la fila 1.');
+        $instrucciones->getStyle('A1')->getFont()->setBold(true);
+        $instrucciones->getColumnDimension('A')->setWidth(90);
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $writer = new Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="plantilla_clientes_erp.xlsx"');
+        header('Cache-Control: max-age=0');
+        $writer->save('php://output');
+        exit;
+    }
+
+    /**
+     * Procesa carga masiva de clientes desde Excel (AJAX)
+     */
+    public function importar_excel_ajax() {
+        if (empty($_FILES['archivo_excel']['name'])) {
+            echo json_encode(['success' => false, 'message' => 'Seleccione un archivo Excel (.xlsx o .xls)']);
+            return;
+        }
+
+        $ext = strtolower(pathinfo($_FILES['archivo_excel']['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['xlsx', 'xls'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Solo se aceptan archivos .xlsx o .xls']);
+            return;
+        }
+
+        if (!empty($_FILES['archivo_excel']['size']) && $_FILES['archivo_excel']['size'] > 5 * 1024 * 1024) {
+            echo json_encode(['success' => false, 'message' => 'El archivo excede el tamaño máximo permitido (5 MB)']);
+            return;
+        }
+
+        $tmp = $_FILES['archivo_excel']['tmp_name'];
+        if (!is_uploaded_file($tmp)) {
+            echo json_encode(['success' => false, 'message' => 'No se pudo leer el archivo subido']);
+            return;
+        }
+
+        try {
+            $readerType = ($ext === 'xlsx') ? 'Xlsx' : 'Xls';
+            $reader = IOFactory::createReader($readerType);
+            $spreadsheet = $reader->load($tmp);
+            $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+
+            $rows = [];
+            $totalFilas = count($sheetData);
+            for ($i = 2; $i <= $totalFilas; $i++) {
+                if (empty($sheetData[$i])) {
+                    continue;
+                }
+                $fila = $sheetData[$i];
+                $razon = $this->_normalizar_celda_excel($fila['A'] ?? '');
+                $rfc = strtoupper(preg_replace('/\s+/', '', $this->_normalizar_celda_excel($fila['C'] ?? '')));
+
+                if ($razon === '' && $rfc === '') {
+                    continue;
+                }
+
+                if (preg_match('/^\(EJEMPLO\)/i', $razon)) {
+                    continue;
+                }
+
+                $rows[] = [
+                    '_linea' => $i,
+                    'razon_social' => $razon,
+                    'nombre_comercial' => $this->_normalizar_celda_excel($fila['B'] ?? ''),
+                    'rfc' => $rfc,
+                    'regimen_fiscal' => $this->_normalizar_celda_excel($fila['D'] ?? ''),
+                    'contacto_nombre' => $this->_normalizar_celda_excel($fila['E'] ?? ''),
+                    'telefono' => $this->_normalizar_celda_excel($fila['F'] ?? ''),
+                    'email' => $this->_normalizar_celda_excel($fila['G'] ?? ''),
+                    'calle' => $this->_normalizar_celda_excel($fila['H'] ?? ''),
+                    'numero_exterior' => $this->_normalizar_celda_excel($fila['I'] ?? ''),
+                    'numero_interior' => $this->_normalizar_celda_excel($fila['J'] ?? ''),
+                    'colonia' => $this->_normalizar_celda_excel($fila['K'] ?? ''),
+                    'ciudad' => $this->_normalizar_celda_excel($fila['L'] ?? ''),
+                    'estado' => $this->_normalizar_celda_excel($fila['M'] ?? ''),
+                    'codigo_postal' => $this->_normalizar_celda_excel($fila['N'] ?? ''),
+                    'limite_credito' => $this->_normalizar_celda_excel($fila['O'] ?? ''),
+                    'dias_credito' => $this->_normalizar_celda_excel($fila['P'] ?? ''),
+                    'tipo_cliente' => $this->_normalizar_celda_excel($fila['Q'] ?? ''),
+                    'estatus' => $this->_normalizar_celda_excel($fila['R'] ?? ''),
+                ];
+            }
+
+            if (empty($rows)) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'No hay clientes para importar. Reemplace la fila de ejemplo en la plantilla o agregue filas con RFC en la columna C.',
+                ]);
+                return;
+            }
+
+            $usuario_id = $this->session->userdata('id');
+            $result = $this->ClientesModel->importar_masivo($rows, $usuario_id);
+
+            echo json_encode([
+                'success' => $result['errors'] === 0 && ($result['inserted'] > 0 || $result['skipped'] > 0),
+                'partial' => $result['inserted'] > 0 && ($result['errors'] > 0 || $result['skipped'] > 0),
+                'message' => 'Carga finalizada: ' . $result['inserted'] . ' insertados, ' . $result['skipped'] . ' omitidos, ' . $result['errors'] . ' errores',
+                'resultado' => $result,
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error al procesar el archivo: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Normaliza valores leídos de Excel (números, notación científica, espacios)
+     */
+    private function _normalizar_celda_excel($valor) {
+        if ($valor === null || $valor === '') {
+            return '';
+        }
+        if (is_float($valor) || is_int($valor)) {
+            if (is_float($valor) && floor($valor) == $valor) {
+                return (string) (int) $valor;
+            }
+            return rtrim(rtrim(sprintf('%.10F', (float) $valor), '0'), '.');
+        }
+        return trim((string) $valor);
     }
 }

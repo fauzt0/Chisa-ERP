@@ -5,6 +5,9 @@
 $stats = $response['stats'] ?? [];
 ?>
 
+<!-- DataTables Buttons CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+
 <!-- Breadcrumb -->
 <div class="row">
   <div class="col-12">
@@ -318,6 +321,16 @@ $stats = $response['stats'] ?? [];
 <script>
 let tabla;
 
+// DataTables Buttons JS
+</script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script>
+let tabla;
+
 function initOrdenes() {
   inicializarDataTable();
   inicializarFiltros();
@@ -327,6 +340,25 @@ function inicializarDataTable() {
   tabla = $('#tablaOrdenes').DataTable({
     processing: true,
     serverSide: true,
+    autoWidth: false,
+    dom: "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    buttons: [
+      {
+        extend: 'excelHtml5',
+        text: '<i class="fas fa-file-excel"></i> Excel',
+        className: 'btn btn-success btn-sm',
+        title: 'Ordenes_Venta',
+        exportOptions: { columns: [0,1,2,3,4,5,6,7] }
+      },
+      {
+        extend: 'print',
+        text: '<i class="fas fa-print"></i> Imprimir',
+        className: 'btn btn-secondary btn-sm',
+        exportOptions: { columns: [0,1,2,3,4,5,6,7] }
+      }
+    ],
     ajax: {
       url: '<?=base_url();?>ventas/Ordenes/lista_ajax',
       type: 'POST',

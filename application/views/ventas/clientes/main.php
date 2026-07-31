@@ -6,6 +6,9 @@
 $stats = $response['stats'] ?? [];
 ?>
 
+<!-- DataTables Buttons CSS/JS para exportación -->
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+
 <!-- Breadcrumb -->
 <div class="row">
   <div class="col-12">
@@ -19,15 +22,23 @@ $stats = $response['stats'] ?? [];
   </div>
 </div>
 
-<!-- Título y botón nuevo -->
+<!-- Título y botones -->
 <div class="row mb-3">
   <div class="col-md-6">
     <h2><i class="fas fa-users"></i> Gestión de Clientes</h2>
   </div>
   <div class="col-md-6 text-end">
-    <button type="button" class="btn btn-primary" onclick="mostrarModalNuevo()">
-      <i class="fas fa-plus"></i> Nuevo Cliente
-    </button>
+    <div class="d-flex gap-2 justify-content-end">
+      <a class="btn btn-outline-success btn-sm" href="<?= base_url('ventas/Clientes/descargar_plantilla_excel') ?>">
+        <i class="fas fa-file-excel"></i> Plantilla Excel
+      </a>
+      <button type="button" class="btn btn-success btn-sm" onclick="abrirModalImportarClientes()">
+        <i class="fas fa-file-upload"></i> Carga masiva
+      </button>
+      <button type="button" class="btn btn-primary" onclick="mostrarModalNuevo()">
+        <i class="fas fa-plus"></i> Nuevo Cliente
+      </button>
+    </div>
   </div>
 </div>
 
@@ -446,6 +457,56 @@ $stats = $response['stats'] ?? [];
   </div>
 </div>
 
+<!-- Modal: Carga masiva de clientes -->
+<div class="modal fade" id="modalImportarClientes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-file-upload me-1"></i> Carga masiva de clientes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info small mb-3">
+          <strong>Instrucciones:</strong>
+          <ol class="mb-0 ps-3">
+            <li>Descargue la <a href="<?= base_url('ventas/Clientes/descargar_plantilla_excel') ?>" class="alert-link">plantilla Excel</a> con las columnas requeridas.</li>
+            <li>La <strong>fila 2</strong> del Excel es solo ejemplo — reemplácela o elimínela antes de importar.</li>
+            <li>Capture sus clientes desde la <strong>fila 2</strong> en la hoja «Clientes» (no modifique el orden de columnas).</li>
+            <li>Campos obligatorios: <strong>Razón social</strong> y <strong>RFC</strong>.</li>
+            <li>Los RFC duplicados (en el archivo o en el sistema) se omiten automáticamente.</li>
+          </ol>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="archivo_importar_clientes">Archivo Excel (.xlsx / .xls)</label>
+          <input type="file" class="form-control" id="archivo_importar_clientes" accept=".xlsx,.xls">
+        </div>
+
+        <div id="importar_clientes_resultado" class="d-none">
+          <div class="border rounded p-3 bg-light small" id="importar_clientes_resumen"></div>
+          <ul class="small mt-2 mb-0" id="importar_clientes_detalle" style="max-height: 200px; overflow-y: auto;"></ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-outline-success btn-sm" href="<?= base_url('ventas/Clientes/descargar_plantilla_excel') ?>">
+          <i class="fas fa-download"></i> Descargar plantilla
+        </a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="btnProcesarImportacionClientes" onclick="procesarImportacionClientes()">
+          <i class="fas fa-upload"></i> Importar clientes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DataTables Buttons JS -->
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
 <script>
 let tabla;
 let busquedaCliTimer = null;
@@ -488,7 +549,25 @@ function inicializarDataTable() {
   tabla = $('#tablaClientes').DataTable({
     processing: true,
     serverSide: true,
-    dom: 'lrtip',
+    autoWidth: false,
+    dom: "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    buttons: [
+      {
+        extend: 'excelHtml5',
+        text: '<i class="fas fa-file-excel"></i> Excel',
+        className: 'btn btn-success btn-sm',
+        title: 'Directorio_Clientes',
+        exportOptions: { columns: [0,1,2,3,4,5,6,7] }
+      },
+      {
+        extend: 'print',
+        text: '<i class="fas fa-print"></i> Imprimir',
+        className: 'btn btn-secondary btn-sm',
+        exportOptions: { columns: [0,1,2,3,4,5,6,7] }
+      }
+    ],
     ajax: {
       url: '<?=base_url();?>ventas/Clientes/lista_ajax',
       type: 'POST',
@@ -886,6 +965,77 @@ window.eliminarCliente = function(id) {
     notifyShow(result.message, result.success ? 'success' : 'danger');
     if(result.success) {
       tabla.ajax.reload();
+    }
+  });
+};
+
+// === Funciones de Carga Masiva de Clientes ===
+
+window.abrirModalImportarClientes = function() {
+  $('#archivo_importar_clientes').val('');
+  $('#importar_clientes_resultado').addClass('d-none');
+  $('#importar_clientes_resumen').empty();
+  $('#importar_clientes_detalle').empty();
+  $('#btnProcesarImportacionClientes').prop('disabled', false).html('<i class="fas fa-upload"></i> Importar clientes');
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImportarClientes')).show();
+};
+
+window.procesarImportacionClientes = function() {
+  const input = document.getElementById('archivo_importar_clientes');
+  if (!input || !input.files || !input.files.length) {
+    notifyShow('Archivo requerido', 'warning');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('archivo_excel', input.files[0]);
+  formData.append('peticion', 'ajax');
+  formData.append('<?php echo $this->security->get_csrf_token_name(); ?>', '<?php echo $this->security->get_csrf_hash(); ?>');
+
+  const btn = $('#btnProcesarImportacionClientes');
+  btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+
+  $.ajax({
+    url: '<?= base_url('ventas/Clientes/importar_excel_ajax') ?>',
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    dataType: 'json',
+    success: function(result) {
+      btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Importar clientes');
+
+      if (!result || typeof result !== 'object') {
+        notifyShow('Respuesta inválida del servidor', 'danger');
+        return;
+      }
+
+      const res = result.resultado || {};
+      $('#importar_clientes_resultado').removeClass('d-none');
+      $('#importar_clientes_resumen').html(
+        '<strong>Resultado:</strong> ' + (result.message || '') +
+        '<br><span class="text-success">Insertados: ' + (res.inserted || 0) + '</span> · ' +
+        '<span class="text-warning">Omitidos: ' + (res.skipped || 0) + '</span> · ' +
+        '<span class="text-danger">Errores: ' + (res.errors || 0) + '</span>'
+      );
+
+      const detalle = (res.messages || []).map(function(msg) {
+        return '<li>' + $('<div>').text(msg).html() + '</li>';
+      }).join('');
+      $('#importar_clientes_detalle').html(detalle || '<li class="text-muted">Sin detalles adicionales.</li>');
+
+      notifyShow(
+        result.message || 'Proceso finalizado.',
+        result.partial ? 'warning' : (result.success ? 'success' : 'warning')
+      );
+
+      if ((res.inserted || 0) > 0 && typeof tabla !== 'undefined' && tabla) {
+        tabla.ajax.reload(null, false);
+      }
+    },
+    error: function() {
+      btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Importar clientes');
+      notifyShow('Error de conexión al procesar el archivo', 'danger');
     }
   });
 };

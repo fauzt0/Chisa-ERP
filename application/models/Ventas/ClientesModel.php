@@ -345,4 +345,107 @@ class ClientesModel extends MY_Model {
         
         return array_values($datos_mensuales); // Retornar indexado desde 0 para JS
     }
+
+    /**
+     * Importa clientes desde filas parseadas del Excel
+     */
+    public function importar_masivo(array $rows, $usuario_id = null) {
+        $inserted = 0;
+        $errors = 0;
+        $skipped = 0;
+        $messages = [];
+        $tipos_validos = ['Regular', 'Mostrador', 'Gobierno', 'Licitación', 'Distribuidor'];
+        $estatus_validos = ['Activo', 'Inactivo', 'Suspendido'];
+        $rfcs_vistos = [];
+
+        foreach ($rows as $idx => $row) {
+            $linea = (int) ($row['_linea'] ?? ($idx + 2));
+            $razon = trim($row['razon_social'] ?? '');
+            $rfc = strtoupper(preg_replace('/\s+/', '', $row['rfc'] ?? ''));
+
+            if (preg_match('/^\(EJEMPLO\)/i', $razon)) {
+                $skipped++;
+                $messages[] = "Fila {$linea}: fila de ejemplo omitida.";
+                continue;
+            }
+
+            if ($razon === '') {
+                $errors++;
+                $messages[] = "Fila {$linea}: la razón social es obligatoria.";
+                continue;
+            }
+
+            if ($rfc === '') {
+                $errors++;
+                $messages[] = "Fila {$linea}: el RFC es obligatorio.";
+                continue;
+            }
+
+            if (strlen($rfc) < 12 || strlen($rfc) > 13) {
+                $errors++;
+                $messages[] = "Fila {$linea}: RFC «{$rfc}» no tiene formato válido (12–13 caracteres).";
+                continue;
+            }
+
+            if (isset($rfcs_vistos[$rfc])) {
+                $skipped++;
+                $messages[] = "Fila {$linea}: RFC {$rfc} duplicado en el archivo (omitido).";
+                continue;
+            }
+            $rfcs_vistos[$rfc] = true;
+
+            $this->db->where('rfc', $rfc);
+            if ($this->db->count_all_results($this->tableName) > 0) {
+                $skipped++;
+                $messages[] = "Fila {$linea}: RFC {$rfc} ya existe en el sistema (omitido).";
+                continue;
+            }
+
+            $tipo = trim($row['tipo_cliente'] ?? '');
+            if ($tipo === '' || !in_array($tipo, $tipos_validos, true)) {
+                $tipo = 'Regular';
+            }
+
+            $estatus = trim($row['estatus'] ?? '');
+            if ($estatus === '' || !in_array($estatus, $estatus_validos, true)) {
+                $estatus = 'Activo';
+            }
+
+            $data = [
+                'razon_social' => $razon,
+                'nombre_comercial' => trim($row['nombre_comercial'] ?? ''),
+                'rfc' => $rfc,
+                'regimen_fiscal' => trim($row['regimen_fiscal'] ?? ''),
+                'contacto_nombre' => trim($row['contacto_nombre'] ?? ''),
+                'telefono' => trim($row['telefono'] ?? ''),
+                'email' => trim($row['email'] ?? ''),
+                'calle' => trim($row['calle'] ?? ''),
+                'numero_exterior' => trim($row['numero_exterior'] ?? ''),
+                'numero_interior' => trim($row['numero_interior'] ?? ''),
+                'colonia' => trim($row['colonia'] ?? ''),
+                'ciudad' => trim($row['ciudad'] ?? ''),
+                'estado' => trim($row['estado'] ?? ''),
+                'codigo_postal' => trim($row['codigo_postal'] ?? ''),
+                'limite_credito' => is_numeric($row['limite_credito'] ?? '') ? (float) $row['limite_credito'] : 0,
+                'dias_credito' => is_numeric($row['dias_credito'] ?? '') ? (int) $row['dias_credito'] : 0,
+                'tipo_cliente' => $tipo,
+                'estatus' => $estatus,
+                'saldo_pendiente' => 0,
+            ];
+
+            if ($this->crear_cliente($data)) {
+                $inserted++;
+            } else {
+                $errors++;
+                $messages[] = "Fila {$linea}: no se pudo insertar «{$razon}».";
+            }
+        }
+
+        return [
+            'inserted' => $inserted,
+            'errors' => $errors,
+            'skipped' => $skipped,
+            'messages' => $messages,
+        ];
+    }
 }
