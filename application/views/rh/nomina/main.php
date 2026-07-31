@@ -15,6 +15,9 @@
       <button type="button" class="btn btn-outline-secondary" onclick="abrirModalConfiguracion()" title="Frecuencia y creación automática">
         <i data-lucide="settings" style="width:16px;height:16px;"></i> Automatización
       </button>
+      <button type="button" class="btn btn-outline-info" onclick="abrirPlaneador()" title="Ver calendario de nóminas del mes">
+        <i data-lucide="calendar" style="width:16px;height:16px;"></i> Planeador
+      </button>
       <button type="button" class="btn btn-primary" onclick="mostrarModalNuevo()">
         <i data-lucide="plus" style="width:16px;height:16px;"></i> Nueva Nómina
       </button>
@@ -273,6 +276,40 @@
   .rh-modal .modal-header {
     flex-wrap: wrap;
     gap: 0.4rem;
+  }
+}
+
+/* --- Planeador Mensual --- */
+
+.planeador-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-height: 160px;
+}
+.planeador-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.12) !important;
+}
+
+#planeadorGrid .col,
+#planeadorGrid .col-md,
+#planeadorGrid .col-md-3,
+#planeadorGrid .col-md-6,
+#planeadorGrid .col-12 {
+  min-width: 0;
+}
+
+@media (max-width: 575px) {
+  #modalPlaneador .btn-group-sm .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+  }
+  #modalPlaneador .modal-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+  #modalPlaneador .modal-header .d-flex {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 </style>
@@ -780,6 +817,54 @@
   </div>
 </div>
 
+<!-- Modal: Planeador Mensual -->
+<div class="modal fade rh-modal" id="modalPlaneador" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-fullscreen-md-down modal-dialog-scrollable" style="max-width: 95vw;">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
+        <h5 class="modal-title text-white mb-0">
+          <i class="fas fa-calendar-alt me-2"></i>
+          Planeador de Nóminas — <span id="planeador-titulo-mes">Julio 2026</span>
+        </h5>
+        <div class="d-flex align-items-center gap-2">
+          <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="planeadorTipo" id="planeadorTipoSemanal" value="Semanal" checked>
+            <label class="btn btn-outline-light" for="planeadorTipoSemanal">Semanal</label>
+            <input type="radio" class="btn-check" name="planeadorTipo" id="planeadorTipoQuincenal" value="Quincenal">
+            <label class="btn btn-outline-light" for="planeadorTipoQuincenal">Quincenal</label>
+            <input type="radio" class="btn-check" name="planeadorTipo" id="planeadorTipoMensual" value="Mensual">
+            <label class="btn btn-outline-light" for="planeadorTipoMensual">Mensual</label>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <button type="button" class="btn btn-outline-primary btn-sm" onclick="navegarPlaneador(-1)">
+            <i class="fas fa-chevron-left"></i> Mes anterior
+          </button>
+          <h4 class="mb-0" id="planeadorLabelMes">Julio 2026</h4>
+          <button type="button" class="btn btn-outline-primary btn-sm" onclick="navegarPlaneador(1)">
+            Mes siguiente <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        <div id="planeadorGrid" class="row g-3">
+        </div>
+        <div class="mt-4 pt-3 border-top">
+          <div class="d-flex flex-wrap gap-3 small">
+            <span><span class="badge bg-success-subtle text-dark me-1">■</span> Pagada</span>
+            <span><span class="badge bg-warning-subtle text-dark me-1">■</span> Calculada</span>
+            <span><span class="badge bg-info-subtle text-dark me-1">■</span> Parcial</span>
+            <span><span class="badge bg-secondary-subtle text-dark me-1">■</span> Borrador</span>
+            <span><span class="badge bg-danger-subtle text-dark me-1">■</span> Cancelada</span>
+            <span><span class="badge bg-light border text-muted me-1">■</span> Sin nómina</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 var tablaNominas;
@@ -788,6 +873,11 @@ var csrfHash = '<?= $this->security->get_csrf_hash() ?>';
 var pagoEmpleadosData = [];
 var periodoFinManual = false;
 var actualizandoPeriodoFin = false;
+
+// --- Planeador Mensual ---
+var planeadorMes = <?= (int)date('m') ?>;
+var planeadorAnio = <?= (int)date('Y') ?>;
+var planeadorTipo = 'Semanal';
 
 // --- Ayuda contextual en modales ---
 function toggleAyudaDetalle() {
@@ -2086,6 +2176,135 @@ function cargarNotasNomina(nominaId) {
     }
   });
 }
+
+// ============================================================
+// Funciones del Planeador Mensual
+// ============================================================
+
+function abrirPlaneador() {
+  planeadorMes = <?= (int)date('m') ?>;
+  planeadorAnio = <?= (int)date('Y') ?>;
+  planeadorTipo = 'Semanal';
+  $('#planeadorTipoSemanal').prop('checked', true);
+  $('#modalPlaneador').modal('show');
+  cargarPlaneador();
+}
+
+function cargarPlaneador() {
+  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  $('#planeadorLabelMes').text(meses[planeadorMes - 1] + ' ' + planeadorAnio);
+  $('#planeador-titulo-mes').text(meses[planeadorMes - 1] + ' ' + planeadorAnio);
+
+  $.get('<?= base_url("rh/Nomina/planeador_mensual_ajax") ?>', {
+    mes: planeadorMes,
+    anio: planeadorAnio,
+    tipo: planeadorTipo
+  }, function(r) {
+    if (!r.success) return;
+    renderizarGrid(r.periodos);
+  });
+}
+
+function renderizarGrid(periodos) {
+  var $grid = $('#planeadorGrid');
+  $grid.empty();
+
+  if (!periodos || periodos.length === 0) {
+    $grid.html('<div class="col-12 text-center text-muted py-5">No hay periodos para mostrar en este mes.</div>');
+    return;
+  }
+
+  var colClass = 'col';
+  if (periodos.length === 1) colClass = 'col-12';
+  else if (periodos.length === 2) colClass = 'col-md-6';
+  else if (periodos.length === 4) colClass = 'col-md-3';
+  else if (periodos.length === 5) colClass = 'col-md';
+
+  periodos.forEach(function(p) {
+    var nom = p.nomina;
+    var bgClass = '';
+    var badgeHtml = '';
+    var clickAction = '';
+
+    if (nom) {
+      var statusMap = {
+        'Pagada':    { bg: 'bg-success-subtle', badge: 'success' },
+        'Calculada': { bg: 'bg-warning-subtle', badge: 'warning' },
+        'Parcial':   { bg: 'bg-info-subtle',    badge: 'info' },
+        'Borrador':  { bg: 'bg-secondary-subtle', badge: 'secondary' },
+        'Cancelada': { bg: 'bg-danger-subtle',  badge: 'danger' }
+      };
+      var s = statusMap[nom.estatus] || { bg: 'bg-light', badge: 'secondary' };
+      bgClass = s.bg;
+      badgeHtml = '<span class="badge bg-' + s.badge + '">' + nom.estatus + '</span>';
+      clickAction = 'onclick="verNominaDesdePlaneador(' + nom.id + ')"';
+    } else {
+      bgClass = 'bg-light';
+      badgeHtml = '<span class="badge bg-light text-muted border">Sin nómina</span>';
+      clickAction = 'onclick="crearNominaDesdePlaneador(\'' + p.inicio + '\',\'' + p.fin + '\')"';
+    }
+
+    var cardHtml = '<div class="' + colClass + '">' +
+      '<div class="card h-100 shadow-sm ' + bgClass + ' border planeador-card" ' +
+           'style="cursor:pointer;transition:transform 0.15s;" ' +
+           clickAction + ' ' +
+           'title="' + (nom ? nom.folio + ' — ' + (nom.estatus || '') + ' — Neto: $' + fmtNum(nom.total_neto || 0) : 'Clic para crear nómina en este periodo') + '">' +
+        '<div class="card-body text-center py-3">' +
+          '<div class="text-muted small mb-1">' + esc(p.label) + '</div>' +
+          '<div class="fs-3 mb-2">' + (nom ? '📋' : '➕') + '</div>' +
+          '<div class="fw-bold">' + esc(nom ? nom.folio : '') + '</div>' +
+          '<div class="mb-1">' + badgeHtml + '</div>' +
+          (nom ? '<div class="fw-semibold text-dark">$' + fmtNum(nom.total_neto || 0) + '</div>' : '') +
+          '<div class="mt-2 small ' + (nom ? 'text-primary' : 'text-success') + '">' +
+            (nom ? '<i class="fas fa-eye"></i> Ver detalle' : '<i class="fas fa-plus-circle"></i> Crear nómina') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+    $grid.append(cardHtml);
+  });
+}
+
+function navegarPlaneador(dir) {
+  planeadorMes += dir;
+  if (planeadorMes < 1) { planeadorMes = 12; planeadorAnio--; }
+  if (planeadorMes > 12) { planeadorMes = 1; planeadorAnio++; }
+  cargarPlaneador();
+}
+
+$('input[name="planeadorTipo"]').on('change', function() {
+  planeadorTipo = $(this).val();
+  cargarPlaneador();
+});
+
+function verNominaDesdePlaneador(nominaId) {
+  $('#modalPlaneador').modal('hide');
+  setTimeout(function() {
+    if (typeof verNomina === 'function') {
+      verNomina(nominaId);
+    } else {
+      $.get('<?= base_url("rh/Nomina/get_nomina_detalle_completo_ajax") ?>', { id: nominaId }, function(r) {
+        if (r.success) {
+          mostrarDetalleNomina(r);
+        }
+      });
+    }
+  }, 300);
+}
+
+function crearNominaDesdePlaneador(inicio, fin) {
+  $('#modalPlaneador').modal('hide');
+  setTimeout(function() {
+    if (typeof mostrarModalNuevo === 'function') {
+      mostrarModalNuevo();
+    }
+    $('#periodoInicio').val(inicio).trigger('change');
+    $('#periodoFin').val(fin);
+  }, 300);
+}
+
 </script>
 
 <style>

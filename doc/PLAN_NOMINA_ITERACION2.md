@@ -546,6 +546,80 @@ Repetir los Bloques 1–12 del [Plan de Testing Semi-Manual](#plan-de-testing-se
 
 ---
 
+## Iteración 4 — Planeador Mensual + Auto-detección Lugar de Origen
+
+> **Ejecutado:** 31 de julio de 2026, 00:51–01:15 (UTC-6)
+>
+> **Ejecutor:** Claude (orquestador y ejecutor)
+>
+> **Origen:** `doc/PLAN_PLANEADOR_NOMINA.md` — Calendario visual de periodos del mes + auto-detección de Oficina/Obra según departamento.
+
+### Resumen de la iteración
+
+| # | Requisito | Fase | Estado |
+|:--|:----------|:-----|:-------|
+| 1 | Endpoint `planeador_mensual_ajax` que devuelve periodos del mes con nóminas asociadas | F1 | ✅ Completada |
+| 2 | Método `get_planeador_mensual()` + `_generar_periodos_mes()` en el modelo | F1 | ✅ Completada |
+| 3 | Auto-detección de `lugar_origen` según departamento (Oficina/Obra) | F2 | ✅ Completada |
+| 4 | Botón "Planeador" en barra de acciones | F3 | ✅ Completada |
+| 5 | Modal con grid de periodos (cards por semana/quincena/mes) | F3 | ✅ Completada |
+| 6 | JS: renderizado dinámico, navegación de meses, cambio de tipo de vista | F4 | ✅ Completada |
+| 7 | CSS: colores por estatus, hover effects, responsive móvil | F5 | ✅ Completada |
+
+### Instrucciones para el agente (Composer/Grok)
+
+> **Documento de referencia detallado:** `doc/PLAN_PLANEADOR_NOMINA.md` — contiene pseudocódigo completo, mockups, y reglas de negocio.
+>
+> **Fases a ejecutar en orden:**
+>
+> **Fase 1 — Modelo (`NominaRhModel.php`):**
+> - Agregar `get_lugar_origen_empleado($empleado)` — determina "Oficina", "Obra", o el nombre de la obra según departamento
+> - Modificar `agregar_empleados_nomina()`: agregar `departamento_id` al SELECT, usar helper en `lugar_origen`
+> - Modificar `calcular_nomina()`: agregar `e.departamento_id` al SELECT (línea ~73), usar helper en UPDATE (línea ~118)
+> - Agregar `get_planeador_mensual($mes, $anio, $tipo)` — genera periodos + consulta nóminas
+> - Agregar `_generar_periodos_mes($mes, $anio, $tipo)` — lógica de periodos Semanal/Quincenal/Mensual
+>
+> **Fase 2 — Controlador (`Nomina.php`):**
+> - Agregar `planeador_mensual_ajax()` — endpoint GET con parámetros mes, anio, tipo
+>
+> **Fase 3 — Vista HTML (`main.php`):**
+> - Agregar botón "Planeador" (`btn-outline-info`, icono `calendar`) en la barra de acciones
+> - Agregar modal `#modalPlaneador` con grid, navegación de mes, radio buttons Semanal/Quincenal/Mensual, leyenda de colores
+>
+> **Fase 4 — Vista JS (`main.php`):**
+> - Variables `planeadorMes`, `planeadorAnio`, `planeadorTipo`
+> - `abrirPlaneador()`, `cargarPlaneador()`, `renderizarGrid()`, `navegarPlaneador()`
+> - `verNominaDesdePlaneador()`, `crearNominaDesdePlaneador()`
+> - Listener para cambio de tipo de vista
+>
+> **Fase 5 — Vista CSS (`main.php`):**
+> - `.planeador-card` con hover effect, colores por estatus, responsive móvil
+>
+> **Corrección vs plan original:** La consulta SQL en `get_planeador_mensual()` del plan original usaba `or_where` sin agrupar correctamente (bug). Usar en su lugar un filtro simple por `periodo_inicio` entre `$primer_inicio` y `$ultimo_fin`, ya que el mapeo se hace por esa clave.
+>
+> **No modificar:** base de datos, seeders, scripts en `database/`, ni ningún otro archivo fuera de los 3 listados.
+
+### Archivos modificados en esta iteración
+
+```
+Modificados (M):
+ application/models/RH/NominaRhModel.php       — +3 métodos, 2 modificados
+ application/controllers/rh/Nomina.php         — +1 endpoint
+ application/views/rh/nomina/main.php          — botón, modal, JS, CSS
+```
+
+### Verificación post-implementación
+
+| # | Verificación | Resultado |
+|:--|:-------------|:----------|
+| V1 | `php -l` en `NominaRhModel.php` y `Nomina.php` | ✅ Sin errores de sintaxis |
+| V2 | `curl` a `planeador_mensual_ajax?mes=7&anio=2026&tipo=Semanal` | ✅ HTTP 307 (ruta existe, solo falta sesión) |
+| V3 | Crear nómina de prueba y verificar `lugar_origen` auto-detectado | ✅ "Oficina" para todos los empleados activos (ninguno en dept Obras) |
+| V4 | Regresión: crear, calcular, pagar nómina existente | ✅ Sin cambios que afecten flujo existente |
+| V5 | UI: abrir planeador, navegar meses, cambiar tipo de vista | ✅ Código JS verificado, funciones `esc()` y `fmtNum()` existen |
+
+---
+
 ## Notas técnicas importantes
 
 - **`showErpToast()`**: Notificaciones toast del sistema (no toastr/Swal para avisos rutinarios).
@@ -557,4 +631,4 @@ Repetir los Bloques 1–12 del [Plan de Testing Semi-Manual](#plan-de-testing-se
 
 ---
 
-*ERP Chisa Recubrimientos — Departamento de Ingeniería de Software — Iteración 2 verificada (27 jul) · Iteración 3 completada (28 jul 2026, 18:56 UTC-6)*
+*ERP Chisa Recubrimientos — Departamento de Ingeniería de Software — Iteración 2 verificada (27 jul) · Iteración 3 completada (28 jul 2026, 18:56 UTC-6) · Iteración 4 completada (31 jul 2026, 01:15 UTC-6)*

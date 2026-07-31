@@ -835,6 +835,20 @@ class Nomina extends MY_Controller {
     }
 
     /**
+     * Retorna todas las nóminas de un mes para el planeador visual.
+     * GET params: mes (1-12), anio (YYYY), tipo (Semanal|Quincenal|Mensual)
+     */
+    public function planeador_mensual_ajax() {
+        $this->requiere_permiso('rh_nomina');
+        $mes  = (int)$this->input->get('mes') ?: (int)date('m');
+        $anio = (int)$this->input->get('anio') ?: (int)date('Y');
+        $tipo = $this->input->get('tipo') ?: 'Semanal';
+
+        $result = $this->NominaRhModel->get_planeador_mensual($mes, $anio, $tipo);
+        echo json_encode(['success' => true, 'periodos' => $result, 'mes' => $mes, 'anio' => $anio, 'tipo' => $tipo]);
+    }
+
+    /**
      * Exporta nómina a Excel (diseño mejorado, multi-hoja).
      * Contiene la misma información operativa que los reportes del contador
      * (relación, transferencias por banco, resumen de pago), sin clonar celdas exactas.

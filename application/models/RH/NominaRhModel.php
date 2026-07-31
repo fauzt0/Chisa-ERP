@@ -12,6 +12,38 @@ class NominaRhModel extends CI_Model {
         $this->load->model('RH/EmpleadoModel');
     }
 
+    /**
+     * Determina el lugar de origen para un empleado según su departamento.
+     *
+     * Reglas:
+     * - Si el departamento NO es "Obras" → "Oficina"
+     * - Si es "Obras" y tiene lugar_pago definido → el nombre de la obra (lugar_pago)
+     * - Si es "Obras" y lugar_pago está vacío → "Obra"
+     *
+     * @param object $empleado  Row de la tabla empleados (debe incluir departamento_id y lugar_pago)
+     * @return string
+     */
+    public function get_lugar_origen_empleado($empleado) {
+        if (empty($empleado->departamento_id)) {
+            return 'Oficina';
+        }
+
+        $dept = $this->db
+            ->select('nombre')
+            ->where('id', (int)$empleado->departamento_id)
+            ->get('departamentos')
+            ->row();
+
+        $es_obras = $dept && strtolower(trim($dept->nombre)) === 'obras';
+
+        if (!$es_obras) {
+            return 'Oficina';
+        }
+
+        $lugar = trim((string)($empleado->lugar_pago ?? ''));
+        return $lugar !== '' ? $lugar : 'Obra';
+    }
+
     public function generar_folio() {
         $ultima = $this->db
             ->select('folio')
@@ -28,7 +60,7 @@ class NominaRhModel extends CI_Model {
 
     public function agregar_empleados_nomina($nomina_id, $tipo_nomina) {
         $empleados = $this->db
-            ->select('id, lugar_pago, forma_pago')
+            ->select('id, lugar_pago, forma_pago, departamento_id')
             ->from('empleados')
             ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
             ->where('tipo_nomina', $tipo_nomina)
@@ -39,7 +71,7 @@ class NominaRhModel extends CI_Model {
             $this->db->insert('nominas_detalle', [
                 'nomina_id'   => $nomina_id,
                 'empleado_id' => $emp->id,
-                'lugar_origen'=> $emp->lugar_pago ?? '',
+                'lugar_origen'=> $this->get_lugar_origen_empleado($emp),
                 'forma_pago'  => $emp->forma_pago ?? 'Transferencia',
             ]);
         }
@@ -67,7 +99,7 @@ class NominaRhModel extends CI_Model {
             e.pension_alimenticia_porcentaje, e.pension_alimenticia_monto,
             e.descuento_infonavit, e.tiene_infonavit, e.infonavit_aportacion,
             e.costo_hora_extra,
-            e.lugar_pago
+            e.lugar_pago, e.departamento_id
         ');
         $this->db->from('nominas_detalle nd');
         $this->db->join('empleados e', 'nd.empleado_id = e.id');
@@ -115,7 +147,7 @@ class NominaRhModel extends CI_Model {
                 'dias_trabajados'     => $dias,
                 'sueldo_base'         => $sueldo,
                 'sueldo_diario'       => round((float)$det->salario_base_diario, 2),
-                'lugar_origen'        => $det->lugar_pago ?? '',
+                'lugar_origen'        => $this->get_lugar_origen_empleado($det),
                 'percepciones'        => $percepciones,
                 'deducciones'         => $deducciones,
                 'infonavit_descuento' => $infonavit_calculado,
@@ -1476,5 +1508,97 @@ class NominaRhModel extends CI_Model {
             'usuario_id' => $usuario_id ?: null,
         ]);
         return ['success' => true, 'message' => 'Nota agregada correctamente', 'id' => $this->db->insert_id()];
+    }
+
+    /**
+     * Genera la lista de periodos del mes con su nómina asociada (si existe).
+     *
+     * @param int $mes  1-12
+     * @param int $anio YYYY
+     * @param string $tipo Semanal|Quincenal|Mensual
+     * @return array  Cada elemento: ['inicio','fin','label','nomina'=>null|object]
+     */
+    public function get_planeador_mensual($mes, $anio, $tipo) {
+        $periodos = $this->_generar_periodos_mes($mes, $anio, $tipo);
+        if (empty($periodos)) {
+            return [];
+        }
+
+        $primer_inicio = $periodos[0]['inicio'];
+        $ultimo_fin    = $periodos[count($periodos) - 1]['fin'];
+
+        $nominas = $this->db
+            ->select('id, folio, tipo_nomina, periodo_inicio, periodo_fin, estatus, total_neto')
+            ->from('nominas')
+            ->where('periodo_inicio >=', $primer_inicio)
+            ->where('periodo_inicio <=', $ultimo_fin)
+            ->get()
+            ->result();
+
+        $mapa = [];
+        foreach ($nominas as $nom) {
+            $mapa[$nom->periodo_inicio] = $nom;
+        }
+
+        foreach ($periodos as &$p) {
+            $p['nomina'] = $mapa[$p['inicio']] ?? null;
+        }
+
+        return $periodos;
+    }
+
+    /**
+     * Genera los periodos del mes según el tipo de nómina.
+     *
+     * @param int $mes
+     * @param int $anio
+     * @param string $tipo
+     * @return array
+     */
+    private function _generar_periodos_mes($mes, $anio, $tipo) {
+        $periodos = [];
+        $primer_dia = sprintf('%04d-%02d-01', $anio, $mes);
+        $ultimo_dia = date('Y-m-t', strtotime($primer_dia));
+
+        switch ($tipo) {
+            case 'Semanal':
+                $cursor = date('Y-m-d', strtotime('monday this week', strtotime($primer_dia)));
+                if ($cursor < $primer_dia) {
+                    $cursor = date('Y-m-d', strtotime($cursor . ' +7 days'));
+                }
+                while ($cursor <= $ultimo_dia) {
+                    $fin = date('Y-m-d', strtotime($cursor . ' +6 days'));
+                    $periodos[] = [
+                        'inicio' => $cursor,
+                        'fin'    => $fin,
+                        'label'  => date('d M', strtotime($cursor)) . ' – ' . date('d M', strtotime($fin)),
+                    ];
+                    $cursor = date('Y-m-d', strtotime($cursor . ' +7 days'));
+                }
+                break;
+
+            case 'Quincenal':
+                $periodos[] = [
+                    'inicio' => date('Y-m-01', strtotime($primer_dia)),
+                    'fin'    => date('Y-m-15', strtotime($primer_dia)),
+                    'label'  => '1ra Quincena: ' . date('d M', strtotime(date('Y-m-01', strtotime($primer_dia)))) . ' – ' . date('d M', strtotime(date('Y-m-15', strtotime($primer_dia)))),
+                ];
+                $periodos[] = [
+                    'inicio' => date('Y-m-16', strtotime($primer_dia)),
+                    'fin'    => $ultimo_dia,
+                    'label'  => '2da Quincena: ' . date('d M', strtotime(date('Y-m-16', strtotime($primer_dia)))) . ' – ' . date('d M', strtotime($ultimo_dia)),
+                ];
+                break;
+
+            case 'Mensual':
+                $periodos[] = [
+                    'inicio' => $primer_dia,
+                    'fin'    => $ultimo_dia,
+                    'label'  => date('F Y', strtotime($primer_dia)),
+                ];
+                break;
+        }
+
+        return $periodos;
     }
 }
