@@ -302,6 +302,52 @@ class NominaRhModel extends CI_Model {
     }
 
     /**
+     * Obtiene datos completos del empleado para edición desde el panel de nómina.
+     * @param int $empleado_id
+     * @return object|null
+     */
+    public function get_empleado_para_edicion($empleado_id) {
+        return $this->db
+            ->select('id, nombre, apellido_paterno, apellido_materno, puesto,'
+                . ' tipo_nomina, salario_base_diario, salario_base_mensual,'
+                . ' forma_pago, banco, cuenta_bancaria,'
+                . ' descuento_infonavit, tiene_infonavit,'
+                . ' isr_porcentaje, imss_cuota,'
+                . ' pension_alimenticia_porcentaje, pension_alimenticia_monto')
+            ->from('empleados')
+            ->where('id', (int)$empleado_id)
+            ->get()
+            ->row();
+    }
+
+    /**
+     * Guarda datos del empleado desde el panel de edición de nómina.
+     * @param int $id
+     * @param array $data
+     * @return array
+     */
+    public function guardar_empleado_desde_nomina($id, $data) {
+        $allowed = [
+            'tipo_nomina', 'salario_base_diario', 'salario_base_mensual',
+            'forma_pago', 'banco', 'cuenta_bancaria',
+            'descuento_infonavit', 'tiene_infonavit',
+            'isr_porcentaje', 'imss_cuota',
+            'pension_alimenticia_porcentaje', 'pension_alimenticia_monto',
+        ];
+        $update = ['fecha_edicion' => date('Y-m-d')];
+        foreach ($allowed as $field) {
+            if (array_key_exists($field, $data)) {
+                $update[$field] = $data[$field];
+            }
+        }
+        if (empty($update)) {
+            return ['success' => false, 'message' => 'Sin cambios'];
+        }
+        $this->db->where('id', (int)$id)->update('empleados', $update);
+        return ['success' => true, 'message' => 'Empleado actualizado correctamente'];
+    }
+
+    /**
      * Actualiza campos editables de un detalle de nómina.
      * Se llama vía AJAX desde el modal.
      */

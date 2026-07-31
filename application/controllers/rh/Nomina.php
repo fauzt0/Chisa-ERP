@@ -751,6 +751,53 @@ class Nomina extends MY_Controller {
         echo json_encode(['success' => true, 'message' => 'Cuenta principal actualizada']);
     }
 
+    /**
+     * Retorna datos completos del empleado para edición desde el panel de nómina.
+     */
+    public function get_empleado_edit_ajax() {
+        $this->requiere_permiso('rh_nomina');
+        $id = (int)$this->input->post('id');
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+        $empleado = $this->NominaRhModel->get_empleado_para_edicion($id);
+        if (!$empleado) {
+            echo json_encode(['success' => false, 'message' => 'Empleado no encontrado']);
+            return;
+        }
+        echo json_encode(['success' => true, 'empleado' => $empleado]);
+    }
+
+    /**
+     * Guarda datos del empleado desde el panel de edición de nómina.
+     */
+    public function guardar_empleado_desde_nomina_ajax() {
+        $this->requiere_permiso('rh_nomina');
+        $id = (int)$this->input->post('id');
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+        $data = [
+            'tipo_nomina'                   => $this->input->post('tipo_nomina'),
+            'salario_base_diario'           => $this->input->post('salario_base_diario'),
+            'salario_base_mensual'          => $this->input->post('salario_base_diario')
+                ? round((float)$this->input->post('salario_base_diario') * 30, 2)
+                : 0,
+            'forma_pago'                    => $this->input->post('forma_pago'),
+            'banco'                         => $this->input->post('banco'),
+            'cuenta_bancaria'               => $this->input->post('cuenta_bancaria'),
+            'descuento_infonavit'           => $this->input->post('descuento_infonavit'),
+            'tiene_infonavit'               => ((float)$this->input->post('descuento_infonavit') > 0) ? 1 : 0,
+            'isr_porcentaje'                => $this->input->post('isr_porcentaje'),
+            'imss_cuota'                    => $this->input->post('imss_cuota'),
+            'pension_alimenticia_porcentaje'=> $this->input->post('pension_alimenticia_porcentaje'),
+        ];
+        $result = $this->NominaRhModel->guardar_empleado_desde_nomina($id, $data);
+        echo json_encode($result);
+    }
+
     public function actualizar_detalle_ajax() {
         $this->requiere_permiso('rh_nomina_editar_detalle');
         $detalle_id = (int)$this->input->post('detalle_id');

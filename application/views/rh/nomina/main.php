@@ -753,6 +753,118 @@
   </div>
 </div>
 
+<!-- Offcanvas: Edición Rápida de Empleado (desde detalle de nómina) -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasEditarEmpleado" aria-labelledby="offcanvasEditarEmpleadoLabel"
+     style="width:480px;max-width:100vw;">
+  <div class="offcanvas-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
+    <h5 class="offcanvas-title text-white" id="offcanvasEditarEmpleadoLabel">
+      <i class="fas fa-user-edit me-2"></i>Editar Empleado
+    </h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div id="empleadoEditLoading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="mt-2 text-muted">Cargando datos del empleado...</p>
+    </div>
+    <form id="formEditarEmpleadoNomina" style="display:none;">
+      <input type="hidden" id="editEmpId" name="id">
+
+      <!-- Datos básicos -->
+      <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-id-card me-2"></i>Datos Personales</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Nombre</label>
+          <input type="text" class="form-control form-control-sm" id="editEmpNombre" disabled>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Puesto</label>
+          <input type="text" class="form-control form-control-sm" id="editEmpPuesto" disabled>
+        </div>
+      </div>
+
+      <!-- Nómina -->
+      <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-money-bill-wave me-2"></i>Datos de Nómina</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Tipo de Nómina</label>
+          <select class="form-select form-select-sm" id="editEmpTipoNomina" name="tipo_nomina">
+            <option value="Semanal">Semanal</option>
+            <option value="Quincenal">Quincenal</option>
+            <option value="Mensual">Mensual</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Salario Diario</label>
+          <input type="number" class="form-control form-control-sm" id="editEmpSalarioDiario" name="salario_base_diario" step="0.01" min="0">
+        </div>
+      </div>
+
+      <!-- Forma de pago -->
+      <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-credit-card me-2"></i>Forma de Pago</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Forma de Pago</label>
+          <select class="form-select form-select-sm" id="editEmpFormaPago" name="forma_pago">
+            <option value="Transferencia">Transferencia</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Depósito">Depósito</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Banco</label>
+          <input type="text" class="form-control form-control-sm" id="editEmpBanco" name="banco" placeholder="Nombre del banco">
+        </div>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-12">
+          <label class="form-label small fw-semibold">CLABE / Número de Cuenta</label>
+          <input type="text" class="form-control form-control-sm" id="editEmpCuenta" name="cuenta_bancaria" maxlength="18" placeholder="CLABE (18 dígitos) o número de cuenta">
+        </div>
+      </div>
+
+      <!-- Deducciones -->
+      <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-percent me-2"></i>Deducciones</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">INFONAVIT (descuento)</label>
+          <input type="number" class="form-control form-control-sm" id="editEmpInfonavit" name="descuento_infonavit" step="0.01" min="0" placeholder="$0.00">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">ISR (%)</label>
+          <input type="number" class="form-control form-control-sm" id="editEmpIsr" name="isr_porcentaje" step="0.01" min="0" max="100" placeholder="0%">
+        </div>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">IMSS (cuota)</label>
+          <input type="number" class="form-control form-control-sm" id="editEmpImss" name="imss_cuota" step="0.01" min="0" placeholder="$0.00">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Pensión Alimenticia (%)</label>
+          <input type="number" class="form-control form-control-sm" id="editEmpPensionPct" name="pension_alimenticia_porcentaje" step="0.01" min="0" max="100" placeholder="0%">
+        </div>
+      </div>
+
+      <!-- Botones -->
+      <div class="d-flex gap-2 mt-4 pt-3 border-top">
+        <button type="button" class="btn btn-primary flex-fill" onclick="guardarEmpleadoDesdeNomina()">
+          <i class="fas fa-save me-1"></i> Guardar Cambios
+        </button>
+        <a href="#" id="editEmpLinkFull" class="btn btn-outline-secondary flex-fill" target="_blank" title="Abrir perfil completo en nueva pestaña">
+          <i class="fas fa-external-link-alt me-1"></i> Perfil Completo
+        </a>
+      </div>
+      <div class="text-center mt-3">
+        <small class="text-muted">
+          <i class="fas fa-info-circle me-1"></i>Para editar más campos (RFC, CURP, NSS, dirección, etc.) use el perfil completo.
+        </small>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modal Cancelar Nómina -->
 <div class="modal fade" id="modalCancelarNomina" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -1692,7 +1804,8 @@ function renderTablaDetalle(detalle, estatus) {
   (detalle || []).forEach(function(d) {
     html += '<tr data-detalle-id="' + d.detalle_id + '">';
     html += '<td class="' + editableCls + ' text-center" data-field="lugar_origen"' + editableTitle + '>' + esc(d.lugar_origen) + '</td>';
-    html += '<td>' + esc(d.nombre + ' ' + d.apellido_paterno + ' ' + (d.apellido_materno || '')) + '</td>';
+    var nombreCompleto = esc(d.nombre + ' ' + d.apellido_paterno + ' ' + (d.apellido_materno || ''));
+    html += '<td><a href="#" class="text-decoration-none fw-semibold" onclick="editarEmpleadoDesdeNomina(' + d.empleado_id + ')" title="Editar datos del empleado">' + nombreCompleto + ' <i class="fas fa-external-link-alt ms-1" style="font-size:0.65rem;opacity:0.5;"></i></a></td>';
     html += '<td class="text-end">' + fmt(d.sueldo_diario) + '</td>';
     html += '<td class="text-end">' + fmt(d.sueldo_base) + '</td>';
     html += '<td class="' + editableCls + ' text-center" data-field="horas_extras" data-type="number"' + editableTitle + '>' + fmtNum(d.horas_extras) + '</td>';
@@ -1740,7 +1853,8 @@ function renderTablaDetalle(detalle, estatus) {
         var label = esc((c.banco || 'Banco') + ' - ' + ult4);
         html += '<option value="' + c.id + '"' + (c.id == defaultId ? ' selected' : '') + '>' + label + '</option>';
       });
-      html += '</select>';
+      html += '</select> ';
+      html += '<button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" onclick="verCuentasEmpleado(' + d.empleado_id + ',\'' + escJS(d.nombre) + '\')" title="Agregar/editar cuentas bancarias">+</button>';
     }
     html += '</td>';
     html += '</tr>';
@@ -1971,6 +2085,98 @@ function eliminarCuentaEmpleado(cuentaId, empleadoId) {
       cargarCuentasEmpleado(empleadoId);
       notifyShow(r.message || 'Cuenta eliminada', 'info');
     }
+  });
+}
+
+function editarEmpleadoDesdeNomina(empleadoId) {
+  // Cerrar modal de cuentas si está abierto
+  try { $('#modalCuentasEmpleado').modal('hide'); } catch(e) {}
+
+  // Mostrar offcanvas con loading
+  var offcanvas = new bootstrap.Offcanvas('#offcanvasEditarEmpleado');
+  $('#empleadoEditLoading').show();
+  $('#formEditarEmpleadoNomina').hide();
+  offcanvas.show();
+
+  // Cargar datos del empleado
+  $.post('<?= base_url('rh/Nomina/get_empleado_edit_ajax') ?>', {
+    id: empleadoId, peticion: 'ajax', [csrfName]: csrfHash
+  }, function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) {
+      notifyShow('Error al procesar la respuesta', 'danger');
+      return;
+    }
+    if (!r.success) {
+      notifyShow(r.message || 'Error al cargar datos', 'danger');
+      offcanvas.hide();
+      return;
+    }
+
+    var e = r.empleado;
+    $('#editEmpId').val(e.id);
+    $('#editEmpNombre').val((e.nombre || '') + ' ' + (e.apellido_paterno || '') + ' ' + (e.apellido_materno || ''));
+    $('#editEmpPuesto').val(e.puesto || '');
+    $('#editEmpTipoNomina').val(e.tipo_nomina || 'Semanal');
+    $('#editEmpSalarioDiario').val(parseFloat(e.salario_base_diario) || 0);
+    $('#editEmpFormaPago').val(e.forma_pago || 'Transferencia');
+    $('#editEmpBanco').val(e.banco || '');
+    $('#editEmpCuenta').val(e.cuenta_bancaria || '');
+    $('#editEmpInfonavit').val(parseFloat(e.descuento_infonavit) || 0);
+    $('#editEmpIsr').val(parseFloat(e.isr_porcentaje) || 0);
+    $('#editEmpImss').val(parseFloat(e.imss_cuota) || 0);
+    $('#editEmpPensionPct').val(parseFloat(e.pension_alimenticia_porcentaje) || 0);
+
+    // Link a perfil completo
+    $('#editEmpLinkFull').attr('href', '<?= base_url('rh/RecursosHumanos/editar/') ?>' + e.id);
+
+    $('#empleadoEditLoading').hide();
+    $('#formEditarEmpleadoNomina').show();
+  }).fail(function() {
+    notifyShow('Error de conexión al cargar datos', 'danger');
+    offcanvas.hide();
+  });
+}
+
+function guardarEmpleadoDesdeNomina() {
+  var btn = event.target;
+  $(btn).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Guardando...');
+
+  var data = {
+    id: $('#editEmpId').val(),
+    tipo_nomina: $('#editEmpTipoNomina').val(),
+    salario_base_diario: $('#editEmpSalarioDiario').val(),
+    forma_pago: $('#editEmpFormaPago').val(),
+    banco: $('#editEmpBanco').val(),
+    cuenta_bancaria: $('#editEmpCuenta').val(),
+    descuento_infonavit: $('#editEmpInfonavit').val(),
+    isr_porcentaje: $('#editEmpIsr').val(),
+    imss_cuota: $('#editEmpImss').val(),
+    pension_alimenticia_porcentaje: $('#editEmpPensionPct').val(),
+    peticion: 'ajax',
+    [csrfName]: csrfHash
+  };
+
+  $.post('<?= base_url('rh/Nomina/guardar_empleado_desde_nomina_ajax') ?>', data, function(r) {
+    try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) {
+      notifyShow('Error al procesar la respuesta', 'danger');
+      return;
+    }
+    if (r.success) {
+      notifyShow(r.message || 'Empleado actualizado correctamente', 'success');
+      // Refrescar el detalle de la nómina para mostrar cambios
+      var nominaId = $('#modalDetalleNomina').data('nomina-id');
+      if (nominaId) {
+        verNomina(nominaId);
+      }
+      // Cerrar offcanvas
+      bootstrap.Offcanvas.getInstance('#offcanvasEditarEmpleado').hide();
+    } else {
+      notifyShow(r.message || 'Error al guardar', 'danger');
+    }
+  }).fail(function() {
+    notifyShow('Error de conexión', 'danger');
+  }).always(function() {
+    $(btn).prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar Cambios');
   });
 }
 
