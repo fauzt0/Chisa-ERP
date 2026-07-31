@@ -28,6 +28,28 @@
 
 ---
 
+## Nota rápida — Estado BD para testing (29 jul 2026)
+
+> El seeder fue re-ejecutado en otra sesión con datos de prueba distintos. Estado actual de la BD:
+
+| Tabla | Registros | Observación |
+|:------|:---------|:------------|
+| `nominas` | 28 (24 Pagada, 3 Calculada, 1 Cancelada) | OK — todos los estados representados |
+| `nominas_detalle` | 104 (~3-4 emp/nómina) | Ligero — seed original tenía 297 (11/nómina). Funcional para tests |
+| `nominas_pagos_log` | 6 | Suficiente para probar flujo de pagos parciales |
+| `nominas_cancelaciones` | 1 | OK |
+| `nominas_notas` | 0 | Se puede crear durante el test |
+| `nomina_configuracion` | 1 (Semanal, auto_crear=1, dias_antes=1) | OK |
+| `empleados_cuentas_bancarias` | 10 | OK |
+| Empleados activos | 15 (todos Semanal) | OK |
+
+> **Conclusión:** Listo para testing manual. Si se desea más volumen de datos, ejecutar:
+> ```bash
+> /usr/local/php82/bin/php database/run_seed_nominas_reset_demo.php apply
+> ```
+
+---
+
 ## Estado de Ejecución (Seguimiento)
 
 > **Última actualización:** 28 de julio de 2026, 18:56 (UTC-6)
@@ -414,6 +436,7 @@ cd /home/admin/domains/erp.chisarecubrimientos.com.mx/public_html
 
 | Ítem | Prioridad | Notas |
 |:-----|:---------:|:------|
+| Planeador Mensual | Media | Documento de plan en `doc/PLAN_PLANEADOR_NOMINA.md`. Modal con calendario de periodos. |
 | Export NOI (ASPE) | Baja | Endpoint legacy `exportar_excel` permanece; definir layout NOI después |
 | Gastos extras en Excel (Flores/Basura) | Baja | Solo si el negocio los modela como conceptos |
 

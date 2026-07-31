@@ -73,6 +73,86 @@
 - [ ] Mejorar contrato de usuario, homogeneizarlo con los pdf que genera el sistema.
 - [ ] Sweet alerts y notify shows funcionan, pero algunas alertas como warning, presentan contrastes de colores extraños o de poco contraste que dificultan la visión. Es necesario verificar y corregir
 
+---
+
+## 📅 Plan: Planeador Mensual de Nóminas (30 jul 2026)
+
+> **Estado:** Planificado — Documento completo en `doc/PLAN_PLANEADOR_NOMINA.md`
+> **Resumen:** Modal con calendario mensual que muestra periodos cubiertos/descubiertos, estatus y folio de cada nómina. Incluye creación de nóminas desde el panel. Backend (endpoint + modelo) + Frontend (HTML + JS + CSS) completamente especificado.
+
+---
+
+## 🎨 Plan: Optimización Global de Visibilidad, Contraste y Responsive (post-Iteración Nómina)
+
+> **Fecha del plan:** 29 jul 2026
+> **Prioridad:** Alta (afecta todos los módulos)
+> **Estado:** Planificado — NO ejecutar hasta terminar iteración `/rh/Nomina`
+> **Referencia visual:** El offcanvas de `/rh/RecursosHumanos` tiene excelente contraste (header gradiente oscuro + texto blanco + cuerpo limpio). Ese es el estándar deseado para todo el ERP.
+
+### 1. Reparar botón de Tema Oscuro 🌓
+
+| # | Tarea | Archivo(s) | Notas |
+|:--|:------|:-----------|:------|
+| 1.1 | Agregar handler JS para `.js-theme-toggle` en navbar | `topNavbar.php` o nuevo `theme-toggle.js` | El botón sol/luna existe pero no funciona. Debe alternar `data-bs-theme` entre `"light"` y `"dark"` en `<html>` y persistir en `localStorage` (`appstack-config-theme`) |
+| 1.2 | Verificar que `app.css` tiene variables CSS para `[data-bs-theme="dark"]` | `assets/dist/css/app.css` | Bootstrap 5.3 incluye dark mode nativo. Confirmar que las variables `--bs-body-bg`, `--bs-body-color`, etc. cambian correctamente |
+| 1.3 | Hacer que el toggle respete el estado guardado al cargar la página | `settings.js` o nuevo script | Leer `localStorage` en `DOMContentLoaded` y aplicar `data-bs-theme` antes del primer render para evitar flash |
+
+### 2. Corrección de Contraste en Modales y Tablas
+
+| # | Tarea | Archivo(s) | Notas |
+|:--|:------|:-----------|:------|
+| 2.1 | Reemplazar colores hardcodeados por variables CSS Bootstrap | `main.php` (Nomina), `main_empleados.php`, y otras vistas | Cambiar `#1e3a5f`, `#2d5a8e`, `#fffef5`, etc. por `var(--bs-primary)`, `var(--bs-dark)`, `var(--bs-warning-bg-subtle)` para que respondan al tema |
+| 2.2 | Suavizar celdas `bg-success`/`bg-danger`/`bg-primary` con texto blanco | `main.php` (tabla detalle nómina) | Usar variantes `-subtle` con texto oscuro (ej. `bg-success-subtle text-success-emphasis`) en lugar de fondo sólido + blanco. Esto mejora legibilidad y reduce fatiga visual |
+| 2.3 | Revisar `table-dark` — asegurar que en dark mode no se vuelva doble-oscuro | `main.php` | `table-dark` usa `#212529`. En dark mode puede confundirse con el fondo. Evaluar cambiar a `table-secondary` o usar variables |
+| 2.4 | Mejorar contraste de `.bg-light` en tema oscuro | `main.php`, vistas varias | Bootstrap 5.3 mapea `bg-light` a un gris oscuro en dark mode. Verificar que el texto (`text-dark` o default) contraste adecuadamente |
+| 2.5 | Aumentar `font-weight` en labels de formularios y encabezados de columna | Vistas de todos los módulos | `fw-semibold` o `fw-bold` donde aplique, para mejorar legibilidad en pantallas de baja resolución |
+
+### 3. Responsive / Móvil en Todos los Módulos
+
+| # | Tarea | Archivo(s) | Notas |
+|:--|:------|:-----------|:------|
+| 3.1 | Asegurar `table-responsive` en TODAS las tablas del sistema | Todas las vistas con DataTables | Envolver cada `<table>` en `<div class="table-responsive">` para scroll horizontal en móvil |
+| 3.2 | Ajustar filtros DataTables para no encimarse en ≤767px | CSS global o `estilos.css` | Generalizar el fix que ya existe en `main.php` (líneas 1933-1947) a un archivo CSS compartido |
+| 3.3 | Modales: usar `modal-fullscreen-{breakpoint}-down` consistentemente | Vistas con modales de detalle | Por ejemplo `modal-fullscreen-md-down` para que en tablet/móvil el modal ocupe toda la pantalla |
+| 3.4 | Reducir `min-width` de tablas muy anchas en móvil | `main.php` (tabla detalle) | La tabla de detalle tiene `min-width: 2200px`. Evaluar columnas colapsables o scroll horizontal con primeras columnas fijas (`position: sticky`) |
+| 3.5 | Botones de acción en tablas: asegurar que no se desborden | CSS global | Usar `btn-group` con `flex-wrap` o `text-nowrap` donde aplique. En móvil, considerar dropdown "Acciones" en lugar de botones individuales |
+| 3.6 | Stats cards responsivas | `main.php` y dashboards | De `col-md-3` a `col-6 col-md-3` para que en móvil se muestren 2 por fila en lugar de 1 |
+
+### 4. Estandarización de Estilos entre Módulos
+
+| # | Tarea | Archivo(s) | Notas |
+|:--|:------|:-----------|:------|
+| 4.1 | Unificar headers de modales/offcanvas: mismo gradiente, misma tipografía | `modal_styles.php` y vistas | El gradiente `#1e3a5f → #2d5a8e` ya está en el partial `modal_styles.php`. Asegurar que todos los módulos lo usen consistentemente |
+| 4.2 | Crear partial `tabla_estilos.php` con reglas compartidas para DataTables | `application/views/rh/partials/` o `application/views/partials/` | Mover estilos repetidos de filtros, selectores, y responsive de DataTables a un solo archivo |
+| 4.3 | Revisar SweetAlert2 y toast: asegurar contraste en ambos temas | `estilos.css` y handlers JS | Los toast ya tienen colores definidos. Verificar que en dark mode los Swal no hereden fondos incorrectos |
+
+### 5. Pruebas Cruzadas
+
+| # | Tarea | Notas |
+|:--|:------|:------|
+| 5.1 | Probar cada módulo en tema claro y oscuro | Navegar todos los módulos alternando el tema y verificar legibilidad |
+| 5.2 | Probar en viewport 375px (iPhone SE), 768px (iPad), 1440px (escritorio) | Usar DevTools responsive mode |
+| 5.3 | Medir contraste con herramienta de accesibilidad | WCAG AA requiere ratio ≥ 4.5:1 para texto normal, ≥ 3:1 para texto grande |
+
+---
+
+### Módulos involucrados (afectados por el plan)
+
+| Módulo | Ruta | Contraste | Dark Theme | Responsive |
+|:-------|:-----|:---------|:-----------|:-----------|
+| Nómina | `/rh/Nomina` | ⚠️ Celdas color sólido | ❌ Hardcodeado | ⚠️ Mínimo |
+| RH Empleados | `/rh/RecursosHumanos` | ✅ Offcanvas OK | ❌ Tabla principal | ⚠️ |
+| Dashboard | `/dashboard` | ⚠️ Cards | ❌ | ⚠️ |
+| Proveedores | `/proveedores` | ⚠️ | ❌ | ⚠️ |
+| Producción | `/produccion` | ⚠️ | ❌ | ⚠️ |
+| Obras | `/obras` | ⚠️ | ❌ | ⚠️ |
+| Facturación | `/facturacion` | ⚠️ | ❌ | ⚠️ |
+| Usuarios | `/usuarios` | ⚠️ | ❌ | ⚠️ |
+| CRM | `/crm` | ⚠️ | ❌ | ⚠️ |
+| Reloj | `/reloj` | ⚠️ | ❌ | ⚠️ |
+
+> **Leyenda:** ✅ Buen estado | ⚠️ Necesita mejora | ❌ No implementado / Roto
+
 
 
 ## ✅ Completado (Última sesión: 2025-12-27)

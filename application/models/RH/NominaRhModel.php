@@ -28,7 +28,7 @@ class NominaRhModel extends CI_Model {
 
     public function agregar_empleados_nomina($nomina_id, $tipo_nomina) {
         $empleados = $this->db
-            ->select('id, lugar_pago')
+            ->select('id, lugar_pago, forma_pago')
             ->from('empleados')
             ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
             ->where('tipo_nomina', $tipo_nomina)
@@ -40,6 +40,7 @@ class NominaRhModel extends CI_Model {
                 'nomina_id'   => $nomina_id,
                 'empleado_id' => $emp->id,
                 'lugar_origen'=> $emp->lugar_pago ?? '',
+                'forma_pago'  => $emp->forma_pago ?? 'Transferencia',
             ]);
         }
 
@@ -51,6 +52,13 @@ class NominaRhModel extends CI_Model {
         if (!$nomina || $nomina->estatus !== 'Borrador') {
             return ['success' => false, 'message' => 'Nómina no válida para cálculo'];
         }
+
+        $config = $this->get_configuracion_automatizacion();
+        $flags = [
+            'infonavit' => $config && isset($config->aplicar_infonavit) ? (bool)$config->aplicar_infonavit : true,
+            'isr'       => $config && isset($config->aplicar_isr) ? (bool)$config->aplicar_isr : false,
+            'imss'      => $config && isset($config->aplicar_imss) ? (bool)$config->aplicar_imss : true,
+        ];
 
         $this->db->select('
             nd.id, nd.empleado_id,
@@ -82,7 +90,8 @@ class NominaRhModel extends CI_Model {
                 $sueldo,
                 $nomina->tipo_nomina,
                 $nomina->periodo_inicio,
-                $nomina->periodo_fin
+                $nomina->periodo_fin,
+                $flags
             );
             $deducciones = array_sum(array_column(array_filter($conceptos, function ($c) {
                 return $c['tipo'] === 'Deducción';
@@ -92,9 +101,14 @@ class NominaRhModel extends CI_Model {
             }), 'monto'));
             $neto = $percepciones - $deducciones;
 
+            // Extraer ISR, IMSS e INFONAVIT de los conceptos calculados (respetan flags)
+            $isr_calculado = 0;
+            $imss_calculado = 0;
             $infonavit_calculado = 0;
-            if (!empty($det->tiene_infonavit) && (float)$det->descuento_infonavit > 0) {
-                $infonavit_calculado = round((float)$det->descuento_infonavit, 2);
+            foreach ($conceptos as $c) {
+                if ($c['concepto'] === 'ISR')       $isr_calculado       = $c['monto'];
+                if ($c['concepto'] === 'IMSS')      $imss_calculado      = $c['monto'];
+                if ($c['concepto'] === 'INFONAVIT') $infonavit_calculado = $c['monto'];
             }
 
             $this->db->where('id', $det->id)->update('nominas_detalle', [
@@ -105,6 +119,8 @@ class NominaRhModel extends CI_Model {
                 'percepciones'        => $percepciones,
                 'deducciones'         => $deducciones,
                 'infonavit_descuento' => $infonavit_calculado,
+                'isr'                 => $isr_calculado,
+                'imss'                => $imss_calculado,
                 'neto'                => $neto,
             ]);
 
@@ -161,8 +177,10 @@ class NominaRhModel extends CI_Model {
         nd.horas_extras, nd.costo_hora_extra, nd.monto_horas_extras,
         nd.comidas, nd.viaticos_pasajes, nd.prima, nd.otros_bonos, nd.otros_ingresos,
         nd.percepciones, nd.deducciones,
-        nd.infonavit_descuento, nd.prestamo_personal, nd.otros_descuentos,
+        nd.infonavit_descuento, nd.isr, nd.imss,
+        nd.prestamo_personal, nd.otros_descuentos,
         nd.neto, nd.monto_pagado, nd.estatus,
+        nd.forma_pago as detalle_forma_pago,
         e.numero_empleado, e.nombre, e.apellido_paterno, e.apellido_materno,
         e.puesto, e.rfc, e.curp, e.nss,
         e.forma_pago, e.banco, e.cuenta_bancaria
@@ -196,6 +214,9 @@ class NominaRhModel extends CI_Model {
                 $row->banco_pago = $row->banco;
                 $row->cuenta_pago = $row->cuenta_bancaria;
             }
+
+            // Forma de pago: prioridad al detalle (editable por nómina), fallback al perfil del empleado
+            $row->forma_pago = !empty($row->detalle_forma_pago) ? $row->detalle_forma_pago : $row->forma_pago;
         }
         unset($row);
 
@@ -256,7 +277,7 @@ class NominaRhModel extends CI_Model {
         $allowed = [
             'lugar_origen', 'horas_extras', 'costo_hora_extra', 'monto_horas_extras',
             'comidas', 'viaticos_pasajes', 'prima', 'otros_bonos', 'otros_ingresos',
-            'prestamo_personal', 'otros_descuentos',
+            'prestamo_personal', 'otros_descuentos', 'forma_pago',
         ];
         $update = [];
         foreach ($allowed as $field) {
@@ -288,7 +309,9 @@ class NominaRhModel extends CI_Model {
             (float)($update['prestamo_personal'] ?? $det->prestamo_personal) +
             (float)($update['otros_descuentos'] ?? $det->otros_descuentos) +
             (float)$det->infonavit_descuento +
-            (float)($det->deducciones - $det->infonavit_descuento - $det->prestamo_personal - $det->otros_descuentos),  // ISR+IMSS+pensión existentes
+            (float)$det->isr +
+            (float)$det->imss +
+            (float)($det->deducciones - $det->infonavit_descuento - $det->isr - $det->imss - $det->prestamo_personal - $det->otros_descuentos),
         2);
 
         $update['percepciones'] = $percepciones;
@@ -663,7 +686,7 @@ class NominaRhModel extends CI_Model {
         }
     }
 
-    private function calcular_conceptos_empleado($empleado, $sueldo, $tipo_nomina, $periodo_inicio = null, $periodo_fin = null) {
+    private function calcular_conceptos_empleado($empleado, $sueldo, $tipo_nomina, $periodo_inicio = null, $periodo_fin = null, $flags = []) {
         $conceptos = [[
             'tipo'     => 'Percepción',
             'concepto' => 'Sueldo Base',
@@ -698,12 +721,17 @@ class NominaRhModel extends CI_Model {
             }
         }
 
-        $isr_pct = (float)$empleado->isr_porcentaje;
-        $isr = $isr_pct > 0 ? round($sueldo * ($isr_pct / 100), 2) : round($sueldo * 0.10, 2);
+        // Flags de deducciones (desde configuración de automatización)
+        $aplicar_isr       = isset($flags['isr'])       ? (bool)$flags['isr']       : false;
+        $aplicar_imss      = isset($flags['imss'])      ? (bool)$flags['imss']      : true;
+        $aplicar_infonavit = isset($flags['infonavit']) ? (bool)$flags['infonavit'] : true;
 
-        $imss = (float)$empleado->imss_cuota;
-        if ($imss <= 0) {
-            $imss = round($sueldo * 0.0235, 2);
+        $isr_pct = (float)$empleado->isr_porcentaje;
+        $isr = ($aplicar_isr && $isr_pct > 0) ? round($sueldo * ($isr_pct / 100), 2) : 0;
+
+        $imss = $aplicar_imss ? (float)$empleado->imss_cuota : 0;
+        if ($imss <= 0 && (float)$empleado->salario_base_diario > 0) {
+            $imss = 0;
         }
 
         $pension_pct = (float)$empleado->pension_alimenticia_porcentaje;
@@ -713,18 +741,17 @@ class NominaRhModel extends CI_Model {
         }
 
         $infonavit = 0;
-        if (!empty($empleado->tiene_infonavit) && (float)$empleado->descuento_infonavit > 0) {
+        if ($aplicar_infonavit && !empty($empleado->tiene_infonavit) && (float)$empleado->descuento_infonavit > 0) {
             $infonavit = round((float)$empleado->descuento_infonavit, 2);
         }
 
-        $conceptos[] = ['tipo' => 'Deducción', 'concepto' => 'ISR', 'monto' => $isr];
-        $conceptos[] = ['tipo' => 'Deducción', 'concepto' => 'IMSS', 'monto' => $imss];
+        // Siempre se agregan los conceptos de deducción; si la bandera está apagada, el monto es 0
+        $conceptos[] = ['tipo' => 'Deducción', 'concepto' => 'ISR',       'monto' => $isr];
+        $conceptos[] = ['tipo' => 'Deducción', 'concepto' => 'IMSS',      'monto' => $imss];
+        $conceptos[] = ['tipo' => 'Deducción', 'concepto' => 'INFONAVIT', 'monto' => $infonavit];
 
         if ($pension_monto > 0) {
             $conceptos[] = ['tipo' => 'Deducción', 'concepto' => 'Pensión Alimenticia', 'monto' => round($pension_monto, 2)];
-        }
-        if ($infonavit > 0) {
-            $conceptos[] = ['tipo' => 'Deducción', 'concepto' => 'INFONAVIT', 'monto' => $infonavit];
         }
 
         return $conceptos;

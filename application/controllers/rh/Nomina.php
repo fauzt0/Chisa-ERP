@@ -769,9 +769,12 @@ class Nomina extends MY_Controller {
     public function guardar_configuracion_ajax() {
         $this->requiere_permiso('rh_nomina_configurar', 'No tienes permiso para configurar la automatización.');
         $data = [
-            'frecuencia'     => $this->input->post('frecuencia'),
-            'auto_crear'     => (int)$this->input->post('auto_crear'),
-            'crear_dias_antes'=> (int)$this->input->post('crear_dias_antes'),
+            'frecuencia'        => $this->input->post('frecuencia'),
+            'auto_crear'        => (int)$this->input->post('auto_crear'),
+            'crear_dias_antes'  => (int)$this->input->post('crear_dias_antes'),
+            'aplicar_infonavit' => (int)$this->input->post('aplicar_infonavit'),
+            'aplicar_isr'       => (int)$this->input->post('aplicar_isr'),
+            'aplicar_imss'      => (int)$this->input->post('aplicar_imss'),
         ];
         $this->NominaRhModel->guardar_configuracion_automatizacion($data);
         echo json_encode(['success' => true, 'message' => 'Configuración guardada']);

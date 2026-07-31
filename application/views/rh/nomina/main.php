@@ -106,8 +106,22 @@
       <div class="nomina-flujo-paso">
         <span class="badge bg-success">3. Procesar pago</span>
       </div>
-      <span class="text-muted nomina-flujo-nota">· Use <strong>Ver</strong> para editar montos · La campana avisa cuando hay nóminas por pagar.</span>
+      <span class="text-muted nomina-flujo-nota">· <strong>Ver</strong> = editar montos y forma de pago · <strong>$</strong> = procesar pago (total o parcial) · <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0" style="width:20px;height:20px;line-height:1;font-size:11px;" onclick="toggleAyudaFlujo()" title="Más info">?</button></span>
     </div>
+  </div>
+
+  <!-- Ayuda del flujo (colapsable) -->
+  <div id="ayudaFlujoInfo" class="alert alert-info border shadow-sm mb-3 py-2 px-3 small" style="display:none;">
+    <div class="d-flex justify-content-between align-items-start mb-1">
+      <strong><i class="fas fa-info-circle me-1"></i> ¿Cómo funciona el módulo de Nómina?</strong>
+      <button type="button" class="btn-close ms-2 flex-shrink-0" style="font-size:0.6rem;" onclick="document.getElementById('ayudaFlujoInfo').style.display='none'"></button>
+    </div>
+    <ul class="mb-0 ps-3" style="line-height:1.5;">
+      <li><strong>1. Nueva / automática:</strong> El sistema crea nóminas en <span class="badge bg-secondary">Borrador</span> (el cron las genera según la configuración de Automatización). También puedes crearlas manualmente.</li>
+      <li><strong>2. Calcular / revisar:</strong> Al hacer clic en <i class="fas fa-calculator"></i> <strong>Calcular</strong>, el sistema calcula sueldos, impuestos, INFONAVIT y demás conceptos. La nómina pasa a <span class="badge bg-warning text-dark">Calculada</span>. Luego usa <strong>Ver</strong> (<i class="fas fa-eye"></i>) para revisar y ajustar horas extras, comidas, préstamos, etc.</li>
+      <li><strong>3. Procesar pago:</strong> Con <strong>$</strong> abres la pantalla de pago. Puedes pagar el <strong>total</strong> o un <strong>parcial</strong> por trabajador. Al completar todos los pagos, la nómina pasa a <span class="badge bg-success">Pagada</span>.</li>
+      <li>Las nóminas <span class="badge bg-success">Pagadas</span> y <span class="badge bg-danger">Canceladas</span> son de solo lectura (no se pueden editar).</li>
+    </ul>
   </div>
 
   <div class="card border-0 shadow-sm">
@@ -242,6 +256,25 @@
 #botonesPeriodoRapido .periodo-btn.active {
   box-shadow: 0 0 0 0.15rem rgba(30, 58, 95, 0.25);
 }
+/* Asegurar que el header del modal no se desborde */
+.rh-modal .modal-header {
+  align-items: flex-start;
+}
+.rh-modal .modal-header .modal-title {
+  min-width: 0;
+  word-break: break-word;
+  padding-right: 0.5rem;
+}
+.rh-modal .alert ul {
+  list-style-type: disc;
+}
+/* En móvil pequeño, permitir wrap del header */
+@media (max-width: 575px) {
+  .rh-modal .modal-header {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+}
 </style>
 
 <?php $this->load->view('rh/partials/modal_styles'); ?>
@@ -317,14 +350,33 @@
           <i class="fas fa-file-invoice-dollar me-2"></i>
           Nómina <span id="detalleFolio">—</span>
         </h5>
-        <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-sm btn-light" onclick="exportarDetalleExcel()" title="Exportar Excel (relación, transferencias y resumen)">
+        <div class="d-flex align-items-center gap-1 flex-shrink-0 ms-auto">
+          <button type="button" class="btn btn-sm rounded-circle flex-shrink-0" 
+                  style="width:24px;height:24px;padding:0;line-height:22px;font-size:13px;font-weight:700;background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.35);"
+                  title="¿Cómo funciona este panel?" onclick="toggleAyudaDetalle()">
+            ?
+          </button>
+          <button type="button" class="btn btn-sm btn-light flex-shrink-0" onclick="exportarDetalleExcel()" title="Exportar Excel (relación, transferencias y resumen)">
             <i class="fas fa-file-excel text-success"></i> Exportar
           </button>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white flex-shrink-0" data-bs-dismiss="modal"></button>
         </div>
       </div>
       <div class="modal-body p-0">
+        <!-- Info de ayuda colapsable -->
+        <div id="ayudaDetalleInfo" class="alert alert-info rounded-0 border-bottom mb-0 py-2 px-3 small" style="display:none;">
+          <div class="d-flex justify-content-between align-items-start mb-1">
+            <strong><i class="fas fa-info-circle me-1"></i> Acerca de esta tabla</strong>
+            <button type="button" class="btn-close ms-2 flex-shrink-0" style="font-size:0.6rem;" onclick="document.getElementById('ayudaDetalleInfo').style.display='none'"></button>
+          </div>
+          <ul class="mb-0 ps-3" style="line-height:1.5;">
+            <li>Muestra el <strong>desglose completo</strong> de percepciones y deducciones por cada trabajador en esta nómina.</li>
+            <li>Las celdas en <span style="background:#fffef5;padding:0 4px;">amarillo claro</span> son <strong>editables</strong> (doble clic).</li>
+            <li>Los cambios solo afectan <strong>esta nómina</strong> — no se heredan a la siguiente (horas extras, comidas, préstamos arrancan en $0.00 cada periodo).</li>
+            <li><strong>Forma de pago:</strong> cambiable directamente desde el <code>&lt;select&gt;</code> de esta tabla.</li>
+            <li><strong>Banco / Cuenta:</strong> muestra las cuentas bancarias del trabajador (perfil). Usa "+ Agregar" si no tiene cuenta.</li>
+          </ul>
+        </div>
         <!-- Info de cabecera: Periodo, Tipo, Fecha Pago -->
         <div class="p-3 bg-light border-bottom">
           <div class="row g-2 small">
@@ -345,7 +397,7 @@
         <!-- Tabla scrolling horizontal con el formato exacto de las imágenes -->
         <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
           <table class="table table-sm table-bordered table-hover mb-0" id="tablaDetalleNomina"
-                 style="font-size: 0.78rem; white-space: nowrap; min-width: 2200px;">
+                 style="font-size: 0.78rem; white-space: nowrap; min-width: 2400px;">
             <thead class="table-dark text-center align-middle" style="position: sticky; top: 0; z-index: 2;">
               <tr>
                 <th rowspan="2" style="min-width:100px;">Lugar u origen</th>
@@ -359,7 +411,9 @@
                 <th rowspan="2" style="min-width:70px;">Otros bonos</th>
                 <th rowspan="2" style="min-width:70px;">Otros</th>
                 <th rowspan="2" class="bg-success text-white" style="min-width:90px;">Total de Percepciones</th>
-                <th rowspan="2" class="bg-danger text-white" style="min-width:80px;">Desglose INFONAVIT</th>
+                <th rowspan="2" class="bg-danger text-white" style="min-width:80px;">INFONAVIT</th>
+                <th rowspan="2" class="bg-danger text-white" style="min-width:65px;">ISR</th>
+                <th rowspan="2" class="bg-danger text-white" style="min-width:65px;">IMSS</th>
                 <th rowspan="2" style="min-width:80px;">Préstamo personal</th>
                 <th rowspan="2" style="min-width:80px;">Otros descuentos</th>
                 <th rowspan="2" class="bg-danger text-white" style="min-width:90px;">Total Deducciones</th>
@@ -412,10 +466,32 @@
           <h5 class="modal-title mb-0 text-white"><i data-lucide="banknote" style="width:20px;height:20px;"></i> Procesar Pago de Nómina</h5>
           <small class="text-white-50" id="pago-nomina-subtitulo">Seleccione los trabajadores a pagar</small>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="d-flex align-items-center gap-1 flex-shrink-0 ms-auto">
+          <button type="button" class="btn btn-sm rounded-circle flex-shrink-0"
+                  style="width:24px;height:24px;padding:0;line-height:22px;font-size:13px;font-weight:700;background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.35);"
+                  title="¿Cómo funciona este panel?" onclick="toggleAyudaPago()">
+            ?
+          </button>
+          <button type="button" class="btn-close btn-close-white flex-shrink-0" data-bs-dismiss="modal"></button>
+        </div>
       </div>
       <div class="modal-body">
         <input type="hidden" id="pago-nomina-id">
+
+        <!-- Info de ayuda colapsable -->
+        <div id="ayudaPagoInfo" class="alert alert-info rounded border mb-3 py-2 px-3 small" style="display:none;">
+          <div class="d-flex justify-content-between align-items-start mb-1">
+            <strong><i class="fas fa-info-circle me-1"></i> Acerca de esta pantalla</strong>
+            <button type="button" class="btn-close ms-2 flex-shrink-0" style="font-size:0.6rem;" onclick="document.getElementById('ayudaPagoInfo').style.display='none'"></button>
+          </div>
+          <ul class="mb-0 ps-3" style="line-height:1.5;">
+            <li><strong>Pend. periodo:</strong> lo que falta por pagar de <em>esta</em> nómina a cada trabajador.</li>
+            <li><strong>Adeudos prev.:</strong> saldo acumulado de nóminas <em>anteriores</em> que quedaron pendientes. El checkbox "Incl." decide si se liquidan ahora.</li>
+            <li><strong>Monto a pagar:</strong> puedes pagar el <strong>total</strong> o un <strong>parcial</strong>. Los botones 25/50/100% son atajos rápidos.</li>
+            <li>Si pagas a <strong>todos</strong> el total → la nómina pasa a <span class="badge bg-success">Pagada</span>.</li>
+            <li>Si pagas <strong>parcial</strong> o solo a algunos → queda en <span class="badge bg-warning text-dark">Parcial</span> hasta completar.</li>
+          </ul>
+        </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-3">
@@ -557,6 +633,27 @@
           <input class="form-check-input" type="checkbox" id="configAutoCrear">
           <label class="form-check-label fw-bold" for="configAutoCrear">Crear nómina automáticamente</label>
         </div>
+
+        <hr class="my-3">
+        <h6 class="fw-bold mb-2"><i class="fas fa-calculator me-1"></i> Configuración de deducciones</h6>
+        <small class="text-muted d-block mb-3">Las deducciones siempre aparecen en el desglose. Si la casilla está desmarcada, el monto será $0 (solo informativo).</small>
+
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="configAplicarInfonavit">
+          <label class="form-check-label fw-bold" for="configAplicarInfonavit">INFONAVIT — Aplicar descuento</label>
+          <small class="d-block text-muted">Monto fijo por empleado.</small>
+        </div>
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="configAplicarISR">
+          <label class="form-check-label fw-bold" for="configAplicarISR">ISR — Aplicar descuento</label>
+          <small class="d-block text-muted">Porcentaje configurado por empleado (por defecto desactivado).</small>
+        </div>
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="configAplicarIMSS">
+          <label class="form-check-label fw-bold" for="configAplicarIMSS">IMSS — Aplicar descuento</label>
+          <small class="d-block text-muted">Cuota fija por empleado.</small>
+        </div>
+
         <div class="alert alert-info mb-0 py-2 small">
           También se verifica al abrir esta pantalla. El cron del servidor ejecuta la creación diaria a las 07:00.
         </div>
@@ -691,6 +788,20 @@ var csrfHash = '<?= $this->security->get_csrf_hash() ?>';
 var pagoEmpleadosData = [];
 var periodoFinManual = false;
 var actualizandoPeriodoFin = false;
+
+// --- Ayuda contextual en modales ---
+function toggleAyudaDetalle() {
+  var el = document.getElementById('ayudaDetalleInfo');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+function toggleAyudaPago() {
+  var el = document.getElementById('ayudaPagoInfo');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+function toggleAyudaFlujo() {
+  var el = document.getElementById('ayudaFlujoInfo');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
 
 /**
  * Los scripts de esta vista se renderizan DENTRO de <main> (antes de app.js).
@@ -1437,6 +1548,14 @@ function abrirModalConfiguracion() {
       $('#configFrecuencia').val(r.config.frecuencia);
       $('#configDiasAntes').val(r.config.crear_dias_antes || 1);
       $('#configAutoCrear').prop('checked', r.config.auto_crear == 1);
+      $('#configAplicarInfonavit').prop('checked', r.config.aplicar_infonavit == 1);
+      $('#configAplicarISR').prop('checked', r.config.aplicar_isr == 1);
+      $('#configAplicarIMSS').prop('checked', r.config.aplicar_imss == 1);
+    } else {
+      // Defaults si no hay configuración guardada aún
+      $('#configAplicarInfonavit').prop('checked', true);
+      $('#configAplicarISR').prop('checked', false);
+      $('#configAplicarIMSS').prop('checked', true);
     }
     $('#modalConfiguracion').modal('show');
   });
@@ -1447,6 +1566,9 @@ function guardarConfiguracion() {
     frecuencia: $('#configFrecuencia').val(),
     crear_dias_antes: $('#configDiasAntes').val(),
     auto_crear: $('#configAutoCrear').is(':checked') ? 1 : 0,
+    aplicar_infonavit: $('#configAplicarInfonavit').is(':checked') ? 1 : 0,
+    aplicar_isr: $('#configAplicarISR').is(':checked') ? 1 : 0,
+    aplicar_imss: $('#configAplicarIMSS').is(':checked') ? 1 : 0,
     peticion: 'ajax',
     [csrfName]: csrfHash
   }, function(r) {
@@ -1473,7 +1595,7 @@ function renderTablaDetalle(detalle, estatus) {
   var totales = {
     sueldo_diario: 0, sueldo_neto: 0, horas_extras: 0, monto_horas_extras: 0,
     comidas: 0, viaticos: 0, prima: 0, bonos: 0, otros: 0,
-    percepciones: 0, infonavit: 0, prestamo: 0, otros_desc: 0,
+    percepciones: 0, infonavit: 0, isr: 0, imss: 0, prestamo: 0, otros_desc: 0,
     deducciones: 0, neto: 0
   };
 
@@ -1493,11 +1615,23 @@ function renderTablaDetalle(detalle, estatus) {
     html += '<td class="' + editableCls + ' text-end" data-field="otros_ingresos" data-type="money"' + editableTitle + '>' + fmt(d.otros_ingresos) + '</td>';
     html += '<td class="text-end bg-success text-white fw-bold">' + fmt(d.percepciones) + '</td>';
     html += '<td class="text-end bg-danger text-white fw-bold">' + fmt(d.infonavit_descuento) + '</td>';
+    html += '<td class="text-end bg-danger bg-opacity-75 text-white fw-bold">' + fmt(d.isr) + '</td>';
+    html += '<td class="text-end bg-danger bg-opacity-75 text-white fw-bold">' + fmt(d.imss) + '</td>';
     html += '<td class="' + editableCls + ' text-end" data-field="prestamo_personal" data-type="money"' + editableTitle + '>' + fmt(d.prestamo_personal) + '</td>';
     html += '<td class="' + editableCls + ' text-end" data-field="otros_descuentos" data-type="money"' + editableTitle + '>' + fmt(d.otros_descuentos) + '</td>';
     html += '<td class="text-end bg-danger text-white fw-bold">' + fmt(d.deducciones) + '</td>';
     html += '<td class="text-end bg-primary text-white fw-bold">' + fmt(d.neto) + '</td>';
-    html += '<td class="text-center">' + badgeFormaPago(d.forma_pago) + '</td>';
+    if (soloLectura) {
+      html += '<td class="text-center">' + badgeFormaPago(d.forma_pago) + '</td>';
+    } else {
+      html += '<td class="text-center forma-pago-cell" data-detalle-id="' + d.detalle_id + '">';
+      html += '<select class="form-select form-select-sm select-forma-pago" style="min-width:130px;font-size:0.75rem;">';
+      var fp = (d.forma_pago || '').trim();
+      ['Transferencia','Efectivo','Cheque','Depósito'].forEach(function(op) {
+        html += '<option value="' + op + '"' + (fp === op ? ' selected' : '') + '>' + op + '</option>';
+      });
+      html += '</select></td>';
+    }
     html += '<td class="text-center">';
     html += '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="descargarReciboIndividual(' + d.detalle_id + ')" title="Descargar recibo individual">';
     html += '<i class="fas fa-file-pdf"></i>';
@@ -1532,6 +1666,8 @@ function renderTablaDetalle(detalle, estatus) {
     totales.otros += parseFloat(d.otros_ingresos) || 0;
     totales.percepciones += parseFloat(d.percepciones) || 0;
     totales.infonavit += parseFloat(d.infonavit_descuento) || 0;
+    totales.isr += parseFloat(d.isr) || 0;
+    totales.imss += parseFloat(d.imss) || 0;
     totales.prestamo += parseFloat(d.prestamo_personal) || 0;
     totales.otros_desc += parseFloat(d.otros_descuentos) || 0;
     totales.deducciones += parseFloat(d.deducciones) || 0;
@@ -1554,6 +1690,8 @@ function renderTablaDetalle(detalle, estatus) {
   footer += '<td class="text-end fw-bold">' + fmt(totales.otros) + '</td>';
   footer += '<td class="text-end bg-success text-white fw-bold">' + fmt(totales.percepciones) + '</td>';
   footer += '<td class="text-end bg-danger text-white fw-bold">' + fmt(totales.infonavit) + '</td>';
+  footer += '<td class="text-end bg-danger bg-opacity-75 text-white fw-bold">' + fmt(totales.isr) + '</td>';
+  footer += '<td class="text-end bg-danger bg-opacity-75 text-white fw-bold">' + fmt(totales.imss) + '</td>';
   footer += '<td class="text-end fw-bold">' + fmt(totales.prestamo) + '</td>';
   footer += '<td class="text-end fw-bold">' + fmt(totales.otros_desc) + '</td>';
   footer += '<td class="text-end bg-danger text-white fw-bold">' + fmt(totales.deducciones) + '</td>';
@@ -1625,6 +1763,27 @@ function activarEdicionInline() {
 
     td.empty().append(input);
     input.focus().select();
+  });
+
+  // Select de forma de pago: envía cambio al instante
+  $('#detalleNominaBody').off('change', '.select-forma-pago').on('change', '.select-forma-pago', function() {
+    var select = $(this);
+    var td = select.closest('td');
+    var detalleId = td.data('detalle-id');
+    var nuevoVal = select.val();
+    var data = { detalle_id: detalleId, forma_pago: nuevoVal, peticion: 'ajax', [csrfName]: csrfHash };
+
+    $.post('<?= base_url('rh/Nomina/actualizar_detalle_ajax') ?>', data, function(r) {
+      try { if (typeof r === 'string') r = JSON.parse(r); } catch (e) {
+        notifyShow('Error al procesar la respuesta', 'danger');
+        return;
+      }
+      if (r.success) {
+        notifyShow('Forma de pago actualizada', 'success');
+      } else {
+        notifyShow(r.message || 'Error al guardar', 'danger');
+      }
+    });
   });
 }
 
