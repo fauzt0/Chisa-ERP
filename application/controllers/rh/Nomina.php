@@ -1367,12 +1367,14 @@ class Nomina extends MY_Controller {
         $row++;
         $cheque = $porForma['Cheque']['neto'] ?? 0;
         $transfer = $porForma['Transferencia']['neto'] ?? 0;
+        $deposito = $porForma['Depósito']['neto'] ?? 0;
         $efectivo = $porForma['Efectivo']['neto'] ?? 0;
-        $otros = $totalNeto - $cheque - $transfer - $efectivo;
+        $otros = $totalNeto - $cheque - $transfer - $deposito - $efectivo;
 
         $guia = [
             ['CHEQUE (sueldos en cheque)', $cheque],
             ['TRANSFERENCIA BANCARIA', $transfer],
+            ['DEPÓSITO', $deposito],
             ['EFECTIVO', $efectivo],
         ];
         if ($otros > 0.009) {

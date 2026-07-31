@@ -620,6 +620,66 @@ Modificados (M):
 
 ---
 
+## Verificación Pre-Presentación — Gap Analysis (31 jul 2026, 01:25–01:45)
+
+> **Objetivo:** Comparar el flujo manual del contador (entrenamiento1/2/3.jpg) contra las funcionalidades del sistema, verificar UI/UX, y validar el Excel exportado.
+>
+> **Ejecutor:** Claude (orquestador)
+
+### Comparativa: Excel Manual vs Sistema
+
+| Elemento del Excel manual | Sistema | Estado |
+|:--------------------------|:--------|:------:|
+| **Hoja 1 — Relación de Nómina** | 18/18 columnas idénticas | ✅ |
+| Agrupación por obra con subtotales | ✅ Implementado | ✅ |
+| Filas alternadas (gris claro) | ✅ `#FAFBFC` en filas pares | ✅ |
+| **Hoja 2 — Transferencias** | 5/5 columnas idénticas | ✅ |
+| Agrupación por banco con subtotales | ✅ Implementado | ✅ |
+| Empleados sin banco excluidos | ✅ `continue` si banco y cuenta son `—` | ✅ |
+| **Hoja 3 — Resumen de Pago** | 3 secciones completas | ✅ |
+| Por forma de pago (Cheque/Transferencia/Efectivo/Depósito) | ✅ Todas las formas aparecen en tabla | ✅ |
+| Por banco / medio de depósito | ✅ Ordenado por monto descendente | ✅ |
+| Guía de desembolso sugerida | ✅ Cheque, Transferencia, Efectivo, Depósito, Otros | ✅ (fix aplicado) |
+| **Cabecera Excel** | Logo, razón social, RFC, tel, email, web, dirección | ✅ |
+| Logo empresa | ✅ `chisa_recubrimientos_logo.jpg` (27 KB, existe) | ✅ |
+| Periodo, fecha pago, folio, tipo, estatus | ✅ Fila 5 en todas las hojas | ✅ |
+
+### Fix aplicado: Depósito en Guía de desembolso
+
+La guía solo listaba Cheque, Transferencia y Efectivo; "Depósito" caía en "OTROS / SIN DEFINIR". Se agregó `$deposito = $porForma['Depósito']['neto'] ?? 0;` y su línea correspondiente en la guía (`['DEPÓSITO', $deposito]`).
+
+### Verificación UI/UX
+
+| Aspecto | Evaluación |
+|:--------|:-----------|
+| Badges de estatus | `-subtle` + `text-dark` = alto contraste en todos los estados |
+| Flujo de trabajo (stepper) | 3 pasos claros con badges de colores: gris → amarillo → verde |
+| Guía contextual en modales | Botones de ayuda (`?`) con tooltips explicativos |
+| Modal detalle: 95vw en escritorio, fullscreen en móvil | ✅ |
+| Tablas responsive con scroll horizontal en ≤767px | ✅ |
+| Colores del planeador por estatus | 5 colores `-subtle` + gris para "Sin nómina" |
+
+### Módulo de Obras — Sin afectación
+
+- Archivos de obras: `controllers/obras/Obras.php`, `models/Obras/ObrasModel.php`, `views/obras/`
+- No referencian `NominaRhModel`, `get_lugar_origen_empleado`, ni ningún código de nómina
+- `php -l` en `Obras.php`: sin errores
+- Tablas de obras (`obras`, `obras_productos`, etc.) sin solapamiento con nómina
+
+### Conclusión
+
+El sistema **cubre completamente el flujo manual** del contador y lo automatiza:
+- Creación automática de nóminas (cron) → elimina trabajo manual de inicio
+- Cálculo automático de sueldos, ISR, IMSS, INFONAVIT → elimina fórmulas Excel
+- Edición inline de horas extras, comidas, préstamos → más rápido que editar celdas Excel
+- Cuentas bancarias integradas → no necesita consultar otro sistema
+- Pagos parciales con log → trazabilidad que el Excel no tiene
+- Exportación Excel 3 hojas con logo y datos completos → reemplaza el archivo manual
+- Recibos PDF individuales → listos para entregar a empleados
+- Planeador mensual → visibilidad de todo el mes, no solo la semana actual
+
+---
+
 ## Notas técnicas importantes
 
 - **`showErpToast()`**: Notificaciones toast del sistema (no toastr/Swal para avisos rutinarios).
