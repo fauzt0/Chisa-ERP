@@ -754,8 +754,9 @@
 </div>
 
 <!-- Offcanvas: Edición Rápida de Empleado (desde detalle de nómina) -->
+<!-- data-bs-backdrop="false" evita doble backdrop; z-index se eleva vía JS cuando se abre desde dentro de un modal -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasEditarEmpleado" aria-labelledby="offcanvasEditarEmpleadoLabel"
-     style="width:480px;max-width:100vw;">
+     data-bs-backdrop="false" style="width:480px;max-width:100vw;z-index:1056;">
   <div class="offcanvas-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
     <h5 class="offcanvas-title text-white" id="offcanvasEditarEmpleadoLabel">
       <i class="fas fa-user-edit me-2"></i>Editar Empleado
@@ -849,7 +850,7 @@
 
       <!-- Botones -->
       <div class="d-flex gap-2 mt-4 pt-3 border-top">
-        <button type="button" class="btn btn-primary flex-fill" onclick="guardarEmpleadoDesdeNomina()">
+        <button type="button" class="btn btn-primary flex-fill" onclick="guardarEmpleadoDesdeNomina(this)">
           <i class="fas fa-save me-1"></i> Guardar Cambios
         </button>
         <a href="#" id="editEmpLinkFull" class="btn btn-outline-secondary flex-fill" target="_blank" title="Abrir perfil completo en nueva pestaña">
@@ -2092,11 +2093,31 @@ function editarEmpleadoDesdeNomina(empleadoId) {
   // Cerrar modal de cuentas si está abierto
   try { $('#modalCuentasEmpleado').modal('hide'); } catch(e) {}
 
+  // Guardar referencia al modal para restaurar después
+  var modalEl = document.getElementById('modalDetalleNomina');
+  var modalWasShown = modalEl && modalEl.classList.contains('show');
+
   // Mostrar offcanvas con loading
-  var offcanvas = new bootstrap.Offcanvas('#offcanvasEditarEmpleado');
+  var offcanvasEl = document.getElementById('offcanvasEditarEmpleado');
+  var offcanvas = new bootstrap.Offcanvas(offcanvasEl);
   $('#empleadoEditLoading').show();
   $('#formEditarEmpleadoNomina').hide();
+
+  // Subir z-index del offcanvas por encima del modal (Bootstrap modal=1055)
+  offcanvasEl.style.zIndex = '1060';
   offcanvas.show();
+
+  // Guardar si el modal estaba abierto para refrescar al cerrar
+  offcanvasEl._nominaModalWasShown = modalWasShown;
+
+  // Al cerrar el offcanvas, refrescar datos del modal
+  offcanvasEl.addEventListener('hidden.bs.offcanvas', function onHidden() {
+    offcanvasEl.removeEventListener('hidden.bs.offcanvas', onHidden);
+    var nominaId = $('#modalDetalleNomina').data('nomina-id');
+    if (nominaId && modalWasShown) {
+      verNomina(nominaId);
+    }
+  }, { once: true });
 
   // Cargar datos del empleado
   $.post('<?= base_url('rh/Nomina/get_empleado_edit_ajax') ?>', {
@@ -2137,9 +2158,10 @@ function editarEmpleadoDesdeNomina(empleadoId) {
   });
 }
 
-function guardarEmpleadoDesdeNomina() {
-  var btn = event.target;
-  $(btn).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Guardando...');
+function guardarEmpleadoDesdeNomina(btn) {
+  btn = btn || event.target;
+  var $btn = $(btn);
+  $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Guardando...');
 
   var data = {
     id: $('#editEmpId').val(),
@@ -2163,20 +2185,17 @@ function guardarEmpleadoDesdeNomina() {
     }
     if (r.success) {
       notifyShow(r.message || 'Empleado actualizado correctamente', 'success');
-      // Refrescar el detalle de la nómina para mostrar cambios
-      var nominaId = $('#modalDetalleNomina').data('nomina-id');
-      if (nominaId) {
-        verNomina(nominaId);
-      }
-      // Cerrar offcanvas
+      // Refrescar CSRF (viene en la respuesta si CodeIgniter lo regenera)
+      if (r.csrf_hash) { csrfHash = r.csrf_hash; }
+      // Cerrar offcanvas primero → el listener 'hidden.bs.offcanvas' refrescará el modal
       bootstrap.Offcanvas.getInstance('#offcanvasEditarEmpleado').hide();
     } else {
       notifyShow(r.message || 'Error al guardar', 'danger');
+      $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar Cambios');
     }
   }).fail(function() {
     notifyShow('Error de conexión', 'danger');
-  }).always(function() {
-    $(btn).prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar Cambios');
+    $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar Cambios');
   });
 }
 
