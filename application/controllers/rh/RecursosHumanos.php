@@ -467,6 +467,38 @@ class RecursosHumanos extends MY_Controller {
     $curp_color = empty($empleado->curp) ? 'text-danger' : '';
     $nss_color = empty($empleado->nss) ? 'text-danger' : '';
 
+    // Cuentas bancarias: prioridad a empleados_cuentas_bancarias
+    $cuenta_default = $this->EmpleadoModel->get_cuenta_default_empleado($id);
+    $cuentas_adicionales = $this->EmpleadoModel->get_cuentas_empleado($id);
+
+    if ($cuenta_default) {
+        $banco_nombre = $cuenta_default->banco ?: ($empleado->banco ?: 'No especificado');
+        $cuenta_html = '<strong>' . htmlspecialchars($banco_nombre) . '</strong>'
+            . '<br><small class="text-muted">Cuenta: ' . htmlspecialchars($cuenta_default->numero_cuenta) . '</small>';
+        if (!empty($cuenta_default->clabe)) {
+            $cuenta_html .= '<br><small class="text-muted">CLABE: ' . htmlspecialchars($cuenta_default->clabe) . '</small>';
+        }
+    } elseif (!empty($empleado->banco) || !empty($empleado->cuenta_bancaria)) {
+        $cuenta_html = htmlspecialchars($empleado->banco ?: '')
+            . '<br><small class="text-muted">Cuenta: ' . htmlspecialchars($empleado->cuenta_bancaria ?: 'N/A') . '</small>';
+    } else {
+        $cuenta_html = '<span class="text-danger fw-bold">FALTANTE</span>';
+    }
+
+    // Si hay cuentas adicionales (más de 1 cuenta activa), listarlas
+    if ($cuentas_adicionales && count($cuentas_adicionales) > 1) {
+        $cuenta_html .= '<hr class="my-1">';
+        foreach ($cuentas_adicionales as $cta) {
+            $es_principal = $cuenta_default && (int)$cta->id === (int)$cuenta_default->id;
+            if ($es_principal) continue; // ya se mostró arriba
+            $cta_banco = $cta->banco ?: 'Sin banco';
+            $badge = ((int)$cta->es_default === 1) ? ' <span class="badge bg-success ms-1" style="font-size:0.65rem;">Principal</span>' : '';
+            $cuenta_html .= '<div class="small ' . ((int)$cta->es_default === 1 ? 'fw-bold' : 'text-muted') . '">'
+                . htmlspecialchars($cta_banco) . ' — ' . htmlspecialchars($cta->numero_cuenta)
+                . $badge . '</div>';
+        }
+    }
+
     $tabs['fiscal'] = [
       'icon' => 'file-text',
       'label' => 'Fiscal',
@@ -478,7 +510,7 @@ class RecursosHumanos extends MY_Controller {
         ['label' => 'C.P. domicilio', 'value' => !empty($empleado->codigo_postal) ? $empleado->codigo_postal : '<span class="text-muted">No registrado</span>', 'icon' => 'map-pin'],
         ['label' => 'C.P. fiscal', 'value' => !empty($empleado->codigo_postal_fiscal) ? $empleado->codigo_postal_fiscal : '<span class="text-muted">No registrado</span>', 'icon' => 'map'],
         ['label' => 'Afore', 'value' => $empleado->afore ?? 'N/A', 'icon' => 'database'],
-        ['label' => 'Cuenta Bancaria', 'value' => $empleado->banco ? ($empleado->banco . ' - Cuenta: ' . ($empleado->cuenta_bancaria ?? 'N/A')) : 'N/A', 'icon' => 'dollar-sign'],
+        ['label' => 'Cuenta Bancaria', 'value' => $cuenta_html, 'icon' => 'dollar-sign'],
         ['label' => 'Régimen Fiscal', 'value' => $empleado->regimen_fiscal ?? 'N/A', 'icon' => 'bookmark'],
       ]
     ];

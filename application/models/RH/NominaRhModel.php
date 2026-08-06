@@ -60,7 +60,7 @@ class NominaRhModel extends CI_Model {
 
     public function agregar_empleados_nomina($nomina_id, $tipo_nomina) {
         $empleados = $this->db
-            ->select('id, lugar_pago, forma_pago, departamento_id')
+            ->select('id, lugar_pago, forma_pago, departamento_id, costo_hora_extra')
             ->from('empleados')
             ->where_in('estatus', EmpleadoModel::estatus_laborales_activos())
             ->where('tipo_nomina', $tipo_nomina)
@@ -69,10 +69,11 @@ class NominaRhModel extends CI_Model {
 
         foreach ($empleados as $emp) {
             $this->db->insert('nominas_detalle', [
-                'nomina_id'   => $nomina_id,
-                'empleado_id' => $emp->id,
-                'lugar_origen'=> $this->get_lugar_origen_empleado($emp),
-                'forma_pago'  => $emp->forma_pago ?? 'Transferencia',
+                'nomina_id'      => $nomina_id,
+                'empleado_id'    => $emp->id,
+                'lugar_origen'   => $this->get_lugar_origen_empleado($emp),
+                'forma_pago'     => $emp->forma_pago ?? 'Transferencia',
+                'costo_hora_extra' => $emp->costo_hora_extra ?? 0.00,
             ]);
         }
 
@@ -143,26 +144,53 @@ class NominaRhModel extends CI_Model {
                 if ($c['concepto'] === 'INFONAVIT') $infonavit_calculado = $c['monto'];
             }
 
-            $this->db->where('id', $det->id)->update('nominas_detalle', [
-                'dias_trabajados'     => $dias,
-                'sueldo_base'         => $sueldo,
-                'sueldo_diario'       => round((float)$det->salario_base_diario, 2),
-                'lugar_origen'        => $this->get_lugar_origen_empleado($det),
-                'percepciones'        => $percepciones,
-                'deducciones'         => $deducciones,
-                'infonavit_descuento' => $infonavit_calculado,
-                'isr'                 => $isr_calculado,
-                'imss'                => $imss_calculado,
-                'neto'                => $neto,
+            $sueldo_diario_val = round((float)$det->salario_base_diario, 2);
+            $lugar_origen_val   = $this->get_lugar_origen_empleado($det);
+
+            // Usar SQL directo para evitar fallos silenciosos de Active Record en producción
+            $sql_update_detalle = "UPDATE nominas_detalle SET
+                dias_trabajados = ?,
+                sueldo_base = ?,
+                sueldo_diario = ?,
+                lugar_origen = ?,
+                costo_hora_extra = ?,
+                monto_horas_extras = ?,
+                percepciones = ?,
+                deducciones = ?,
+                infonavit_descuento = ?,
+                isr = ?,
+                imss = ?,
+                neto = ?
+            WHERE id = ?";
+            $this->db->query($sql_update_detalle, [
+                $dias,
+                $sueldo,
+                $sueldo_diario_val,
+                $lugar_origen_val,
+                round((float)$det->costo_hora_extra, 2),
+                round((float)$det->costo_hora_extra * (float)($det->horas_extras ?? 0), 2),
+                $percepciones,
+                $deducciones,
+                $infonavit_calculado,
+                $isr_calculado,
+                $imss_calculado,
+                $neto,
+                $det->id,
             ]);
 
-            $this->db->where('nomina_detalle_id', $det->id)->delete('nominas_conceptos');
+            if ($this->db->affected_rows() === 0) {
+                $db_error = $this->db->error();
+                log_message('error', 'NominaRhModel::calcular_nomina — UPDATE detalle id=' . $det->id
+                    . ' sin filas afectadas. DB error: ' . json_encode($db_error));
+            }
+
+            $this->db->query('DELETE FROM nominas_conceptos WHERE nomina_detalle_id = ?', [$det->id]);
             foreach ($conceptos as $concepto) {
-                $this->db->insert('nominas_conceptos', [
-                    'nomina_detalle_id' => $det->id,
-                    'tipo'              => $concepto['tipo'],
-                    'concepto'          => $concepto['concepto'],
-                    'monto'             => $concepto['monto'],
+                $this->db->query('INSERT INTO nominas_conceptos (nomina_detalle_id, tipo, concepto, monto) VALUES (?, ?, ?, ?)', [
+                    $det->id,
+                    $concepto['tipo'],
+                    $concepto['concepto'],
+                    $concepto['monto'],
                 ]);
             }
 
@@ -178,12 +206,17 @@ class NominaRhModel extends CI_Model {
             $total_neto += $neto;
         }
 
-        $this->db->where('id', (int)$nomina_id)->update('nominas', [
-            'total_percepciones' => $total_percepciones,
-            'total_deducciones'  => $total_deducciones,
-            'total_neto'         => $total_neto,
-            'estatus'            => 'Calculada',
-        ]);
+        // Usar SQL directo para actualizar cabecera (evita fallos silenciosos de AR)
+        $this->db->query(
+            'UPDATE nominas SET total_percepciones = ?, total_deducciones = ?, total_neto = ?, estatus = ? WHERE id = ?',
+            [$total_percepciones, $total_deducciones, $total_neto, 'Calculada', (int)$nomina_id]
+        );
+
+        if ($this->db->affected_rows() === 0) {
+            $db_error = $this->db->error();
+            log_message('error', 'NominaRhModel::calcular_nomina — UPDATE cabecera nomina_id=' . $nomina_id
+                . ' sin filas afectadas. DB error: ' . json_encode($db_error));
+        }
 
         return [
             'success' => true,
@@ -277,6 +310,10 @@ class NominaRhModel extends CI_Model {
             $this->db->where('id', (int)$data['id'])
                      ->update('empleados_cuentas_bancarias', $data);
             return (int)$data['id'];
+        }
+        // Si es tarjeta, usar el número de tarjeta como numero_cuenta (columna NOT NULL)
+        if (isset($data['tipo']) && $data['tipo'] === 'tarjeta' && empty($data['numero_cuenta'])) {
+            $data['numero_cuenta'] = $data['numero_tarjeta'] ?? 'TARJ-' . time();
         }
         $this->db->insert('empleados_cuentas_bancarias', $data);
         return $this->db->insert_id();
@@ -403,7 +440,21 @@ class NominaRhModel extends CI_Model {
             $update['monto_horas_extras'] = round($h * $c, 2);
         }
 
-        $this->db->where('id', (int)$detalle_id)->update('nominas_detalle', $update);
+        // Usar SQL directo para actualizar detalle (evita fallos silenciosos de AR en producción)
+        $sql_parts = [];
+        $sql_params = [];
+        foreach ($update as $field => $value) {
+            $sql_parts[] = "`$field` = ?";
+            $sql_params[] = $value;
+        }
+        $sql_params[] = (int)$detalle_id;
+        $this->db->query('UPDATE nominas_detalle SET ' . implode(', ', $sql_parts) . ' WHERE id = ?', $sql_params);
+
+        if ($this->db->affected_rows() === 0) {
+            $db_error = $this->db->error();
+            log_message('error', 'NominaRhModel::actualizar_detalle_nomina — UPDATE detalle id=' . $detalle_id
+                . ' sin filas afectadas. DB error: ' . json_encode($db_error));
+        }
 
         // Actualizar totales de la cabecera de nómina
         $this->actualizar_totales_nomina($det->nomina_id);
@@ -421,11 +472,16 @@ class NominaRhModel extends CI_Model {
             ->where('nomina_id', (int)$nomina_id)
             ->get()->row();
 
-        $this->db->where('id', (int)$nomina_id)->update('nominas', [
-            'total_percepciones' => round((float)$totales->p, 2),
-            'total_deducciones'  => round((float)$totales->d, 2),
-            'total_neto'         => round((float)$totales->n, 2),
-        ]);
+        // Usar SQL directo para evitar fallos silenciosos de AR en producción
+        $this->db->query(
+            'UPDATE nominas SET total_percepciones = ?, total_deducciones = ?, total_neto = ? WHERE id = ?',
+            [
+                round((float)$totales->p, 2),
+                round((float)$totales->d, 2),
+                round((float)$totales->n, 2),
+                (int)$nomina_id,
+            ]
+        );
     }
 
     /**
@@ -1161,11 +1217,10 @@ class NominaRhModel extends CI_Model {
             $estatus = 'Pendiente';
         }
 
-        $this->db->where('id', (int)$detalle_id)->update('nominas_detalle', [
-            'monto_pagado' => $nuevo_pagado,
-            'estatus'      => $estatus,
-            'fecha_pago'   => $fecha,
-        ]);
+        $this->db->query(
+            'UPDATE nominas_detalle SET monto_pagado = ?, estatus = ?, fecha_pago = ? WHERE id = ?',
+            [$nuevo_pagado, $estatus, $fecha, (int)$detalle_id]
+        );
 
         return true;
     }
@@ -1234,7 +1289,7 @@ class NominaRhModel extends CI_Model {
             $estatus = 'Parcial';
         }
 
-        $this->db->where('id', (int)$nomina_id)->update('nominas', ['estatus' => $estatus]);
+        $this->db->query('UPDATE nominas SET estatus = ? WHERE id = ?', [$estatus, (int)$nomina_id]);
     }
 
     /**
@@ -1518,7 +1573,7 @@ class NominaRhModel extends CI_Model {
         }
 
         $this->db->trans_start();
-        $this->db->where('id', (int)$nomina_id)->update('nominas', ['estatus' => 'Cancelada']);
+        $this->db->query('UPDATE nominas SET estatus = ? WHERE id = ?', ['Cancelada', (int)$nomina_id]);
         $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
         $this->db->insert('nominas_cancelaciones', [
             'nomina_id' => (int)$nomina_id,
@@ -1537,7 +1592,7 @@ class NominaRhModel extends CI_Model {
         return $this->db
             ->select('nn.*, u.nombre as usuario_nombre')
             ->from('nominas_notas nn')
-            ->join('usuarios u', 'u.id = nn.usuario_id', 'left')
+            ->join('administradores u', 'u.id = nn.usuario_id', 'left')
             ->where('nn.nomina_id', (int)$nomina_id)
             ->order_by('nn.created_at', 'DESC')
             ->get()
@@ -1576,8 +1631,14 @@ class NominaRhModel extends CI_Model {
         $nominas = $this->db
             ->select('id, folio, tipo_nomina, periodo_inicio, periodo_fin, estatus, total_neto')
             ->from('nominas')
-            ->where('periodo_inicio >=', $primer_inicio)
-            ->where('periodo_inicio <=', $ultimo_fin)
+            ->group_start()
+                ->where('periodo_inicio >=', $primer_inicio)
+                ->where('periodo_fin <=', $ultimo_fin)
+            ->group_end()
+            ->or_group_start()
+                ->where('periodo_fin >=', $primer_inicio)
+                ->where('periodo_inicio <=', $ultimo_fin)
+            ->group_end()
             ->get()
             ->result();
 
@@ -1646,5 +1707,71 @@ class NominaRhModel extends CI_Model {
         }
 
         return $periodos;
+    }
+
+    /**
+     * Calcula las próximas nóminas automáticas que se crearían
+     * (previsualización para el planeador mensual).
+     *
+     * @return array  Lista de periodos pendientes de auto-crear
+     */
+    public function get_proxima_auto_nomina_preview() {
+        $config = $this->get_configuracion_automatizacion();
+        if (!$config || !$config->auto_crear || !$config->activo) {
+            return [];
+        }
+
+        $hoy = date('Y-m-d');
+        $dias_antes = max(0, (int)$config->crear_dias_antes);
+        $previews = [];
+
+        $tipos = ['Semanal', 'Quincenal', 'Mensual'];
+        foreach ($tipos as $tipo) {
+            if ($this->contar_empleados_activos_tipo($tipo) === 0) {
+                continue;
+            }
+
+            // Buscar el próximo periodo SIN nómina (hasta 90 días adelante)
+            $cursor = date('Y-m-d', strtotime($hoy . ' +' . $dias_antes . ' days'));
+            $periodo = null;
+            for ($d = 0; $d < 90; $d++) {
+                $fecha = date('Y-m-d', strtotime($cursor . ' +' . $d . ' days'));
+                $p = $this->_periodo_para_fecha_inicio($tipo, $fecha);
+                if (!$p || $p['inicio'] < $hoy) {
+                    continue;
+                }
+                // Verificar que no exista ya una nómina para este periodo
+                $existe = $this->db
+                    ->where('periodo_inicio', $p['inicio'])
+                    ->where('periodo_fin', $p['fin'])
+                    ->where('tipo_nomina', $tipo)
+                    ->count_all_results('nominas');
+                if ($existe > 0) {
+                    continue; // seguir buscando el siguiente periodo
+                }
+                $periodo = $p;
+                break;
+            }
+            if (!$periodo) continue;
+
+            $fecha_creacion = date('Y-m-d', strtotime($periodo['inicio'] . ' -' . $dias_antes . ' days'));
+            $fecha_creacion_ts = strtotime($fecha_creacion);
+            $hoy_ts = strtotime($hoy);
+
+            $previews[] = [
+                'tipo'           => $tipo,
+                'inicio'         => $periodo['inicio'],
+                'fin'            => $periodo['fin'],
+                'fecha_creacion' => $fecha_creacion,
+                'dias_restantes' => $fecha_creacion_ts > $hoy_ts ? (int)(($fecha_creacion_ts - $hoy_ts) / 86400) : 0,
+                'label'          => date('d M', strtotime($periodo['inicio'])) . ' – ' . date('d M', strtotime($periodo['fin'])),
+            ];
+        }
+
+        usort($previews, function($a, $b) {
+            return strcmp($a['fecha_creacion'], $b['fecha_creacion']);
+        });
+
+        return $previews;
     }
 }

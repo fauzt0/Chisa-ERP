@@ -366,6 +366,55 @@ class EmpleadoModel extends MY_Model {
         $this->db->where('empleados.id', $id);
         return $this->db->get()->row();
     }
+
+    /**
+     * Obtiene la cuenta bancaria default del empleado desde empleados_cuentas_bancarias.
+     * Prioridad: es_default=1 > primera activa > null.
+     */
+    public function get_cuenta_default_empleado($empleado_id) {
+        // Primero buscar la marcada como default
+        $default = $this->db
+            ->select('ecb.*, cb.banco')
+            ->from('empleados_cuentas_bancarias ecb')
+            ->join('cuentas_bancarias cb', 'cb.id = ecb.cuenta_bancaria_id', 'left')
+            ->where('ecb.empleado_id', (int)$empleado_id)
+            ->where('ecb.estatus', 1)
+            ->where('ecb.es_default', 1)
+            ->get()
+            ->row();
+
+        if ($default) {
+            return $default;
+        }
+
+        // Si no hay default, tomar la primera activa
+        return $this->db
+            ->select('ecb.*, cb.banco')
+            ->from('empleados_cuentas_bancarias ecb')
+            ->join('cuentas_bancarias cb', 'cb.id = ecb.cuenta_bancaria_id', 'left')
+            ->where('ecb.empleado_id', (int)$empleado_id)
+            ->where('ecb.estatus', 1)
+            ->order_by('ecb.id', 'ASC')
+            ->limit(1)
+            ->get()
+            ->row();
+    }
+
+    /**
+     * Obtiene todas las cuentas bancarias activas del empleado.
+     */
+    public function get_cuentas_empleado($empleado_id) {
+        return $this->db
+            ->select('ecb.*, cb.banco')
+            ->from('empleados_cuentas_bancarias ecb')
+            ->join('cuentas_bancarias cb', 'cb.id = ecb.cuenta_bancaria_id', 'left')
+            ->where('ecb.empleado_id', (int)$empleado_id)
+            ->where('ecb.estatus', 1)
+            ->order_by('ecb.es_default', 'DESC')
+            ->order_by('ecb.id', 'ASC')
+            ->get()
+            ->result();
+    }
     
     /**
      * Obtiene lista de empleados para select (jefe directo)

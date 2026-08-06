@@ -726,10 +726,16 @@ class Nomina extends MY_Controller {
             'cuenta_bancaria_id'=> $this->input->post('cuenta_bancaria_id') ? (int)$this->input->post('cuenta_bancaria_id') : null,
             'numero_cuenta'     => $this->input->post('numero_cuenta'),
             'clabe'             => $this->input->post('clabe'),
+            'tipo'              => $this->input->post('tipo') ?: 'cuenta',
+            'numero_tarjeta'    => $this->input->post('numero_tarjeta') ?: null,
             'es_default'        => (int)$this->input->post('es_default'),
         ];
-        if (empty($data['empleado_id']) || empty($data['numero_cuenta'])) {
+        if (empty($data['empleado_id']) || (empty($data['numero_cuenta']) && $data['tipo'] === 'cuenta')) {
             echo json_encode(['success' => false, 'message' => 'Complete los campos requeridos']);
+            return;
+        }
+        if ($data['tipo'] === 'tarjeta' && empty($data['numero_tarjeta'])) {
+            echo json_encode(['success' => false, 'message' => 'Ingrese el número de tarjeta']);
             return;
         }
         $id = $this->NominaRhModel->guardar_cuenta_empleado($data);
@@ -892,7 +898,15 @@ class Nomina extends MY_Controller {
         $tipo = $this->input->get('tipo') ?: 'Semanal';
 
         $result = $this->NominaRhModel->get_planeador_mensual($mes, $anio, $tipo);
-        echo json_encode(['success' => true, 'periodos' => $result, 'mes' => $mes, 'anio' => $anio, 'tipo' => $tipo]);
+        $proximas_auto = $this->NominaRhModel->get_proxima_auto_nomina_preview();
+        echo json_encode([
+            'success'       => true,
+            'periodos'      => $result,
+            'proximas_auto' => $proximas_auto,
+            'mes'           => $mes,
+            'anio'          => $anio,
+            'tipo'          => $tipo
+        ]);
     }
 
     /**

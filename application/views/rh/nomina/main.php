@@ -178,15 +178,15 @@
         <thead class="table-light">
           <tr>
             <th>Folio</th>
-            <th>Tipo</th>
+            <th class="d-none d-md-table-cell">Tipo</th>
             <th>Periodo</th>
-            <th>Fecha Pago</th>
-            <th class="text-end">Percepciones</th>
-            <th class="text-end">Deducciones</th>
+            <th class="d-none d-md-table-cell">Fecha Pago</th>
+            <th class="text-end d-none d-lg-table-cell">Percepciones</th>
+            <th class="text-end d-none d-lg-table-cell">Deducciones</th>
             <th class="text-end">Neto</th>
             <th>Estatus</th>
-            <th width="170">Pago</th>
-            <th width="130">Acciones</th>
+            <th class="text-nowrap" width="170">Pago</th>
+            <th class="text-nowrap" width="130">Acciones</th>
             <th class="d-none" aria-hidden="true"></th>
           </tr>
         </thead>
@@ -288,6 +288,59 @@
 .planeador-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.12) !important;
+}
+
+/* --- Filtros del planeador (chips) --- */
+.filter-chip {
+  border-radius: 20px;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+.filter-chip .chip-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.filter-chip:not(.active) {
+  opacity: 0.45;
+}
+.filter-chip.active {
+  opacity: 1;
+}
+
+/* --- Arreglo estético: selects en tabla de detalle (forma de pago / banco) --- */
+/* Elimina la flecha duplicada de Bootstrap en selects dentro de la tabla */
+#tablaDetalleNomina select.form-select-sm {
+  background-image: none !important;
+  padding-right: 0.35rem !important;
+  appearance: auto;
+}
+/* Celda de forma de pago: evita que el select se desborde */
+.forma-pago-cell {
+  vertical-align: middle;
+}
+/* Celda de banco/cuenta: layout flex para select + botón sin solaparse */
+.td-banco-cuenta {
+  min-width: 200px;
+  white-space: nowrap;
+}
+.td-banco-cuenta .banco-cuenta-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
+.td-banco-cuenta .banco-cuenta-row select {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
+}
+.td-banco-cuenta .banco-cuenta-row .btn {
+  flex-shrink: 0;
 }
 
 #planeadorGrid .col,
@@ -704,12 +757,12 @@
   </div>
 </div>
 
-<!-- Modal: Cuentas Bancarias del Empleado -->
+<!-- Modal: Cuentas Bancarias / Tarjetas del Empleado -->
 <div class="modal fade rh-modal" id="modalCuentasEmpleado" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content border-0 shadow">
       <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
-        <h5 class="modal-title text-white"><i class="fas fa-university me-2"></i>Cuentas — <span id="cuentasEmpleadoNombre">—</span></h5>
+        <h5 class="modal-title text-white"><i class="fas fa-credit-card me-2"></i>Cuentas y Tarjetas — <span id="cuentasEmpleadoNombre">—</span></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -717,8 +770,9 @@
           <table class="table table-sm table-hover" id="tablaCuentasEmpleado">
             <thead class="table-light">
               <tr>
+                <th>Tipo</th>
                 <th>Banco</th>
-                <th>Número de Cuenta</th>
+                <th>No. Cuenta / Tarjeta</th>
                 <th>CLABE</th>
                 <th>Default</th>
                 <th class="text-end">Acciones</th>
@@ -728,21 +782,37 @@
           </table>
         </div>
         <hr>
-        <h6 class="fw-bold">Agregar cuenta</h6>
-        <div class="row g-2">
-          <div class="col-md-4">
+        <h6 class="fw-bold">Agregar cuenta o tarjeta</h6>
+        <div class="row g-2 mb-2">
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Tipo</label>
+            <select id="nuevoTipoCuenta" class="form-select form-select-sm" onchange="toggleTipoCuenta()">
+              <option value="cuenta">🏦 Cuenta bancaria</option>
+              <option value="tarjeta">💳 Tarjeta</option>
+            </select>
+          </div>
+          <div class="col-md-3" id="divBancoSelect">
+            <label class="form-label small mb-1">Banco</label>
             <select id="nuevoBancoId" class="form-select form-select-sm">
               <option value="">Seleccionar banco...</option>
               <!-- Llenado vía AJAX desde cuentas_bancarias -->
             </select>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-3" id="divNumeroCuenta">
+            <label class="form-label small mb-1">No. Cuenta</label>
             <input type="text" id="nuevoNumeroCuenta" class="form-control form-control-sm" placeholder="No. Cuenta">
           </div>
-          <div class="col-md-3">
-            <input type="text" id="nuevoClabe" class="form-control form-control-sm" placeholder="CLABE (18 dígitos)">
+          <div class="col-md-3" id="divNumeroTarjeta" style="display:none;">
+            <label class="form-label small mb-1">No. Tarjeta</label>
+            <input type="text" id="nuevoNumeroTarjeta" class="form-control form-control-sm" placeholder="16 dígitos" maxlength="16">
           </div>
-          <div class="col-md-2">
+        </div>
+        <div class="row g-2">
+          <div class="col-md-8">
+            <label class="form-label small mb-1">CLABE</label>
+            <input type="text" id="nuevoClabe" class="form-control form-control-sm" placeholder="CLABE interbancaria (18 dígitos)" maxlength="18">
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
             <button class="btn btn-sm btn-success w-100" onclick="agregarCuentaEmpleado()">
               <i class="fas fa-plus"></i> Agregar
             </button>
@@ -961,16 +1031,45 @@
             Mes siguiente <i class="fas fa-chevron-right"></i>
           </button>
         </div>
+        <!-- Panel: Próximas nóminas automáticas (colapsable) -->
+        <div id="panelProximasAuto" class="mb-3" style="display:none;">
+          <div class="card border-info shadow-sm">
+            <div class="card-header bg-info bg-opacity-10 border-info d-flex justify-content-between align-items-center py-2">
+              <span class="fw-semibold text-info"><i class="fas fa-robot me-2"></i>Próximas nóminas automáticas</span>
+              <button type="button" class="btn-close btn-sm" onclick="$('#panelProximasAuto').hide()" title="Ocultar"></button>
+            </div>
+            <div id="proximasAutoContent" class="card-body py-2 small">
+              <!-- Llenado dinámico por JS -->
+            </div>
+          </div>
+        </div>
         <div id="planeadorGrid" class="row g-3">
         </div>
+        <!-- Filtro por estatus (click para mostrar/ocultar) -->
         <div class="mt-4 pt-3 border-top">
-          <div class="d-flex flex-wrap gap-3 small">
-            <span><span class="badge bg-success-subtle text-dark me-1">■</span> Pagada</span>
-            <span><span class="badge bg-warning-subtle text-dark me-1">■</span> Calculada</span>
-            <span><span class="badge bg-info-subtle text-dark me-1">■</span> Parcial</span>
-            <span><span class="badge bg-secondary-subtle text-dark me-1">■</span> Borrador</span>
-            <span><span class="badge bg-danger-subtle text-dark me-1">■</span> Cancelada</span>
-            <span><span class="badge bg-light border text-muted me-1">■</span> Sin nómina</span>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <small class="text-muted fw-semibold me-1">Filtrar:</small>
+            <button type="button" class="btn btn-sm btn-outline-success active filter-chip" data-status="Pagada" onclick="toggleFiltroStatus(this)" title="Mostrar/ocultar Pagadas">
+              <span class="chip-dot bg-success"></span> Pagada
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning active filter-chip" data-status="Calculada" onclick="toggleFiltroStatus(this)" title="Mostrar/ocultar Calculadas">
+              <span class="chip-dot bg-warning"></span> Calculada
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info active filter-chip" data-status="Parcial" onclick="toggleFiltroStatus(this)" title="Mostrar/ocultar Parciales">
+              <span class="chip-dot bg-info"></span> Parcial
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary active filter-chip" data-status="Borrador" onclick="toggleFiltroStatus(this)" title="Mostrar/ocultar Borradores">
+              <span class="chip-dot bg-secondary"></span> Borrador
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger active filter-chip" data-status="Cancelada" onclick="toggleFiltroStatus(this)" title="Mostrar/ocultar Canceladas">
+              <span class="chip-dot bg-danger"></span> Cancelada
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-dark active filter-chip" data-status="_sin_nomina" onclick="toggleFiltroStatus(this)" title="Mostrar/ocultar periodos sin nómina">
+              <span class="chip-dot bg-dark"></span> Sin nómina
+            </button>
+            <button type="button" class="btn btn-sm btn-link text-decoration-none ms-2" onclick="resetFiltrosStatus()" title="Mostrar todos">
+              <i class="fas fa-sync-alt me-1"></i>Mostrar todos
+            </button>
           </div>
         </div>
       </div>
@@ -991,6 +1090,14 @@ var actualizandoPeriodoFin = false;
 var planeadorMes = <?= (int)date('m') ?>;
 var planeadorAnio = <?= (int)date('Y') ?>;
 var planeadorTipo = 'Semanal';
+var planeadorFiltros = {
+  'Pagada': true,
+  'Calculada': true,
+  'Parcial': true,
+  'Borrador': true,
+  'Cancelada': true,
+  '_sin_nomina': true
+};
 
 // --- Ayuda contextual en modales ---
 function toggleAyudaDetalle() {
@@ -1061,6 +1168,8 @@ function initTablaNominas() {
     processing: true,
     serverSide: false,
     searching: false,
+    scrollX: true,
+    scrollCollapse: true,
     ajax: {
       url: '<?= base_url('rh/Nomina/lista_ajax') ?>',
       type: 'POST',
@@ -1093,6 +1202,9 @@ function initTablaNominas() {
     columnDefs: [
       { className: 'text-end', targets: [4, 5, 6] },
       { className: 'text-nowrap', targets: [8, 9] },
+      // Ocultar columnas secundarias en pantallas pequeñas para mejorar legibilidad
+      { className: 'd-none d-md-table-cell', targets: [1, 3] },
+      { className: 'd-none d-lg-table-cell', targets: [4, 5] },
       { type: 'html-num-fmt', targets: [4, 5, 6] },
       { targets: 2, orderData: [10, 2] },
       { targets: 10, visible: false, orderable: true, searchable: false }
@@ -1840,22 +1952,25 @@ function renderTablaDetalle(detalle, estatus) {
     html += '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="descargarReciboIndividual(' + d.detalle_id + ')" title="Descargar recibo individual">';
     html += '<i class="fas fa-file-pdf"></i>';
     html += '</button></td>';
-    html += '<td class="text-center" style="min-width:160px;">';
+    html += '<td class="text-center td-banco-cuenta">';
     var cuentas = d.cuentas_bancarias || [];
     if (cuentas.length === 0) {
       html += '<span class="text-muted small">Sin cuentas</span> ';
-      html += '<button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" onclick="verCuentasEmpleado(' + d.empleado_id + ',\'' + escJS(d.nombre) + '\')" title="Agregar cuenta bancaria">+ Agregar</button>';
+      html += '<button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" onclick="verCuentasEmpleado(' + d.empleado_id + ',\'' + escJS(d.nombre) + '\')" title="Agregar cuenta bancaria o tarjeta">+ Agregar</button>';
     } else {
+      html += '<div class="banco-cuenta-row">';
       var defaultId = d.cuenta_default ? d.cuenta_default.id : cuentas[0].id;
-      html += '<select class="form-select form-select-sm" style="min-width:150px;" title="Cuenta bancaria (informativo)">';
+      html += '<select class="form-select form-select-sm banco-cuenta-select" title="Cuenta bancaria / tarjeta (informativo)">';
       cuentas.forEach(function(c) {
-        var num = String(c.numero_cuenta || c.clabe || '');
+        var tipoLabel = (c.tipo === 'tarjeta') ? '💳' : '🏦';
+        var num = String(c.numero_cuenta || c.numero_tarjeta || c.clabe || '');
         var ult4 = num.length >= 4 ? num.slice(-4) : (num || '—');
-        var label = esc((c.banco || 'Banco') + ' - ' + ult4);
+        var label = tipoLabel + ' ' + esc((c.banco || (c.tipo === 'tarjeta' ? 'Tarjeta' : 'Banco')) + ' - ' + ult4);
         html += '<option value="' + c.id + '"' + (c.id == defaultId ? ' selected' : '') + '>' + label + '</option>';
       });
       html += '</select> ';
-      html += '<button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" onclick="verCuentasEmpleado(' + d.empleado_id + ',\'' + escJS(d.nombre) + '\')" title="Agregar/editar cuentas bancarias">+</button>';
+      html += '<button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" onclick="verCuentasEmpleado(' + d.empleado_id + ',\'' + escJS(d.nombre) + '\')" title="Agregar/editar cuentas o tarjetas">+</button>';
+      html += '</div>';
     }
     html += '</td>';
     html += '</tr>';
@@ -1992,14 +2107,29 @@ function activarEdicionInline() {
   });
 }
 
-// --- Cuentas bancarias del empleado ---
+// --- Cuentas bancarias y tarjetas del empleado ---
 
 function verCuentasEmpleado(empleadoId, nombre) {
   $('#cuentasEmpleadoNombre').text(nombre);
   $('#modalCuentasEmpleado').data('empleado-id', empleadoId);
+  // Resetear formulario
+  $('#nuevoTipoCuenta').val('cuenta');
+  $('#nuevoNumeroCuenta, #nuevoNumeroTarjeta, #nuevoClabe').val('');
+  toggleTipoCuenta();
   cargarCuentasEmpleado(empleadoId);
   cargarCatalogoBancos();
   $('#modalCuentasEmpleado').modal('show');
+}
+
+function toggleTipoCuenta() {
+  var tipo = $('#nuevoTipoCuenta').val();
+  if (tipo === 'tarjeta') {
+    $('#divBancoSelect, #divNumeroCuenta').hide();
+    $('#divNumeroTarjeta').show();
+  } else {
+    $('#divBancoSelect, #divNumeroCuenta').show();
+    $('#divNumeroTarjeta').hide();
+  }
 }
 
 function cargarCuentasEmpleado(empleadoId) {
@@ -2010,9 +2140,14 @@ function cargarCuentasEmpleado(empleadoId) {
     var html = '';
     if (r.cuentas && r.cuentas.length > 0) {
       r.cuentas.forEach(function(c) {
+        var tipoIcon = (c.tipo === 'tarjeta') ? '💳 Tarjeta' : '🏦 Cuenta';
+        var numeroMostrar = c.tipo === 'tarjeta'
+          ? esc(c.numero_tarjeta ? ('••••' + c.numero_tarjeta.slice(-4)) : '—')
+          : esc(c.numero_cuenta || '—');
         html += '<tr>';
+        html += '<td><span class="badge bg-light text-dark border">' + tipoIcon + '</span></td>';
         html += '<td>' + esc(c.banco || '—') + '</td>';
-        html += '<td>' + esc(c.numero_cuenta) + '</td>';
+        html += '<td>' + numeroMostrar + '</td>';
         html += '<td>' + esc(c.clabe || '—') + '</td>';
         html += '<td>' + (c.es_default == 1 ? '<span class="badge bg-success">Principal</span>' :
           '<button class="btn btn-sm btn-outline-success" onclick="setCuentaDefault(' + empleadoId + ',' + c.id + ')">Establecer</button>') + '</td>';
@@ -2020,7 +2155,7 @@ function cargarCuentasEmpleado(empleadoId) {
         html += '</tr>';
       });
     } else {
-      html = '<tr><td colspan="5" class="text-center text-muted">Sin cuentas registradas</td></tr>';
+      html = '<tr><td colspan="6" class="text-center text-muted">Sin cuentas ni tarjetas registradas</td></tr>';
     }
     $('#cuentasEmpleadoBody').html(html);
   });
@@ -2041,11 +2176,14 @@ function cargarCatalogoBancos() {
 
 function agregarCuentaEmpleado() {
   var empleadoId = $('#modalCuentasEmpleado').data('empleado-id');
+  var tipo = $('#nuevoTipoCuenta').val();
   $.post('<?= base_url('rh/Nomina/guardar_cuenta_empleado_ajax') ?>', {
     empleado_id: empleadoId,
-    cuenta_bancaria_id: $('#nuevoBancoId').val(),
-    numero_cuenta: $('#nuevoNumeroCuenta').val(),
+    cuenta_bancaria_id: tipo === 'cuenta' ? $('#nuevoBancoId').val() : '',
+    numero_cuenta: tipo === 'cuenta' ? $('#nuevoNumeroCuenta').val() : '',
     clabe: $('#nuevoClabe').val(),
+    tipo: tipo,
+    numero_tarjeta: tipo === 'tarjeta' ? $('#nuevoNumeroTarjeta').val() : '',
     es_default: 0,
     peticion: 'ajax',
     [csrfName]: csrfHash
@@ -2055,11 +2193,11 @@ function agregarCuentaEmpleado() {
       return;
     }
     if (r.success) {
-      $('#nuevoNumeroCuenta, #nuevoClabe').val('');
+      $('#nuevoNumeroCuenta, #nuevoNumeroTarjeta, #nuevoClabe').val('');
       cargarCuentasEmpleado(empleadoId);
-      notifyShow(r.message || 'Cuenta agregada', 'success');
+      notifyShow(r.message || 'Guardado correctamente', 'success');
     } else {
-      notifyShow(r.message || 'Error al agregar cuenta', 'danger');
+      notifyShow(r.message || 'Error al guardar', 'danger');
     }
   });
 }
@@ -2410,6 +2548,12 @@ function abrirPlaneador() {
   planeadorMes = <?= (int)date('m') ?>;
   planeadorAnio = <?= (int)date('Y') ?>;
   planeadorTipo = 'Semanal';
+  // Resetear filtros al abrir
+  planeadorFiltros = {
+    'Pagada': true, 'Calculada': true, 'Parcial': true,
+    'Borrador': true, 'Cancelada': true, '_sin_nomina': true
+  };
+  $('.filter-chip').addClass('active');
   $('#planeadorTipoSemanal').prop('checked', true);
   $('#modalPlaneador').modal('show');
   cargarPlaneador();
@@ -2421,13 +2565,34 @@ function cargarPlaneador() {
   $('#planeadorLabelMes').text(meses[planeadorMes - 1] + ' ' + planeadorAnio);
   $('#planeador-titulo-mes').text(meses[planeadorMes - 1] + ' ' + planeadorAnio);
 
+  // Mostrar spinner de carga mientras se obtienen los datos
+  var $grid = $('#planeadorGrid');
+  $grid.html('<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div><p class="text-muted mt-2 mb-0">Cargando periodos...</p></div>');
+
   $.get('<?= base_url("rh/Nomina/planeador_mensual_ajax") ?>', {
     mes: planeadorMes,
     anio: planeadorAnio,
     tipo: planeadorTipo
   }, function(r) {
-    if (!r.success) return;
+    if (!r || !r.success) {
+      $grid.html('<div class="col-12 text-center text-danger py-5"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p>Error al cargar los datos del planeador.</p><p class="small text-muted">' + (r && r.message ? esc(r.message) : 'Respuesta inesperada del servidor.') + '</p></div>');
+      return;
+    }
     renderizarGrid(r.periodos);
+    // Renderizar panel de próximas nóminas automáticas
+    if (r.proximas_auto && r.proximas_auto.length > 0) {
+      renderProximasAuto(r.proximas_auto);
+    } else {
+      $('#panelProximasAuto').hide();
+    }
+  }, 'json')
+  .fail(function(jqXHR, textStatus, errorThrown) {
+    console.error('Planeador: error al cargar datos', textStatus, errorThrown);
+    var msg = 'Error de conexión al cargar el planeador.';
+    if (jqXHR.status === 403) msg = 'No tienes permisos para ver el planeador de nóminas.';
+    else if (jqXHR.status === 401 || jqXHR.status === 302 || jqXHR.status === 307) msg = 'Tu sesión ha expirado. Recarga la página e inicia sesión de nuevo.';
+    else if (jqXHR.status === 500) msg = 'Error interno del servidor. Contacta a soporte técnico.';
+    $grid.html('<div class="col-12 text-center text-danger py-5"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p>' + msg + '</p><p class="small text-muted">(' + textStatus + ')</p></div>');
   });
 }
 
@@ -2446,11 +2611,14 @@ function renderizarGrid(periodos) {
   else if (periodos.length === 4) colClass = 'col-md-3';
   else if (periodos.length === 5) colClass = 'col-md';
 
+  var visibleCount = 0;
+
   periodos.forEach(function(p) {
     var nom = p.nomina;
     var bgClass = '';
     var badgeHtml = '';
     var clickAction = '';
+    var cardStatus = nom ? nom.estatus : '_sin_nomina';
 
     if (nom) {
       var statusMap = {
@@ -2470,7 +2638,11 @@ function renderizarGrid(periodos) {
       clickAction = 'onclick="crearNominaDesdePlaneador(\'' + p.inicio + '\',\'' + p.fin + '\')"';
     }
 
-    var cardHtml = '<div class="' + colClass + '">' +
+    // Aplicar filtro: ocultar si el estatus no está activo
+    var hidden = planeadorFiltros && !planeadorFiltros[cardStatus];
+    if (!hidden) visibleCount++;
+
+    var cardHtml = '<div class="' + colClass + ' planeador-card-wrapper" data-status="' + cardStatus + '" style="' + (hidden ? 'display:none;' : '') + '">' +
       '<div class="card h-100 shadow-sm ' + bgClass + ' border planeador-card" ' +
            'style="cursor:pointer;transition:transform 0.15s;" ' +
            clickAction + ' ' +
@@ -2490,6 +2662,11 @@ function renderizarGrid(periodos) {
 
     $grid.append(cardHtml);
   });
+
+  // Si todos están ocultos, mostrar mensaje
+  if (visibleCount === 0) {
+    $grid.append('<div class="col-12 text-center text-muted py-3 planeador-empty-msg"><i class="fas fa-filter me-1"></i> Todos los periodos están filtrados. Usa los botones de arriba para mostrar estatus.</div>');
+  }
 }
 
 function navegarPlaneador(dir) {
@@ -2499,10 +2676,100 @@ function navegarPlaneador(dir) {
   cargarPlaneador();
 }
 
-$('input[name="planeadorTipo"]').on('change', function() {
-  planeadorTipo = $(this).val();
-  cargarPlaneador();
-});
+// --- Funciones de filtro por estatus ---
+function toggleFiltroStatus(btn) {
+  var status = $(btn).data('status');
+  planeadorFiltros[status] = !planeadorFiltros[status];
+  if (planeadorFiltros[status]) {
+    $(btn).addClass('active');
+  } else {
+    $(btn).removeClass('active');
+  }
+  aplicarFiltrosGrid();
+}
+
+function resetFiltrosStatus() {
+  Object.keys(planeadorFiltros).forEach(function(k) { planeadorFiltros[k] = true; });
+  $('.filter-chip').addClass('active');
+  aplicarFiltrosGrid();
+}
+
+function aplicarFiltrosGrid() {
+  var $grid = $('#planeadorGrid');
+  var visibleCount = 0;
+  $grid.find('.planeador-card-wrapper').each(function() {
+    var $wrapper = $(this);
+    var status = $wrapper.data('status');
+    if (planeadorFiltros[status]) {
+      $wrapper.show();
+      visibleCount++;
+    } else {
+      $wrapper.hide();
+    }
+  });
+  // Mostrar/ocultar mensaje "todos filtrados"
+  var $msg = $grid.find('.planeador-empty-msg');
+  if (visibleCount === 0 && $grid.find('.planeador-card-wrapper').length > 0) {
+    if ($msg.length === 0) {
+      $grid.append('<div class="col-12 text-center text-muted py-3 planeador-empty-msg"><i class="fas fa-filter me-1"></i> Todos los periodos están filtrados. Usa los botones de arriba para mostrar estatus.</div>');
+    }
+    $msg.show();
+  } else {
+    $msg.remove();
+  }
+}
+
+// --- Renderizar panel de próximas nóminas automáticas ---
+function renderProximasAuto(proximas) {
+  var $panel = $('#panelProximasAuto');
+  var $content = $('#proximasAutoContent');
+  $content.empty();
+
+  if (!proximas || proximas.length === 0) {
+    $panel.hide();
+    return;
+  }
+
+  var html = '<div class="d-flex flex-wrap gap-2">';
+  proximas.forEach(function(p) {
+    var diasTexto = p.dias_restantes === 0
+      ? '<span class="badge bg-warning text-dark">Hoy</span>'
+      : (p.dias_restantes === 1
+        ? '<span class="badge bg-info">Mañana</span>'
+        : '<span class="badge bg-secondary">En ' + p.dias_restantes + ' días</span>');
+
+    html += '<div class="border rounded p-2 bg-white" style="min-width:200px;">' +
+      '<div class="fw-semibold mb-1">' + esc(p.tipo) + ': ' + esc(p.label) + '</div>' +
+      '<div class="d-flex justify-content-between align-items-center">' +
+        '<small class="text-muted">Creación: ' + esc(p.fecha_creacion) + '</small>' +
+        diasTexto +
+      '</div>' +
+      '<div class="mt-1"><small class="text-muted">Periodo: ' + esc(p.inicio) + ' → ' + esc(p.fin) + '</small></div>' +
+    '</div>';
+  });
+  html += '</div>';
+
+  $content.html(html);
+  $panel.show();
+}
+
+// Listener diferido para toggle de tipo (Semanal/Quincenal/Mensual)
+// Se registra cuando jQuery esté disponible (sigue el mismo patrón que bootNominaModule)
+function bindPlaneadorTipoListener() {
+  $('input[name="planeadorTipo"]').on('change', function() {
+    planeadorTipo = $(this).val();
+    cargarPlaneador();
+  });
+}
+if (typeof jQuery !== 'undefined') {
+  $(document).ready(bindPlaneadorTipoListener);
+} else {
+  window.addEventListener('load', function() {
+    if (typeof jQuery !== 'undefined') {
+      $(document).ready(bindPlaneadorTipoListener);
+    }
+  });
+}
 
 function verNominaDesdePlaneador(nominaId) {
   $('#modalPlaneador').modal('hide');
@@ -2533,19 +2800,49 @@ function crearNominaDesdePlaneador(inicio, fin) {
 </script>
 
 <style>
+/* ── Responsive: nómina principal ── */
 @media (max-width: 767px) {
-  .rh-nomina-page .table-responsive {
-    -webkit-overflow-scrolling: touch;
-    overflow-x: auto;
-  }
   .rh-nomina-page .dataTables_wrapper .dataTables_filter,
   .rh-nomina-page .dataTables_wrapper .dataTables_length {
-    float: none;
-    text-align: left;
+    float: none !important;
+    text-align: left !important;
     margin-bottom: 8px;
   }
   #tablaNominas_wrapper .row {
     flex-direction: column;
+  }
+  /* DataTables scrollX wrapper: evitar doble scroll innecesario */
+  .rh-nomina-page .dataTables_wrapper .dataTables_scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Ajustar la tabla dentro del scroll horizontal */
+  #tablaNominas {
+    min-width: 600px;
+  }
+  /* Stats cards: 2 por fila en móvil */
+  .rh-nomina-page > .row.mb-3 > [class*="col-"] {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+  /* Filtros: que ocupen todo el ancho */
+  .rh-nomina-page .row.g-2.mb-3 > [class*="col-"] {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+@media (max-width: 575px) {
+  /* Una columna de filtros en pantallas muy pequeñas */
+  .rh-nomina-page .row.g-2.mb-3 > [class*="col-"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  /* Stats: apilar verticalmente */
+  .rh-nomina-page > .row.mb-3 > [class*="col-"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  #tablaNominas {
+    min-width: 480px;
   }
 }
 </style>
