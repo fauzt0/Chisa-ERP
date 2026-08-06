@@ -936,14 +936,27 @@ class OrdenesCompra extends MY_Controller {
         $this->requiere_permiso('compras_pagos', 'No tienes permiso para registrar pagos de compras');
 
         $orden_id = (int) $this->input->post('orden_id');
-        $result = $this->OrdenesCompraModel->registrar_pago($orden_id, [
+        $pagoData = [
             'monto' => $this->input->post('monto'),
             'fecha_pago' => $this->input->post('fecha_pago'),
             'metodo_pago' => $this->input->post('metodo_pago'),
             'referencia' => $this->input->post('referencia'),
             'notas' => $this->input->post('notas'),
             'registrado_por' => $this->session->userdata('id'),
-        ]);
+        ];
+
+        // Upload comprobante si se adjunta
+        if (!empty($_FILES['comprobante']['name'])) {
+            $upload_result = $this->_subir_comprobante_pago($orden_id);
+            if (!empty($upload_result['error'])) {
+                echo json_encode(['success' => false, 'message' => $upload_result['error']]);
+                return;
+            }
+            $pagoData['comprobante_nombre'] = $upload_result['nombre'];
+            $pagoData['comprobante_ruta'] = $upload_result['ruta'];
+        }
+
+        $result = $this->OrdenesCompraModel->registrar_pago($orden_id, $pagoData);
 
         if (!empty($result['success'])) {
             $orden = $this->OrdenesCompraModel->get_orden($orden_id);
@@ -959,13 +972,26 @@ class OrdenesCompra extends MY_Controller {
         $this->requiere_permiso('compras_pagos', 'No tienes permiso para registrar pagos de compras');
 
         $orden_id = (int) $this->input->post('orden_id');
-        $result = $this->OrdenesCompraModel->marcar_pagado_completo($orden_id, [
+        $pagoData = [
             'fecha_pago' => $this->input->post('fecha_pago') ?: date('Y-m-d'),
             'metodo_pago' => $this->input->post('metodo_pago'),
             'referencia' => $this->input->post('referencia'),
             'notas' => $this->input->post('notas') ?: 'Marcado como pagado',
             'registrado_por' => $this->session->userdata('id'),
-        ]);
+        ];
+
+        // Upload comprobante si se adjunta
+        if (!empty($_FILES['comprobante']['name'])) {
+            $upload_result = $this->_subir_comprobante_pago($orden_id);
+            if (!empty($upload_result['error'])) {
+                echo json_encode(['success' => false, 'message' => $upload_result['error']]);
+                return;
+            }
+            $pagoData['comprobante_nombre'] = $upload_result['nombre'];
+            $pagoData['comprobante_ruta'] = $upload_result['ruta'];
+        }
+
+        $result = $this->OrdenesCompraModel->marcar_pagado_completo($orden_id, $pagoData);
 
         if (!empty($result['success'])) {
             $orden = $this->OrdenesCompraModel->get_orden($orden_id);
@@ -975,5 +1001,164 @@ class OrdenesCompra extends MY_Controller {
             );
         }
         echo json_encode($result);
+    }
+
+    /**
+     * Sube un comprobante de pago a la carpeta de la OC.
+     */
+    private function _subir_comprobante_pago($orden_id) {
+        $upload_path = './uploads/ordenes_compra/' . $orden_id . '/pagos/';
+        if (!is_dir($upload_path)) {
+            mkdir($upload_path, 0755, true);
+        }
+
+        $config = [
+            'upload_path'   => $upload_path,
+            'allowed_types' => 'pdf|xml|jpg|jpeg|png|webp|doc|docx|xls|xlsx',
+            'max_size'      => 10240,
+            'encrypt_name'  => true,
+        ];
+        $this->load->library('upload', $config);
+
+        if (!$this->upload->do_upload('comprobante')) {
+            $err = strip_tags($this->upload->display_errors('', ''));
+            return ['error' => $err];
+        }
+
+        $upload_data = $this->upload->data();
+        return [
+            'nombre' => $upload_data['orig_name'],
+            'ruta'   => 'uploads/ordenes_compra/' . $orden_id . '/pagos/' . $upload_data['file_name'],
+        ];
+    }
+
+    /**
+     * Genera texto para WhatsApp (copia y pega) de una orden de compra (AJAX).
+     */
+    public function whatsapp_texto_ajax() {
+        $this->requiere_permiso('compras_ordenes_consult', 'No tienes permiso para consultar órdenes de compra');
+
+        $id = $this->input->post('id');
+        $tipo = $this->input->post('tipo') ?: 'solicitud';
+
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID requerido']);
+            return;
+        }
+
+        $resultado = $this->OrdenesCompraModel->generar_texto_whatsapp($id, $tipo);
+        echo json_encode($resultado);
+    }
+
+    /**
+     * Envía correo electrónico real al proveedor usando SMTP configurado (AJAX).
+     */
+    public function enviar_correo_real_ajax() {
+        $this->requiere_permiso('compras_ordenes_consult', 'No tienes permiso para enviar correos');
+
+        $id = $this->input->post('id');
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID requerido']);
+            return;
+        }
+
+        $orden = $this->OrdenesCompraModel->get_orden($id);
+        if (!$orden) {
+            echo json_encode(['success' => false, 'message' => 'Orden no encontrada']);
+            return;
+        }
+
+        if (empty($orden->email_proveedor)) {
+            echo json_encode(['success' => false, 'message' => 'El proveedor no tiene email registrado']);
+            return;
+        }
+
+        $resultado = $this->OrdenesCompraModel->construir_correo_simulado($id);
+        if (empty($resultado['success'])) {
+            echo json_encode($resultado);
+            return;
+        }
+
+        $asunto = $this->input->post('asunto') ?: $resultado['asunto'];
+        $cuerpo_html = $this->input->post('cuerpo_html') ?: $resultado['cuerpo_html'];
+        $cc = $this->input->post('cc') ?: '';
+        $adjuntar_pdf = $this->input->post('adjuntar_pdf') ? true : false;
+
+        $this->load->library('email');
+
+        $config['mailtype'] = 'html';
+        $config['charset']  = 'utf-8';
+        $this->email->initialize($config);
+
+        $this->email->from('compras@chisarecubrimientos.com.mx', 'Chisa Recubrimientos - Compras');
+        $this->email->to($orden->email_proveedor);
+
+        if (!empty($cc)) {
+            $cc_emails = array_map('trim', explode(',', $cc));
+            $this->email->cc($cc_emails);
+        }
+
+        $this->email->subject($asunto);
+        $this->email->message($cuerpo_html);
+
+        if ($adjuntar_pdf) {
+            $pdf_path = $this->_generar_pdf_oc($id);
+            if ($pdf_path) {
+                $this->email->attach($pdf_path);
+            }
+        }
+
+        if ($this->email->send()) {
+            $this->registrar_bitacora(
+                'Correo enviado al proveedor — OC ' . ($orden->folio ?? $id) . ' → ' . $orden->email_proveedor,
+                'Compras'
+            );
+            echo json_encode(['success' => true, 'message' => 'Correo enviado correctamente a ' . $orden->email_proveedor]);
+        } else {
+            $debug = $this->email->print_debugger(['headers', 'subject', 'body']);
+            echo json_encode(['success' => false, 'message' => 'Error al enviar correo', 'debug' => $debug]);
+        }
+    }
+
+    /**
+     * Genera un PDF temporal de la OC para adjuntar al correo.
+     */
+    private function _generar_pdf_oc($orden_id) {
+        $orden = $this->OrdenesCompraModel->get_orden($orden_id);
+        if (!$orden) return null;
+
+        $detalles = $orden->detalles ?? [];
+        $this->load->model('Config/EmpresaModel');
+        $empresa = $this->EmpresaModel->get_config();
+
+        $html = $this->load->view('compras/ordenes_compra/pdf_oc', [
+            'orden'    => $orden,
+            'detalles' => $detalles,
+            'empresa'  => $empresa,
+        ], true);
+
+        $temp_dir = './uploads/temp/';
+        if (!is_dir($temp_dir)) {
+            mkdir($temp_dir, 0755, true);
+        }
+
+        $filename = 'OC_' . str_replace('/', '_', $orden->folio) . '.pdf';
+        $filepath = $temp_dir . $filename;
+
+        // Usar html2pdf si está disponible, si no guardar como HTML
+        if (class_exists('Dompdf\Dompdf') || file_exists(APPPATH . 'third_party/dompdf/autoload.inc.php')) {
+            require_once APPPATH . 'third_party/dompdf/autoload.inc.php';
+            $dompdf = new Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+            file_put_contents($filepath, $dompdf->output());
+            return $filepath;
+        }
+
+        // Fallback: guardar como HTML
+        $filepath = $temp_dir . 'OC_' . str_replace('/', '_', $orden->folio) . '.html';
+        file_put_contents($filepath, $html);
+        return $filepath;
     }
 }

@@ -760,16 +760,24 @@ class OrdenesCompraModel extends MY_Model {
             'registrado_por' => $data['registrado_por'] ?? null,
         ];
 
+        // Agregar comprobante si las columnas existen (migración iteración 5)
+        if ($this->_columna_existe('pagos_ordenes_compra', 'comprobante_nombre')) {
+            $insert['comprobante_nombre'] = $data['comprobante_nombre'] ?? null;
+            $insert['comprobante_ruta'] = $data['comprobante_ruta'] ?? null;
+        }
+
         $ok = $this->db->insert('pagos_ordenes_compra', $insert);
         if (!$ok) {
             return ['success' => false, 'message' => 'Error al registrar el pago'];
         }
 
         $this->actualizar_estatus_pago($orden_id);
+        $pago_id = $this->db->insert_id();
         return [
             'success' => true,
             'message' => 'Pago registrado correctamente',
             'folio' => $insert['folio'],
+            'pago_id' => $pago_id,
             'orden' => $this->get_orden($orden_id),
         ];
     }
@@ -792,6 +800,103 @@ class OrdenesCompraModel extends MY_Model {
             'referencia' => $data['referencia'] ?? 'Pago total',
             'notas' => $data['notas'] ?? 'Marcado como pagado',
             'registrado_por' => $data['registrado_por'] ?? null,
+            'comprobante_nombre' => $data['comprobante_nombre'] ?? null,
+            'comprobante_ruta' => $data['comprobante_ruta'] ?? null,
         ]);
+    }
+
+    /**
+     * Verifica si una columna existe en una tabla.
+     */
+    private function _columna_existe($tabla, $columna) {
+        static $cache = [];
+        $key = $tabla . '.' . $columna;
+        if (isset($cache[$key])) {
+            return $cache[$key];
+        }
+        $query = $this->db->query("SHOW COLUMNS FROM `{$tabla}` LIKE '{$columna}'");
+        $cache[$key] = ($query && $query->num_rows() > 0);
+        return $cache[$key];
+    }
+
+    /**
+     * Genera texto para WhatsApp con los datos de una orden de compra.
+     * @param int $orden_id
+     * @param string $tipo 'solicitud'|'comprobante_pago'
+     * @return array
+     */
+    public function generar_texto_whatsapp($orden_id, $tipo = 'solicitud') {
+        $orden = $this->get_orden($orden_id);
+        if (!$orden) {
+            return ['success' => false, 'message' => 'Orden no encontrada'];
+        }
+
+        $CI =& get_instance();
+        $CI->load->model('Config/EmpresaModel');
+        $empresa = $CI->EmpresaModel->get_config();
+        $nombre_empresa = $empresa->nombre_comercial ?: $empresa->razon_social;
+
+        if ($tipo === 'comprobante_pago') {
+            $texto = "✅ *COMPROBANTE DE PAGO*\n\n";
+            $texto .= "Estimado proveedor *{$orden->razon_social}*,\n\n";
+            $texto .= "Le informamos que hemos realizado el pago correspondiente a la orden de compra:\n\n";
+            $texto .= "📋 *OC:* {$orden->folio}\n";
+            $texto .= "📅 *Fecha:* " . date('d/m/Y', strtotime($orden->fecha_orden)) . "\n";
+            $texto .= "💰 *Total:* $" . number_format($orden->total, 2) . "\n";
+
+            if (!empty($orden->forma_pago)) {
+                $texto .= "💳 *Forma de pago:* {$orden->forma_pago}\n";
+            }
+
+            if (!empty($orden->fecha_entrega_estimada)) {
+                $texto .= "🚚 *Entrega estimada:* " . date('d/m/Y', strtotime($orden->fecha_entrega_estimada)) . "\n";
+            }
+
+            $texto .= "\n_En breve recibirá el comprobante por correo electrónico._\n\n";
+            $texto .= "Saludos cordiales,\n*{$nombre_empresa}*";
+
+            return [
+                'success' => true,
+                'texto' => $texto,
+                'proveedor' => $orden->razon_social,
+                'folio' => $orden->folio,
+            ];
+        }
+
+        // solicitud / nueva OC
+        $texto = "📋 *SOLICITUD DE PRODUCTOS*\n\n";
+        $texto .= "Estimado proveedor *{$orden->razon_social}*,\n\n";
+        $texto .= "Por medio del presente solicitamos el suministro de los siguientes productos:\n\n";
+        $texto .= "📋 *OC:* {$orden->folio}\n";
+        $texto .= "📅 *Fecha:* " . date('d/m/Y', strtotime($orden->fecha_orden)) . "\n\n";
+
+        $texto .= "*Productos solicitados:*\n";
+        foreach ($orden->detalles as $det) {
+            $nombre = $det->nombre_proveedor ?: $det->nombre_tecnico;
+            $texto .= "• {$nombre}\n";
+            $texto .= "  Cantidad: " . number_format((float)$det->cantidad_solicitada, 2) . " {$det->unidad_medida}\n";
+            $texto .= "  Precio unit: $" . number_format((float)$det->precio_unitario, 2) . "\n";
+            $texto .= "  Subtotal: $" . number_format((float)$det->subtotal, 2) . "\n\n";
+        }
+
+        $texto .= "💰 *Total (IVA incl.):* $" . number_format($orden->total, 2) . "\n";
+
+        if (!empty($orden->fecha_entrega_estimada)) {
+            $texto .= "🚚 *Entrega estimada:* " . date('d/m/Y', strtotime($orden->fecha_entrega_estimada)) . "\n";
+        }
+
+        if (!empty($orden->observaciones)) {
+            $texto .= "\n📝 *Observaciones:* {$orden->observaciones}\n";
+        }
+
+        $texto .= "\nQuedamos atentos a su confirmación.\n\n";
+        $texto .= "Saludos cordiales,\n*{$nombre_empresa}*";
+
+        return [
+            'success' => true,
+            'texto' => $texto,
+            'proveedor' => $orden->razon_social,
+            'folio' => $orden->folio,
+        ];
     }
 }

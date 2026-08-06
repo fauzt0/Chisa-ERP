@@ -378,29 +378,49 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title"><i class="fas fa-envelope me-1"></i> Enviar solicitud (simulación)</h5>
+        <h5 class="modal-title"><i class="fas fa-envelope me-1"></i> Enviar solicitud al proveedor</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
+        <input type="hidden" id="correo_oc_id">
         <div class="mb-3">
           <label class="form-label text-muted small mb-0">Destinatario</label>
           <div class="fw-semibold" id="correo_destinatario">—</div>
         </div>
         <div class="mb-3">
-          <label class="form-label text-muted small mb-0">Asunto</label>
-          <div class="fw-semibold" id="correo_asunto">—</div>
+          <label class="form-label text-muted small mb-0">CC (opcional, separar con comas)</label>
+          <input type="text" class="form-control form-control-sm" id="correo_cc" placeholder="copia1@email.com, copia2@email.com">
         </div>
         <div class="mb-3">
-          <label class="form-label text-muted small mb-0">Cuerpo del mensaje</label>
-          <div class="border rounded p-3 bg-light" id="correo_cuerpo_html" style="max-height:360px;overflow:auto;"></div>
+          <label class="form-label text-muted small mb-0">Asunto</label>
+          <input type="text" class="form-control form-control-sm" id="correo_asunto_edit" placeholder="Asunto del correo">
+          <div class="fw-semibold d-none" id="correo_asunto">—</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted small mb-0">Cuerpo del mensaje (editable)</label>
+          <div class="border rounded p-3 bg-white" id="correo_cuerpo_html" contenteditable="true" style="max-height:360px;overflow:auto;min-height:200px;"></div>
         </div>
         <textarea class="form-control d-none" id="correo_cuerpo_texto" rows="8" readonly></textarea>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="correo_adjuntar_pdf" checked>
+          <label class="form-check-label" for="correo_adjuntar_pdf">Adjuntar PDF de la OC</label>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" onclick="copiarCorreoSimulado()">
-          <i class="fas fa-copy me-1"></i> Copiar
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      <div class="modal-footer justify-content-between">
+        <div>
+          <button type="button" class="btn btn-outline-success" onclick="whatsappTextoOc()" title="Copiar texto para WhatsApp">
+            <i class="fab fa-whatsapp me-1"></i> WhatsApp
+          </button>
+          <button type="button" class="btn btn-outline-secondary" onclick="copiarCorreoSimulado()">
+            <i class="fas fa-copy me-1"></i> Copiar
+          </button>
+        </div>
+        <div>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-success" onclick="enviarCorreoReal()">
+            <i class="fas fa-paper-plane me-1"></i> Enviar email
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -902,6 +922,11 @@
         <div class="mb-0">
           <label class="form-label">Notas</label>
           <textarea class="form-control" id="pago_oc_notas" rows="2"></textarea>
+        </div>
+        <div class="mb-3 mt-3">
+          <label class="form-label">Comprobante de pago</label>
+          <input type="file" class="form-control" id="pago_oc_comprobante" accept=".pdf,.xml,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
+          <small class="text-muted">Adjunte el comprobante de pago (PDF, imagen).</small>
         </div>
       </div>
       <div class="modal-footer justify-content-between">
@@ -1985,9 +2010,12 @@
         showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: result.message || 'No se pudo generar la simulación.' });
         return;
       }
+      $('#correo_oc_id').val(id);
       $('#correo_destinatario').text(result.destinatario || '—');
       $('#correo_asunto').text(result.asunto || '—');
+      $('#correo_asunto_edit').val(result.asunto || '');
       $('#correo_cuerpo_html').html(result.cuerpo_html || '');
+      $('#correo_cc').val('');
       ultimoCorreoTexto = 'Para: ' + (result.destinatario || '') + '\nAsunto: ' + (result.asunto || '') + '\n\n' + (result.cuerpo_texto || '');
       $('#correo_cuerpo_texto').val(ultimoCorreoTexto);
       const modalEl = document.getElementById('modalSimularCorreo');
@@ -2003,7 +2031,7 @@
     const texto = ultimoCorreoTexto || $('#correo_cuerpo_texto').val();
     if (!texto) return;
     const onCopied = function() {
-      showErpToast({ type: 'info', module: 'Compras', title: 'Correo simulado', message: 'Contenido copiado — envío real pendiente de configuración SMTP.' });
+      showErpToast({ type: 'info', module: 'Compras', title: 'Correo', message: 'Contenido copiado al portapapeles.' });
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(texto).then(onCopied).catch(function() {
@@ -2022,6 +2050,84 @@
       }
       document.body.removeChild(ta);
     }
+  };
+
+  window.whatsappTextoOc = function() {
+    const id = $('#correo_oc_id').val();
+    if (!id) {
+      showErpToast({ type: 'warning', module: 'Compras', title: 'WhatsApp', message: 'No se encontró la orden.' });
+      return;
+    }
+    $.post('<?=base_url();?>compras/OrdenesCompra/whatsapp_texto_ajax', {
+      id: id,
+      tipo: 'solicitud',
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) {
+        showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: 'Respuesta inválida del servidor.' });
+        return;
+      }
+      if (!result.success) {
+        showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: result.message || 'No se pudo generar el texto.' });
+        return;
+      }
+      const texto = result.texto;
+      const onCopied = function() {
+        showErpToast({ type: 'success', module: 'Compras', title: 'WhatsApp', message: 'Texto copiado. Pégalo en WhatsApp para enviar al proveedor.' });
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(onCopied).catch(function() {
+          showErpToast({ type: 'warning', module: 'Compras', title: 'WhatsApp', message: 'No se pudo copiar. Intenta de nuevo.' });
+        });
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = texto;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); onCopied(); } catch (e) {
+          showErpToast({ type: 'warning', module: 'Compras', title: 'WhatsApp', message: 'No se pudo copiar al portapapeles.' });
+        }
+        document.body.removeChild(ta);
+      }
+    });
+  };
+
+  window.enviarCorreoReal = function() {
+    const id = $('#correo_oc_id').val();
+    if (!id) {
+      showErpToast({ type: 'warning', module: 'Compras', title: 'Email', message: 'No se encontró la orden.' });
+      return;
+    }
+    const asunto = $('#correo_asunto_edit').val() || $('#correo_asunto').text();
+    const cuerpo = $('#correo_cuerpo_html').html();
+    const cc = $('#correo_cc').val();
+    const adjuntar = $('#correo_adjuntar_pdf').is(':checked') ? 1 : 0;
+
+    showErpToast({ type: 'info', module: 'Compras', title: 'Email', message: 'Enviando correo...' });
+
+    $.post('<?=base_url();?>compras/OrdenesCompra/enviar_correo_real_ajax', {
+      id: id,
+      asunto: asunto,
+      cuerpo_html: cuerpo,
+      cc: cc,
+      adjuntar_pdf: adjuntar,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) {
+        showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: 'Respuesta inválida del servidor.' });
+        return;
+      }
+      if (result.success) {
+        showErpToast({ type: 'success', module: 'Compras', title: 'Email enviado', message: result.message });
+        cerrarModal('modalSimularCorreo');
+      } else {
+        showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: result.message || 'No se pudo enviar el correo.' });
+      }
+    }).fail(function() {
+      showErpToast({ type: 'danger', module: 'Compras', title: 'Error de conexión', message: 'No se pudo contactar al servidor.' });
+    });
   };
 
   window.toggleRangoPersonalizado = function() {
@@ -2316,40 +2422,70 @@
       toastCompras('warning', 'Monto inválido', 'Indique un monto mayor a cero.');
       return;
     }
-    $.post('<?=base_url();?>compras/OrdenesCompra/registrar_pago_ajax', {
-      orden_id: ordenId,
-      monto: monto,
-      fecha_pago: $('#pago_oc_fecha').val(),
-      metodo_pago: $('#pago_oc_metodo').val(),
-      referencia: $('#pago_oc_referencia').val(),
-      notas: $('#pago_oc_notas').val(),
-      peticion: 'ajax',
-      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
-    }, function(result) {
-      try { result = JSON.parse(result); } catch (e) { return; }
-      toastCompras(result.success ? 'success' : 'danger', result.success ? 'Pago registrado' : 'Error', result.message || '');
-      if (result.success) {
-        cerrarModal('modalPagoOc');
-        if (tabla) tabla.ajax.reload();
+
+    var formData = new FormData();
+    formData.append('orden_id', ordenId);
+    formData.append('monto', monto);
+    formData.append('fecha_pago', $('#pago_oc_fecha').val());
+    formData.append('metodo_pago', $('#pago_oc_metodo').val());
+    formData.append('referencia', $('#pago_oc_referencia').val());
+    formData.append('notas', $('#pago_oc_notas').val());
+    formData.append('peticion', 'ajax');
+    formData.append('<?php echo $this->security->get_csrf_token_name();?>', '<?php echo $this->security->get_csrf_hash();?>');
+
+    var comprobanteFile = document.getElementById('pago_oc_comprobante').files[0];
+    if (comprobanteFile) {
+      formData.append('comprobante', comprobanteFile);
+    }
+
+    $.ajax({
+      url: '<?=base_url();?>compras/OrdenesCompra/registrar_pago_ajax',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(result) {
+        try { result = JSON.parse(result); } catch (e) { return; }
+        toastCompras(result.success ? 'success' : 'danger', result.success ? 'Pago registrado' : 'Error', result.message || '');
+        if (result.success) {
+          cerrarModal('modalPagoOc');
+          $('#pago_oc_comprobante').val('');
+          if (tabla) tabla.ajax.reload();
+        }
       }
     });
   };
 
   window.marcarPagadoCompletoOc = function() {
     const ordenId = $('#pago_oc_orden_id').val();
-    $.post('<?=base_url();?>compras/OrdenesCompra/marcar_pagado_ajax', {
-      orden_id: ordenId,
-      fecha_pago: $('#pago_oc_fecha').val(),
-      metodo_pago: $('#pago_oc_metodo').val(),
-      referencia: $('#pago_oc_referencia').val() || 'Pago total',
-      peticion: 'ajax',
-      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
-    }, function(result) {
-      try { result = JSON.parse(result); } catch (e) { return; }
-      toastCompras(result.success ? 'success' : 'danger', result.success ? 'Pagado' : 'Error', result.message || '');
-      if (result.success) {
-        cerrarModal('modalPagoOc');
-        if (tabla) tabla.ajax.reload();
+
+    var formData = new FormData();
+    formData.append('orden_id', ordenId);
+    formData.append('fecha_pago', $('#pago_oc_fecha').val());
+    formData.append('metodo_pago', $('#pago_oc_metodo').val());
+    formData.append('referencia', $('#pago_oc_referencia').val() || 'Pago total');
+    formData.append('peticion', 'ajax');
+    formData.append('<?php echo $this->security->get_csrf_token_name();?>', '<?php echo $this->security->get_csrf_hash();?>');
+
+    var comprobanteFile = document.getElementById('pago_oc_comprobante').files[0];
+    if (comprobanteFile) {
+      formData.append('comprobante', comprobanteFile);
+    }
+
+    $.ajax({
+      url: '<?=base_url();?>compras/OrdenesCompra/marcar_pagado_ajax',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(result) {
+        try { result = JSON.parse(result); } catch (e) { return; }
+        toastCompras(result.success ? 'success' : 'danger', result.success ? 'Pagado' : 'Error', result.message || '');
+        if (result.success) {
+          cerrarModal('modalPagoOc');
+          $('#pago_oc_comprobante').val('');
+          if (tabla) tabla.ajax.reload();
+        }
       }
     });
   };
