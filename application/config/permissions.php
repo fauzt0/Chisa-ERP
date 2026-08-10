@@ -65,6 +65,10 @@ $config['permissions'] = array(
     'compras_documentos'           => 'Adjuntar documentos y comentarios en OC',
     'compras_pagos'                => 'Registrar pagos y marcar adeudos en OC',
     'compras_servicios_recurrentes' => 'Gestionar servicios recurrentes (internet, soporte, etc.)',
+    'compras_cotizaciones_add'     => 'Crear solicitudes de cotización',
+    'compras_cotizaciones_edit'    => 'Editar cotizaciones y registrar precios',
+    'compras_cotizaciones_consult' => 'Consultar cotizaciones de compra',
+    'compras_cotizaciones_delete'  => 'Eliminar cotizaciones de compra',
   ),
   
   'Producción' => array(

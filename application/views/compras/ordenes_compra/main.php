@@ -405,6 +405,18 @@
           <input class="form-check-input" type="checkbox" id="correo_adjuntar_pdf" checked>
           <label class="form-check-label" for="correo_adjuntar_pdf">Adjuntar PDF de la OC</label>
         </div>
+        <hr>
+        <div class="mb-0">
+          <label class="form-label small fw-bold"><i class="fas fa-receipt me-1"></i> Adjuntar comprobantes de pago</label>
+          <small class="text-muted d-block mb-2">Selecciona los comprobantes de pago/transferencia ya registrados para adjuntarlos al correo.</small>
+          <div id="correo_comprobantes_lista" class="border rounded p-2 bg-light small" style="max-height:120px;overflow:auto;">
+            <span class="text-muted">Cargando comprobantes...</span>
+          </div>
+          <div class="mt-2">
+            <label class="form-label small text-muted">O adjuntar archivo adicional</label>
+            <input type="file" class="form-control form-control-sm" id="correo_archivo_extra" accept=".pdf,.xml,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" multiple>
+          </div>
+        </div>
       </div>
       <div class="modal-footer justify-content-between">
         <div>
@@ -2016,8 +2028,11 @@
       $('#correo_asunto_edit').val(result.asunto || '');
       $('#correo_cuerpo_html').html(result.cuerpo_html || '');
       $('#correo_cc').val('');
+      $('#correo_archivo_extra').val('');
       ultimoCorreoTexto = 'Para: ' + (result.destinatario || '') + '\nAsunto: ' + (result.asunto || '') + '\n\n' + (result.cuerpo_texto || '');
       $('#correo_cuerpo_texto').val(ultimoCorreoTexto);
+      // Cargar comprobantes de pago disponibles
+      cargarComprobantesParaCorreo(id);
       const modalEl = document.getElementById('modalSimularCorreo');
       if (modalEl && typeof bootstrap !== 'undefined') {
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
@@ -2026,6 +2041,33 @@
       showErpToast({ type: 'danger', module: 'Compras', title: 'Error de conexión', message: 'No se pudo contactar al servidor.' });
     });
   };
+
+  function cargarComprobantesParaCorreo(ordenId) {
+    $.post('<?=base_url();?>compras/OrdenesCompra/get_pagos_orden_ajax', {
+      orden_id: ordenId,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(result) {
+      try { result = JSON.parse(result); } catch (e) { return; }
+      var html = '<span class="text-muted">Sin comprobantes de pago registrados para esta OC.</span>';
+      if (result.success && result.pagos && result.pagos.length > 0) {
+        html = '';
+        result.pagos.forEach(function(p) {
+          if (p.comprobante_ruta) {
+            html += '<div class="form-check mb-1">';
+            html += '<input class="form-check-input correo-comp-check" type="checkbox" value="' + p.id + '" id="comp_' + p.id + '" data-ruta="' + p.comprobante_ruta + '">';
+            html += '<label class="form-check-label" for="comp_' + p.id + '">';
+            html += '<i class="fas fa-file-pdf text-danger me-1"></i>' + (p.comprobante_nombre || 'Comprobante #' + p.id);
+            html += ' <small class="text-muted">($' + parseFloat(p.monto).toFixed(2) + ' — ' + (p.fecha_pago || '') + ')</small>';
+            html += '</label></div>';
+          }
+        });
+        if (!html) html = '<span class="text-muted">Los pagos registrados no tienen comprobante adjunto.</span>';
+        html += '<small class="text-muted d-block mt-1">Marca los comprobantes que deseas adjuntar al correo.</small>';
+      }
+      $('#correo_comprobantes_lista').html(html);
+    });
+  }
 
   window.copiarCorreoSimulado = function() {
     const texto = ultimoCorreoTexto || $('#correo_cuerpo_texto').val();
@@ -2104,29 +2146,51 @@
     const cc = $('#correo_cc').val();
     const adjuntar = $('#correo_adjuntar_pdf').is(':checked') ? 1 : 0;
 
+    // Recolectar IDs de comprobantes seleccionados
+    const comprobantesIds = [];
+    $('.correo-comp-check:checked').each(function() {
+      comprobantesIds.push($(this).val());
+    });
+
     showErpToast({ type: 'info', module: 'Compras', title: 'Email', message: 'Enviando correo...' });
 
-    $.post('<?=base_url();?>compras/OrdenesCompra/enviar_correo_real_ajax', {
-      id: id,
-      asunto: asunto,
-      cuerpo_html: cuerpo,
-      cc: cc,
-      adjuntar_pdf: adjuntar,
-      peticion: 'ajax',
-      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
-    }, function(result) {
-      try { result = JSON.parse(result); } catch (e) {
-        showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: 'Respuesta inválida del servidor.' });
-        return;
+    var formData = new FormData();
+    formData.append('id', id);
+    formData.append('asunto', asunto);
+    formData.append('cuerpo_html', cuerpo);
+    formData.append('cc', cc);
+    formData.append('adjuntar_pdf', adjuntar);
+    formData.append('comprobantes_ids', JSON.stringify(comprobantesIds));
+    formData.append('peticion', 'ajax');
+    formData.append('<?php echo $this->security->get_csrf_token_name();?>', '<?php echo $this->security->get_csrf_hash();?>');
+
+    // Adjuntar archivos extra si hay
+    var extraFiles = document.getElementById('correo_archivo_extra').files;
+    for (var i = 0; i < extraFiles.length; i++) {
+      formData.append('archivos_extra[]', extraFiles[i]);
+    }
+
+    $.ajax({
+      url: '<?=base_url();?>compras/OrdenesCompra/enviar_correo_real_ajax',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(result) {
+        try { result = JSON.parse(result); } catch (e) {
+          showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: 'Respuesta inválida del servidor.' });
+          return;
+        }
+        if (result.success) {
+          showErpToast({ type: 'success', module: 'Compras', title: 'Email enviado', message: result.message });
+          cerrarModal('modalSimularCorreo');
+        } else {
+          showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: result.message || 'No se pudo enviar el correo.' });
+        }
+      },
+      error: function() {
+        showErpToast({ type: 'danger', module: 'Compras', title: 'Error de conexión', message: 'No se pudo contactar al servidor.' });
       }
-      if (result.success) {
-        showErpToast({ type: 'success', module: 'Compras', title: 'Email enviado', message: result.message });
-        cerrarModal('modalSimularCorreo');
-      } else {
-        showErpToast({ type: 'danger', module: 'Compras', title: 'Error', message: result.message || 'No se pudo enviar el correo.' });
-      }
-    }).fail(function() {
-      showErpToast({ type: 'danger', module: 'Compras', title: 'Error de conexión', message: 'No se pudo contactar al servidor.' });
     });
   };
 

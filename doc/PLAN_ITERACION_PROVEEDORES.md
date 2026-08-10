@@ -2,7 +2,42 @@
 
 > **Fecha:** 6 agosto 2026  
 > **ERP:** Chisa Recubrimientos S.A. de C.V.  
-> **URL:** https://erp.chisarecubrimientos.com.mx/compras/Proveedores
+> **URL:** https://erp.chisarecubrimientos.com.mx/compras/Proveedores  
+> **Base de datos:** `st32477_chisa` @ `67.217.58.138`
+
+---
+
+## ROLES DE AGENTE — Cómo leer y ejecutar este plan
+
+Este documento define **qué** debe hacerse. La ejecución se delega a un agente distinto al planificador/arquitecto.
+
+### 🧠 Agente Planificador (dueño del plan)
+- Lee, analiza y documenta requisitos, arquitectura y dependencias.
+- Redacta y mantiene este archivo.
+- **No edita código. Solo valida lo ejecutado por el Agente Ejecutor.**
+- Al final de cada iteración, verifica la integridad de lo entregado contra el plan.
+
+### 🛠️ Agente Ejecutor (otro chat/agente externo)
+- Lee este documento como su única fuente de verdad.
+- Implementa todos los cambios descritos en la sección de la iteración activa.
+- **Debe reportar al final:** archivos modificados, sql ejecutado, y cualquier desviación respecto al plan.
+- Si encuentra un bloqueo, lo documenta en la misma sección y notifica al planificador.
+
+### 📐 Flujo de trabajo por iteración
+
+```
+Planificador escribe/especifica  →  Ejecutor lee el plan e implementa
+       ↑                                      ↓
+       └─── Planificador VALIDA (sin editar) ←─┘
+```
+
+### 📋 Checklist de validación (para el Planificador)
+
+Al recibir el reporte del Ejecutor, verificar:
+- [ ] Las tablas/columnas migradas existen en BD con el schema correcto
+- [ ] Los archivos listados en la iteración existen y contienen los cambios esperados
+- [ ] No hay archivos huérfanos o cambios no documentados
+- [ ] El SQL de migración se ejecutó sin errores
 
 ---
 
@@ -31,7 +66,7 @@
 
 ---
 
-## Iteración 5 (6 agosto 2026) — Completada ✅
+## Iteración 5 (6 agosto 2026) — Completada ✅ — Migración validada ✅
 
 ### Archivos modificados:
 
@@ -67,6 +102,16 @@ O ejecutar el SQL manualmente:
 ALTER TABLE pagos_ordenes_compra ADD COLUMN comprobante_nombre VARCHAR(255) NULL AFTER notas;
 ALTER TABLE pagos_ordenes_compra ADD COLUMN comprobante_ruta VARCHAR(500) NULL AFTER comprobante_nombre;
 ```
+
+### Resultado validación BD (Planificador — 6 agosto 2026):
+
+| Check | Resultado |
+|:------|:----------|
+| `pagos_ordenes_compra.comprobante_nombre` VARCHAR(255) NULL | ✅ Existe |
+| `pagos_ordenes_compra.comprobante_ruta` VARCHAR(500) NULL | ✅ Existe |
+| `idx_pagos_orden` en `orden_compra_id` | ✅ Creado |
+| `notificaciones_config` tabla | ✅ Creada |
+| Seeds `notificaciones_config` (4 rows: email + whatsapp) | ✅ Insertados |
 
 ---
 

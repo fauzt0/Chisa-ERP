@@ -111,6 +111,7 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Insumos">Insumos</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Proveedores">Proveedores</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/OrdenesCompra">Órdenes de Compra</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Cotizaciones">Cotizaciones</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/ServiciosRecurrentes">Servicios Recurrentes</a></li>
         </ul>
       </li>

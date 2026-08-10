@@ -1084,6 +1084,16 @@ class OrdenesCompra extends MY_Controller {
         $cc = $this->input->post('cc') ?: '';
         $adjuntar_pdf = $this->input->post('adjuntar_pdf') ? true : false;
 
+        // IDs de comprobantes de pago a adjuntar (JSON)
+        $comprobantes_ids_raw = $this->input->post('comprobantes_ids');
+        $comprobantes_ids = [];
+        if ($comprobantes_ids_raw) {
+            $decoded = json_decode($comprobantes_ids_raw, true);
+            if (is_array($decoded)) {
+                $comprobantes_ids = array_map('intval', $decoded);
+            }
+        }
+
         $this->load->library('email');
 
         $config['mailtype'] = 'html';
@@ -1101,10 +1111,38 @@ class OrdenesCompra extends MY_Controller {
         $this->email->subject($asunto);
         $this->email->message($cuerpo_html);
 
+        // Adjuntar PDF de la OC
         if ($adjuntar_pdf) {
             $pdf_path = $this->_generar_pdf_oc($id);
             if ($pdf_path) {
                 $this->email->attach($pdf_path);
+            }
+        }
+
+        // Adjuntar comprobantes de pago seleccionados
+        if (!empty($comprobantes_ids)) {
+            $pagos = $this->OrdenesCompraModel->get_pagos($id);
+            $pagos_map = [];
+            foreach ($pagos as $pago) {
+                $pagos_map[$pago->id] = $pago;
+            }
+            foreach ($comprobantes_ids as $pago_id) {
+                if (isset($pagos_map[$pago_id]) && !empty($pagos_map[$pago_id]->comprobante_ruta)) {
+                    $ruta_completa = FCPATH . $pagos_map[$pago_id]->comprobante_ruta;
+                    if (is_file($ruta_completa)) {
+                        $this->email->attach($ruta_completa);
+                    }
+                }
+            }
+        }
+
+        // Adjuntar archivos extra subidos desde el modal
+        if (!empty($_FILES['archivos_extra']['name'][0])) {
+            $files = $_FILES['archivos_extra'];
+            for ($i = 0; $i < count($files['name']); $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $this->email->attach($files['tmp_name'][$i], 'attachment', $files['name'][$i]);
+                }
             }
         }
 

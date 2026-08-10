@@ -50,7 +50,32 @@ Para mantener la seguridad, consistencia y eficiencia, todo desarrollo debe here
 Todos los controladores del sistema heredan de `MY_Controller`. Este realiza automáticamente:
 1. **Verificación de Sesión Activa**: A través de `Init_controller->check_session()`.
 2. **Seguridad y Permisos por Módulo**: Si el controlador define la propiedad protegida `$modulo` (ej. `protected $modulo = 'Producción';`), el constructor valida automáticamente si el usuario tiene acceso. Si no lo tiene, redirige a la vista `deny` o retorna una respuesta JSON de error en llamadas AJAX.
-3. **Estructura Estándar de Retorno (`$this->viewData`)**: Inicializa un array estandarizado para renderizado de vistas en el layout general (`layouts/general_template`).
+3. **Estructura Estándar de Retorno (`$this->viewData`)**: Inicializa un array estandarizado para renderizado de vistas en el layout general (`layouts/general_template`). Las claves disponibles son:
+
+```php
+$this->viewData = [
+    'pageTitle'  => '',  // <title> de la página (opcional pero recomendado)
+    'headTitle'  => '',  // Encabezado H1 visible
+    'breadcrumb' => '',  // Ruta de navegación: "Inicio > Módulo > Página"
+    'pageView'   => '',  // **OBLIGATORIO** — vista de contenido a cargar dentro del layout
+    'pageScript' => '',  // Vista con JS específico de la página (opcional)
+    'validate'   => '',  // Estado de validación (opcional)
+    'response'   => []   // Datos para pasar al frontend (opcional)
+];
+```
+
+**Patrón obligatorio en todo controlador:**
+
+```php
+$this->viewData['pageTitle']  = 'Título de la Página';
+$this->viewData['headTitle']  = 'Encabezado Principal';
+$this->viewData['breadcrumb'] = 'Inicio > Módulo > Página';
+$this->viewData['pageView']   = 'modulo/subcarpeta/main';
+$this->viewData['validate']   = '';
+$this->load->view('layouts/general_template', $this->viewData);
+```
+
+`MY_Controller` inicializa todas las claves como vacías, por lo que `$this->viewData` ya existe al entrar a cualquier método. Solo debes asignar los valores que necesitas.
 
 ### 2.2 Modelos (`MY_Model.php`)
 Todos los modelos heredan de `MY_Model`, el cual proporciona métodos CRUD genéricos optimizados:
