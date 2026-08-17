@@ -44,6 +44,16 @@
 
 ## 🔴 Urgente / Crítico
 
+- [ ] **Corregir enum `incidencias_empleados.tipo_incidencia`** (falta el valor `'Horas Extras'`).
+  - **Detectado:** 10 ago 2026 (`doc/PRUEBAS_MANUALES_RH_2026-08-10.md`, Hallazgo H1). Confirmado aún vigente en BD el 13 ago 2026.
+  - **Problema:** la UI de `/rh/RecursosHumanos` (registro de incidencias) ya ofrece la opción "Horas Extras" y `NominaRhModel::calcular_conceptos_empleado()` ya espera `tipo_incidencia === 'Horas Extras'` para convertirla en percepción de nómina, pero el enum real en base de datos solo es `('Retardo','Falta','Falta Justificada','Permiso','Incapacidad','Suspensión','Amonestación','Renuncia','Otro')`. Con `STRICT_TRANS_TABLES` el INSERT falla (error 1265) y la incidencia no se puede registrar.
+  - **Corrección pendiente (aplicar cuando se autorice):**
+    ```sql
+    ALTER TABLE incidencias_empleados
+      MODIFY tipo_incidencia ENUM('Retardo','Falta','Falta Justificada','Permiso','Incapacidad','Suspensión','Amonestación','Renuncia','Otro','Horas Extras') NOT NULL;
+    ```
+  - **Bloquea:** flujo completo Incidencias → Nómina (Bloques I4 y K3 de `doc/PRUEBAS_MANUALES_RH_2026-08-10.md`, y el caso límite C9 de `doc/CHECKLIST_MANUAL_POST_E2E_NOMINA.md`). El resto del módulo `rh/Nomina` no depende de esto y puede probarse con normalidad.
+
 ## 🟡 Pendientes Facturación
 - [x] Conexión API Facture App (Implementado)
 - [ ] Implementar Automatización de Importación (Cron Job / Lazy Load)

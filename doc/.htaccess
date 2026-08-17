@@ -1,0 +1,18 @@
+# Denegar acceso público a todos los archivos en este directorio
+# Deny public access to all files in this directory
+# (contiene SQL dumps, PDFs y hojas de cálculo con datos reales de nómina/empleados)
+
+<IfModule mod_authz_core.c>
+    # Apache 2.4+
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    # Apache 2.2
+    Order deny,allow
+    Deny from all
+</IfModule>
+
+# Prevenir listado de directorios
+# Prevent directory listing
+Options -Indexes
