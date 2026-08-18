@@ -215,6 +215,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // DataTables      
   table = $('#datatables-departamentos').DataTable({
     responsive: true,
+    scrollX: true,
     "searching": false,
     "order": [],
     "processing": true,

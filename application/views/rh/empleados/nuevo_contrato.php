@@ -196,7 +196,7 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
+                    <table class="table table-sm table-hover mb-0 w-100 rh-dt-responsive" id="tabla-historial-contratos">
                         <thead class="table-light">
                             <tr>
                                 <th class="small font-weight-bold text-dark">Versión</th>
@@ -236,7 +236,7 @@
 </div>
 
 <!-- Modal Ver Contrato -->
-<div class="modal fade" id="modalVerContrato" tabindex="-1" aria-hidden="true">
+<div class="modal fade rh-modal" id="modalVerContrato" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content shadow-lg">
       <div class="modal-header bg-dark text-white">

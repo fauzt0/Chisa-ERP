@@ -44,15 +44,11 @@
 
 ## 🔴 Urgente / Crítico
 
-- [ ] **Corregir enum `incidencias_empleados.tipo_incidencia`** (falta el valor `'Horas Extras'`).
-  - **Detectado:** 10 ago 2026 (`doc/PRUEBAS_MANUALES_RH_2026-08-10.md`, Hallazgo H1). Confirmado aún vigente en BD el 13 ago 2026.
-  - **Problema:** la UI de `/rh/RecursosHumanos` (registro de incidencias) ya ofrece la opción "Horas Extras" y `NominaRhModel::calcular_conceptos_empleado()` ya espera `tipo_incidencia === 'Horas Extras'` para convertirla en percepción de nómina, pero el enum real en base de datos solo es `('Retardo','Falta','Falta Justificada','Permiso','Incapacidad','Suspensión','Amonestación','Renuncia','Otro')`. Con `STRICT_TRANS_TABLES` el INSERT falla (error 1265) y la incidencia no se puede registrar.
-  - **Corrección pendiente (aplicar cuando se autorice):**
-    ```sql
-    ALTER TABLE incidencias_empleados
-      MODIFY tipo_incidencia ENUM('Retardo','Falta','Falta Justificada','Permiso','Incapacidad','Suspensión','Amonestación','Renuncia','Otro','Horas Extras') NOT NULL;
-    ```
-  - **Bloquea:** flujo completo Incidencias → Nómina (Bloques I4 y K3 de `doc/PRUEBAS_MANUALES_RH_2026-08-10.md`, y el caso límite C9 de `doc/CHECKLIST_MANUAL_POST_E2E_NOMINA.md`). El resto del módulo `rh/Nomina` no depende de esto y puede probarse con normalidad.
+- [X] **Corregir enum `incidencias_empleados.tipo_incidencia`** (agregado el valor `'Horas Extras'`).
+  - **Detectado:** 10 ago 2026 (`doc/PRUEBAS_MANUALES_RH_2026-08-10.md`, Hallazgo H1). Confirmado vigente en BD el 13 ago 2026.
+  - **Problema original:** la UI de `/rh/RecursosHumanos` (registro de incidencias) ya ofrecía la opción "Horas Extras" y `NominaRhModel::calcular_conceptos_empleado()` ya esperaba `tipo_incidencia === 'Horas Extras'`, pero el enum real en BD solo era `('Retardo','Falta','Falta Justificada','Permiso','Incapacidad','Suspensión','Amonestación','Renuncia','Otro')`. Con `STRICT_TRANS_TABLES` el INSERT fallaba (error 1265) y la incidencia no se podía registrar.
+  - **Corrección aplicada (17 ago 2026):** migración `database/incidencias_empleados_tipo_horas_extras.sql` ejecutada en BD de producción y verificada (INSERT de prueba OK). Commit `c258e7b` en `feature/rh-nominas-iteracion2` (sin push). Script de creación `database/contratos_rh.sql` alineado en el mismo commit.
+  - **Desbloquea:** flujo completo Incidencias → Nómina (Bloques I4 y K3 de `doc/PRUEBAS_MANUALES_RH_2026-08-10.md`, y el caso límite C9 de `doc/CHECKLIST_MANUAL_POST_E2E_NOMINA.md`).
 
 ## 🟡 Pendientes Facturación
 - [x] Conexión API Facture App (Implementado)

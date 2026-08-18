@@ -103,6 +103,7 @@ class Descuentos extends MY_Controller {
             'descripcion' => $this->input->post('descripcion'),
             'tipo_descuento' => $this->input->post('tipo_descuento'),
             'valor' => $this->input->post('valor'),
+            'cliente_id' => $this->input->post('cliente_id') ?: null,
             'estatus' => $this->input->post('estatus')
         ];
         
@@ -126,6 +127,7 @@ class Descuentos extends MY_Controller {
             'descripcion' => $this->input->post('descripcion'),
             'tipo_descuento' => $this->input->post('tipo_descuento'),
             'valor' => $this->input->post('valor'),
+            'cliente_id' => $this->input->post('cliente_id') ?: null,
             'estatus' => $this->input->post('estatus')
         ];
         

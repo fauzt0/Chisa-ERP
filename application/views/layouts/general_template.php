@@ -33,6 +33,21 @@
 	  document.documentElement.setAttribute('data-erp-font-level', String(level));
 	})();
 	</script>
+	<script>
+	(function () {
+	  try {
+	    var t = localStorage.getItem('appstack-config-theme');
+	    var root = document.documentElement;
+	    if (t === 'dark') {
+	      root.setAttribute('data-bs-theme', 'dark');
+	      root.setAttribute('data-sidebar-theme', 'dark');
+	    } else if (t === 'light') {
+	      root.setAttribute('data-bs-theme', 'light');
+	      root.setAttribute('data-sidebar-theme', 'light');
+	    }
+	  } catch (e) {}
+	})();
+	</script>
   
 </head>
 
@@ -52,7 +67,9 @@
     </div>
 
   </div>  
-  <script src="<?php echo base_url();?>assets/dist/js/app.js"></script>  
+  <script src="<?php echo base_url();?>assets/dist/js/app.js"></script>
+  <script src="<?php echo base_url();?>assets/dist/js/theme-toggle.js?v=<?php echo time(); ?>"></script>
+  <script src="<?php echo base_url();?>assets/dist/js/rh-tables-responsive.js?v=<?php echo time(); ?>"></script>
   <?php if(isset($pageScript) && $pageScript != ''){ $this->load->view($pageScript); } ?>
 
 

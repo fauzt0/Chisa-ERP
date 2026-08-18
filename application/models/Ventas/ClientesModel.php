@@ -40,6 +40,10 @@ class ClientesModel extends MY_Model {
         if(isset($_POST['filtro_tipo_cliente']) && $_POST['filtro_tipo_cliente'] != '') {
             $this->db->where('clientes.tipo_cliente', $_POST['filtro_tipo_cliente']);
         }
+
+        if(isset($_POST['filtro_tipo_contacto']) && $_POST['filtro_tipo_contacto'] != '') {
+            $this->db->where('clientes.tipo_contacto', $_POST['filtro_tipo_contacto']);
+        }
         
         if(isset($_POST['filtro_estatus']) && $_POST['filtro_estatus'] != '') {
             $this->db->where('clientes.estatus', $_POST['filtro_estatus']);
@@ -347,6 +351,39 @@ class ClientesModel extends MY_Model {
     }
 
     /**
+     * Seguimientos CRM de un cliente
+     */
+    public function get_seguimientos($cliente_id, $limit = 20) {
+        $this->db->select('s.*, CONCAT(a.nombre, " ", a.apellidos) as usuario_nombre');
+        $this->db->from('seguimientos_cliente s');
+        $this->db->join('administradores a', 'a.id = s.usuario_id', 'left');
+        $this->db->where('s.cliente_id', (int) $cliente_id);
+        $this->db->order_by('s.fecha', 'DESC');
+        $this->db->limit($limit);
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Registra un seguimiento CRM
+     */
+    public function crear_seguimiento($data) {
+        $data['fecha_registro'] = date('Y-m-d H:i:s');
+        if (empty($data['fecha'])) {
+            $data['fecha'] = date('Y-m-d H:i:s');
+        }
+        return $this->db->insert('seguimientos_cliente', $data);
+    }
+
+    /**
+     * Elimina un seguimiento CRM
+     */
+    public function eliminar_seguimiento($id, $cliente_id) {
+        $this->db->where('id', (int) $id);
+        $this->db->where('cliente_id', (int) $cliente_id);
+        return $this->db->delete('seguimientos_cliente');
+    }
+
+    /**
      * Importa clientes desde filas parseadas del Excel
      */
     public function importar_masivo(array $rows, $usuario_id = null) {
@@ -354,8 +391,9 @@ class ClientesModel extends MY_Model {
         $errors = 0;
         $skipped = 0;
         $messages = [];
-        $tipos_validos = ['Regular', 'Mostrador', 'Gobierno', 'Licitación', 'Distribuidor'];
+        $tipos_validos = ['Empresa', 'Persona Física', 'Mostrador'];
         $estatus_validos = ['Activo', 'Inactivo', 'Suspendido'];
+        $tipos_contacto_validos = ['Cliente', 'Prospecto'];
         $rfcs_vistos = [];
 
         foreach ($rows as $idx => $row) {
@@ -403,7 +441,12 @@ class ClientesModel extends MY_Model {
 
             $tipo = trim($row['tipo_cliente'] ?? '');
             if ($tipo === '' || !in_array($tipo, $tipos_validos, true)) {
-                $tipo = 'Regular';
+                $tipo = 'Empresa';
+            }
+
+            $tipo_contacto = trim($row['tipo_contacto'] ?? '');
+            if ($tipo_contacto === '' || !in_array($tipo_contacto, $tipos_contacto_validos, true)) {
+                $tipo_contacto = 'Cliente';
             }
 
             $estatus = trim($row['estatus'] ?? '');
@@ -429,6 +472,7 @@ class ClientesModel extends MY_Model {
                 'limite_credito' => is_numeric($row['limite_credito'] ?? '') ? (float) $row['limite_credito'] : 0,
                 'dias_credito' => is_numeric($row['dias_credito'] ?? '') ? (int) $row['dias_credito'] : 0,
                 'tipo_cliente' => $tipo,
+                'tipo_contacto' => $tipo_contacto,
                 'estatus' => $estatus,
                 'saldo_pendiente' => 0,
             ];

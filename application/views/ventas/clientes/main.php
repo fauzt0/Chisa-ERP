@@ -178,11 +178,17 @@ $stats = $response['stats'] ?? [];
           <label class="form-label small text-muted mb-1">Tipo</label>
           <select class="form-select form-select-sm" id="filtro_tipo_cliente">
             <option value="">Todos</option>
-            <option value="Regular">Regular</option>
+            <option value="Empresa">Empresa</option>
+            <option value="Persona Física">Persona Física</option>
             <option value="Mostrador">Mostrador</option>
-            <option value="Gobierno">Gobierno</option>
-            <option value="Licitación">Licitación</option>
-            <option value="Distribuidor">Distribuidor</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted mb-1">Contacto</label>
+          <select class="form-select form-select-sm" id="filtro_tipo_contacto">
+            <option value="">Todos</option>
+            <option value="Cliente">Cliente</option>
+            <option value="Prospecto">Prospecto</option>
           </select>
         </div>
         <div class="col-md-2">
@@ -266,11 +272,16 @@ $stats = $response['stats'] ?? [];
             <div class="col-md-4">
               <label class="form-label">Tipo de Cliente <span class="text-danger">*</span></label>
               <select class="form-select" id="cliente_tipo_cliente" required>
-                <option value="Regular">Regular</option>
+                <option value="Empresa">Empresa</option>
+                <option value="Persona Física">Persona Física</option>
                 <option value="Mostrador">Mostrador</option>
-                <option value="Gobierno">Gobierno</option>
-                <option value="Licitación">Licitación</option>
-                <option value="Distribuidor">Distribuidor</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tipo de Contacto</label>
+              <select class="form-select" id="cliente_tipo_contacto">
+                <option value="Cliente">Cliente</option>
+                <option value="Prospecto">Prospecto</option>
               </select>
             </div>
           </div>
@@ -382,6 +393,7 @@ $stats = $response['stats'] ?? [];
       <li class="nav-item"><button class="nav-link active" id="cli-info-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-info" type="button">Información</button></li>
       <li class="nav-item"><button class="nav-link" id="cli-ventas-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-ventas" type="button">Ventas</button></li>
       <li class="nav-item"><button class="nav-link" id="cli-cotizaciones-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-cotizaciones" type="button">Cotizaciones</button></li>
+      <li class="nav-item"><button class="nav-link" id="cli-seguimiento-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-seguimiento" type="button">Seguimiento</button></li>
     </ul>
     <div class="tab-content px-3 py-3">
       <div class="tab-pane fade show active" id="cli-tab-info">
@@ -409,6 +421,38 @@ $stats = $response['stats'] ?? [];
             </table>
           </div>
           <div id="cli-cotizaciones-paginacion" class="d-grid gap-2 mt-2"></div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="cli-tab-seguimiento">
+        <div class="mb-3 p-2 border rounded bg-light">
+          <h6 class="mb-2"><i class="fas fa-plus-circle"></i> Nuevo seguimiento</h6>
+          <div class="row g-2">
+            <div class="col-md-4">
+              <select class="form-select form-select-sm" id="seg-tipo">
+                <option value="Llamada">Llamada</option>
+                <option value="Visita">Visita</option>
+                <option value="Correo">Correo</option>
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <input type="datetime-local" class="form-control form-control-sm" id="seg-fecha">
+            </div>
+            <div class="col-md-4">
+              <input type="text" class="form-control form-control-sm" id="seg-asunto" placeholder="Asunto">
+            </div>
+            <div class="col-12">
+              <textarea class="form-control form-control-sm" id="seg-notas" rows="2" placeholder="Notas del seguimiento..."></textarea>
+            </div>
+            <div class="col-12">
+              <button type="button" class="btn btn-sm btn-primary" onclick="guardarSeguimientoCliente()"><i class="fas fa-save"></i> Registrar</button>
+            </div>
+          </div>
+        </div>
+        <div id="cli-seguimiento-loading" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i></div>
+        <div id="cli-seguimiento-container" style="display:none;">
+          <div class="list-group list-group-flush" id="cli-seguimiento-list"></div>
         </div>
       </div>
     </div>
@@ -574,6 +618,7 @@ function inicializarDataTable() {
       data: function(d) {
         d.peticion = 'ajax';
         d.filtro_tipo_cliente = $('#filtro_tipo_cliente').val();
+        d.filtro_tipo_contacto = $('#filtro_tipo_contacto').val();
         d.filtro_estatus = $('#filtro_estatus').val();
         d.filtro_saldo = $('#filtro_saldo').val();
         d['<?php echo $this->security->get_csrf_token_name();?>'] = '<?php echo $this->security->get_csrf_hash();?>';
@@ -598,13 +643,14 @@ function inicializarDataTable() {
 }
 
 function inicializarFiltros() {
-  $('#filtro_tipo_cliente, #filtro_estatus, #filtro_saldo').on('change', function() {
+  $('#filtro_tipo_cliente, #filtro_tipo_contacto, #filtro_estatus, #filtro_saldo').on('change', function() {
     tabla.ajax.reload();
   });
 }
 
 function limpiarFiltros() {
   $('#filtro_tipo_cliente').val('');
+  $('#filtro_tipo_contacto').val('');
   $('#filtro_estatus').val('');
   $('#filtro_saldo').val('');
   $('#busquedaClientes').val('');
@@ -616,7 +662,8 @@ function mostrarModalNuevo() {
   $('#formCliente')[0].reset();
   $('#cliente_id').val('');
   $('#cliente_estatus').val('Activo');
-  $('#cliente_tipo_cliente').val('Regular');
+  $('#cliente_tipo_cliente').val('Empresa');
+  $('#cliente_tipo_contacto').val('Cliente');
   $('#modalCliente').modal('show');
 }
 
@@ -648,6 +695,7 @@ window.editarCliente = function(id) {
       $('#cliente_limite_credito').val(c.limite_credito);
       $('#cliente_dias_credito').val(c.dias_credito);
       $('#cliente_tipo_cliente').val(c.tipo_cliente);
+      $('#cliente_tipo_contacto').val(c.tipo_contacto || 'Cliente');
       $('#cliente_estatus').val(c.estatus);
       $('#modalCliente').modal('show');
     }
@@ -677,6 +725,7 @@ function guardarCliente() {
     'limite_credito': $('#cliente_limite_credito').val(),
     'dias_credito': $('#cliente_dias_credito').val(),
     'tipo_cliente': $('#cliente_tipo_cliente').val(),
+    'tipo_contacto': $('#cliente_tipo_contacto').val(),
     'estatus': $('#cliente_estatus').val(),
     'peticion': 'ajax',
     '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
@@ -701,10 +750,11 @@ window.verCliente = function(id) {
   oc.show();
 
   $('#cli-detalles').html('<tr><td colspan="2" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i></td></tr>');
-  $('#cli-ventas-container, #cli-cotizaciones-container').hide();
-  $('#cli-ventas-loading, #cli-cotizaciones-loading').show();
+  $('#cli-ventas-container, #cli-cotizaciones-container, #cli-seguimiento-container').hide();
+  $('#cli-ventas-loading, #cli-cotizaciones-loading, #cli-seguimiento-loading').show();
   $('#cli-ventas-tbody, #cli-cotizaciones-tbody').html('');
   $('#cli-ventas-paginacion, #cli-cotizaciones-paginacion').html('');
+  $('#cli-seguimiento-list').html('');
 
   $('#cli-btn-editar').off('click').on('click', function() {
     bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasDetalleCliente')).hide();
@@ -718,6 +768,9 @@ window.verCliente = function(id) {
   });
   $('#cli-cotizaciones-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
     if($('#cli-cotizaciones-tbody').is(':empty')) cargarCotizaciones(id);
+  });
+  $('#cli-seguimiento-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
+    if($('#cli-seguimiento-list').is(':empty')) cargarSeguimientosCliente(id);
   });
 
   $.post('<?=base_url();?>ventas/Clientes/get_cliente_ajax', {
@@ -742,7 +795,8 @@ window.verCliente = function(id) {
     html += fila('Nombre Comercial', c.nombre_comercial);
     html += fila('RFC', c.rfc);
     html += fila('Régimen Fiscal', c.regimen_fiscal);
-    html += fila('Tipo', '<span class="badge bg-primary">' + c.tipo_cliente + '</span>');
+    html += fila('Tipo', '<span class="badge bg-primary">' + c.tipo_cliente + '</span>' +
+      (c.tipo_contacto === 'Prospecto' ? ' <span class="badge bg-warning text-dark">Prospecto</span>' : ''));
     html += fila('Contacto', c.contacto_nombre);
     html += fila('Teléfono', c.telefono ? '<a href="tel:' + c.telefono + '">' + c.telefono + '</a>' : null);
     html += fila('Email', c.email ? '<a href="mailto:' + c.email + '">' + c.email + '</a>' : null);
@@ -1039,6 +1093,78 @@ window.procesarImportacionClientes = function() {
     }
   });
 };
+
+function cargarSeguimientosCliente(clienteId) {
+  $('#cli-seguimiento-loading').show();
+  $('#cli-seguimiento-container').hide();
+  $('#cli-seguimiento-list').html('');
+
+  $.post('<?=base_url();?>ventas/Clientes/get_seguimientos_ajax', {
+    cliente_id: clienteId,
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(res) {
+    res = JSON.parse(res);
+    $('#cli-seguimiento-loading').hide();
+
+    if (!res.success || !res.seguimientos || !res.seguimientos.length) {
+      $('#cli-seguimiento-list').html('<div class="text-muted text-center py-3">Sin seguimientos registrados</div>');
+      $('#cli-seguimiento-container').show();
+      return;
+    }
+
+    let html = '';
+    res.seguimientos.forEach(function(s) {
+      html += '<div class="list-group-item px-0">';
+      html += '<div class="d-flex justify-content-between align-items-start">';
+      html += '<div><span class="badge bg-secondary me-1">' + s.tipo + '</span>';
+      html += '<strong>' + (s.asunto || 'Sin asunto') + '</strong>';
+      html += '<div class="small text-muted">' + formatearFechaMX(s.fecha) + (s.usuario_nombre ? ' · ' + s.usuario_nombre : '') + '</div>';
+      if (s.notas) html += '<div class="small mt-1">' + s.notas + '</div>';
+      html += '</div>';
+      html += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarSeguimientoCliente(' + s.id + ',' + clienteId + ')"><i class="fas fa-trash"></i></button>';
+      html += '</div></div>';
+    });
+    $('#cli-seguimiento-list').html(html);
+    $('#cli-seguimiento-container').show();
+  });
+}
+
+function guardarSeguimientoCliente() {
+  if (!cliOrdenesActualId) return;
+  const data = {
+    cliente_id: cliOrdenesActualId,
+    tipo: $('#seg-tipo').val(),
+    fecha: $('#seg-fecha').val(),
+    asunto: $('#seg-asunto').val(),
+    notas: $('#seg-notas').val(),
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  };
+  $.post('<?=base_url();?>ventas/Clientes/crear_seguimiento_ajax', data, function(res) {
+    res = JSON.parse(res);
+    notifyShow(res.message, res.success ? 'success' : 'danger');
+    if (res.success) {
+      $('#seg-asunto, #seg-notas').val('');
+      $('#seg-fecha').val('');
+      cargarSeguimientosCliente(cliOrdenesActualId);
+    }
+  });
+}
+
+function eliminarSeguimientoCliente(id, clienteId) {
+  if (!confirm('¿Eliminar este seguimiento?')) return;
+  $.post('<?=base_url();?>ventas/Clientes/eliminar_seguimiento_ajax', {
+    id: id,
+    cliente_id: clienteId,
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(res) {
+    res = JSON.parse(res);
+    notifyShow(res.message, res.success ? 'success' : 'danger');
+    if (res.success) cargarSeguimientosCliente(clienteId);
+  });
+}
 
 // Inicializar cuando jQuery esté disponible
 if (typeof jQuery !== 'undefined') {

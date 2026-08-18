@@ -195,4 +195,102 @@
 .btn-acciones-crm .btn {
   margin: 0 !important;
 }
+
+/* =============================================================================
+   Modales: contraste claro / oscuro (referencia: Registrar Nueva Incidencia)
+   Cuerpo, labels e inputs usan tokens de Bootstrap. bg-light / text-dark
+   dentro del body se remapean para no quedar negro-sobre-negro en dark.
+   Encabezados de color (gradient, primary, danger…) siguen en blanco.
+   ============================================================================= */
+.modal-content {
+  background-color: var(--bs-modal-bg, var(--bs-secondary-bg));
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+.modal-body,
+.modal-footer {
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+.modal-body .form-label,
+.modal-body label:not(.form-check-label):not(.btn),
+.modal-body .form-check-label {
+  color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+html[data-bs-theme="dark"] .modal-body .form-control,
+html[data-bs-theme="dark"] .modal-body .form-select,
+html[data-bs-theme="dark"] .modal-body .input-group-text {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-emphasis-color, var(--bs-body-color));
+  border-color: var(--bs-border-color);
+}
+html[data-bs-theme="dark"] .modal-body .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  opacity: 1;
+}
+html[data-bs-theme="dark"] .modal-body .form-control:focus,
+html[data-bs-theme="dark"] .modal-body .form-select:focus {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-emphasis-color, var(--bs-body-color));
+  border-color: var(--bs-primary);
+}
+
+/* Superficies "claras" de Bootstrap → superficie terciaria del tema */
+.modal .bg-light,
+.offcanvas .bg-light,
+.modal .card.bg-light,
+.modal .card-header.bg-light {
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color);
+}
+.modal .card-header.bg-light,
+.modal .card-header.bg-light h6,
+.modal .card-header.bg-light .mb-0 {
+  color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+
+/* text-dark en el cuerpo del modal (no en headers warning/amarillos) */
+.modal-body .text-dark,
+.modal-footer .text-dark,
+.modal .card-body .text-dark,
+.modal thead .text-dark,
+.modal td .text-dark,
+.modal th.text-dark {
+  color: var(--bs-emphasis-color, var(--bs-body-color)) !important;
+}
+.modal-header.bg-warning .text-dark,
+.modal-header.bg-warning .modal-title,
+.modal-header.bg-warning.text-dark .modal-title {
+  color: #212529 !important;
+}
+
+.modal .table-light,
+.modal .table-light > :not(caption) > * > * {
+  --bs-table-bg: var(--bs-tertiary-bg);
+  --bs-table-color: var(--bs-body-color);
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
+/* Fondos hex claros hardcodeados */
+.modal-body[style*="#f5f5f5"],
+.modal-body[style*="#f8f9fa"] {
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+html[data-bs-theme="dark"] .modal .bg-white:not(#contenidoContratoModal):not(.recibo-paper):not(.recibo-item) {
+  background-color: var(--bs-body-bg) !important;
+  color: var(--bs-body-color);
+}
+
+/* Cerrar (X) visible en headers oscuros/de color */
+.modal-header.bg-primary .btn-close:not(.btn-close-white),
+.modal-header.bg-success .btn-close:not(.btn-close-white),
+.modal-header.bg-danger .btn-close:not(.btn-close-white),
+.modal-header.bg-dark .btn-close:not(.btn-close-white),
+.modal-header.bg-info .btn-close:not(.btn-close-white),
+.modal-header.text-white .btn-close:not(.btn-close-white),
+.modal-header[style*="gradient"] .btn-close:not(.btn-close-white) {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
 </style>

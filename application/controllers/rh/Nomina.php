@@ -99,9 +99,12 @@ class Nomina extends MY_Controller {
                 $acciones .= $this->btn_tabla('eliminarNomina(' . $id . ')', 'btn-outline-danger', 'fa-trash', 'Eliminar borrador');
             } elseif ($nomina->estatus === 'Calculada') {
                 $folio_js = str_replace("'", "\\'", $nomina->folio);
-                $acciones .= $this->btn_tabla('pedirCancelarNomina(' . $id . ', \'' . $folio_js . '\')', 'btn-outline-warning', 'fa-ban', 'Cancelar nómina');
+                $acciones .= $this->btn_tabla('calcularNomina(' . $id . ')', 'btn-outline-secondary', 'fa-calculator', 'Recalcular (salarios e incidencias)');
+                $acciones .= $this->btn_tabla('pedirCancelarNomina(' . $id . ', \'' . $folio_js . '\', \'' . $nomina->estatus . '\')', 'btn-outline-warning', 'fa-ban', 'Cancelar nómina');
             } elseif (in_array($nomina->estatus, ['Parcial', 'Pagada'], true)) {
+                $folio_js = str_replace("'", "\\'", $nomina->folio);
                 $acciones .= $this->btn_tabla('verNomina(' . $id . ', true)', 'btn-outline-warning', 'fa-sticky-note', 'Notas de ajuste');
+                $acciones .= $this->btn_tabla('pedirCancelarNomina(' . $id . ', \'' . $folio_js . '\', \'' . $nomina->estatus . '\')', 'btn-outline-danger', 'fa-ban', 'Cancelar nómina');
             }
             if (in_array($nomina->estatus, ['Calculada', 'Parcial', 'Pagada'], true)) {
                 $acciones .= $this->btn_tabla('exportarExcel(' . $id . ')', 'btn-outline-success', 'fa-file-excel', 'Exportar Excel');
@@ -122,13 +125,13 @@ class Nomina extends MY_Controller {
 
             $data[] = [
                 '<strong>' . htmlspecialchars($nomina->folio) . '</strong>',
-                '<span class="badge bg-' . $badge_tipo . '">' . htmlspecialchars($nomina->tipo_nomina) . '</span>',
+                '<span class="badge ' . $badge_tipo . '">' . htmlspecialchars($nomina->tipo_nomina) . '</span>',
                 $periodoHtml,
                 $fechaPagoHtml,
                 '<span class="text-end d-block" data-order="' . (float)($nomina->total_percepciones ?? 0) . '">$' . number_format((float)($nomina->total_percepciones ?? 0), 2) . '</span>',
                 '<span class="text-end d-block text-danger" data-order="' . (float)($nomina->total_deducciones ?? 0) . '">$' . number_format((float)($nomina->total_deducciones ?? 0), 2) . '</span>',
                 '<strong class="text-end d-block" data-order="' . (float)($nomina->total_neto ?? 0) . '">$' . number_format((float)($nomina->total_neto ?? 0), 2) . '</strong>',
-                '<span class="badge bg-' . $badge_estatus . '">' . htmlspecialchars($nomina->estatus) . '</span>',
+                '<span class="badge ' . $badge_estatus . '">' . htmlspecialchars($nomina->estatus) . '</span>',
                 $btn_pago,
                 $acciones,
                 $periodoSortKey,
@@ -238,7 +241,7 @@ class Nomina extends MY_Controller {
     }
 
     public function eliminar_ajax() {
-        $this->requiere_permiso('rh_nomina');
+        $this->requiere_permiso('rh_nomina', 'No tienes permiso para cancelar nóminas.');
         $id = (int)$this->input->post('id');
         $nomina = $this->db->get_where('nominas', ['id' => $id])->row();
         if (!$nomina) {
@@ -254,22 +257,54 @@ class Nomina extends MY_Controller {
             $this->db->where('nomina_id', $id)->delete('nominas_detalle');
             $this->db->where('nomina_id', $id)->delete('nominas_pagos_log');
             $this->db->where('id', $id)->delete('nominas');
+            $this->registrar_bitacora(
+                'Nómina borrador eliminada: ' . ($nomina->folio ?? ('#' . $id)),
+                'RH'
+            );
             echo json_encode(['success' => true, 'message' => 'Nómina eliminada permanentemente']);
             return;
         }
-        // Calculada → soft delete (cancelar)
-        if ($nomina->estatus === 'Calculada') {
+        // Calculada / Parcial / Pagada → cancelación (soft); marca empleados Cancelado
+        if (in_array($nomina->estatus, ['Calculada', 'Parcial', 'Pagada'], true)) {
             $motivo = trim((string)$this->input->post('motivo'));
             if (strlen($motivo) < 10) {
                 echo json_encode(['success' => false, 'message' => 'El motivo de cancelación debe tener al menos 10 caracteres']);
                 return;
             }
             $result = $this->NominaRhModel->cancelar_nomina($id, $motivo);
+            if (!empty($result['success'])) {
+                $this->registrar_bitacora(
+                    'Nómina cancelada: ' . ($nomina->folio ?? ('#' . $id)) . ' — ' . substr($motivo, 0, 160),
+                    'RH'
+                );
+            }
             echo json_encode($result);
             return;
         }
-        // Pagada / Parcial → no permitir
-        echo json_encode(['success' => false, 'message' => 'No se puede cancelar una nómina con pagos procesados. Use el sistema de notas de ajuste.']);
+        echo json_encode(['success' => false, 'message' => 'Esta nómina no se puede cancelar.']);
+    }
+
+    public function cancelar_empleado_ajax() {
+        $this->requiere_permiso('rh_nomina', 'No tienes permiso para cancelar nóminas.');
+        $detalle_id = (int)$this->input->post('detalle_id');
+        $motivo = trim((string)$this->input->post('motivo'));
+        if ($detalle_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Empleado inválido']);
+            return;
+        }
+        if (strlen($motivo) < 10) {
+            echo json_encode(['success' => false, 'message' => 'El motivo de cancelación debe tener al menos 10 caracteres']);
+            return;
+        }
+        $result = $this->NominaRhModel->cancelar_empleado_nomina($detalle_id, $motivo);
+        if (!empty($result['success'])) {
+            $this->registrar_bitacora(
+                'Empleado cancelado en nómina ' . ($result['folio'] ?? '') . ' (detalle #' . $detalle_id . ') — ' . substr($motivo, 0, 160),
+                'RH'
+            );
+        }
+        echo json_encode($result);
+        return;
     }
 
     public function get_notas_ajax() {
@@ -659,25 +694,25 @@ class Nomina extends MY_Controller {
 
     private function badge_tipo($tipo) {
         $map = [
-            'Semanal'        => 'primary',
-            'Quincenal'      => 'success',
-            'Mensual'        => 'info',
-            'Extraordinaria' => 'warning',
-            'Aguinaldo'      => 'danger',
-            'Finiquito'      => 'dark',
+            'Semanal'        => 'bg-primary-subtle text-primary-emphasis border border-primary-subtle',
+            'Quincenal'      => 'bg-success-subtle text-success-emphasis border border-success-subtle',
+            'Mensual'        => 'bg-info-subtle text-info-emphasis border border-info-subtle',
+            'Extraordinaria' => 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+            'Aguinaldo'      => 'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
+            'Finiquito'      => 'bg-dark-subtle text-dark-emphasis border border-dark-subtle',
         ];
-        return $map[$tipo] ?? 'secondary';
+        return $map[$tipo] ?? 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
     }
 
     private function badge_estatus($estatus) {
         $map = [
-            'Borrador'   => 'secondary',
-            'Calculada'  => 'warning',
-            'Parcial'    => 'info',
-            'Pagada'     => 'success',
-            'Cancelada'  => 'danger',
+            'Borrador'   => 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle',
+            'Calculada'  => 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+            'Parcial'    => 'bg-info-subtle text-info-emphasis border border-info-subtle',
+            'Pagada'     => 'bg-success-subtle text-success-emphasis border border-success-subtle',
+            'Cancelada'  => 'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
         ];
-        return $map[$estatus] ?? 'secondary';
+        return $map[$estatus] ?? 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
     }
 
     /**
@@ -708,6 +743,7 @@ class Nomina extends MY_Controller {
             'success' => true,
             'nomina'  => $nomina,
             'detalle' => $detalle,
+            'cancelaciones' => $this->NominaRhModel->get_cancelaciones_nomina($id),
         ]);
     }
 

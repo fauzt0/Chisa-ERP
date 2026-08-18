@@ -58,6 +58,9 @@
             tablaPreview = $('#tabla-preview-sync').DataTable({
                 pageLength: 25,
                 order: [[0, 'asc']],
+                responsive: true,
+                scrollX: true,
+                autoWidth: false,
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
                 }

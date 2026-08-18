@@ -209,8 +209,44 @@ class Notifications extends MY_Controller {
       }
     }
 
-    // Limitar a las 10 notificaciones más importantes
-    $notifications = array_slice($notifications, 0, 10);
+    // 8b. RH — Cancelaciones recientes (alerta distinta a pendientes de pago)
+    if (tiene_permiso('rh_nomina') && $this->db->table_exists('nominas_cancelaciones')) {
+      $this->db->select('nc.motivo, nc.created_at, n.id, n.folio, n.tipo_nomina, n.periodo_inicio, n.periodo_fin');
+      $this->db->from('nominas_cancelaciones nc');
+      $this->db->join('nominas n', 'n.id = nc.nomina_id');
+      $this->db->where('nc.created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')));
+      $this->db->order_by('nc.created_at', 'DESC');
+      $this->db->limit(5);
+      $canceladas_recientes = $this->db->get()->result();
+      foreach ($canceladas_recientes as $canc) {
+        $hace = max(0, (int)floor((time() - strtotime($canc->created_at)) / 3600));
+        $time = $hace < 1 ? 'Ahora' : ($hace < 24 ? $hace . 'h' : ((int)floor($hace / 24) . 'd'));
+        $notifications[] = [
+          'type' => 'warning',
+          'icon' => 'ban',
+          'module' => 'RH',
+          'title' => 'Nómina cancelada',
+          'message' => $canc->folio . ' · ' . substr((string)$canc->motivo, 0, 80),
+          'link' => base_url('rh/Nomina'),
+          'time' => $time
+        ];
+        $total_count++;
+      }
+    }
+
+    // Priorizar vencidas/críticas y alertas de RH para que no las tape el stock de almacén.
+    usort($notifications, function ($a, $b) {
+        $prioType = ['danger' => 0, 'warning' => 1, 'info' => 2];
+        $ta = $prioType[$a['type'] ?? ''] ?? 3;
+        $tb = $prioType[$b['type'] ?? ''] ?? 3;
+        if ($ta !== $tb) {
+            return $ta - $tb;
+        }
+        $ma = (($a['module'] ?? '') === 'RH') ? 0 : 1;
+        $mb = (($b['module'] ?? '') === 'RH') ? 0 : 1;
+        return $ma - $mb;
+    });
+    $notifications = array_slice($notifications, 0, 12);
 
     echo json_encode([
       'success' => true,

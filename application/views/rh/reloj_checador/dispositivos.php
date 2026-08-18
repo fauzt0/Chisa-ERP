@@ -47,16 +47,16 @@
 </div>
 
 <!-- Modal: Nuevo/Editar Dispositivo -->
-<div class="modal fade" id="modalDispositivo" tabindex="-1" aria-hidden="true">
+<div class="modal fade rh-modal" id="modalDispositivo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form id="formDispositivo" method="post">
                 <input type="hidden" name="id" id="dispositivo_id" value="">
                 <input type="hidden" name="<?php echo $this->security->get_csrf_token_name(); ?>" value="<?php echo $this->security->get_csrf_hash(); ?>">
 
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalDispositivoTitle">Nuevo Dispositivo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header rh-header-brand text-white">
+                    <h5 class="modal-title text-white" id="modalDispositivoTitle">Nuevo Dispositivo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-3">
@@ -107,12 +107,12 @@
 </div>
 
 <!-- Modal: Detalle del Dispositivo -->
-<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+<div class="modal fade rh-modal" id="modalDetalle" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Detalle del Dispositivo</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header rh-header-brand text-white">
+                <h5 class="modal-title text-white">Detalle del Dispositivo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="detalleContent">
                 <div class="text-center">

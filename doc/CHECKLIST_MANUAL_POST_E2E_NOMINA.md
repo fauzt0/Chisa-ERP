@@ -5,11 +5,9 @@
 > confiable**: contraste visual, responsive, contenido exacto de PDFs/Excel y casos límite
 > de negocio.
 >
-> **Prerrequisito bloqueante:** corregir primero el **Hallazgo H1** (ver
-> `doc/PRUEBAS_MANUALES_RH_2026-08-10.md`, sección 2) — el enum
-> `incidencias_empleados.tipo_incidencia` en la base de datos real **todavía no incluye**
-> `'Horas Extras'` (verificado el 13-ago-2026), aunque la UI y `NominaRhModel.php` ya lo
-> esperan. Sin este `ALTER TABLE`, el Bloque D de este checklist fallará con error 1265.
+> **Nota:** el Hallazgo H1 (enum `incidencias_empleados.tipo_incidencia` sin `'Horas Extras'`)
+> fue corregido en BD de producción el 17-ago-2026 (`database/incidencias_empleados_tipo_horas_extras.sql`,
+> commit `c258e7b`), por lo que el caso C9 ya puede probarse sin prerequisito.
 >
 > **Login sugerido:** `presentacion@chisa.mx` / `Demo2026!` (ya tiene los 5 permisos de nómina).
 
@@ -42,7 +40,7 @@ Repite en el navegador, con ojo humano, lo que el E2E ya validó por código:
 - [ ] C6. Capturar un motivo de cancelación de **menos de 10 caracteres** → debe rechazar antes de enviar la petición (validación de frontend).
 - [ ] C7. Ejecutar el cron dos veces el mismo día (`php index.php rh/Nomina verificar_auto_nomina_ajax`) → la segunda ejecución **no debe duplicar** la nómina de la semana ya creada.
 - [ ] C8. Verificar el caso de un empleado **sin cuenta bancaria activa** dentro del detalle de nómina → la columna "Banco/Cuenta" debe ofrecer "+ Agregar" en vez de romper la fila.
-- [ ] C9. **[Requiere H1 corregido]** Registrar una incidencia "Horas Extras" desde `/rh/RecursosHumanos` para un empleado dentro del periodo de una nómina ya calculada → recalcular la nómina → confirmar que aparece como percepción "Horas Extras (dd/mm)" y coincide con `horas × costo_hora_extra`.
+- [ ] C9. Registrar una incidencia "Horas Extras" desde `/rh/RecursosHumanos` para un empleado dentro del periodo de una nómina ya calculada → recalcular la nómina → confirmar que aparece como percepción "Horas Extras (dd/mm)" y coincide con `horas × costo_hora_extra`.
 - [ ] C10. Reducir la ventana a 375px durante el flujo de "Procesar Pago": los botones 25/50/100% de monto rápido no deben desbordar la tarjeta.
 
 ## D. Revisión de PDFs y Excel (el script no valida contenido, solo que se descarguen)
@@ -81,13 +79,13 @@ Repite en el navegador, con ojo humano, lo que el E2E ya validó por código:
 
 | Bloque | Ejecutado por | Fecha | Resultado (✅/⚠️/❌) | Notas |
 |:-------|:--------------|:------|:---------------------:|:------|
-| A — Visual | | | | |
-| B — Edición inline | | | | |
-| C — Casos límite | | | | |
-| D — PDFs/Excel | | | | |
-| E — Planeador | | | | |
-| F — Alertas | | | | |
-| G — Regresión RH | | | | |
+| A — Visual | Cursor agente | 18 ago 2026 | ⚠️ | A2 hint auto-cálculo legible. A3 badges Borrador/Calculada/Pagada/Cancelada/Parcial **WCAG AA** en claro (8.08–11.92) y oscuro forzado (6.40–10.03). El **toggle de tema no funciona** (`data-bs-theme` se queda en default; TODO 1.1). A5 celda HE `#fffef5` / texto oscuro. A1/A4 375px no emulados. Overlay del layout intercepta clics en botones del header (Planeador se abrió por JS). |
+| B — Edición inline | Cursor agente | 18 ago 2026 | ⚠️ | B1 Comidas 1700 recalcula neto y totales; restaurado. B2 HE 5× no se capturó; sí HE=2 × 136.66 = 273.32 (bug $0 del 4-ago no reaparece). Volver HE a 0 no recalcula percepciones hasta otro campo. B3 Depósito persiste; restaurado. B4 filtro en vivo; 2 Miguel; tfoot permanece. |
+| C — Casos límite | Cursor agente | 18 ago 2026 | ⚠️ | C1 2.º `calcular_ajax` → «Nómina no válida para cálculo» (no duplica; **tampoco permite recálculo**). C2 Quincenal sin empleados: toast + borrador fantasma id 39 **eliminado**. C3 monto &gt; máx rechazado en front. C4 Parcial en NOM000038; pagados siguen listados como «Pagado» disabled. C5 mismo bloqueo que Pagada. C6 motivo corto rechazado. C7 cron ×2 sin duplicar. C8 Ana «+ Agregar». C9 no ejecutable: no hay recálculo de Calculada. C10 375px no emulado. |
+| D — PDFs/Excel | — | 18 ago 2026 | ⚠️ | No se abrieron Excel/PDF/contrato/reloj en esta pasada. |
+| E — Planeador | Cursor agente | 18 ago 2026 | ⚠️ | E1–E4 OK (dic→ene, 5/2/1 periodos, precarga fechas, próximas auto). Contraste «Sin nómina» 4.12:1. |
+| F — Alertas | Cursor agente | 18 ago 2026 | ⚠️ | Campana con badge 9+; contenido = stock de almacén, **sin** notificaciones de nómina. |
+| G — Regresión RH | Cursor agente | 18 ago 2026 | ⚠️ | Listado RH OK. Badges de estatus Activo/Reingreso aún sólidos (no AA). G1/G2/G3 (alta inválida, cambio tipo_nomina, vacaciones) no ejecutados. |
 
 ---
 

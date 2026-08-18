@@ -73,7 +73,9 @@
                 { extend: 'pdfHtml5', text: '<i class="fas fa-file-pdf"></i> PDF', className: 'btn btn-danger btn-sm' },
                 { extend: 'print', text: '<i class="fas fa-print"></i> Imprimir', className: 'btn btn-info btn-sm' }
             ],
-            responsive: true
+            responsive: true,
+            scrollX: true,
+            autoWidth: false
         });
 
         $('#tabla-dispositivos').on('xhr.dt', function(e, settings, json) {

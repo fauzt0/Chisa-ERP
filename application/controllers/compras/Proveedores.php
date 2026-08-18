@@ -688,6 +688,119 @@ class Proveedores extends MY_Controller {
     }
 
     /**
+     * Comprobantes de pago históricos de un proveedor (todas sus OCs) — AJAX
+     */
+    public function get_comprobantes_proveedor_ajax() {
+        $this->requiere_permiso('compras_pagos', 'No tienes permiso para ver comprobantes de pago');
+        $proveedor_id = (int) $this->input->post('proveedor_id');
+        if (!$proveedor_id) {
+            echo json_encode(['success' => false, 'message' => 'Proveedor requerido']);
+            return;
+        }
+        $comprobantes = $this->ProveedoresModel->get_comprobantes_proveedor($proveedor_id);
+        echo json_encode(['success' => true, 'comprobantes' => $comprobantes]);
+    }
+
+    /**
+     * Documentos / facturas históricos de un proveedor (todas sus OCs) — AJAX
+     */
+    public function get_documentos_proveedor_ajax() {
+        $this->requiere_permiso('proveedores_consult', 'No tienes permiso');
+        $proveedor_id = (int) $this->input->post('proveedor_id');
+        if (!$proveedor_id) {
+            echo json_encode(['success' => false, 'message' => 'Proveedor requerido']);
+            return;
+        }
+        $documentos = $this->ProveedoresModel->get_documentos_proveedor($proveedor_id);
+        echo json_encode(['success' => true, 'documentos' => $documentos]);
+    }
+
+    /**
+     * Estadísticas avanzadas para gráficas (Chart.js) — AJAX
+     */
+    public function estadisticas_avanzadas_ajax() {
+        $this->requiere_permiso('proveedores_consult', 'Sin permiso');
+        $data = $this->ProveedoresModel->get_estadisticas_avanzadas();
+        echo json_encode(['success' => true, 'data' => $data]);
+    }
+
+    /**
+     * Enviar comprobante de pago al proveedor por email — AJAX
+     */
+    public function enviar_comprobante_pago_ajax() {
+        $this->requiere_permiso('compras_pagos', 'No tienes permiso para enviar comprobantes');
+
+        $pago_id   = (int) $this->input->post('pago_id');
+        $asunto    = $this->input->post('asunto');
+        $cuerpo    = $this->input->post('cuerpo_html');
+        $cc        = $this->input->post('cc');
+        $destinatario = $this->input->post('destinatario');
+
+        if (!$pago_id || !$destinatario) {
+            echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+            return;
+        }
+
+        // Obtener el comprobante
+        $this->load->model('Compras/OrdenesCompraModel');
+        $pago = $this->db->where('id', $pago_id)->get('pagos_ordenes_compra')->row();
+        if (!$pago) {
+            echo json_encode(['success' => false, 'message' => 'Comprobante no encontrado']);
+            return;
+        }
+
+        $this->load->library('email');
+        $config['mailtype'] = 'html';
+        $config['charset']  = 'utf-8';
+        $this->email->initialize($config);
+
+        $this->email->from('compras@chisarecubrimientos.com.mx', 'Chisa Recubrimientos');
+        $this->email->to(trim($destinatario));
+
+        if (!empty($cc)) {
+            $cc_emails = array_filter(array_map('trim', explode(',', $cc)));
+            if (!empty($cc_emails)) $this->email->cc($cc_emails);
+        }
+
+        $this->email->subject($asunto ?: 'Comprobante de pago — ' . $pago->folio);
+        $this->email->message($cuerpo ?: '<p>Adjunto encontrará el comprobante de pago correspondiente.</p>');
+
+        // Adjuntar comprobante si existe en disco
+        if (!empty($pago->comprobante_ruta)) {
+            $ruta_completa = FCPATH . $pago->comprobante_ruta;
+            if (is_file($ruta_completa)) {
+                $this->email->attach($ruta_completa);
+            }
+        }
+
+        // Adjuntar archivos extra subidos desde el modal
+        if (!empty($_FILES['archivos_extra']['name'][0])) {
+            $files = $_FILES['archivos_extra'];
+            for ($i = 0; $i < count($files['name']); $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $this->email->attach($files['tmp_name'][$i], 'attachment', $files['name'][$i]);
+                }
+            }
+        }
+
+        if ($this->email->send()) {
+            // Marcar como enviado
+            $this->db->where('id', $pago_id)->update('pagos_ordenes_compra', [
+                'comprobante_enviado_email' => 1,
+                'fecha_envio_email' => date('Y-m-d H:i:s'),
+            ]);
+            $this->registrar_bitacora(
+                'Comprobante de pago enviado por email — ' . $pago->folio . ' → ' . $destinatario,
+                'Proveedores'
+            );
+            echo json_encode(['success' => true, 'message' => 'Comprobante enviado correctamente a ' . $destinatario]);
+        } else {
+            $debug = $this->email->print_debugger(['headers', 'subject']);
+            echo json_encode(['success' => false, 'message' => 'Error al enviar correo', 'debug' => $debug]);
+        }
+    }
+
+    /**
      * Normaliza valores leídos de Excel (números, notación científica, espacios).
      */
     private function _normalizar_celda_excel($valor) {

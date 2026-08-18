@@ -39,7 +39,7 @@ Estado verificado el 10-ago-2026 revisando código (`application/controllers/rh/
 
 | # | Severidad | Hallazgo | Detalle | Acción |
 |:-:|:---------:|:---------|:--------|:-------|
-| H1 | 🔴 **Crítico** | El enum `incidencias_empleados.tipo_incidencia` **no incluye "Horas Extras"** | La UI ofrece la opción "Horas Extras" (main_empleados línea 794) y el cálculo de nómina espera `tipo_incidencia === 'Horas Extras'` (NominaRhModel línea 842), pero el enum de BD es `('Retardo','Falta','Falta Justificada','Permiso','Incapacidad','Suspensión','Amonestación','Renuncia','Otro')`. Con MySQL en `STRICT_TRANS_TABLES`, el INSERT fallará (error 1265) y no se podrá registrar la incidencia. | **Corregir antes de la demo:** `ALTER TABLE incidencias_empleados MODIFY tipo_incidencia ENUM(...,'Horas Extras',...)`. Pendiente de autorización. |
+| H1 | 🔴 **Crítico** | El enum `incidencias_empleados.tipo_incidencia` **no incluía "Horas Extras"** | La UI ofrece la opción "Horas Extras" (main_empleados línea 794) y el cálculo de nómina espera `tipo_incidencia === 'Horas Extras'` (NominaRhModel línea 842), pero el enum de BD era `('Retardo','Falta','Falta Justificada','Permiso','Incapacidad','Suspensión','Amonestación','Renuncia','Otro')`. Con MySQL en `STRICT_TRANS_TABLES`, el INSERT fallaba (error 1265). | ✅ **Corregido el 17 ago 2026:** `ALTER TABLE incidencias_empleados MODIFY tipo_incidencia ENUM(...,'Horas Extras',...)` aplicado y verificado en BD de producción (ver `database/incidencias_empleados_tipo_horas_extras.sql`, commit `c258e7b`). |
 | H2 | 🟡 Menor | Incidencia tipo "Vacaciones" no existe en el enum | La cotización menciona "vacaciones" como incidencia, pero el sistema las gestiona en su módulo propio (balance + solicitudes con aprobación), lo cual cubre el requisito. | Ninguna (correcto). |
 | O1 | Info | `aplicar_isr = 0` en `nomina_configuracion` | **Confirmado por el usuario: intencional** — el ISR se calcula en Aspel NOI. | Ninguna. |
 | O2 | Info | Reloj checador en obras (API KONECT®/Bixpe) | Fuera de alcance por instrucción. | Ninguna. |
@@ -57,7 +57,7 @@ Estado verificado el 10-ago-2026 revisando código (`application/controllers/rh/
    - 18 empleados: **activos** (estatus 1): 1 EHWEB, 2 Pedro Lopez, 3 Ana Karina Roman, 4 Maria Pilar, 5 Esahu Enrique, 6 Teodoro Jimenez, 9 Mauro Avila, 10 Miguel Ivan, 12 Francisco Martinez, 14 Rigo Nevarez, 15 Miguel (con costo HE $136.66/hr), 16 Oscar Galindo, 17 Iliana Quezada, 18 María del Carmen. **Inactivos** (estatus 2): 7 Jorge, 8 Marcelo, 11 Carolina, 13 Gerardo.
    - 28 contratos (varios empleados con historial), 2 plantillas, 28 horarios, 2 incidencias, 3 solicitudes de vacaciones, 2 periodos de vacaciones, 98 asistencias, 2 dispositivos reloj, 12 departamentos.
    - Nómina vigente: **NOM000027** (10–16 ago 2026, Calculada, neto $84,939.14).
-4. **Corrección H1 aplicada** (solo si se autoriza) para probar el flujo HE → nómina.
+4. **Corrección H1 aplicada** (17 ago 2026) — el enum de BD ya incluye `'Horas Extras'`; el flujo HE → nómina puede probarse directamente.
 
 ---
 
@@ -164,7 +164,7 @@ Estado verificado el 10-ago-2026 revisando código (`application/controllers/rh/
 | I1 | En el detalle de un empleado → pestaña Laboral → "Incidencias" | ✅ Lista las 2 incidencias demo (Falta Justificada) con badge amarillo |
 | I2 | Registrar **Falta** con monto de descuento y archivo de evidencia | ✅ Toast verde; aparece en la lista con evidencia descargable |
 | I3 | Registrar **Incapacidad** | ✅ Aparece con estatus Activa |
-| I4 | Registrar **Horas Extras** (ej. empleado 15 Miguel, 5 hrs) | ⚠️ **Requiere corrección H1.** Si ya está corregida: ✅ se guarda y en nómina aparece como percepción. Si no: ❌ error de BD — reportar |
+| I4 | Registrar **Horas Extras** (ej. empleado 15 Miguel, 5 hrs) | ✅ Se guarda y en nómina aparece como percepción (H1 corregido el 17 ago 2026) |
 | I5 | Filtrar incidencias por tipo y rango de fechas | ✅ Filtra correctamente |
 | I6 | Cancelar una incidencia | ✅ Estatus → Cancelada |
 | I7 | Verificar en BD: `SELECT * FROM incidencias_empleados WHERE empleado_id=X` | ✅ Registros con estatus correcto |
@@ -252,4 +252,4 @@ Estado verificado el 10-ago-2026 revisando código (`application/controllers/rh/
 
 ---
 
-*ERP Chisa Recubrimientos — Plan de pruebas manuales RH · 10 agosto 2026. Hallazgo crítico H1 pendiente de corrección (enum incidencias).*
+*ERP Chisa Recubrimientos — Plan de pruebas manuales RH · 10 agosto 2026. Actualizado 17 ago 2026: Hallazgo crítico H1 corregido (enum incidencias con `'Horas Extras'`).*

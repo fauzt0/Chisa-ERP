@@ -132,6 +132,9 @@ function badgeEstatusTarea(e) {
 }
 
 function cargarTareas() {
+  if (typeof window.rhDestroyResponsiveTable === 'function') {
+    window.rhDestroyResponsiveTable('#tabla-tareas-rh');
+  }
   if (!tablasListas) {
     $('#listaTareas').html('<tr><td colspan="5" class="text-center text-muted py-4">Módulo no instalado en base de datos.</td></tr>');
     return;
@@ -173,6 +176,9 @@ function cargarTareas() {
       html += '</td></tr>';
     });
     $('#listaTareas').html(html);
+    if (typeof window.rhRefreshResponsiveTable === 'function') {
+      window.rhRefreshResponsiveTable('#tabla-tareas-rh', { paging: false, searching: false, info: false });
+    }
   });
 }
 

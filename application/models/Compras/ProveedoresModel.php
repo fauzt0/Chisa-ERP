@@ -395,24 +395,125 @@ class ProveedoresModel extends MY_Model {
     public function get_estadisticas() {
         $stats = [];
         
-        // Total de proveedores activos
         $this->db->where('estatus', 'Activo');
         $stats['total_activos'] = $this->db->count_all_results($this->tableName);
         
-        // Total de proveedores inactivos
         $this->db->where('estatus', 'Inactivo');
         $stats['total_inactivos'] = $this->db->count_all_results($this->tableName);
         
-        // Total de relaciones proveedor-insumo
         $stats['total_relaciones'] = $this->db->count_all_results('proveedor_insumo');
-
         $stats['total_ordenes'] = $this->db->count_all_results('ordenes_compra');
 
         $this->db->select('COUNT(DISTINCT proveedor_id) AS total');
         $this->db->from('ordenes_compra');
         $row = $this->db->get()->row();
         $stats['proveedores_con_ordenes'] = (int) ($row->total ?? 0);
+
+        $this->db->select('COALESCE(SUM(saldo_pendiente),0) AS total_adeudo', false);
+        $this->db->from('ordenes_compra');
+        $this->db->where_not_in('estatus', ['Borrador', 'Cancelada']);
+        $row2 = $this->db->get()->row();
+        $stats['total_adeudo'] = (float) ($row2->total_adeudo ?? 0);
+
+        $this->db->select('COALESCE(SUM(monto_pagado),0) AS total_pagado', false);
+        $this->db->from('ordenes_compra');
+        $row3 = $this->db->get()->row();
+        $stats['total_pagado'] = (float) ($row3->total_pagado ?? 0);
         
         return $stats;
+    }
+
+    /**
+     * Todos los comprobantes de pago de un proveedor (todas sus OCs)
+     */
+    public function get_comprobantes_proveedor($proveedor_id) {
+        $this->db->select('poc.*, oc.folio AS folio_oc, p.razon_social, p.email AS email_proveedor');
+        $this->db->from('pagos_ordenes_compra poc');
+        $this->db->join('ordenes_compra oc', 'oc.id = poc.orden_compra_id');
+        $this->db->join('proveedores p', 'p.id = oc.proveedor_id');
+        $this->db->where('oc.proveedor_id', (int) $proveedor_id);
+        $this->db->order_by('poc.fecha_pago', 'DESC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Todos los documentos (facturas, notas) de un proveedor (todas sus OCs)
+     */
+    public function get_documentos_proveedor($proveedor_id) {
+        $this->db->select('ocd.*, oc.folio AS folio_oc');
+        $this->db->from('ordenes_compra_documentos ocd');
+        $this->db->join('ordenes_compra oc', 'oc.id = ocd.orden_compra_id');
+        $this->db->where('oc.proveedor_id', (int) $proveedor_id);
+        $this->db->order_by('ocd.fecha_subida', 'DESC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Estadísticas avanzadas para gráficas Chart.js
+     */
+    public function get_estadisticas_avanzadas() {
+        $data = [];
+
+        // Compras por mes (últimos 12 meses)
+        $query = $this->db->query("
+            SELECT DATE_FORMAT(fecha_orden,'%Y-%m') AS mes,
+                   SUM(total) AS total_mes,
+                   COUNT(*) AS num_ordenes
+            FROM ordenes_compra
+            WHERE fecha_orden >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+              AND estatus NOT IN ('Borrador','Cancelada')
+            GROUP BY mes
+            ORDER BY mes ASC
+        ");
+        $data['compras_mes'] = $query->result();
+
+        // Top 5 proveedores por monto comprado (histórico)
+        $query2 = $this->db->query("
+            SELECT p.razon_social, p.nombre_comercial,
+                   SUM(oc.total) AS total_comprado,
+                   COUNT(oc.id) AS num_ordenes
+            FROM ordenes_compra oc
+            JOIN proveedores p ON p.id = oc.proveedor_id
+            WHERE oc.estatus NOT IN ('Borrador','Cancelada')
+            GROUP BY oc.proveedor_id
+            ORDER BY total_comprado DESC
+            LIMIT 5
+        ");
+        $data['top_proveedores'] = $query2->result();
+
+        // Distribución por tipo de proveedor
+        $query3 = $this->db->query("
+            SELECT tipo_proveedor, COUNT(*) AS total
+            FROM proveedores
+            WHERE estatus = 'Activo'
+            GROUP BY tipo_proveedor
+        ");
+        $data['distribucion_tipo'] = $query3->result();
+
+        // Adeudos por proveedor (top 5)
+        $query4 = $this->db->query("
+            SELECT p.razon_social, SUM(oc.saldo_pendiente) AS adeudo
+            FROM ordenes_compra oc
+            JOIN proveedores p ON p.id = oc.proveedor_id
+            WHERE oc.saldo_pendiente > 0
+              AND oc.estatus NOT IN ('Borrador','Cancelada')
+            GROUP BY oc.proveedor_id
+            ORDER BY adeudo DESC
+            LIMIT 5
+        ");
+        $data['adeudos_proveedor'] = $query4->result();
+
+        // Resumen pagos vs adeudo global
+        $query5 = $this->db->query("
+            SELECT
+                COALESCE(SUM(total),0) AS total_comprado,
+                COALESCE(SUM(monto_pagado),0) AS total_pagado,
+                COALESCE(SUM(saldo_pendiente),0) AS total_adeudo
+            FROM ordenes_compra
+            WHERE estatus NOT IN ('Borrador','Cancelada')
+        ");
+        $data['resumen_pago'] = $query5->row();
+
+        return $data;
     }
 }

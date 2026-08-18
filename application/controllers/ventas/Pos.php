@@ -68,7 +68,8 @@ class Pos extends MY_Controller {
      * Obtiene descuentos activos para select (AJAX)
      */
     public function get_descuentos_ajax() {
-        $descuentos = $this->DescuentosModel->get_descuentos_activos();
+        $cliente_id = $this->input->post('cliente_id');
+        $descuentos = $this->DescuentosModel->get_descuentos_activos($cliente_id);
         echo json_encode(['success' => true, 'descuentos' => $descuentos]);
     }
     
@@ -126,7 +127,8 @@ class Pos extends MY_Controller {
             'descuento_id' => $descuento_id ?: null,
             'descuento_nombre' => $descuento_nombre ?: null,
             'descuento_tipo' => $descuento_tipo ?: null,
-            'descuento_valor' => $descuento_valor ?: 0
+            'descuento_valor' => $descuento_valor ?: 0,
+            'creado_por' => (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 0),
         ];
         
         $orden_id = $this->VentasModel->crear_orden($data_orden);
@@ -215,6 +217,11 @@ class Pos extends MY_Controller {
         
         // Obtener orden completa para respuesta
         $orden = $this->VentasModel->get_orden_completa($orden_id);
+        
+        $this->registrar_bitacora(
+            ($estatus_final === 'Cotización' ? 'Cotización' : 'Venta') . ' ' . $orden->folio . ' creada (cliente ID ' . $cliente_id . ')',
+            'Ventas'
+        );
         
         echo json_encode([
             'success' => true, 

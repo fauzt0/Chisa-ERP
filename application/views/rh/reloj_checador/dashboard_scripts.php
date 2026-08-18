@@ -128,7 +128,15 @@
                         var ultima = d.ultima ? d.ultima : '<span class="text-muted">Nunca</span>';
                         tbody += '<tr><td><code>' + d.sn + '</code></td><td>' + (d.alias || '—') + '</td><td>' + ultima + '</td><td>' + estado + '</td></tr>';
                     });
-                    if (tbody) $('#tabla-dispositivos-status tbody').html(tbody);
+                    if (tbody) {
+                        if (typeof window.rhDestroyResponsiveTable === 'function') {
+                            window.rhDestroyResponsiveTable('#tabla-dispositivos-status');
+                        }
+                        $('#tabla-dispositivos-status tbody').html(tbody);
+                        if (typeof window.rhRefreshResponsiveTable === 'function') {
+                            window.rhRefreshResponsiveTable('#tabla-dispositivos-status', { paging: false, searching: false, info: false });
+                        }
+                    }
                 }
 
                 if (result.ultimas_checadas) {
@@ -136,7 +144,13 @@
                     result.ultimas_checadas.forEach(function(c) {
                         rows += '<tr><td><code>' + c.numero_empleado + '</code></td><td>' + c.empleado_nombre + '</td><td>' + c.hora + '</td><td>' + c.metodo_html + '</td></tr>';
                     });
+                    if (typeof window.rhDestroyResponsiveTable === 'function') {
+                        window.rhDestroyResponsiveTable('#tabla-ultimas-checadas');
+                    }
                     $('#tabla-ultimas-checadas tbody').html(rows || '<tr><td colspan="4" class="text-muted text-center py-3">Sin checadas recientes</td></tr>');
+                    if (rows && typeof window.rhRefreshResponsiveTable === 'function') {
+                        window.rhRefreshResponsiveTable('#tabla-ultimas-checadas', { paging: false, searching: false, info: false });
+                    }
                 }
 
                 if (chartInstance && s.checadas_7_dias) {

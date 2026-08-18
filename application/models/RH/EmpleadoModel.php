@@ -80,11 +80,11 @@ class EmpleadoModel extends MY_Model {
     public static function badge_estatus_html($estatus) {
         switch ((int) $estatus) {
             case self::ESTATUS_ACTIVO:
-                return '<span class="badge bg-success">Activo</span>';
+                return '<span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Activo</span>';
             case self::ESTATUS_REINGRESO:
-                return '<span class="badge bg-info text-white">Reingreso</span>';
+                return '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Reingreso</span>';
             default:
-                return '<span class="badge bg-danger">Inactivo</span>';
+                return '<span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">Inactivo</span>';
         }
     }
 

@@ -614,6 +614,18 @@ window.cancelarOrden = function(id) {
   $('#modalCancelar').modal('show');
 };
 
+window.reenviarCotizacion = function(id) {
+  if (!confirm('¿Enviar esta cotización por email al cliente?')) return;
+  $.post('<?=base_url();?>ventas/Ordenes/reenviar_cotizacion_ajax', {
+    id: id,
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(result) {
+    result = JSON.parse(result);
+    notifyShow(result.message, result.success ? 'success' : 'danger');
+  });
+};
+
 function confirmarCancelacion() {
   const id = $('#cancelar_orden_id').val();
   const motivo = $('#cancelar_motivo').val();

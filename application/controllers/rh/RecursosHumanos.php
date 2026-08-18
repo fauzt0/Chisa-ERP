@@ -110,16 +110,16 @@ class RecursosHumanos extends MY_Controller {
       $nombre_html = $empleado->nombre . ' ' . $empleado->apellido_paterno . ' ' . $empleado->apellido_materno;
       if (isset($faltantes_ids[$empleado->id])) {
         $faltantes_str = htmlspecialchars($faltantes_info[$empleado->id], ENT_QUOTES, 'UTF-8');
-        $nombre_html .= ' <span class="badge bg-warning text-dark ms-1" style="font-size:0.75rem;cursor:pointer;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Faltan: ' . $faltantes_str . '" onclick="notificarFaltantes(' . $empleado->id . ')"><i class="fas fa-exclamation-triangle me-1"></i>Datos incompletos</span>';
+        $nombre_html .= ' <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1" style="font-size:0.75rem;cursor:pointer;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Faltan: ' . $faltantes_str . '" onclick="notificarFaltantes(' . $empleado->id . ')"><i class="fas fa-exclamation-triangle me-1"></i>Datos incompletos</span>';
       }
       if (isset($expediente_map[$empleado->id])) {
         $exp_falt = htmlspecialchars(implode(', ', $expediente_map[$empleado->id]['faltantes']), ENT_QUOTES, 'UTF-8');
-        $nombre_html .= ' <span class="badge bg-danger ms-1" style="font-size:0.65rem;cursor:pointer;" title="Expediente incompleto: ' . $exp_falt . '" onclick="empleado_detail(' . $empleado->id . ')">📁</span>';
+        $nombre_html .= ' <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle ms-1" style="font-size:0.65rem;cursor:pointer;" title="Expediente incompleto: ' . $exp_falt . '" onclick="empleado_detail(' . $empleado->id . ')">📁</span>';
       }
       if ($this->EmpleadoUsuarioModel->tiene_vinculo_habilitado()) {
         $usr = $this->EmpleadoUsuarioModel->get_usuario_por_empleado($empleado->id);
         if ($usr) {
-          $nombre_html .= ' <span class="badge bg-primary ms-1" style="font-size:0.65rem;" title="Usuario ERP: ' . htmlspecialchars($usr->username, ENT_QUOTES) . '"><i class="fas fa-user-lock"></i></span>';
+          $nombre_html .= ' <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle ms-1" style="font-size:0.65rem;" title="Usuario ERP: ' . htmlspecialchars($usr->username, ENT_QUOTES) . '"><i class="fas fa-user-lock"></i></span>';
         }
       }
       $row[] = $nombre_html;
@@ -492,7 +492,7 @@ class RecursosHumanos extends MY_Controller {
             $es_principal = $cuenta_default && (int)$cta->id === (int)$cuenta_default->id;
             if ($es_principal) continue; // ya se mostró arriba
             $cta_banco = $cta->banco ?: 'Sin banco';
-            $badge = ((int)$cta->es_default === 1) ? ' <span class="badge bg-success ms-1" style="font-size:0.65rem;">Principal</span>' : '';
+            $badge = ((int)$cta->es_default === 1) ? ' <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle ms-1" style="font-size:0.65rem;">Principal</span>' : '';
             $cuenta_html .= '<div class="small ' . ((int)$cta->es_default === 1 ? 'fw-bold' : 'text-muted') . '">'
                 . htmlspecialchars($cta_banco) . ' — ' . htmlspecialchars($cta->numero_cuenta)
                 . $badge . '</div>';
@@ -554,8 +554,8 @@ class RecursosHumanos extends MY_Controller {
         ['label' => 'Expediente', 'value' => $checklist_html, 'icon' => 'clipboard-check'],
         ['label' => 'Archivos adjuntos', 'value' => $total_docs . ' documento(s)', 'icon' => 'paperclip'],
         ['label' => 'Estado', 'value' => $checklist['completo']
-          ? '<span class="badge bg-success">Expediente completo</span>'
-          : '<span class="badge bg-warning text-dark">Faltan ' . count($checklist['faltantes']) . ' documento(s)</span>', 'icon' => 'folder-open'],
+          ? '<span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Expediente completo</span>'
+          : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Faltan ' . count($checklist['faltantes']) . ' documento(s)</span>', 'icon' => 'folder-open'],
       ],
     ];
 
@@ -925,7 +925,7 @@ class RecursosHumanos extends MY_Controller {
       $timeline_html = '<li class="timeline-item"><p class="text-muted">No hay contratos registrados</p></li>';
     } else {
       foreach($contratos as $contrato){
-        $badge = $contrato->vigente == 1 ? '<span class="badge bg-success">Vigente</span>' : '';
+        $badge = $contrato->vigente == 1 ? '<span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Vigente</span>' : '';
         $fecha = date('d M Y', strtotime($contrato->fecha_creacion));
         
         $timeline_html .= '

@@ -107,7 +107,7 @@
 </div>
 
 <!-- Modal detalle del día -->
-<div class="modal fade" id="modalDetalleDiario" tabindex="-1">
+<div class="modal fade rh-modal" id="modalDetalleDiario" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header text-white" style="background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);">

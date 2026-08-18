@@ -54,7 +54,9 @@
                 { extend: 'excelHtml5', text: '<i class="fas fa-file-excel"></i> Excel', className: 'btn btn-success btn-sm' },
                 { extend: 'pdfHtml5', text: '<i class="fas fa-file-pdf"></i> PDF', className: 'btn btn-danger btn-sm' }
             ],
-            responsive: true
+            responsive: true,
+            scrollX: true,
+            autoWidth: false
         });
 
         $('#tabla-comandos').on('xhr.dt', function(e, settings, json) {

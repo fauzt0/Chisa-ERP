@@ -53,7 +53,7 @@
                style="font-size:0.72rem;"
                title="Faltan: <?php echo $faltantes_str; ?>">
               <?php echo $emp['nombre']; ?> 
-              <span class="badge bg-warning text-dark ms-1"><?php echo $emp['total_faltantes']; ?></span>
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1"><?php echo $emp['total_faltantes']; ?></span>
             </a>
           <?php endforeach; ?>
           <?php if($total_faltantes > 5): ?>
@@ -138,7 +138,7 @@
               </h3>
             </div>
             <div class="col-4 text-end">
-              <span class="badge bg-primary"><?php echo $response['stats']['porcentaje_activos']; ?>%</span>
+              <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle"><?php echo $response['stats']['porcentaje_activos']; ?>%</span>
             </div>
           </div>
 
@@ -235,7 +235,7 @@
               <h3 class="d-flex align-items-center mb-0 fw-light text-warning"><?php echo $total_faltantes_card; ?></h3>
             </div>
             <div class="col-4 text-end">
-              <span class="badge bg-warning text-dark">RFC/CURP/NSS</span>
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">RFC/CURP/NSS</span>
             </div>
           </div>
           <div class="d-flex flex-column gap-1">
@@ -243,7 +243,7 @@
               <a href="<?php echo base_url('rh/RecursosHumanos/editar/'.$emp_card['id']); ?>"
                  class="small text-decoration-none d-flex justify-content-between align-items-center">
                 <span><?php echo htmlspecialchars($emp_card['nombre']); ?></span>
-                <span class="badge bg-danger"><?php echo (int)$emp_card['total_faltantes']; ?></span>
+                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle"><?php echo (int)$emp_card['total_faltantes']; ?></span>
               </a>
             <?php endforeach; ?>
             <?php if($total_faltantes_card > 3): ?>
@@ -502,11 +502,11 @@
 <div class="modal fade rh-modal" id="modalContrato" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
         <h5 class="modal-title text-white"><i class="fas fa-file-contract"></i> Contrato de Trabajo</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-0" style="background: #f5f5f5;">
+      <div class="modal-body p-0">
         <div id="contrato-content" style="min-height: 400px;">
           <div class="text-center text-muted p-5">
             <p>Cargando contrato...</p>
@@ -529,7 +529,7 @@
 <div class="modal fade rh-modal" id="modalVacaciones" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <div class="modal-header bg-info text-white">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
         <h5 class="modal-title text-white"><i class="fas fa-umbrella-beach"></i> Gestión de Vacaciones</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -587,7 +587,7 @@
 <div class="modal fade rh-modal" id="modalSolicitarVacaciones" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header bg-success text-white">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
         <h5 class="modal-title text-white"><i class="fas fa-calendar-plus"></i> Solicitar Vacaciones</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -747,7 +747,7 @@
           </div>
         </div>
         <div class="table-responsive">
-          <table class="table table-hover">
+          <table class="table table-hover" id="tabla-incidencias">
             <thead>
               <tr>
                 <th>Fecha</th>
@@ -775,7 +775,7 @@
 <div class="modal fade rh-modal" id="modalRegistrarIncidencia" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <div class="modal-header bg-success text-white">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
         <h5 class="modal-title text-white"><i class="fas fa-plus"></i> Registrar Nueva Incidencia</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -923,7 +923,7 @@
                 <h6 class="text-uppercase text-muted mb-3" style="font-size:0.75rem;letter-spacing:0.5px;"><i class="fas fa-user me-2"></i>Datos del Empleado</h6>
                 <div class="row">
                   <div class="col-5 text-muted small">Empleado:</div>
-                  <div class="col-7 fw-semibold text-dark" id="calc-nombre">—</div>
+                  <div class="col-7 fw-semibold" id="calc-nombre">—</div>
                 </div>
                 <div class="row mt-2">
                   <div class="col-5 text-muted small">Fecha Ingreso:</div>
@@ -1013,7 +1013,7 @@
 <div class="modal fade rh-modal" id="modalHorario" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
-      <div class="modal-header bg-info text-white">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
         <h5 class="modal-title text-white"><i class="fas fa-clock"></i> Horario Laboral del Empleado</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -1635,8 +1635,8 @@ document.addEventListener("DOMContentLoaded", function() {
         contratoActual = result['contrato'];
 
         var badgeVigente = contratoActual.vigente == 1 ?
-          '<span class="badge bg-success">Vigente</span>' :
-          '<span class="badge bg-secondary">Histórico</span>';
+          '<span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Vigente</span>' :
+          '<span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">Histórico</span>';
 
         var metaHtml =
           '<div class="card border-0 shadow-sm mb-0">' +
@@ -1824,8 +1824,9 @@ document.addEventListener("DOMContentLoaded", function() {
         if(result['solicitudes'] && result['solicitudes'].length > 0) {
           var solicitudesHtml = '';
           result['solicitudes'].forEach(function(sol) {
-            var badgeClass = sol.estatus == 'Aprobada' ? 'bg-success' : 
-                           sol.estatus == 'Rechazada' ? 'bg-danger' : 'bg-warning';
+            var badgeClass = sol.estatus == 'Aprobada' ? 'bg-success-subtle text-success-emphasis border border-success-subtle' :
+                           sol.estatus == 'Rechazada' ? 'bg-danger-subtle text-danger-emphasis border border-danger-subtle' :
+                           'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
             
             var acciones = '';
             if(sol.estatus == 'Pendiente') {
@@ -1841,7 +1842,18 @@ document.addEventListener("DOMContentLoaded", function() {
               '<td>' + acciones + '</td>' +
             '</tr>';
           });
+          if (typeof window.rhDestroyResponsiveTable === 'function') {
+            window.rhDestroyResponsiveTable('#tabla-solicitudes');
+          }
           $('#solicitudes-body').html(solicitudesHtml);
+          if (typeof window.rhRefreshResponsiveTable === 'function') {
+            window.rhRefreshResponsiveTable('#tabla-solicitudes', { paging: false, searching: false, info: false });
+          }
+        } else {
+          if (typeof window.rhDestroyResponsiveTable === 'function') {
+            window.rhDestroyResponsiveTable('#tabla-solicitudes');
+          }
+          $('#solicitudes-body').html('<tr><td colspan="5" class="text-center text-muted">Sin solicitudes</td></tr>');
         }
         
         $('#modalVacaciones').modal('show');
@@ -1941,10 +1953,11 @@ document.addEventListener("DOMContentLoaded", function() {
             }
 
             // Badge de estatus
-            var badgeClass = 'bg-secondary';
-            if(sol.estatus === 'Aprobada') badgeClass = 'bg-success';
-            if(sol.estatus === 'Rechazada') badgeClass = 'bg-danger';
-            if(sol.estatus === 'Pendiente') badgeClass = 'bg-warning text-dark';
+            var badgeClass = 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
+            if(sol.estatus === 'Aprobada') badgeClass = 'bg-success-subtle text-success-emphasis border border-success-subtle';
+            if(sol.estatus === 'Rechazada') badgeClass = 'bg-danger-subtle text-danger-emphasis border border-danger-subtle';
+            if(sol.estatus === 'Pendiente') badgeClass = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+            if(sol.estatus === 'Cancelada') badgeClass = 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
             
             var estatusHtml = '<span class="badge ' + badgeClass + '">' + sol.estatus + '</span>';
 
@@ -1961,7 +1974,13 @@ document.addEventListener("DOMContentLoaded", function() {
         } else {
           html = '<tr><td colspan="7" class="text-center text-muted">No hay solicitudes ' + estatus.toLowerCase() + 's</td></tr>';
         }
+        if (typeof window.rhDestroyResponsiveTable === 'function') {
+          window.rhDestroyResponsiveTable('#tabla-todas-solicitudes');
+        }
         $('#todas-solicitudes-body').html(html);
+        if (typeof window.rhRefreshResponsiveTable === 'function') {
+          window.rhRefreshResponsiveTable('#tabla-todas-solicitudes', { paging: false, searching: false, info: false });
+        }
       }
     });
   }
@@ -2059,6 +2078,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
   function mostrarIncidencias(incidencias) {
     const tbody = $('#incidencias-body');
+    if (typeof window.rhDestroyResponsiveTable === 'function') {
+      window.rhDestroyResponsiveTable('#tabla-incidencias');
+    }
     tbody.empty();
 
     if (incidencias.length === 0) {
@@ -2067,7 +2089,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     incidencias.forEach(inc => {
-      const badgeClass = inc.estatus === 'Activa' ? 'bg-success' : (inc.estatus === 'Cancelada' ? 'bg-danger' : 'bg-secondary');
+      const badgeClass = inc.estatus === 'Activa' ? 'bg-success-subtle text-success-emphasis border border-success-subtle' : (inc.estatus === 'Cancelada' ? 'bg-danger-subtle text-danger-emphasis border border-danger-subtle' : 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle');
       const descuento = inc.tiene_descuento == 1 ? `$${parseFloat(inc.monto_descuento).toFixed(2)}` : '-';
       const acciones = inc.estatus === 'Activa' 
         ? `<button class="btn btn-sm btn-danger" onclick="cancelarIncidencia(${inc.id})"><i class="fas fa-times"></i></button>`
@@ -2076,7 +2098,7 @@ document.addEventListener("DOMContentLoaded", function() {
       const row = `
         <tr>
           <td>${inc.fecha_incidencia}${inc.hora_incidencia ? ' ' + inc.hora_incidencia : ''}</td>
-          <td><span class="badge bg-warning">${inc.tipo_incidencia}</span></td>
+          <td><span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">${inc.tipo_incidencia}</span></td>
           <td>
             ${inc.descripcion || '-'}
             ${inc.archivo_evidencia ? `<br><a href="<?=base_url()?>${inc.archivo_evidencia}" target="_blank" class="text-info"><i class="fas fa-paperclip"></i> Ver Evidencia</a>` : ''}
@@ -2088,6 +2110,9 @@ document.addEventListener("DOMContentLoaded", function() {
       `;
       tbody.append(row);
     });
+    if (typeof window.rhRefreshResponsiveTable === 'function') {
+      window.rhRefreshResponsiveTable('#tabla-incidencias', { paging: false, searching: false, info: false });
+    }
   }
 
   function mostrarEstadisticasIncidencias(stats) {
@@ -2428,34 +2453,34 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   var _relojEstadoClases = {
-    'Asistencia completa': 'bg-success',
-    'Con retardo':         'bg-warning text-dark',
-    'Retardo mayor':       'bg-danger',
-    'Salida temprana':     'bg-warning text-dark',
-    'Checadas parciales':  'bg-secondary',
+    'Asistencia completa': 'bg-success-subtle text-success-emphasis border border-success-subtle',
+    'Con retardo':         'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+    'Retardo mayor':       'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
+    'Salida temprana':     'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+    'Checadas parciales':  'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle',
     'Sin checadas':        'bg-light text-muted border',
-    'Sin horario asignado':'bg-info text-dark'
+    'Sin horario asignado':'bg-info-subtle text-info-emphasis border border-info-subtle'
   };
 
   var _relojTipoClases = {
-    entrada:            'bg-success',
-    salida:             'bg-primary',
-    salida_comida:      'bg-warning text-dark',
-    entrada_comida:     'bg-info text-dark',
-    checada_intermedia: 'bg-secondary',
+    entrada:            'bg-success-subtle text-success-emphasis border border-success-subtle',
+    salida:             'bg-primary-subtle text-primary-emphasis border border-primary-subtle',
+    salida_comida:      'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+    entrada_comida:     'bg-info-subtle text-info-emphasis border border-info-subtle',
+    checada_intermedia: 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle',
     checada_extra:      'bg-light text-dark border'
   };
 
   function badgeEstadoAsistencia(estado) {
     var mapa = (typeof _relojEstadoClases !== 'undefined') ? _relojEstadoClases : {};
     var etiqueta = estado || 'Sin checadas';
-    var cls = mapa[etiqueta] || 'bg-secondary';
+    var cls = mapa[etiqueta] || 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
     return '<span class="badge rounded-pill ' + cls + '">' + etiqueta + '</span>';
   }
 
   function badgeTipoChecada(tipo, label) {
     var mapa = (typeof _relojTipoClases !== 'undefined') ? _relojTipoClases : {};
-    var cls = mapa[tipo] || 'bg-secondary';
+    var cls = mapa[tipo] || 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
     return '<span class="badge ' + cls + '">' + (label || tipo || '—') + '</span>';
   }
 
@@ -2474,7 +2499,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // --- Tabla resumen ---
     var r = '<div class="table-responsive">';
-    r += '<table class="table table-sm table-hover align-middle mb-0" style="font-size:0.82rem">';
+    r += '<table class="table table-sm table-hover align-middle mb-0 w-100" id="tabla-reloj-resumen-emp" style="font-size:0.82rem">';
     r += '<thead><tr style="background:#f0fdf4;color:#15803d;">';
     r += '<th class="fw-semibold">Fecha</th>';
     r += '<th class="fw-semibold">Día</th>';
@@ -2510,10 +2535,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
     r += '</tbody></table></div>';
     $('#reloj-tabla-resumen').html(r);
+    if (typeof window.rhRefreshResponsiveTable === 'function') {
+      window.rhRefreshResponsiveTable('#tabla-reloj-resumen-emp', { paging: false, searching: false, info: false });
+    }
 
     // --- Tabla detalle ---
     var d = '<div class="table-responsive">';
-    d += '<table class="table table-sm table-hover align-middle mb-0" style="font-size:0.82rem">';
+    d += '<table class="table table-sm table-hover align-middle mb-0 w-100" id="tabla-reloj-detalle-emp" style="font-size:0.82rem">';
     d += '<thead><tr style="background:#f0fdf4;color:#15803d;">';
     d += '<th class="fw-semibold">Fecha</th>';
     d += '<th class="fw-semibold">Hora</th>';
@@ -2544,6 +2572,9 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     d += '</tbody></table></div>';
     $('#reloj-tabla-detalle').html(d);
+    if (hayChecadas && typeof window.rhRefreshResponsiveTable === 'function') {
+      window.rhRefreshResponsiveTable('#tabla-reloj-detalle-emp', { paging: false, searching: false, info: false });
+    }
 
     // --- Calendario mensual (solo si modo es 'mes') ---
     if (modoRelojActual === 'mes') {
@@ -2562,10 +2593,10 @@ document.addEventListener("DOMContentLoaded", function() {
           '<div class="d-flex align-items-center justify-content-between mb-3">' +
           '<h6 class="fw-bold mb-0"><i class="fas fa-calendar-alt me-2 text-success"></i>Vista Calendario Mensual</h6>' +
           '<div class="d-flex gap-2 align-items-center">' +
-          '<span class="badge bg-success rounded-pill px-3 py-1" style="font-size:0.7rem;">✓ Asistió</span>' +
-          '<span class="badge bg-warning text-dark rounded-pill px-3 py-1" style="font-size:0.7rem;">⚠ Retardo</span>' +
-          '<span class="badge bg-danger rounded-pill px-3 py-1" style="font-size:0.7rem;">✗ Falta</span>' +
-          '<span class="badge bg-secondary rounded-pill px-3 py-1" style="font-size:0.7rem;">— Descanso</span>' +
+          '<span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-3 py-1" style="font-size:0.7rem;">✓ Asistió</span>' +
+          '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1" style="font-size:0.7rem;">⚠ Retardo</span>' +
+          '<span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill px-3 py-1" style="font-size:0.7rem;">✗ Falta</span>' +
+          '<span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill px-3 py-1" style="font-size:0.7rem;">— Descanso</span>' +
           '<span class="badge bg-light text-muted rounded-pill px-3 py-1 border" style="font-size:0.7rem;"> Sin datos</span>' +
           '</div></div>' +
           '<div class="table-responsive rounded border">' +
@@ -2797,11 +2828,11 @@ document.addEventListener("DOMContentLoaded", function() {
         var chkHtml = '<div class="card border-0 bg-light mb-2"><div class="card-body py-2 px-3">' +
           '<div class="d-flex justify-content-between align-items-center mb-1">' +
           '<small class="fw-bold text-uppercase text-muted">Checklist expediente</small>' +
-          '<span class="badge bg-' + (chk.completo ? 'success' : 'warning') + '">' + chk.porcentaje + '%</span></div>' +
+          '<span class="badge ' + (chk.completo ? 'bg-success-subtle text-success-emphasis border border-success-subtle' : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle') + '">' + chk.porcentaje + '%</span></div>' +
           '<div class="progress mb-2" style="height:6px;"><div class="progress-bar" style="width:' + chk.porcentaje + '%"></div></div>' +
           '<div class="d-flex flex-wrap gap-1">';
         chk.items.forEach(function(item) {
-          chkHtml += '<span class="badge ' + (item.tiene ? 'bg-success' : 'bg-danger') + '" style="font-size:0.65rem;">' +
+          chkHtml += '<span class="badge ' + (item.tiene ? 'bg-success-subtle text-success-emphasis border border-success-subtle' : 'bg-danger-subtle text-danger-emphasis border border-danger-subtle') + '" style="font-size:0.65rem;">' +
             (item.tiene ? '✓' : '✗') + ' ' + item.label + '</span>';
         });
         chkHtml += '</div></div></div>';
@@ -3033,7 +3064,7 @@ document.addEventListener("DOMContentLoaded", function() {
       result.usuarios.forEach(function(u) {
         if (u.vinculado_a_este) tieneVinculoActual = true;
         var btn = u.ocupado
-          ? '<span class="badge bg-secondary">Ocupado</span>'
+          ? '<span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">Ocupado</span>'
           : '<button type="button" class="btn btn-sm btn-primary" onclick="confirmarVinculoUsuario(' + u.id + ')"><i class="fas fa-link"></i> Vincular</button>';
         html += '<div class="list-group-item d-flex justify-content-between align-items-center">' +
           '<div><strong>#' + u.id + '</strong> ' + u.nombre + '<br><small class="text-muted">' + u.username + '</small></div>' +

@@ -5,6 +5,11 @@
  */
 ?>
 <?php $this->load->helper('permissions'); ?>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Quill.js (editor de texto enriquecido) -->
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 <div class="container-fluid p-0 compras-page">
 
   <!-- Breadcrumb -->
@@ -96,6 +101,92 @@
             </div>
           </div>
           <small class="text-muted"><?php echo $response['stats']['proveedores_con_ordenes'] ?? 0; ?> proveedores con OC</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard de Estadísticas Avanzadas -->
+  <div class="row mb-3" id="seccion-estadisticas">
+    <!-- KPIs adicionales: adeudo y pagado -->
+    <div class="col-md-6 col-xl-3 d-flex mb-3">
+      <div class="card flex-fill border-danger">
+        <div class="card-body py-3">
+          <div class="d-flex align-items-center">
+            <div class="flex-fill">
+              <small class="text-muted d-block">Total Adeudado a Proveedores</small>
+              <h4 class="mb-0 text-danger fw-bold" id="kpi-adeudo">$—</h4>
+            </div>
+            <i class="fas fa-exclamation-circle text-danger fa-2x ms-2 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3 d-flex mb-3">
+      <div class="card flex-fill border-success">
+        <div class="card-body py-3">
+          <div class="d-flex align-items-center">
+            <div class="flex-fill">
+              <small class="text-muted d-block">Total Pagado a Proveedores</small>
+              <h4 class="mb-0 text-success fw-bold" id="kpi-pagado">$—</h4>
+            </div>
+            <i class="fas fa-check-circle text-success fa-2x ms-2 opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Gráfica: Compras por Mes -->
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+          <h6 class="card-title mb-0"><i class="fas fa-chart-bar me-1 text-primary"></i>Compras por Mes (últimos 12 meses)</h6>
+          <div class="spinner-border spinner-border-sm text-primary d-none" id="chart-compras-spinner"></div>
+        </div>
+        <div class="card-body py-2">
+          <canvas id="chartComprasMes" height="130"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- Gráfica: Top Proveedores -->
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+          <h6 class="card-title mb-0"><i class="fas fa-trophy me-1 text-warning"></i>Top 5 Proveedores (por monto)</h6>
+          <div class="spinner-border spinner-border-sm text-warning d-none" id="chart-top-spinner"></div>
+        </div>
+        <div class="card-body py-2">
+          <canvas id="chartTopProveedores" height="130"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- Gráfica: Distribución por Tipo -->
+    <div class="col-lg-4 mb-3">
+      <div class="card h-100">
+        <div class="card-header py-2">
+          <h6 class="card-title mb-0"><i class="fas fa-chart-pie me-1 text-info"></i>Distribución por Tipo</h6>
+        </div>
+        <div class="card-body py-2 d-flex align-items-center justify-content-center">
+          <canvas id="chartDistribucion" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- Tabla: Adeudos por Proveedor -->
+    <div class="col-lg-8 mb-3">
+      <div class="card h-100">
+        <div class="card-header py-2">
+          <h6 class="card-title mb-0"><i class="fas fa-exclamation-triangle me-1 text-danger"></i>Top Adeudos por Proveedor</h6>
+        </div>
+        <div class="card-body py-2">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr><th>Proveedor</th><th class="text-end">Adeudo Total</th><th></th></tr>
+              </thead>
+              <tbody id="tabla-adeudos-proveedor">
+                <tr><td colspan="3" class="text-center text-muted py-2"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -551,7 +642,7 @@
     </div>
 
     <!-- Tabs -->
-    <ul class="nav nav-tabs px-3 pt-2" id="ocTabs" role="tablist">
+    <ul class="nav nav-tabs px-3 pt-2 flex-wrap" id="ocTabs" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="oc-info-tab" data-bs-toggle="tab"
                 data-bs-target="#oc-tab-info" type="button">Información</button>
@@ -563,6 +654,20 @@
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="oc-ordenes-tab" data-bs-toggle="tab"
                 data-bs-target="#oc-tab-ordenes" type="button">Órdenes</button>
+      </li>
+      <?php if (tiene_permiso('compras_pagos')): ?>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="oc-comprobantes-tab" data-bs-toggle="tab"
+                data-bs-target="#oc-tab-comprobantes" type="button">
+          <i class="fas fa-receipt me-1"></i>Comprobantes
+        </button>
+      </li>
+      <?php endif; ?>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="oc-docs-tab" data-bs-toggle="tab"
+                data-bs-target="#oc-tab-docs" type="button">
+          <i class="fas fa-file-alt me-1"></i>Documentos
+        </button>
       </li>
       <li class="nav-item" role="presentation" id="oc-servicios-tab-li" style="display:none;">
         <button class="nav-link" id="oc-servicios-tab" data-bs-toggle="tab"
@@ -664,10 +769,121 @@
         </div>
       </div>
 
+      <?php if (tiene_permiso('compras_pagos')): ?>
+      <!-- TAB COMPROBANTES DE PAGO -->
+      <div class="tab-pane fade" id="oc-tab-comprobantes" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="small text-muted fw-semibold">Comprobantes de pago al proveedor</span>
+          <span class="badge bg-secondary" id="oc-comprobantes-count">0</span>
+        </div>
+        <div id="oc-comprobantes-loading" class="text-center text-muted py-4">
+          <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+        <div id="oc-comprobantes-container" style="display:none;">
+          <div id="oc-comprobantes-lista"></div>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <!-- TAB DOCUMENTOS / FACTURAS -->
+      <div class="tab-pane fade" id="oc-tab-docs" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="small text-muted fw-semibold">Facturas y documentos por órdenes de compra</span>
+          <span class="badge bg-secondary" id="oc-docs-count">0</span>
+        </div>
+        <div id="oc-docs-loading" class="text-center text-muted py-4">
+          <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+        <div id="oc-docs-container" style="display:none;">
+          <div id="oc-docs-lista"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
 <!-- /Offcanvas Proveedor -->
+
+<!-- ============================================================
+     Modal: Enviar Comprobante de Pago al Proveedor (Quill.js)
+============================================================ -->
+<?php if (tiene_permiso('compras_pagos')): ?>
+<div class="modal fade" id="modalEnviarComprobante" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title text-white">
+          <i class="fas fa-paper-plane me-2"></i>Enviar Comprobante de Pago al Proveedor
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="env-pago-id">
+        <input type="hidden" id="env-pago-folio-hidden">
+        <div class="row g-3">
+          <!-- Columna izquierda: resumen del pago -->
+          <div class="col-md-4">
+            <div class="card border-success h-100">
+              <div class="card-header bg-success bg-opacity-10 py-2">
+                <small class="fw-semibold text-success"><i class="fas fa-receipt me-1"></i>Comprobante seleccionado</small>
+              </div>
+              <div class="card-body py-2">
+                <table class="table table-sm table-borderless mb-0">
+                  <tr><td class="text-muted small">Folio:</td><td class="fw-semibold" id="env-pago-folio">—</td></tr>
+                  <tr><td class="text-muted small">Fecha:</td><td id="env-pago-fecha">—</td></tr>
+                  <tr><td class="text-muted small">Monto:</td><td class="text-success fw-bold" id="env-pago-monto">$0.00</td></tr>
+                  <tr><td class="text-muted small">Método:</td><td id="env-pago-metodo">—</td></tr>
+                  <tr><td class="text-muted small">OC:</td><td><span class="badge bg-primary" id="env-pago-oc">—</span></td></tr>
+                  <tr><td class="text-muted small">Referencia:</td><td id="env-pago-referencia">—</td></tr>
+                </table>
+                <div class="mt-2" id="env-comp-archivo-info">
+                  <small class="text-muted">Archivo adjunto:</small><br>
+                  <span id="env-comp-nombre" class="badge bg-light text-dark border"><i class="fas fa-paperclip"></i> —</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Columna derecha: formulario de email -->
+          <div class="col-md-8">
+            <div class="mb-2">
+              <label class="form-label small text-muted mb-1">Destinatario <span class="text-danger">*</span></label>
+              <input type="email" class="form-control form-control-sm" id="env-destinatario" placeholder="email@proveedor.com">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small text-muted mb-1">CC (separar con comas)</label>
+              <input type="text" class="form-control form-control-sm" id="env-cc" placeholder="copia@empresa.com, otro@empresa.com">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small text-muted mb-1">Asunto</label>
+              <input type="text" class="form-control form-control-sm" id="env-asunto" placeholder="Comprobante de pago">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small text-muted mb-1">Mensaje <small class="text-info">(editor de texto enriquecido)</small></label>
+              <div id="env-quill-editor" style="height:200px; background:#fff;"></div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small text-muted mb-1">Adjuntar archivos adicionales (opcional)</label>
+              <input type="file" class="form-control form-control-sm" id="env-archivos-extra"
+                     accept=".pdf,.xml,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" multiple>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <div class="text-muted small">
+          <i class="fas fa-lock me-1"></i>El comprobante quedará guardado en el sistema como historial.
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success" onclick="enviarComprobantePago()" id="btn-enviar-comp">
+            <i class="fas fa-paper-plane me-1"></i>Enviar Comprobante
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 <!-- Modal: Detalle de Orden de Compra -->
 <div class="modal fade" id="modalDetalleOrdenCompra" tabindex="-1">
@@ -778,6 +994,11 @@
   let provOrdenesOffset = 0;
   let provOrdenesTotal = 0;
   let insumosProveedorCache = {};
+  let quillEnvioComp = null;
+  let provActualEmail = '';
+  let chartComprasMes = null;
+  let chartTopProv = null;
+  let chartDistribucion = null;
 
   const badgeOrdenCompra = {
     'Borrador': 'secondary',
@@ -1254,6 +1475,20 @@
     $('#oc-insumos-container').hide();
     $('#oc-ordenes-tbody').html('');
     $('#oc-ordenes-paginacion').html('');
+    // Reset tabs de comprobantes, documentos y servicios
+    $('#oc-ordenes-loading').show();
+    $('#oc-ordenes-container').hide();
+    $('#oc-comprobantes-loading').show();
+    $('#oc-comprobantes-container').hide();
+    $('#oc-comprobantes-lista').html('');
+    $('#oc-comprobantes-count').text('0');
+    $('#oc-docs-loading').show();
+    $('#oc-docs-container').hide();
+    $('#oc-docs-lista').html('');
+    $('#oc-docs-count').text('0');
+    $('#oc-servicios-loading').show();
+    $('#oc-servicios-container').hide();
+    $('#oc-servicios-tbody').html('');
 
     // Activar tab Información por defecto
     const tabInfo = document.getElementById('oc-info-tab');
@@ -1284,6 +1519,7 @@
       res = JSON.parse(res);
       if(!res.success) return;
       var p = res.proveedor;
+      provActualEmail = p.email || '';
 
       // Header
       $('#oc-razon-social').text(p.razon_social);
@@ -1347,6 +1583,16 @@
 
     $('#oc-servicios-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
       cargarServiciosOC(id);
+    });
+
+    if (PUEDE_PAGOS) {
+      $('#oc-comprobantes-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
+        cargarComprobantesProveedor(id);
+      });
+    }
+
+    $('#oc-docs-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
+      cargarDocumentosProveedor(id);
     });
   };
 
@@ -1684,13 +1930,321 @@
     });
   }
 
+  // ============================================================
+  // COMPROBANTES DE PAGO DEL PROVEEDOR
+  // ============================================================
+  function cargarComprobantesProveedor(proveedorId) {
+    if (!PUEDE_PAGOS) return;
+    $('#oc-comprobantes-loading').show();
+    $('#oc-comprobantes-container').hide();
+    $.post('<?= base_url('compras/Proveedores/get_comprobantes_proveedor_ajax') ?>', {
+      proveedor_id: proveedorId,
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      res = JSON.parse(res);
+      $('#oc-comprobantes-loading').hide();
+      if (!res.success) {
+        $('#oc-comprobantes-lista').html('<div class="alert alert-warning">No se pudieron cargar los comprobantes.</div>');
+        $('#oc-comprobantes-container').show();
+        return;
+      }
+      var lista = res.comprobantes || [];
+      $('#oc-comprobantes-count').text(lista.length);
+      if (lista.length === 0) {
+        $('#oc-comprobantes-lista').html('<div class="text-center text-muted py-4"><i class="fas fa-receipt fa-2x mb-2"></i><br>Sin comprobantes de pago registrados</div>');
+      } else {
+        var html = '';
+        lista.forEach(function(c) {
+          var iconoCls = 'fas fa-file text-secondary';
+          if (c.comprobante_nombre) {
+            var ext = (c.comprobante_nombre.split('.').pop() || '').toLowerCase();
+            if (ext === 'pdf') iconoCls = 'fas fa-file-pdf text-danger';
+            else if (ext === 'xml') iconoCls = 'fas fa-file-code text-primary';
+            else if (['jpg','jpeg','png','webp'].indexOf(ext) >= 0) iconoCls = 'fas fa-file-image text-info';
+          }
+          var enviado = c.comprobante_enviado_email == 1
+            ? '<span class="badge bg-success ms-1" title="Enviado por email el ' + (c.fecha_envio_email || '') + '"><i class="fas fa-envelope-check"></i> Enviado</span>'
+            : '';
+          html += '<div class="border rounded p-2 mb-2 bg-white">';
+          html += '<div class="d-flex justify-content-between align-items-start">';
+          html += '<div>';
+          html += '<strong class="small">' + (c.folio || '—') + '</strong>' + enviado;
+          html += '<br><span class="text-muted" style="font-size:0.78rem;">OC: <span class="badge bg-primary">' + (c.folio_oc || '—') + '</span></span>';
+          html += '<br><span class="text-muted" style="font-size:0.78rem;">Fecha: ' + formatearFechaMX(c.fecha_pago) + ' · $' + parseFloat(c.monto || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + ' · ' + (c.metodo_pago || '') + '</span>';
+          if (c.referencia) html += '<br><span class="text-muted" style="font-size:0.75rem;">Ref: ' + c.referencia + '</span>';
+          html += '</div>';
+          html += '<div class="d-flex flex-column gap-1 ms-2">';
+          if (c.comprobante_nombre && c.comprobante_ruta) {
+            html += '<a href="<?= base_url() ?>' + c.comprobante_ruta + '" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-1" title="Ver/descargar comprobante" style="font-size:0.75rem;"><i class="' + iconoCls + '"></i> ' + c.comprobante_nombre + '</a>';
+          }
+          html += '<button class="btn btn-sm btn-success py-0 px-2" style="font-size:0.75rem;" onclick="abrirModalEnviarComprobante(' + JSON.stringify(c).replace(/"/g,'&quot;') + ')" title="Enviar por email"><i class="fas fa-paper-plane me-1"></i>Enviar</button>';
+          html += '</div></div></div>';
+        });
+        $('#oc-comprobantes-lista').html(html);
+      }
+      $('#oc-comprobantes-container').show();
+    }).fail(function() {
+      $('#oc-comprobantes-loading').hide();
+      $('#oc-comprobantes-lista').html('<div class="alert alert-danger">Error de conexión.</div>');
+      $('#oc-comprobantes-container').show();
+    });
+  }
+
+  // ============================================================
+  // DOCUMENTOS / FACTURAS DEL PROVEEDOR
+  // ============================================================
+  function cargarDocumentosProveedor(proveedorId) {
+    $('#oc-docs-loading').show();
+    $('#oc-docs-container').hide();
+    $.post('<?= base_url('compras/Proveedores/get_documentos_proveedor_ajax') ?>', {
+      proveedor_id: proveedorId,
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      res = JSON.parse(res);
+      $('#oc-docs-loading').hide();
+      var lista = res.documentos || [];
+      $('#oc-docs-count').text(lista.length);
+      if (lista.length === 0) {
+        $('#oc-docs-lista').html('<div class="text-center text-muted py-4"><i class="fas fa-folder-open fa-2x mb-2"></i><br>Sin facturas ni documentos registrados</div>');
+      } else {
+        var tipoIcons = {
+          'Factura': 'fas fa-file-invoice text-danger',
+          'Nota de remisión': 'fas fa-file-alt text-warning',
+          'Cotización': 'fas fa-file-signature text-info',
+          'Otro': 'fas fa-file text-secondary'
+        };
+        var html = '';
+        lista.forEach(function(d) {
+          var ext = (d.nombre_archivo || '').split('.').pop().toLowerCase();
+          var iconoCls = tipoIcons[d.tipo] || 'fas fa-file text-secondary';
+          if (ext === 'pdf') iconoCls = 'fas fa-file-pdf text-danger';
+          else if (ext === 'xml') iconoCls = 'fas fa-file-code text-primary';
+          else if (['jpg','jpeg','png','webp'].indexOf(ext) >= 0) iconoCls = 'fas fa-file-image text-info';
+          var kb = d.tamano_bytes ? (d.tamano_bytes / 1024).toFixed(1) + ' KB' : '';
+          html += '<div class="border rounded p-2 mb-2 bg-white d-flex justify-content-between align-items-center">';
+          html += '<div>';
+          html += '<i class="' + iconoCls + ' me-1"></i><strong class="small">' + (d.nombre_archivo || '—') + '</strong>';
+          html += '<br><span class="badge bg-secondary" style="font-size:0.7rem;">' + (d.tipo || 'Otro') + '</span>';
+          html += ' <span class="text-muted" style="font-size:0.75rem;">OC: <span class="badge bg-primary">' + (d.folio_oc || '—') + '</span> ' + formatearFechaMX(d.fecha_subida) + (kb ? ' · ' + kb : '') + '</span>';
+          if (d.notas) html += '<br><small class="text-muted">' + d.notas + '</small>';
+          html += '</div>';
+          html += '<a href="<?= base_url() ?>' + d.ruta + '" target="_blank" class="btn btn-sm btn-outline-primary ms-2"><i class="fas fa-download"></i></a>';
+          html += '</div>';
+        });
+        $('#oc-docs-lista').html(html);
+      }
+      $('#oc-docs-container').show();
+    }).fail(function() {
+      $('#oc-docs-loading').hide();
+      $('#oc-docs-lista').html('<div class="alert alert-danger">Error de conexión.</div>');
+      $('#oc-docs-container').show();
+    });
+  }
+
+  // ============================================================
+  // MODAL ENVIAR COMPROBANTE DE PAGO (Quill.js)
+  // ============================================================
+  window.abrirModalEnviarComprobante = function(pago) {
+    if (!PUEDE_PAGOS) return;
+    $('#env-pago-id').val(pago.id);
+    $('#env-pago-folio').text(pago.folio || '—');
+    $('#env-pago-folio-hidden').val(pago.folio || '');
+    $('#env-pago-fecha').text(formatearFechaMX(pago.fecha_pago));
+    $('#env-pago-monto').text('$' + parseFloat(pago.monto || 0).toLocaleString('es-MX', {minimumFractionDigits:2}));
+    $('#env-pago-metodo').text(pago.metodo_pago || '—');
+    $('#env-pago-oc').text(pago.folio_oc || '—');
+    $('#env-pago-referencia').text(pago.referencia || '—');
+    $('#env-comp-nombre').html(pago.comprobante_nombre
+      ? '<i class="fas fa-paperclip"></i> ' + pago.comprobante_nombre
+      : '<span class="text-muted">Sin archivo adjunto</span>');
+    // Pre-llenar destinatario con email del proveedor
+    $('#env-destinatario').val(pago.email_proveedor || provActualEmail || '');
+    $('#env-asunto').val('Comprobante de pago ' + (pago.folio || '') + ' — OC ' + (pago.folio_oc || ''));
+    // Inicializar o limpiar Quill
+    if (quillEnvioComp) {
+      quillEnvioComp.root.innerHTML = '';
+    } else if (typeof Quill !== 'undefined') {
+      quillEnvioComp = new Quill('#env-quill-editor', {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link'],
+            ['clean']
+          ]
+        }
+      });
+    }
+    if (quillEnvioComp) {
+      quillEnvioComp.setText('');
+      quillEnvioComp.clipboard.dangerouslyPasteHTML(
+        '<p>Estimado proveedor,</p>' +
+        '<p>Adjunto el comprobante de pago correspondiente:</p>' +
+        '<ul>' +
+        '<li><strong>Folio:</strong> ' + (pago.folio || '—') + '</li>' +
+        '<li><strong>Fecha de pago:</strong> ' + formatearFechaMX(pago.fecha_pago) + '</li>' +
+        '<li><strong>Monto:</strong> $' + parseFloat(pago.monto || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</li>' +
+        '<li><strong>Método:</strong> ' + (pago.metodo_pago || '—') + '</li>' +
+        (pago.referencia ? '<li><strong>Referencia:</strong> ' + pago.referencia + '</li>' : '') +
+        '</ul>' +
+        '<p>Quedo a sus órdenes para cualquier aclaración.</p>' +
+        '<p>Atentamente,<br><strong>Chisa Recubrimientos</strong></p>'
+      );
+    }
+    $('#env-archivos-extra').val('');
+    abrirModal('modalEnviarComprobante');
+  };
+
+  window.enviarComprobantePago = function() {
+    var pagoId = $('#env-pago-id').val();
+    var destinatario = $('#env-destinatario').val().trim();
+    if (!pagoId || !destinatario) {
+      toastr ? toastr.warning('Complete el destinatario.') : alert('Complete el destinatario.');
+      return;
+    }
+    var cuerpoHtml = quillEnvioComp ? quillEnvioComp.root.innerHTML : '';
+    var btn = $('#btn-enviar-comp');
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Enviando...');
+
+    var fd = new FormData();
+    fd.append('pago_id', pagoId);
+    fd.append('destinatario', destinatario);
+    fd.append('cc', $('#env-cc').val());
+    fd.append('asunto', $('#env-asunto').val());
+    fd.append('cuerpo_html', cuerpoHtml);
+    fd.append('<?php echo $this->security->get_csrf_token_name();?>', '<?php echo $this->security->get_csrf_hash();?>');
+    var extras = document.getElementById('env-archivos-extra').files;
+    for (var i = 0; i < extras.length; i++) fd.append('archivos_extra[]', extras[i]);
+
+    $.ajax({
+      url: '<?= base_url('compras/Proveedores/enviar_comprobante_pago_ajax') ?>',
+      type: 'POST',
+      data: fd,
+      processData: false,
+      contentType: false,
+      success: function(res) {
+        res = JSON.parse(res);
+        btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i>Enviar Comprobante');
+        if (res.success) {
+          cerrarModal('modalEnviarComprobante');
+          toastr ? toastr.success(res.message) : alert(res.message);
+          // Refrescar lista de comprobantes
+          if (provOrdenesActualId) cargarComprobantesProveedor(provOrdenesActualId);
+        } else {
+          toastr ? toastr.error(res.message || 'Error al enviar') : alert(res.message);
+        }
+      },
+      error: function() {
+        btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i>Enviar Comprobante');
+        toastr ? toastr.error('Error de conexión') : alert('Error de conexión');
+      }
+    });
+  };
+
+  // ============================================================
+  // ESTADÍSTICAS AVANZADAS / CHART.JS
+  // ============================================================
+  function cargarEstadisticasAvanzadas() {
+    if (typeof Chart === 'undefined') return;
+    $.post('<?= base_url('compras/Proveedores/estadisticas_avanzadas_ajax') ?>', {
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      try { res = JSON.parse(res); } catch(e) { return; }
+      if (!res.success) return;
+      var d = res.data;
+
+      // KPIs adeudo / pagado
+      if (d.resumen_pago) {
+        $('#kpi-adeudo').text('$' + parseFloat(d.resumen_pago.total_adeudo || 0).toLocaleString('es-MX', {minimumFractionDigits:2}));
+        $('#kpi-pagado').text('$' + parseFloat(d.resumen_pago.total_pagado || 0).toLocaleString('es-MX', {minimumFractionDigits:2}));
+      }
+
+      // Gráfica: Compras por Mes
+      if (d.compras_mes && d.compras_mes.length) {
+        var labels = d.compras_mes.map(function(r) {
+          var p = r.mes.split('-');
+          var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+          return meses[parseInt(p[1])-1] + ' ' + p[0].slice(2);
+        });
+        var totales = d.compras_mes.map(function(r) { return parseFloat(r.total_mes || 0); });
+        if (chartComprasMes) chartComprasMes.destroy();
+        chartComprasMes = new Chart(document.getElementById('chartComprasMes'), {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ label: 'Compras ($)', data: totales, backgroundColor: 'rgba(0,123,255,0.7)', borderRadius: 4 }]
+          },
+          options: { responsive: true, plugins: { legend: { display: false } },
+            scales: { y: { ticks: { callback: function(v) { return '$' + v.toLocaleString('es-MX'); } } } } }
+        });
+      }
+
+      // Gráfica: Top Proveedores
+      if (d.top_proveedores && d.top_proveedores.length) {
+        var tpLabels = d.top_proveedores.map(function(r) {
+          return (r.nombre_comercial || r.razon_social || '').substring(0, 20);
+        });
+        var tpData = d.top_proveedores.map(function(r) { return parseFloat(r.total_comprado || 0); });
+        var tpColors = ['#0d6efd','#6610f2','#6f42c1','#d63384','#fd7e14'];
+        if (chartTopProv) chartTopProv.destroy();
+        chartTopProv = new Chart(document.getElementById('chartTopProveedores'), {
+          type: 'bar',
+          data: {
+            labels: tpLabels,
+            datasets: [{ label: 'Compras ($)', data: tpData, backgroundColor: tpColors, borderRadius: 4 }]
+          },
+          options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } },
+            scales: { x: { ticks: { callback: function(v) { return '$' + v.toLocaleString('es-MX'); } } } } }
+        });
+      }
+
+      // Gráfica: Distribución por Tipo
+      if (d.distribucion_tipo && d.distribucion_tipo.length) {
+        var dtLabels = d.distribucion_tipo.map(function(r) { return r.tipo_proveedor || 'Mixto'; });
+        var dtData = d.distribucion_tipo.map(function(r) { return parseInt(r.total || 0); });
+        var dtColors = ['#0d6efd','#198754','#ffc107','#6c757d','#0dcaf0'];
+        if (chartDistribucion) chartDistribucion.destroy();
+        chartDistribucion = new Chart(document.getElementById('chartDistribucion'), {
+          type: 'doughnut',
+          data: { labels: dtLabels, datasets: [{ data: dtData, backgroundColor: dtColors }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+      }
+
+      // Tabla adeudos
+      if (d.adeudos_proveedor && d.adeudos_proveedor.length) {
+        var html = '';
+        d.adeudos_proveedor.forEach(function(a) {
+          var pct = d.resumen_pago ? Math.min(100, Math.round(parseFloat(a.adeudo) / parseFloat(d.resumen_pago.total_adeudo || 1) * 100)) : 0;
+          html += '<tr>';
+          html += '<td class="small">' + (a.razon_social || '—') + '</td>';
+          html += '<td class="text-end text-danger fw-semibold">$' + parseFloat(a.adeudo || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
+          html += '<td><div class="progress" style="height:8px;min-width:60px;"><div class="progress-bar bg-danger" style="width:' + pct + '%"></div></div></td>';
+          html += '</tr>';
+        });
+        $('#tabla-adeudos-proveedor').html(html);
+      } else {
+        $('#tabla-adeudos-proveedor').html('<tr><td colspan="3" class="text-center text-muted py-2"><i class="fas fa-check-circle text-success me-1"></i>Sin adeudos pendientes</td></tr>');
+      }
+    });
+  }
+
   // Inicializar cuando jQuery esté disponible
   if (typeof jQuery !== 'undefined') {
-    $(document).ready(initProveedores);
+    $(document).ready(function() {
+      initProveedores();
+      // Cargar estadísticas avanzadas
+      setTimeout(cargarEstadisticasAvanzadas, 500);
+    });
   } else {
     window.addEventListener('load', function() {
       if (typeof jQuery !== 'undefined') {
-        $(document).ready(initProveedores);
+        $(document).ready(function() {
+          initProveedores();
+          setTimeout(cargarEstadisticasAvanzadas, 500);
+        });
       }
     });
   }

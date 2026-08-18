@@ -113,7 +113,8 @@ class IncidenciasModel extends MY_Model {
         $this->db->where('empleado_id', (int)$empleado_id);
         $this->db->where('fecha_incidencia >=', $periodo_inicio);
         $this->db->where('fecha_incidencia <=', $periodo_fin);
-        $this->db->where('estatus', 'Activa');
+        // Recálculo de Calculada: las incidencias ya marcadas Procesada deben seguir aplicándose.
+        $this->db->where_in('estatus', ['Activa', 'Procesada']);
         $this->db->order_by('fecha_incidencia', 'ASC');
         return $this->db->get()->result();
     }

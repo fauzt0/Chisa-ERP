@@ -155,6 +155,8 @@
                 { extend: 'print', text: '<i class="fas fa-print"></i> Imprimir', className: 'btn btn-info btn-sm' }
             ],
             responsive: true,
+            scrollX: true,
+            autoWidth: false,
             createdRow: function(row, data) {
                 $(row).css('cursor', 'pointer').attr('title', 'Clic para ver detalle');
             }

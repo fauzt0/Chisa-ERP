@@ -63,9 +63,11 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/Departamentos">
             Departamentos
           </a></li>
+          <?php if (tiene_permiso('rh_nomina')): ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/Nomina">
             Nómina
           </a></li>
+          <?php endif; ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?php echo base_url();?>rh/Comunicacion">
             Comunicación Interna
           </a></li>

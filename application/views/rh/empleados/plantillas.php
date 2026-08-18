@@ -14,7 +14,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped" id="tabla-plantillas">
+                    <table class="table table-hover table-striped w-100" id="tabla-plantillas">
                         <thead>
                             <tr>
                                 <th>Nombre</th>
@@ -69,10 +69,15 @@ function eliminarPlantilla(id){
     }
 }
 
-$(document).ready(function() {
-    $('#tabla-plantillas').DataTable({
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof jQuery === 'undefined' || !jQuery.fn.DataTable) return;
+    if (jQuery.fn.DataTable.isDataTable('#tabla-plantillas')) return;
+    jQuery('#tabla-plantillas').DataTable({
+        responsive: true,
+        scrollX: true,
+        autoWidth: false,
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
         }
     });
 });

@@ -82,9 +82,10 @@ class NominaRhModel extends CI_Model {
 
     public function calcular_nomina($nomina_id) {
         $nomina = $this->db->get_where('nominas', ['id' => (int)$nomina_id])->row();
-        if (!$nomina || $nomina->estatus !== 'Borrador') {
-            return ['success' => false, 'message' => 'Nómina no válida para cálculo'];
+        if (!$nomina || !in_array($nomina->estatus, ['Borrador', 'Calculada'], true)) {
+            return ['success' => false, 'message' => 'Nómina no válida para cálculo. Solo Borrador o Calculada (sin pagos) se pueden calcular.'];
         }
+        $era_calculada = ($nomina->estatus === 'Calculada');
 
         $config = $this->get_configuracion_automatizacion();
         $flags = [
@@ -95,6 +96,9 @@ class NominaRhModel extends CI_Model {
 
         $this->db->select('
             nd.id, nd.empleado_id,
+            nd.horas_extras, nd.comidas, nd.viaticos_pasajes, nd.prima,
+            nd.otros_bonos, nd.otros_ingresos, nd.prestamo_personal, nd.otros_descuentos,
+            nd.costo_hora_extra as costo_hora_extra_detalle,
             e.salario_base_mensual, e.salario_base_diario,
             e.isr_porcentaje, e.imss_cuota,
             e.pension_alimenticia_porcentaje, e.pension_alimenticia_monto,
@@ -105,10 +109,11 @@ class NominaRhModel extends CI_Model {
         $this->db->from('nominas_detalle nd');
         $this->db->join('empleados e', 'nd.empleado_id = e.id');
         $this->db->where('nd.nomina_id', (int)$nomina_id);
+        $this->db->where('nd.estatus !=', 'Cancelado');
         $detalles = $this->db->get()->result();
 
         if (empty($detalles)) {
-            return ['success' => false, 'message' => 'No hay empleados en esta nómina'];
+            return ['success' => false, 'message' => 'No hay empleados activos en esta nómina (todos están cancelados)'];
         }
 
         $total_percepciones = 0;
@@ -132,7 +137,21 @@ class NominaRhModel extends CI_Model {
             $percepciones = array_sum(array_column(array_filter($conceptos, function ($c) {
                 return $c['tipo'] === 'Percepción';
             }), 'monto'));
-            $neto = $percepciones - $deducciones;
+
+            // Conservar ajustes inline (HE/comidas/etc.) al recalcular una Calculada.
+            $costo_he = (float)($det->costo_hora_extra_detalle ?: $det->costo_hora_extra);
+            $monto_he = round((float)($det->horas_extras ?? 0) * $costo_he, 2);
+            $percepciones += $monto_he
+                + (float)($det->comidas ?? 0)
+                + (float)($det->viaticos_pasajes ?? 0)
+                + (float)($det->prima ?? 0)
+                + (float)($det->otros_bonos ?? 0)
+                + (float)($det->otros_ingresos ?? 0);
+            $deducciones += (float)($det->prestamo_personal ?? 0)
+                + (float)($det->otros_descuentos ?? 0);
+            $percepciones = round($percepciones, 2);
+            $deducciones = round($deducciones, 2);
+            $neto = round($percepciones - $deducciones, 2);
 
             // Extraer ISR, IMSS e INFONAVIT de los conceptos calculados (respetan flags)
             $isr_calculado = 0;
@@ -167,8 +186,8 @@ class NominaRhModel extends CI_Model {
                 $sueldo,
                 $sueldo_diario_val,
                 $lugar_origen_val,
-                round((float)$det->costo_hora_extra, 2),
-                round((float)$det->costo_hora_extra * (float)($det->horas_extras ?? 0), 2),
+                round($costo_he, 2),
+                $monto_he,
                 $percepciones,
                 $deducciones,
                 $infonavit_calculado,
@@ -220,7 +239,9 @@ class NominaRhModel extends CI_Model {
 
         return [
             'success' => true,
-            'message' => 'Nómina calculada correctamente',
+            'message' => $era_calculada
+                ? 'Nómina recalculada correctamente. Los ajustes del detalle (horas extras, comidas, etc.) se conservaron.'
+                : 'Nómina calculada correctamente',
             'totales' => [
                 'percepciones' => $total_percepciones,
                 'deducciones'  => $total_deducciones,
@@ -409,6 +430,16 @@ class NominaRhModel extends CI_Model {
         if (!$det) {
             return ['success' => false, 'message' => 'Detalle no encontrado'];
         }
+        if (($det->estatus ?? '') === 'Cancelado') {
+            return ['success' => false, 'message' => 'No se puede editar un empleado cancelado en esta nómina'];
+        }
+
+        // Recalcular monto_horas_extras ANTES de los totales (si no, HE=0 deja el neto viejo).
+        if (array_key_exists('horas_extras', $update) || array_key_exists('costo_hora_extra', $update)) {
+            $h = (float)($update['horas_extras'] ?? $det->horas_extras);
+            $c = (float)($update['costo_hora_extra'] ?? $det->costo_hora_extra);
+            $update['monto_horas_extras'] = round($h * $c, 2);
+        }
 
         $percepciones = round(
             (float)($update['monto_horas_extras'] ?? $det->monto_horas_extras) +
@@ -432,13 +463,6 @@ class NominaRhModel extends CI_Model {
         $update['percepciones'] = $percepciones;
         $update['deducciones'] = $deducciones;
         $update['neto'] = round($percepciones - $deducciones, 2);
-
-        // Recalcular monto_horas_extras si se editaron horas o costo
-        if (array_key_exists('horas_extras', $update) || array_key_exists('costo_hora_extra', $update)) {
-            $h = (float)($update['horas_extras'] ?? $det->horas_extras);
-            $c = (float)($update['costo_hora_extra'] ?? $det->costo_hora_extra);
-            $update['monto_horas_extras'] = round($h * $c, 2);
-        }
 
         // Usar SQL directo para actualizar detalle (evita fallos silenciosos de AR en producción)
         $sql_parts = [];
@@ -915,6 +939,9 @@ class NominaRhModel extends CI_Model {
         ];
 
         foreach ($nomina->detalle as $det) {
+            if (($det->estatus ?? '') === 'Cancelado') {
+                continue;
+            }
             $monto_pagado = (float)($det->monto_pagado ?? 0);
             $neto = (float)$det->neto;
             $pendiente = max(0, round($neto - $monto_pagado, 2));
@@ -1280,10 +1307,13 @@ class NominaRhModel extends CI_Model {
             $this->db->select('COUNT(*) as total, SUM(CASE WHEN estatus="Pagado" THEN 1 ELSE 0 END) as pagados, 0 as pagado, SUM(neto) as neto_total');
         }
         $this->db->where('nomina_id', (int)$nomina_id);
+        $this->db->where('estatus !=', 'Cancelado');
         $stats = $this->db->get('nominas_detalle')->row();
 
         $estatus = 'Calculada';
-        if ((int)$stats->pagados === (int)$stats->total && (int)$stats->total > 0) {
+        if ((int)$stats->total === 0) {
+            $estatus = 'Cancelada';
+        } elseif ((int)$stats->pagados === (int)$stats->total && (int)$stats->total > 0) {
             $estatus = 'Pagada';
         } elseif ((int)$stats->pagados > 0 || (float)$stats->pagado > 0) {
             $estatus = 'Parcial';
@@ -1565,27 +1595,148 @@ class NominaRhModel extends CI_Model {
         if (!$nomina) {
             return ['success' => false, 'message' => 'Nómina no encontrada'];
         }
-        if (in_array($nomina->estatus, ['Pagada', 'Parcial'])) {
-            return ['success' => false, 'message' => 'No se puede cancelar una nómina con pagos procesados. Use el sistema de notas de ajuste.'];
+        if ($nomina->estatus === 'Cancelada') {
+            return ['success' => false, 'message' => 'La nómina ya está cancelada'];
+        }
+        if ($nomina->estatus === 'Borrador') {
+            return ['success' => false, 'message' => 'Elimine el borrador en lugar de cancelarlo'];
+        }
+
+        $this->db->trans_start();
+        $this->db->query(
+            "UPDATE nominas_detalle SET estatus = 'Cancelado' WHERE nomina_id = ? AND estatus != 'Cancelado'",
+            [(int)$nomina_id]
+        );
+        $this->db->query('UPDATE nominas SET estatus = ? WHERE id = ?', ['Cancelada', (int)$nomina_id]);
+        $this->registrar_cancelacion((int)$nomina_id, $motivo, null);
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            return ['success' => false, 'message' => 'Error al cancelar la nómina'];
+        }
+
+        $msg = 'Nómina cancelada correctamente';
+        if (!empty($nomina->poliza_id)) {
+            $msg .= '. Quedó póliza #' . (int)$nomina->poliza_id . ' en Contabilidad; revísela si debe revertirse.';
+        }
+        return [
+            'success' => true,
+            'message' => $msg,
+            'folio' => $nomina->folio,
+        ];
+    }
+
+    /**
+     * Cancela a un empleado dentro de la nómina (estatus detalle = Cancelado).
+     * Recalcula totales y estatus de cabecera con los empleados restantes.
+     */
+    public function cancelar_empleado_nomina($detalle_id, $motivo) {
+        $det = $this->db->get_where('nominas_detalle', ['id' => (int)$detalle_id])->row();
+        if (!$det) {
+            return ['success' => false, 'message' => 'Empleado no encontrado en la nómina'];
+        }
+        if (($det->estatus ?? '') === 'Cancelado') {
+            return ['success' => false, 'message' => 'Este empleado ya está cancelado en la nómina'];
+        }
+
+        $nomina = $this->db->get_where('nominas', ['id' => (int)$det->nomina_id])->row();
+        if (!$nomina) {
+            return ['success' => false, 'message' => 'Nómina no encontrada'];
         }
         if ($nomina->estatus === 'Cancelada') {
             return ['success' => false, 'message' => 'La nómina ya está cancelada'];
         }
 
         $this->db->trans_start();
-        $this->db->query('UPDATE nominas SET estatus = ? WHERE id = ?', ['Cancelada', (int)$nomina_id]);
-        $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
-        $this->db->insert('nominas_cancelaciones', [
-            'nomina_id' => (int)$nomina_id,
-            'motivo' => substr(trim($motivo), 0, 500),
-            'usuario_id' => $usuario_id ?: null,
-        ]);
+        $this->db->query(
+            "UPDATE nominas_detalle SET estatus = 'Cancelado' WHERE id = ?",
+            [(int)$detalle_id]
+        );
+        $this->registrar_cancelacion((int)$det->nomina_id, $motivo, (int)$detalle_id);
+        $nuevo_estatus = $this->recalcular_totales_y_estatus_cabecera((int)$det->nomina_id, $nomina->estatus === 'Borrador');
+        if ($nuevo_estatus === 'Cancelada' && $nomina->estatus !== 'Cancelada') {
+            $this->registrar_cancelacion(
+                (int)$det->nomina_id,
+                'Cancelada automáticamente: no quedan empleados activos. Último motivo: ' . $motivo,
+                null
+            );
+        }
         $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE) {
-            return ['success' => false, 'message' => 'Error al cancelar la nómina'];
+            return ['success' => false, 'message' => 'Error al cancelar al empleado'];
         }
-        return ['success' => true, 'message' => 'Nómina cancelada correctamente'];
+
+        $msg = 'Empleado cancelado en la nómina';
+        if ($nuevo_estatus === 'Cancelada') {
+            $msg .= '. La nómina quedó Cancelada (no quedan empleados activos).';
+        } elseif ($nuevo_estatus && $nuevo_estatus !== $nomina->estatus) {
+            $msg .= '. Estatus de la nómina: ' . $nuevo_estatus . '.';
+        }
+        return [
+            'success' => true,
+            'message' => $msg,
+            'nomina_id' => (int)$det->nomina_id,
+            'estatus_nomina' => $nuevo_estatus,
+            'folio' => $nomina->folio,
+        ];
+    }
+
+    private function registrar_cancelacion($nomina_id, $motivo, $detalle_id = null) {
+        $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
+        $row = [
+            'nomina_id'  => (int)$nomina_id,
+            'motivo'     => substr(trim((string)$motivo), 0, 500),
+            'usuario_id' => $usuario_id ?: null,
+        ];
+        if ($detalle_id && $this->db->field_exists('detalle_id', 'nominas_cancelaciones')) {
+            $row['detalle_id'] = (int)$detalle_id;
+        } elseif ($detalle_id) {
+            $row['motivo'] = substr('Empleado detalle #' . (int)$detalle_id . ': ' . $row['motivo'], 0, 500);
+        }
+        $this->db->insert('nominas_cancelaciones', $row);
+    }
+
+    /**
+     * Recalcula totales de cabecera excluyendo empleados Cancelado.
+     * @return string Nuevo estatus de la nómina
+     */
+    private function recalcular_totales_y_estatus_cabecera($nomina_id, $preservar_borrador = false) {
+        $this->db->select('COUNT(*) as total, SUM(CASE WHEN estatus="Pagado" THEN 1 ELSE 0 END) as pagados, SUM(COALESCE(monto_pagado, 0)) as pagado, SUM(percepciones) as perc, SUM(deducciones) as ded, SUM(neto) as neto_total', false);
+        $this->db->from('nominas_detalle');
+        $this->db->where('nomina_id', (int)$nomina_id);
+        $this->db->where('estatus !=', 'Cancelado');
+        $stats = $this->db->get()->row();
+
+        $total = (int)($stats->total ?? 0);
+        if ($total === 0) {
+            $this->db->query(
+                'UPDATE nominas SET total_percepciones = ?, total_deducciones = ?, total_neto = ?, estatus = ? WHERE id = ?',
+                [0, 0, 0, 'Cancelada', (int)$nomina_id]
+            );
+            return 'Cancelada';
+        }
+
+        $estatus = 'Calculada';
+        if ($preservar_borrador) {
+            $estatus = 'Borrador';
+        } elseif ((int)$stats->pagados === $total) {
+            $estatus = 'Pagada';
+        } elseif ((int)$stats->pagados > 0 || (float)$stats->pagado > 0) {
+            $estatus = 'Parcial';
+        }
+
+        $this->db->query(
+            'UPDATE nominas SET total_percepciones = ?, total_deducciones = ?, total_neto = ?, estatus = ? WHERE id = ?',
+            [
+                round((float)$stats->perc, 2),
+                round((float)$stats->ded, 2),
+                round((float)$stats->neto_total, 2),
+                $estatus,
+                (int)$nomina_id,
+            ]
+        );
+        return $estatus;
     }
 
     public function get_notas_nomina($nomina_id) {
@@ -1597,6 +1748,27 @@ class NominaRhModel extends CI_Model {
             ->order_by('nn.created_at', 'DESC')
             ->get()
             ->result();
+    }
+
+    /**
+     * Historial de cancelaciones (nómina completa o por empleado).
+     */
+    public function get_cancelaciones_nomina($nomina_id) {
+        if (!$this->db->table_exists('nominas_cancelaciones')) {
+            return [];
+        }
+        $this->db->from('nominas_cancelaciones nc');
+        $this->db->join('administradores u', 'u.id = nc.usuario_id', 'left');
+        if ($this->db->field_exists('detalle_id', 'nominas_cancelaciones')) {
+            $this->db->select("nc.*, u.nombre as usuario_nombre, TRIM(CONCAT(IFNULL(e.nombre,''),' ',IFNULL(e.apellido_paterno,''),' ',IFNULL(e.apellido_materno,''))) as empleado_nombre", false);
+            $this->db->join('nominas_detalle nd', 'nd.id = nc.detalle_id', 'left');
+            $this->db->join('empleados e', 'e.id = nd.empleado_id', 'left');
+        } else {
+            $this->db->select('nc.*, u.nombre as usuario_nombre');
+        }
+        $this->db->where('nc.nomina_id', (int)$nomina_id);
+        $this->db->order_by('nc.created_at', 'DESC');
+        return $this->db->get()->result();
     }
 
     public function agregar_nota_nomina($nomina_id, $data) {

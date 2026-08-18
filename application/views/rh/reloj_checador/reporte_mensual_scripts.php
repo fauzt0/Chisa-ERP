@@ -62,6 +62,8 @@
                 { extend: 'print', text: '<i class="fas fa-print"></i> Imprimir', className: 'btn btn-info btn-sm' }
             ],
             responsive: true,
+            scrollX: true,
+            autoWidth: false,
             columnDefs: [
                 { orderable: false, targets: 6 },
                 { type: 'num', targets: [4, 5] }

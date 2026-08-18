@@ -669,7 +669,7 @@ function cargarDocsEditar(empleadoId) {
       $('#lista-docs-editar').html('<div class="alert alert-light border text-center">Sin documentos en el expediente</div>');
       return;
     }
-    var html = '<div class="table-responsive"><table class="table table-sm table-hover"><thead class="table-light"><tr><th>Tipo</th><th>Archivo</th><th>Fecha</th><th></th></tr></thead><tbody>';
+    var html = '<div class="table-responsive"><table class="table table-sm table-hover w-100" id="tabla-docs-editar"><thead class="table-light"><tr><th>Tipo</th><th>Archivo</th><th>Fecha</th><th></th></tr></thead><tbody>';
     result.documentos.forEach(function(doc) {
       html += '<tr><td><span class="badge bg-primary">' + doc.tipo_label + '</span></td>' +
         '<td class="small text-truncate" style="max-width:180px;">' + doc.nombre_archivo + '</td>' +
@@ -681,6 +681,9 @@ function cargarDocsEditar(empleadoId) {
     });
     html += '</tbody></table></div>';
     $('#lista-docs-editar').html(html);
+    if (typeof window.rhRefreshResponsiveTable === 'function') {
+      window.rhRefreshResponsiveTable('#tabla-docs-editar', { paging: false, searching: false, info: false, ordering: false });
+    }
     if (typeof lucide !== 'undefined') lucide.createIcons();
   });
 }

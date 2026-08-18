@@ -99,15 +99,15 @@
     <div class="nomina-flujo d-flex flex-wrap align-items-center gap-2 small">
       <span class="fw-semibold text-muted me-1">Flujo:</span>
       <div class="nomina-flujo-paso">
-        <span class="badge bg-secondary">1. Nueva / automática</span>
+        <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">1. Nueva / automática</span>
       </div>
       <span class="nomina-flujo-flecha text-muted" aria-hidden="true">›</span>
       <div class="nomina-flujo-paso">
-        <span class="badge bg-warning text-dark">2. Calcular / revisar</span>
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">2. Calcular / revisar</span>
       </div>
       <span class="nomina-flujo-flecha text-muted" aria-hidden="true">›</span>
       <div class="nomina-flujo-paso">
-        <span class="badge bg-success">3. Procesar pago</span>
+        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">3. Procesar pago</span>
       </div>
       <span class="text-muted nomina-flujo-nota">· <strong>Ver</strong> = editar montos y forma de pago · <strong>$</strong> = procesar pago (total o parcial) · <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0" style="width:20px;height:20px;line-height:1;font-size:11px;" onclick="toggleAyudaFlujo()" title="Más info">?</button></span>
     </div>
@@ -120,10 +120,10 @@
       <button type="button" class="btn-close ms-2 flex-shrink-0" style="font-size:0.6rem;" onclick="document.getElementById('ayudaFlujoInfo').style.display='none'"></button>
     </div>
     <ul class="mb-0 ps-3" style="line-height:1.5;">
-      <li><strong>1. Nueva / automática:</strong> El sistema crea nóminas en <span class="badge bg-secondary">Borrador</span> (el cron las genera según la configuración de Automatización). También puedes crearlas manualmente.</li>
-      <li><strong>2. Calcular / revisar:</strong> Al hacer clic en <i class="fas fa-calculator"></i> <strong>Calcular</strong>, el sistema calcula sueldos, impuestos, INFONAVIT y demás conceptos. La nómina pasa a <span class="badge bg-warning text-dark">Calculada</span>. Luego usa <strong>Ver</strong> (<i class="fas fa-eye"></i>) para revisar y ajustar horas extras, comidas, préstamos, etc.</li>
-      <li><strong>3. Procesar pago:</strong> Con <strong>$</strong> abres la pantalla de pago. Puedes pagar el <strong>total</strong> o un <strong>parcial</strong> por trabajador. Al completar todos los pagos, la nómina pasa a <span class="badge bg-success">Pagada</span>.</li>
-      <li>Las nóminas <span class="badge bg-success">Pagadas</span> y <span class="badge bg-danger">Canceladas</span> son de solo lectura (no se pueden editar).</li>
+      <li><strong>1. Nueva / automática:</strong> El sistema crea nóminas en <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">Borrador</span> (el cron las genera según la configuración de Automatización). También puedes crearlas manualmente.</li>
+      <li><strong>2. Calcular / revisar:</strong> Al hacer clic en <i class="fas fa-calculator"></i> <strong>Calcular</strong>, el sistema calcula sueldos, impuestos, INFONAVIT y demás conceptos. La nómina pasa a <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Calculada</span>. Luego usa <strong>Ver</strong> (<i class="fas fa-eye"></i>) para revisar y ajustar horas extras, comidas, préstamos, etc.</li>
+      <li><strong>3. Procesar pago:</strong> Con <strong>$</strong> abres la pantalla de pago. Puedes pagar el <strong>total</strong> o un <strong>parcial</strong> por trabajador. Al completar todos los pagos, la nómina pasa a <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Pagada</span>.</li>
+      <li>Las nóminas <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Pagadas</span> y <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">Canceladas</span> son de solo lectura (no se pueden editar).</li>
     </ul>
   </div>
 
@@ -173,26 +173,24 @@
           </button>
         </div>
       </div>
-      <div class="table-responsive">
       <table id="tablaNominas" class="table table-hover w-100 align-middle">
         <thead class="table-light">
           <tr>
             <th>Folio</th>
-            <th class="d-none d-md-table-cell">Tipo</th>
+            <th>Tipo</th>
             <th>Periodo</th>
-            <th class="d-none d-md-table-cell">Fecha Pago</th>
-            <th class="text-end d-none d-lg-table-cell">Percepciones</th>
-            <th class="text-end d-none d-lg-table-cell">Deducciones</th>
+            <th>Fecha Pago</th>
+            <th class="text-end">Percepciones</th>
+            <th class="text-end">Deducciones</th>
             <th class="text-end">Neto</th>
             <th>Estatus</th>
-            <th class="text-nowrap" width="170">Pago</th>
-            <th class="text-nowrap" width="130">Acciones</th>
+            <th class="text-nowrap">Pago</th>
+            <th class="text-nowrap">Acciones</th>
             <th class="d-none" aria-hidden="true"></th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
-      </div>
     </div>
   </div>
 </div>
@@ -251,6 +249,8 @@
 #tablaDetalleNomina td.editable {
   cursor: pointer;
   background-color: #fffef5;
+  color: #212529;
+  font-weight: 500;
 }
 #tablaDetalleNomina td.editable:hover {
   outline: 1px dashed #2d5a8e;
@@ -467,6 +467,10 @@
             <li><strong>Banco / Cuenta:</strong> muestra las cuentas bancarias del trabajador (perfil). Usa "+ Agregar" si no tiene cuenta.</li>
           </ul>
         </div>
+        <div id="alertaCancelacionNomina" class="alert alert-warning rounded-0 border-bottom mb-0 py-2 px-3 small" style="display:none;">
+          <strong><i class="fas fa-ban me-1"></i> Nómina cancelada.</strong>
+          <span id="alertaCancelacionTexto"></span>
+        </div>
         <!-- Info de cabecera: Periodo, Tipo, Fecha Pago -->
         <div class="p-3 bg-light border-bottom">
           <div class="row g-2 small">
@@ -486,7 +490,7 @@
 
         <!-- Tabla scrolling horizontal con el formato exacto de las imágenes -->
         <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
-          <table class="table table-sm table-bordered table-hover mb-0" id="tablaDetalleNomina"
+          <table class="table table-sm table-bordered table-hover mb-0 rh-skip-responsive" id="tablaDetalleNomina"
                  style="font-size: 0.78rem; white-space: nowrap; min-width: 2400px;">
             <thead class="table-dark text-center align-middle" style="position: sticky; top: 0; z-index: 2;">
               <tr>
@@ -494,28 +498,28 @@
                 <th rowspan="2" style="min-width:180px;">Nombre del trabajador</th>
                 <th rowspan="2" style="min-width:80px;">Sueldo diario</th>
                 <th rowspan="2" style="min-width:80px;">Sueldo neto</th>
-                <th colspan="3" class="bg-success text-white">Horas extras</th>
+                <th colspan="3" class="bg-success-subtle text-success-emphasis border border-success-subtle">Horas extras</th>
                 <th rowspan="2" style="min-width:70px;">Comidas</th>
                 <th rowspan="2" style="min-width:80px;">Viáticos / Pasajes</th>
                 <th rowspan="2" style="min-width:70px;">Prima</th>
                 <th rowspan="2" style="min-width:70px;">Otros bonos</th>
                 <th rowspan="2" style="min-width:70px;">Otros</th>
-                <th rowspan="2" class="bg-success text-white" style="min-width:90px;">Total de Percepciones</th>
-                <th rowspan="2" class="bg-danger text-white" style="min-width:80px;">INFONAVIT</th>
-                <th rowspan="2" class="bg-danger text-white" style="min-width:65px;">ISR</th>
-                <th rowspan="2" class="bg-danger text-white" style="min-width:65px;">IMSS</th>
+                <th rowspan="2" class="bg-success-subtle text-success-emphasis border border-success-subtle" style="min-width:90px;">Total de Percepciones</th>
+                <th rowspan="2" class="bg-danger-subtle text-danger-emphasis border border-danger-subtle" style="min-width:80px;">INFONAVIT</th>
+                <th rowspan="2" class="bg-danger-subtle text-danger-emphasis border border-danger-subtle" style="min-width:65px;">ISR</th>
+                <th rowspan="2" class="bg-danger-subtle text-danger-emphasis border border-danger-subtle" style="min-width:65px;">IMSS</th>
                 <th rowspan="2" style="min-width:80px;">Préstamo personal</th>
                 <th rowspan="2" style="min-width:80px;">Otros descuentos</th>
-                <th rowspan="2" class="bg-danger text-white" style="min-width:90px;">Total Deducciones</th>
-                <th rowspan="2" class="bg-primary text-white" style="min-width:90px;">Total Sueldo Neto</th>
+                <th rowspan="2" class="bg-danger-subtle text-danger-emphasis border border-danger-subtle" style="min-width:90px;">Total Deducciones</th>
+                <th rowspan="2" class="bg-primary-subtle text-primary-emphasis border border-primary-subtle" style="min-width:90px;">Total Sueldo Neto</th>
                 <th rowspan="2" style="min-width:90px;">Forma de pago</th>
-                <th rowspan="2" style="min-width:50px;">Recibo</th>
+                <th rowspan="2" style="min-width:90px;">Acciones</th>
                 <th rowspan="2" style="min-width:160px;">Banco / Cuenta</th>
               </tr>
               <tr>
-                <th class="bg-success-subtle text-dark" style="min-width:60px;">Cantidad</th>
-                <th class="bg-success-subtle text-dark" style="min-width:70px;">Costo x hora</th>
-                <th class="bg-success-subtle text-dark" style="min-width:70px;">Monto</th>
+                <th class="bg-success-subtle text-success-emphasis" style="min-width:60px;">Cantidad</th>
+                <th class="bg-success-subtle text-success-emphasis" style="min-width:70px;">Costo x hora</th>
+                <th class="bg-success-subtle text-success-emphasis" style="min-width:70px;">Monto</th>
               </tr>
             </thead>
             <tbody id="detalleNominaBody">
@@ -529,6 +533,11 @@
           </table>
         </div>
       </div>
+      <!-- Historial de cancelación -->
+      <div id="seccionHistorialCancelacion" class="border-top px-3 py-2" style="display:none;">
+        <h6 class="mb-2"><i class="fas fa-history text-danger me-1"></i>Historial de cancelación</h6>
+        <div id="historialCancelacionBody" class="small"></div>
+      </div>
       <!-- Notas de ajuste (visible solo si hay notas o nómina pagada) -->
       <div id="seccionNotasNomina" class="border-top px-3 py-2 bg-light" style="display:none;">
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -541,6 +550,9 @@
       </div>
       <div class="modal-footer">
         <small class="text-muted me-auto" id="detalleFooterHint">Celdas en amarillo claro: <strong>doble clic</strong> para editar (horas extras, comidas, descuentos, etc.).</small>
+        <button type="button" class="btn btn-outline-danger" id="btnCancelarNominaDetalle" style="display:none;" onclick="pedirCancelarDesdeDetalle()">
+          <i class="fas fa-ban me-1"></i> Cancelar nómina
+        </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
@@ -578,8 +590,8 @@
             <li><strong>Pend. periodo:</strong> lo que falta por pagar de <em>esta</em> nómina a cada trabajador.</li>
             <li><strong>Adeudos prev.:</strong> saldo acumulado de nóminas <em>anteriores</em> que quedaron pendientes. El checkbox "Incl." decide si se liquidan ahora.</li>
             <li><strong>Monto a pagar:</strong> puedes pagar el <strong>total</strong> o un <strong>parcial</strong>. Los botones 25/50/100% son atajos rápidos.</li>
-            <li>Si pagas a <strong>todos</strong> el total → la nómina pasa a <span class="badge bg-success">Pagada</span>.</li>
-            <li>Si pagas <strong>parcial</strong> o solo a algunos → queda en <span class="badge bg-warning text-dark">Parcial</span> hasta completar.</li>
+            <li>Si pagas a <strong>todos</strong> el total → la nómina pasa a <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Pagada</span>.</li>
+            <li>Si pagas <strong>parcial</strong> o solo a algunos → queda en <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Parcial</span> hasta completar.</li>
           </ul>
         </div>
 
@@ -632,7 +644,7 @@
         </div>
 
         <div class="table-responsive">
-          <table class="table table-sm table-hover align-middle" id="tablaPagoEmpleados">
+          <table class="table table-sm table-hover align-middle rh-skip-responsive" id="tablaPagoEmpleados">
             <thead class="table-light">
               <tr>
                 <th width="40"></th>
@@ -937,16 +949,18 @@
 </div>
 
 <!-- Modal Cancelar Nómina -->
-<div class="modal fade" id="modalCancelarNomina" tabindex="-1" aria-hidden="true">
+<div class="modal fade rh-modal" id="modalCancelarNomina" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content border-0 shadow">
       <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title"><i class="fas fa-ban me-2"></i>Cancelar Nómina</h5>
+        <h5 class="modal-title text-white" id="cancelar-nomina-titulo"><i class="fas fa-ban me-2"></i>Cancelar Nómina</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="cancelar-nomina-id">
-        <p class="text-muted">Está a punto de cancelar la nómina <strong id="cancelar-nomina-folio">—</strong>. Esta acción es reversible solo desde base de datos.</p>
+        <input type="hidden" id="cancelar-detalle-id" value="">
+        <p class="text-muted" id="cancelar-nomina-texto">Está a punto de cancelar la nómina <strong id="cancelar-nomina-folio">—</strong>.</p>
+        <div class="alert alert-warning py-2 small" id="cancelar-nomina-aviso" style="display:none;"></div>
         <div class="mb-3">
           <label class="form-label">Motivo de cancelación <span class="text-danger">*</span></label>
           <textarea class="form-control" id="cancelar-motivo" rows="3" placeholder="Describa el motivo (mínimo 10 caracteres)..." required minlength="10"></textarea>
@@ -964,7 +978,7 @@
 </div>
 
 <!-- Modal Agregar Nota -->
-<div class="modal fade" id="modalAgregarNota" tabindex="-1" aria-hidden="true">
+<div class="modal fade rh-modal" id="modalAgregarNota" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content border-0 shadow">
       <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
@@ -1082,6 +1096,7 @@
 var tablaNominas;
 var csrfName = '<?= $this->security->get_csrf_token_name() ?>';
 var csrfHash = '<?= $this->security->get_csrf_hash() ?>';
+var puedeGestionarNomina = <?= tiene_permiso('rh_nomina') ? 'true' : 'false' ?>;
 var pagoEmpleadosData = [];
 var periodoFinManual = false;
 var actualizandoPeriodoFin = false;
@@ -1168,6 +1183,7 @@ function initTablaNominas() {
     processing: true,
     serverSide: false,
     searching: false,
+    responsive: true,
     scrollX: true,
     scrollCollapse: true,
     ajax: {
@@ -1202,15 +1218,22 @@ function initTablaNominas() {
     columnDefs: [
       { className: 'text-end', targets: [4, 5, 6] },
       { className: 'text-nowrap', targets: [8, 9] },
-      // Ocultar columnas secundarias en pantallas pequeñas para mejorar legibilidad
-      { className: 'd-none d-md-table-cell', targets: [1, 3] },
-      { className: 'd-none d-lg-table-cell', targets: [4, 5] },
+      { responsivePriority: 1, targets: 0 },
+      { responsivePriority: 2, targets: 7 },
+      { responsivePriority: 3, targets: 2 },
+      { responsivePriority: 4, targets: 6 },
+      { responsivePriority: 10, targets: [1, 3, 4, 5, 8] },
+      { responsivePriority: 10000, targets: 9 },
       { type: 'html-num-fmt', targets: [4, 5, 6] },
       { targets: 2, orderData: [10, 2] },
       { targets: 10, visible: false, orderable: true, searchable: false }
     ],
     drawCallback: function() {
       refreshLucideIcons();
+      try {
+        this.api().columns.adjust();
+        if (this.api().responsive) this.api().responsive.recalc();
+      } catch (e) {}
     },
     initComplete: function() {
       var $wrap = $(this.api().table().container());
@@ -1442,8 +1465,15 @@ function verNomina(id, mostrarNotas) {
 
     $('#modalDetalleNomina').data('nomina-id', id);
     $('#modalDetalleNomina').data('nomina-estatus', r.nomina.estatus);
+    $('#modalDetalleNomina').data('nomina-folio', r.nomina.folio);
 
     renderTablaDetalle(r.detalle, r.nomina.estatus);
+    if (puedeGestionarNomina && r.nomina.estatus !== 'Cancelada' && r.nomina.estatus !== 'Borrador') {
+      $('#btnCancelarNominaDetalle').show();
+    } else {
+      $('#btnCancelarNominaDetalle').hide();
+    }
+    renderAlertaEHistorialCancelacion(r.nomina, r.cancelaciones || []);
 
     cargarNotasNomina(id);
     if (r.nomina && (r.nomina.estatus === 'Pagada' || r.nomina.estatus === 'Parcial')) {
@@ -1457,7 +1487,7 @@ function verNomina(id, mostrarNotas) {
 }
 
 function calcularNomina(id) {
-  if (!confirm('¿Calcular esta nómina con los salarios y deducciones de cada empleado?')) return;
+  if (!confirm('¿Calcular o recalcular esta nómina con salarios, incidencias y deducciones actuales?\nLos ajustes capturados en el detalle (horas extras, comidas, etc.) se conservan.')) return;
   $.post('<?= base_url('rh/Nomina/calcular_ajax') ?>', { id: id, peticion: 'ajax', [csrfName]: csrfHash }, function(result) {
     result = parseJsonSafe(result);
     if (!result) return;
@@ -1516,7 +1546,11 @@ function renderModalPago(data) {
     var adeudo = emp.adeudos.total > 0
       ? '<span class="text-danger fw-semibold" title="' + adeudoTitle + '">$' + emp.adeudos.total.toFixed(2) + '</span>'
       : '<span class="text-muted">—</span>';
-    var pctClass = emp.porcentaje_pagado >= 100 ? 'success' : (emp.porcentaje_pagado > 0 ? 'info' : 'secondary');
+    var pctBadge = emp.porcentaje_pagado >= 100
+      ? 'bg-success-subtle text-success-emphasis border border-success-subtle'
+      : (emp.porcentaje_pagado > 0
+        ? 'bg-info-subtle text-info-emphasis border border-info-subtle'
+        : 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle');
     var adeudoChk = emp.adeudos.total > 0 && emp.puede_pagar
       ? '<input type="checkbox" class="form-check-input chk-adeudo-emp" data-idx="' + idx + '" onchange="actualizarMaxMonto(' + idx + ')">'
       : '<span class="text-muted">—</span>';
@@ -1541,7 +1575,7 @@ function renderModalPago(data) {
       '<td class="text-end">' + adeudo + '</td>' +
       '<td class="text-center">' + adeudoChk + '</td>' +
       '<td class="text-end">' + montoInput + '</td>' +
-      '<td class="text-center"><span class="badge bg-' + pctClass + '">' + emp.porcentaje_pagado + '%</span></td>' +
+      '<td class="text-center"><span class="badge ' + pctBadge + '">' + emp.porcentaje_pagado + '%</span></td>' +
       '<td><button type="button" class="btn btn-sm btn-outline-secondary py-0" onclick="toggleConceptosPago(' + idx + ')" title="Ver desglose"><i class="fas fa-chevron-down"></i></button></td>' +
       '</tr>' +
       '<tr class="conceptos-pago-row d-none" id="conceptos-pago-' + idx + '"><td colspan="8" class="bg-light py-2">' +
@@ -1903,7 +1937,8 @@ function guardarConfiguracion() {
 // --- Modal de detalle (formato tabla nuevo) ---
 
 function renderTablaDetalle(detalle, estatus) {
-  var soloLectura = estatus === 'Pagada' || estatus === 'Cancelada';
+  var nominaCerrada = estatus === 'Cancelada';
+  var soloLectura = estatus === 'Pagada' || nominaCerrada;
   var editableCls = soloLectura ? '' : 'editable';
   var editableTitle = soloLectura ? '' : ' title="Doble clic para editar"';
   var html = '';
@@ -1915,29 +1950,40 @@ function renderTablaDetalle(detalle, estatus) {
   };
 
   (detalle || []).forEach(function(d) {
-    html += '<tr data-detalle-id="' + d.detalle_id + '">';
-    html += '<td class="' + editableCls + ' text-center" data-field="lugar_origen"' + editableTitle + '>' + esc(d.lugar_origen) + '</td>';
+    var cancelado = (d.estatus || '') === 'Cancelado';
+    var cellEdit = (soloLectura || cancelado) ? '' : editableCls;
+    var cellTitle = (soloLectura || cancelado) ? '' : editableTitle;
+    html += '<tr data-detalle-id="' + d.detalle_id + '"' + (cancelado ? ' class="table-secondary text-muted"' : '') + '>';
+    html += '<td class="' + cellEdit + ' text-center" data-field="lugar_origen"' + cellTitle + '>' + esc(d.lugar_origen) + '</td>';
     var nombreCompleto = esc(d.nombre + ' ' + d.apellido_paterno + ' ' + (d.apellido_materno || ''));
-    html += '<td><a href="#" class="text-decoration-none fw-semibold" onclick="editarEmpleadoDesdeNomina(' + d.empleado_id + ')" title="Editar datos del empleado">' + nombreCompleto + ' <i class="fas fa-external-link-alt ms-1" style="font-size:0.65rem;opacity:0.5;"></i></a></td>';
+    html += '<td><a href="#" class="text-decoration-none fw-semibold" onclick="editarEmpleadoDesdeNomina(' + d.empleado_id + ')" title="Editar datos del empleado">' + nombreCompleto + ' <i class="fas fa-external-link-alt ms-1" style="font-size:0.65rem;opacity:0.5;"></i></a>';
+    if (cancelado) {
+      html += ' <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">Cancelado</span>';
+    } else if (d.estatus === 'Pagado') {
+      html += ' <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Pagado</span>';
+    } else if (d.estatus === 'Parcial') {
+      html += ' <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Parcial</span>';
+    }
+    html += '</td>';
     html += '<td class="text-end">' + fmt(d.sueldo_diario) + '</td>';
     html += '<td class="text-end">' + fmt(d.sueldo_base) + '</td>';
-    html += '<td class="' + editableCls + ' text-center" data-field="horas_extras" data-type="number"' + editableTitle + '>' + fmtNum(d.horas_extras) + '</td>';
-    html += '<td class="' + editableCls + ' text-end" data-field="costo_hora_extra" data-type="money"' + editableTitle + '>' + fmt(d.costo_hora_extra) + '</td>';
+    html += '<td class="' + cellEdit + ' text-center" data-field="horas_extras" data-type="number"' + cellTitle + '>' + fmtNum(d.horas_extras) + '</td>';
+    html += '<td class="' + cellEdit + ' text-end" data-field="costo_hora_extra" data-type="money"' + cellTitle + '>' + fmt(d.costo_hora_extra) + '</td>';
     html += '<td class="text-end fw-bold">' + fmt(d.monto_horas_extras) + '</td>';
-    html += '<td class="' + editableCls + ' text-end" data-field="comidas" data-type="money"' + editableTitle + '>' + fmt(d.comidas) + '</td>';
-    html += '<td class="' + editableCls + ' text-end" data-field="viaticos_pasajes" data-type="money"' + editableTitle + '>' + fmt(d.viaticos_pasajes) + '</td>';
-    html += '<td class="' + editableCls + ' text-end" data-field="prima" data-type="money"' + editableTitle + '>' + fmt(d.prima) + '</td>';
-    html += '<td class="' + editableCls + ' text-end" data-field="otros_bonos" data-type="money"' + editableTitle + '>' + fmt(d.otros_bonos) + '</td>';
-    html += '<td class="' + editableCls + ' text-end" data-field="otros_ingresos" data-type="money"' + editableTitle + '>' + fmt(d.otros_ingresos) + '</td>';
-    html += '<td class="text-end bg-success text-white fw-bold">' + fmt(d.percepciones) + '</td>';
-    html += '<td class="text-end bg-danger text-white fw-bold">' + fmt(d.infonavit_descuento) + '</td>';
-    html += '<td class="text-end bg-danger bg-opacity-75 text-white fw-bold">' + fmt(d.isr) + '</td>';
-    html += '<td class="text-end bg-danger bg-opacity-75 text-white fw-bold">' + fmt(d.imss) + '</td>';
-    html += '<td class="' + editableCls + ' text-end" data-field="prestamo_personal" data-type="money"' + editableTitle + '>' + fmt(d.prestamo_personal) + '</td>';
-    html += '<td class="' + editableCls + ' text-end" data-field="otros_descuentos" data-type="money"' + editableTitle + '>' + fmt(d.otros_descuentos) + '</td>';
-    html += '<td class="text-end bg-danger text-white fw-bold">' + fmt(d.deducciones) + '</td>';
-    html += '<td class="text-end bg-primary text-white fw-bold">' + fmt(d.neto) + '</td>';
-    if (soloLectura) {
+    html += '<td class="' + cellEdit + ' text-end" data-field="comidas" data-type="money"' + cellTitle + '>' + fmt(d.comidas) + '</td>';
+    html += '<td class="' + cellEdit + ' text-end" data-field="viaticos_pasajes" data-type="money"' + cellTitle + '>' + fmt(d.viaticos_pasajes) + '</td>';
+    html += '<td class="' + cellEdit + ' text-end" data-field="prima" data-type="money"' + cellTitle + '>' + fmt(d.prima) + '</td>';
+    html += '<td class="' + cellEdit + ' text-end" data-field="otros_bonos" data-type="money"' + cellTitle + '>' + fmt(d.otros_bonos) + '</td>';
+    html += '<td class="' + cellEdit + ' text-end" data-field="otros_ingresos" data-type="money"' + cellTitle + '>' + fmt(d.otros_ingresos) + '</td>';
+    html += '<td class="text-end bg-success-subtle text-success-emphasis border border-success-subtle fw-bold">' + fmt(d.percepciones) + '</td>';
+    html += '<td class="text-end bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-bold">' + fmt(d.infonavit_descuento) + '</td>';
+    html += '<td class="text-end bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-bold">' + fmt(d.isr) + '</td>';
+    html += '<td class="text-end bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-bold">' + fmt(d.imss) + '</td>';
+    html += '<td class="' + cellEdit + ' text-end" data-field="prestamo_personal" data-type="money"' + cellTitle + '>' + fmt(d.prestamo_personal) + '</td>';
+    html += '<td class="' + cellEdit + ' text-end" data-field="otros_descuentos" data-type="money"' + cellTitle + '>' + fmt(d.otros_descuentos) + '</td>';
+    html += '<td class="text-end bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-bold">' + fmt(d.deducciones) + '</td>';
+    html += '<td class="text-end bg-primary-subtle text-primary-emphasis border border-primary-subtle fw-bold">' + fmt(d.neto) + '</td>';
+    if (soloLectura || cancelado) {
       html += '<td class="text-center">' + badgeFormaPago(d.forma_pago) + '</td>';
     } else {
       html += '<td class="text-center forma-pago-cell" data-detalle-id="' + d.detalle_id + '">';
@@ -1948,10 +1994,14 @@ function renderTablaDetalle(detalle, estatus) {
       });
       html += '</select></td>';
     }
-    html += '<td class="text-center">';
+    html += '<td class="text-center text-nowrap">';
     html += '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="descargarReciboIndividual(' + d.detalle_id + ')" title="Descargar recibo individual">';
-    html += '<i class="fas fa-file-pdf"></i>';
-    html += '</button></td>';
+    html += '<i class="fas fa-file-pdf"></i></button> ';
+    if (puedeGestionarNomina && !nominaCerrada && !cancelado) {
+      html += '<button type="button" class="btn btn-sm btn-outline-warning py-0 px-1" onclick="pedirCancelarEmpleado(' + d.detalle_id + ', \'' + escJS((d.nombre || '') + ' ' + (d.apellido_paterno || '')) + '\', \'' + escJS(d.estatus || '') + '\')" title="Cancelar este empleado">';
+      html += '<i class="fas fa-user-slash"></i></button>';
+    }
+    html += '</td>';
     html += '<td class="text-center td-banco-cuenta">';
     var cuentas = d.cuentas_bancarias || [];
     if (cuentas.length === 0) {
@@ -1975,6 +2025,9 @@ function renderTablaDetalle(detalle, estatus) {
     html += '</td>';
     html += '</tr>';
 
+    if (cancelado) {
+      return;
+    }
     totales.sueldo_diario += parseFloat(d.sueldo_diario) || 0;
     totales.sueldo_neto += parseFloat(d.sueldo_base) || 0;
     totales.horas_extras += parseFloat(d.horas_extras) || 0;
@@ -2008,16 +2061,16 @@ function renderTablaDetalle(detalle, estatus) {
   footer += '<td class="text-end fw-bold">' + fmt(totales.prima) + '</td>';
   footer += '<td class="text-end fw-bold">' + fmt(totales.bonos) + '</td>';
   footer += '<td class="text-end fw-bold">' + fmt(totales.otros) + '</td>';
-  footer += '<td class="text-end bg-success text-white fw-bold">' + fmt(totales.percepciones) + '</td>';
-  footer += '<td class="text-end bg-danger text-white fw-bold">' + fmt(totales.infonavit) + '</td>';
-  footer += '<td class="text-end bg-danger bg-opacity-75 text-white fw-bold">' + fmt(totales.isr) + '</td>';
-  footer += '<td class="text-end bg-danger bg-opacity-75 text-white fw-bold">' + fmt(totales.imss) + '</td>';
+  footer += '<td class="text-end bg-success-subtle text-success-emphasis border border-success-subtle fw-bold">' + fmt(totales.percepciones) + '</td>';
+  footer += '<td class="text-end bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-bold">' + fmt(totales.infonavit) + '</td>';
+  footer += '<td class="text-end bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-bold">' + fmt(totales.isr) + '</td>';
+  footer += '<td class="text-end bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-bold">' + fmt(totales.imss) + '</td>';
   footer += '<td class="text-end fw-bold">' + fmt(totales.prestamo) + '</td>';
   footer += '<td class="text-end fw-bold">' + fmt(totales.otros_desc) + '</td>';
-  footer += '<td class="text-end bg-danger text-white fw-bold">' + fmt(totales.deducciones) + '</td>';
-  footer += '<td class="text-end bg-primary text-white fw-bold">' + fmt(totales.neto) + '</td>';
+  footer += '<td class="text-end bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-bold">' + fmt(totales.deducciones) + '</td>';
+  footer += '<td class="text-end bg-primary-subtle text-primary-emphasis border border-primary-subtle fw-bold">' + fmt(totales.neto) + '</td>';
   footer += '<td></td>'; // forma de pago
-  footer += '<td></td>'; // recibo
+  footer += '<td></td>'; // acciones
   footer += '<td></td>'; // banco/cuenta
   $('#detalleNominaFooter').html(footer);
 
@@ -2149,7 +2202,7 @@ function cargarCuentasEmpleado(empleadoId) {
         html += '<td>' + esc(c.banco || '—') + '</td>';
         html += '<td>' + numeroMostrar + '</td>';
         html += '<td>' + esc(c.clabe || '—') + '</td>';
-        html += '<td>' + (c.es_default == 1 ? '<span class="badge bg-success">Principal</span>' :
+        html += '<td>' + (c.es_default == 1 ? '<span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Principal</span>' :
           '<button class="btn btn-sm btn-outline-success" onclick="setCuentaDefault(' + empleadoId + ',' + c.id + ')">Establecer</button>') + '</td>';
         html += '<td class="text-end"><button class="btn btn-sm btn-outline-danger" onclick="eliminarCuentaEmpleado(' + c.id + ',' + empleadoId + ')"><i class="fas fa-trash"></i></button></td>';
         html += '</tr>';
@@ -2157,7 +2210,18 @@ function cargarCuentasEmpleado(empleadoId) {
     } else {
       html = '<tr><td colspan="6" class="text-center text-muted">Sin cuentas ni tarjetas registradas</td></tr>';
     }
+    if (typeof window.rhDestroyResponsiveTable === 'function') {
+      window.rhDestroyResponsiveTable('#tablaCuentasEmpleado');
+    }
     $('#cuentasEmpleadoBody').html(html);
+    if (typeof window.rhRefreshResponsiveTable === 'function') {
+      window.rhRefreshResponsiveTable('#tablaCuentasEmpleado', {
+        paging: false,
+        searching: false,
+        info: false,
+        ordering: false
+      });
+    }
   });
 }
 
@@ -2437,44 +2501,145 @@ function escJS(str) {
 }
 
 function renderBadgeEstatus(estatus) {
-  var map = { Borrador: 'secondary', Calculada: 'warning', Parcial: 'info', Pagada: 'success', Cancelada: 'danger' };
-  return '<span class="badge bg-' + (map[estatus] || 'secondary') + '">' + estatus + '</span>';
+  var map = {
+    Borrador: 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle',
+    Calculada: 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+    Parcial: 'bg-info-subtle text-info-emphasis border border-info-subtle',
+    Pagada: 'bg-success-subtle text-success-emphasis border border-success-subtle',
+    Cancelada: 'bg-danger-subtle text-danger-emphasis border border-danger-subtle'
+  };
+  var cls = map[estatus] || map.Borrador;
+  return '<span class="badge ' + cls + '">' + estatus + '</span>';
 }
 
 function badgeFormaPago(forma) {
+  var subtleSecondary = 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
   var f = (forma || '').trim();
-  if (!f) return '<span class="badge bg-secondary">Sin definir</span>';
-  var map = { Transferencia: 'primary', Cheque: 'info', Efectivo: 'success', 'Depósito': 'warning' };
-  return '<span class="badge bg-' + (map[f] || 'secondary') + '">' + esc(f) + '</span>';
+  if (!f) return '<span class="badge ' + subtleSecondary + '">Sin definir</span>';
+  var map = {
+    Transferencia: 'bg-primary-subtle text-primary-emphasis border border-primary-subtle',
+    Cheque: 'bg-info-subtle text-info-emphasis border border-info-subtle',
+    Efectivo: 'bg-success-subtle text-success-emphasis border border-success-subtle',
+    'Depósito': 'bg-warning-subtle text-warning-emphasis border border-warning-subtle'
+  };
+  return '<span class="badge ' + (map[f] || subtleSecondary) + '">' + esc(f) + '</span>';
 }
 
-// --- Cancelar nómina ---
+// --- Cancelar nómina (general) o empleado ---
 var nominaAEliminarId = null;
-function pedirCancelarNomina(id, folio) {
+function configurarAvisoCancelacion(estatus) {
+  var $aviso = $('#cancelar-nomina-aviso');
+  var html = 'Esta acción quedará registrada en el <strong>historial de la nómina</strong> y en la <strong>bitácora</strong> del sistema. El motivo es obligatorio.';
+  if (estatus === 'Parcial' || estatus === 'Pagada' || estatus === 'Pagado') {
+    html += ' No se revierte el dinero ni la póliza contable; si hay póliza, revísela en Contabilidad.';
+  }
+  $aviso.html(html).show();
+}
+
+function renderAlertaEHistorialCancelacion(nomina, cancelaciones) {
+  var lista = cancelaciones || [];
+  if (nomina && nomina.estatus === 'Cancelada') {
+    var ultima = lista[0];
+    var extra = ultima
+      ? ' Motivo: ' + (ultima.motivo || '—') + ' · ' + (ultima.usuario_nombre || 'Sistema') + ' · ' + (ultima.created_at || '')
+      : ' Consulte el historial debajo.';
+    $('#alertaCancelacionTexto').text(extra);
+    $('#alertaCancelacionNomina').show();
+  } else {
+    $('#alertaCancelacionNomina').hide();
+    $('#alertaCancelacionTexto').text('');
+  }
+  if (!lista.length) {
+    $('#seccionHistorialCancelacion').hide();
+    $('#historialCancelacionBody').empty();
+    return;
+  }
+  var html = '';
+  lista.forEach(function(c) {
+    var ambito = (c.detalle_id && parseInt(c.detalle_id, 10) > 0) || (c.empleado_nombre && String(c.empleado_nombre).trim())
+      ? ('Empleado' + (c.empleado_nombre ? ': ' + esc(c.empleado_nombre) : ''))
+      : 'Nómina completa';
+    html += '<div class="border-bottom py-1">';
+    html += '<span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle me-1">' + ambito + '</span>';
+    html += '<strong>' + esc(c.motivo || '') + '</strong>';
+    html += '<div class="text-muted" style="font-size:0.7rem;">' + esc(c.usuario_nombre || 'Sistema') + ' · ' + esc(c.created_at || '') + '</div>';
+    html += '</div>';
+  });
+  $('#historialCancelacionBody').html(html);
+  $('#seccionHistorialCancelacion').show();
+}
+
+function pedirCancelarNomina(id, folio, estatus) {
+  if (!puedeGestionarNomina) {
+    notifyShow('No tienes permiso para cancelar nóminas.', 'danger');
+    return;
+  }
   nominaAEliminarId = id;
   $('#cancelar-nomina-id').val(id);
-  $('#cancelar-nomina-folio').text(folio);
+  $('#cancelar-detalle-id').val('');
+  $('#cancelar-nomina-folio').text(folio || '—');
   $('#cancelar-motivo').val('');
+  $('#cancelar-nomina-titulo').html('<i class="fas fa-ban me-2"></i>Cancelar Nómina');
+  $('#cancelar-nomina-texto').html('Está a punto de cancelar la nómina <strong id="cancelar-nomina-folio">' + esc(folio || '—') + '</strong>. Todos los empleados de esta nómina quedarán Cancelado.');
+  configurarAvisoCancelacion(estatus || $('#modalDetalleNomina').data('nomina-estatus'));
+  $('#modalCancelarNomina').modal('show');
+}
+function pedirCancelarDesdeDetalle() {
+  pedirCancelarNomina(
+    $('#modalDetalleNomina').data('nomina-id'),
+    $('#modalDetalleNomina').data('nomina-folio'),
+    $('#modalDetalleNomina').data('nomina-estatus')
+  );
+}
+function pedirCancelarEmpleado(detalleId, nombre, estatusEmp) {
+  if (!puedeGestionarNomina) {
+    notifyShow('No tienes permiso para cancelar nóminas.', 'danger');
+    return;
+  }
+  $('#cancelar-nomina-id').val($('#modalDetalleNomina').data('nomina-id') || '');
+  $('#cancelar-detalle-id').val(detalleId);
+  $('#cancelar-motivo').val('');
+  $('#cancelar-nomina-titulo').html('<i class="fas fa-user-slash me-2"></i>Cancelar empleado');
+  $('#cancelar-nomina-texto').html('Va a cancelar a <strong>' + esc(nombre || 'este empleado') + '</strong> en la nómina <strong>' + esc($('#modalDetalleNomina').data('nomina-folio') || '') + '</strong>. El resto de la nómina no se cancela.');
+  configurarAvisoCancelacion(estatusEmp);
   $('#modalCancelarNomina').modal('show');
 }
 function confirmarCancelarNomina() {
   var id = $('#cancelar-nomina-id').val();
+  var detalleId = $('#cancelar-detalle-id').val();
   var motivo = $('#cancelar-motivo').val().trim();
   if (motivo.length < 10) {
     notifyShow('El motivo debe tener al menos 10 caracteres', 'warning');
     return;
   }
-  $.post('<?= base_url('rh/Nomina/eliminar_ajax') ?>', {
-    id: id, motivo: motivo, peticion: 'ajax', [csrfName]: csrfHash
-  }, function(result) {
-    result = parseJsonSafe(result);
-    if (!result) return;
-    notifyShow(result.message, result.success ? 'success' : 'danger');
-    if (result.success) {
+  var esEmpleado = detalleId && parseInt(detalleId, 10) > 0;
+  var payload = { motivo: motivo, peticion: 'ajax' };
+  payload[csrfName] = csrfHash;
+  if (esEmpleado) {
+    payload.detalle_id = detalleId;
+  } else {
+    payload.id = id;
+  }
+  $.post(
+    esEmpleado
+      ? '<?= base_url('rh/Nomina/cancelar_empleado_ajax') ?>'
+      : '<?= base_url('rh/Nomina/eliminar_ajax') ?>',
+    payload,
+    function(result) {
+      result = parseJsonSafe(result);
+      if (!result) return;
+      notifyShow(result.message, result.success ? 'warning' : 'danger');
+      if (!result.success) return;
       $('#modalCancelarNomina').modal('hide');
       recargarTablaNominas();
+      var nominaId = result.nomina_id || id || $('#modalDetalleNomina').data('nomina-id');
+      if (esEmpleado && nominaId) {
+        verNomina(nominaId);
+      } else {
+        $('#modalDetalleNomina').modal('hide');
+      }
     }
-  });
+  );
 }
 
 // --- Notas de ajuste ---
@@ -2520,9 +2685,13 @@ function cargarNotasNomina(nominaId) {
     if (result.notas.length > 0) {
       var html = '';
       result.notas.forEach(function(n) {
-        var badgeTipo = { Ajuste: 'warning', Corrección: 'info', Reclasificación: 'secondary' };
+        var badgeTipo = {
+          Ajuste: 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+          Corrección: 'bg-info-subtle text-info-emphasis border border-info-subtle',
+          Reclasificación: 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
+        };
         html += '<div class="border-bottom py-1">';
-        html += '<span class="badge bg-' + (badgeTipo[n.tipo] || 'secondary') + ' me-1">' + esc(n.tipo) + '</span>';
+        html += '<span class="badge ' + (badgeTipo[n.tipo] || 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle') + ' me-1">' + esc(n.tipo) + '</span>';
         html += '<strong>' + esc(n.descripcion) + '</strong>';
         if (n.monto) html += ' <span class="text-danger">($' + parseFloat(n.monto).toFixed(2) + ')</span>';
         html += '<div class="text-muted" style="font-size:0.7rem;">' + (n.usuario_nombre || 'Sistema') + ' · ' + n.created_at + '</div>';
@@ -2622,19 +2791,19 @@ function renderizarGrid(periodos) {
 
     if (nom) {
       var statusMap = {
-        'Pagada':    { bg: 'bg-success-subtle', badge: 'success' },
-        'Calculada': { bg: 'bg-warning-subtle', badge: 'warning' },
-        'Parcial':   { bg: 'bg-info-subtle',    badge: 'info' },
-        'Borrador':  { bg: 'bg-secondary-subtle', badge: 'secondary' },
-        'Cancelada': { bg: 'bg-danger-subtle',  badge: 'danger' }
+        'Pagada':    { bg: 'bg-success-subtle', badge: 'bg-success-subtle text-success-emphasis border border-success-subtle' },
+        'Calculada': { bg: 'bg-warning-subtle', badge: 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' },
+        'Parcial':   { bg: 'bg-info-subtle',    badge: 'bg-info-subtle text-info-emphasis border border-info-subtle' },
+        'Borrador':  { bg: 'bg-secondary-subtle', badge: 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle' },
+        'Cancelada': { bg: 'bg-danger-subtle',  badge: 'bg-danger-subtle text-danger-emphasis border border-danger-subtle' }
       };
-      var s = statusMap[nom.estatus] || { bg: 'bg-light', badge: 'secondary' };
+      var s = statusMap[nom.estatus] || { bg: 'bg-light', badge: 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle' };
       bgClass = s.bg;
-      badgeHtml = '<span class="badge bg-' + s.badge + '">' + nom.estatus + '</span>';
+      badgeHtml = '<span class="badge ' + s.badge + '">' + nom.estatus + '</span>';
       clickAction = 'onclick="verNominaDesdePlaneador(' + nom.id + ')"';
     } else {
-      bgClass = 'bg-light';
-      badgeHtml = '<span class="badge bg-light text-muted border">Sin nómina</span>';
+      bgClass = 'bg-secondary-subtle';
+      badgeHtml = '<span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">Sin nómina</span>';
       clickAction = 'onclick="crearNominaDesdePlaneador(\'' + p.inicio + '\',\'' + p.fin + '\')"';
     }
 
@@ -2652,7 +2821,7 @@ function renderizarGrid(periodos) {
           '<div class="fs-3 mb-2">' + (nom ? '📋' : '➕') + '</div>' +
           '<div class="fw-bold">' + esc(nom ? nom.folio : '') + '</div>' +
           '<div class="mb-1">' + badgeHtml + '</div>' +
-          (nom ? '<div class="fw-semibold text-dark">$' + fmtNum(nom.total_neto || 0) + '</div>' : '') +
+          (nom ? '<div class="fw-semibold">$' + fmtNum(nom.total_neto || 0) + '</div>' : '') +
           '<div class="mt-2 small ' + (nom ? 'text-primary' : 'text-success') + '">' +
             (nom ? '<i class="fas fa-eye"></i> Ver detalle' : '<i class="fas fa-plus-circle"></i> Crear nómina') +
           '</div>' +
@@ -2733,10 +2902,10 @@ function renderProximasAuto(proximas) {
   var html = '<div class="d-flex flex-wrap gap-2">';
   proximas.forEach(function(p) {
     var diasTexto = p.dias_restantes === 0
-      ? '<span class="badge bg-warning text-dark">Hoy</span>'
+      ? '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Hoy</span>'
       : (p.dias_restantes === 1
-        ? '<span class="badge bg-info">Mañana</span>'
-        : '<span class="badge bg-secondary">En ' + p.dias_restantes + ' días</span>');
+        ? '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Mañana</span>'
+        : '<span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">En ' + p.dias_restantes + ' días</span>');
 
     html += '<div class="border rounded p-2 bg-white" style="min-width:200px;">' +
       '<div class="fw-semibold mb-1">' + esc(p.tipo) + ': ' + esc(p.label) + '</div>' +
@@ -2815,10 +2984,6 @@ function crearNominaDesdePlaneador(inicio, fin) {
   .rh-nomina-page .dataTables_wrapper .dataTables_scroll {
     -webkit-overflow-scrolling: touch;
   }
-  /* Ajustar la tabla dentro del scroll horizontal */
-  #tablaNominas {
-    min-width: 600px;
-  }
   /* Stats cards: 2 por fila en móvil */
   .rh-nomina-page > .row.mb-3 > [class*="col-"] {
     flex: 0 0 50%;
@@ -2840,9 +3005,6 @@ function crearNominaDesdePlaneador(inicio, fin) {
   .rh-nomina-page > .row.mb-3 > [class*="col-"] {
     flex: 0 0 100%;
     max-width: 100%;
-  }
-  #tablaNominas {
-    min-width: 480px;
   }
 }
 </style>

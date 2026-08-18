@@ -239,7 +239,7 @@ $checadas7 = $stats['checadas_7_dias'] ?? [];
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover mb-0" id="tabla-ultimas-checadas">
+                        <table class="table table-sm table-hover mb-0 w-100 rh-dt-responsive" id="tabla-ultimas-checadas">
                             <thead class="table-light">
                                 <tr>
                                     <th>PIN</th>
@@ -277,7 +277,7 @@ $checadas7 = $stats['checadas_7_dias'] ?? [];
                 <div class="card-body p-0">
                     <?php if (!empty($response['dispositivos'])): ?>
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0" id="tabla-dispositivos-status">
+                            <table class="table table-sm table-hover mb-0 w-100 rh-dt-responsive" id="tabla-dispositivos-status">
                                 <thead class="table-light">
                                     <tr>
                                         <th>SN</th>
@@ -331,7 +331,7 @@ $checadas7 = $stats['checadas_7_dias'] ?? [];
                 <div class="card-body">
                     <?php if (!empty($response['ultimo_sync'])): ?>
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
+                            <table class="table table-sm table-hover mb-0 w-100 rh-dt-responsive" id="tabla-ultimas-sync">
                                 <thead>
                                     <tr>
                                         <th>Dispositivo</th>

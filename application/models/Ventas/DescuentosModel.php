@@ -21,9 +21,18 @@ class DescuentosModel extends MY_Model {
     /**
      * Obtiene descuentos activos para select
      */
-    public function get_descuentos_activos() {
-        $this->db->select('id, nombre, descripcion, tipo_descuento, valor');
+    public function get_descuentos_activos($cliente_id = null) {
+        $this->db->select('id, nombre, descripcion, tipo_descuento, valor, cliente_id');
         $this->db->where('estatus', 'Activo');
+
+        if ($cliente_id) {
+            $this->db->group_start();
+            $this->db->where('cliente_id', (int) $cliente_id);
+            $this->db->or_where('cliente_id IS NULL', null, false);
+            $this->db->group_end();
+        }
+
+        $this->db->order_by('cliente_id', 'DESC');
         $this->db->order_by('nombre', 'ASC');
         return $this->db->get($this->tableName)->result();
     }

@@ -106,7 +106,7 @@ $nombreEmp = $empleado ? trim($empleado->nombre . ' ' . $empleado->apellido_pate
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 w-100" id="tabla-tareas-rh">
               <thead class="table-light">
                 <tr>
                   <th>Tarea</th>
@@ -128,7 +128,7 @@ $nombreEmp = $empleado ? trim($empleado->nombre . ' ' . $empleado->apellido_pate
 </div>
 
 <!-- Modal Mensaje -->
-<div class="modal fade" id="modalNuevoMensaje" tabindex="-1">
+<div class="modal fade rh-modal" id="modalNuevoMensaje" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
@@ -164,7 +164,7 @@ $nombreEmp = $empleado ? trim($empleado->nombre . ' ' . $empleado->apellido_pate
 </div>
 
 <!-- Modal Tarea -->
-<div class="modal fade" id="modalNuevaTarea" tabindex="-1">
+<div class="modal fade rh-modal" id="modalNuevaTarea" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-success text-white">

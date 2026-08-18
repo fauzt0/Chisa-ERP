@@ -94,6 +94,43 @@ class VentasModel extends MY_Model {
     }
     
     /**
+     * Cancela una orden y revierte stock / solicitudes de producción si aplica
+     */
+    public function cancelar_orden($id, $motivo = '') {
+        $orden = $this->get_orden_completa($id);
+        if (!$orden || $orden->estatus === 'Cancelada') {
+            return false;
+        }
+
+        if ($orden->estatus === 'Entregada' && !empty($orden->detalles)) {
+            foreach ($orden->detalles as $detalle) {
+                $this->db->set('stock_actual', 'stock_actual + ' . (float) $detalle->cantidad, false);
+                $this->db->where('id', $detalle->producto_id);
+                $this->db->update('productos');
+
+                $movimiento = [
+                    'producto_id' => $detalle->producto_id,
+                    'tipo_movimiento' => 'Entrada',
+                    'cantidad' => $detalle->cantidad,
+                    'motivo' => 'Cancelación - Orden ' . $orden->folio,
+                    'fecha_movimiento' => date('Y-m-d H:i:s'),
+                ];
+                $this->db->insert('movimientos_inventario', $movimiento);
+            }
+        }
+
+        $this->db->where('orden_venta_id', $id);
+        $this->db->where_in('estatus', ['Pendiente', 'En Proceso']);
+        $this->db->update('solicitudes_produccion', ['estatus' => 'Cancelada']);
+
+        $this->db->where('id', $id);
+        return $this->db->update('ordenes_venta', [
+            'estatus' => 'Cancelada',
+            'motivo_cancelacion' => $motivo,
+        ]);
+    }
+
+    /**
      * Confirma una orden (cambia de Cotización a Confirmada)
      */
     public function confirmar_orden($id) {

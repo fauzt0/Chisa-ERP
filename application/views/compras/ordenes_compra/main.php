@@ -11,7 +11,24 @@
   <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
    
   <!-- Titulo de la pagina -->
-  <h1 class="h3 mb-3"><?php echo $headTitle;?></h1>
+  <h1 class="h3 mb-2"><?php echo $headTitle;?></h1>
+
+  <!-- Acceso rápido a módulos conectados -->
+  <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+    <small class="text-muted me-1"><i class="fas fa-project-diagram me-1"></i>Conexiones:</small>
+    <a href="<?= base_url('produccion') ?>" class="btn btn-sm btn-outline-warning">
+      <i class="fas fa-industry me-1"></i>Producción
+    </a>
+    <a href="<?= base_url('crm') ?>" class="btn btn-sm btn-outline-info">
+      <i class="fas fa-users me-1"></i>CRM Clientes
+    </a>
+    <a href="<?= base_url('ventas') ?>" class="btn btn-sm btn-outline-success">
+      <i class="fas fa-shopping-cart me-1"></i>Ventas / Pedidos
+    </a>
+    <a href="<?= base_url('compras/Proveedores') ?>" class="btn btn-sm btn-outline-primary">
+      <i class="fas fa-truck me-1"></i>Catálogo Proveedores
+    </a>
+  </div>
 
   <!-- Cards de estadísticas -->
   <div class="row">
@@ -373,32 +390,41 @@
   </div><!-- /tab-content -->
 </div>
 
-<!-- Modal: Simulación de correo al proveedor -->
+<!-- Quill.js para editor de email -->
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+
+<!-- Modal: Enviar solicitud de OC al proveedor (con Quill.js) -->
 <div class="modal fade" id="modalSimularCorreo" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title"><i class="fas fa-envelope me-1"></i> Enviar solicitud al proveedor</h5>
+        <h5 class="modal-title"><i class="fas fa-envelope me-1"></i> Enviar solicitud de Orden de Compra al proveedor</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="correo_oc_id">
-        <div class="mb-3">
-          <label class="form-label text-muted small mb-0">Destinatario</label>
-          <div class="fw-semibold" id="correo_destinatario">—</div>
-        </div>
-        <div class="mb-3">
-          <label class="form-label text-muted small mb-0">CC (opcional, separar con comas)</label>
-          <input type="text" class="form-control form-control-sm" id="correo_cc" placeholder="copia1@email.com, copia2@email.com">
-        </div>
-        <div class="mb-3">
-          <label class="form-label text-muted small mb-0">Asunto</label>
-          <input type="text" class="form-control form-control-sm" id="correo_asunto_edit" placeholder="Asunto del correo">
-          <div class="fw-semibold d-none" id="correo_asunto">—</div>
-        </div>
-        <div class="mb-3">
-          <label class="form-label text-muted small mb-0">Cuerpo del mensaje (editable)</label>
-          <div class="border rounded p-3 bg-white" id="correo_cuerpo_html" contenteditable="true" style="max-height:360px;overflow:auto;min-height:200px;"></div>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label text-muted small mb-0">Destinatario</label>
+            <div class="fw-semibold border rounded px-2 py-1 bg-light" id="correo_destinatario">—</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small mb-0">CC (separar con comas)</label>
+            <input type="text" class="form-control form-control-sm" id="correo_cc" placeholder="copia1@email.com, copia2@email.com">
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted small mb-0">Asunto</label>
+            <input type="text" class="form-control form-control-sm" id="correo_asunto_edit" placeholder="Asunto del correo">
+            <div class="fw-semibold d-none" id="correo_asunto">—</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted small mb-0">
+              Mensaje <small class="text-info ms-1"><i class="fas fa-edit"></i> Editor de texto enriquecido</small>
+            </label>
+            <div id="correo_quill_editor" style="height:280px; background:#fff;"></div>
+            <div id="correo_cuerpo_html" class="d-none"></div>
+          </div>
         </div>
         <textarea class="form-control d-none" id="correo_cuerpo_texto" rows="8" readonly></textarea>
         <div class="form-check mb-2">
@@ -837,6 +863,14 @@
       </div>
       <div class="modal-body">
         <input type="hidden" id="gestionar_orden_id">
+
+        <!-- Conexiones a otros módulos -->
+        <div id="oc-conexiones-modulos" class="mb-3 d-none">
+          <div class="p-2 rounded bg-light border">
+            <small class="text-muted fw-semibold d-block mb-1"><i class="fas fa-project-diagram me-1"></i>Módulos conectados:</small>
+            <div id="oc-conexiones-badges" class="d-flex flex-wrap gap-2"></div>
+          </div>
+        </div>
 
         <ul class="nav nav-tabs mb-3" role="tablist">
           <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabGestionComentarios" type="button">Comentarios</button></li>
@@ -2028,7 +2062,7 @@
       $('#correo_asunto_edit').val(result.asunto || '');
       $('#correo_cuerpo_html').html(result.cuerpo_html || '');
       $('#correo_cc').val('');
-      $('#correo_archivo_extra').val('');
+      if (document.getElementById('correo_archivo_extra')) $('#correo_archivo_extra').val('');
       ultimoCorreoTexto = 'Para: ' + (result.destinatario || '') + '\nAsunto: ' + (result.asunto || '') + '\n\n' + (result.cuerpo_texto || '');
       $('#correo_cuerpo_texto').val(ultimoCorreoTexto);
       // Cargar comprobantes de pago disponibles
@@ -2037,6 +2071,28 @@
       if (modalEl && typeof bootstrap !== 'undefined') {
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
       }
+      // Inicializar Quill con el HTML del correo
+      setTimeout(function() {
+        if (typeof Quill !== 'undefined') {
+          var editorEl = document.getElementById('correo_quill_editor');
+          if (editorEl) {
+            if (!window._quillCorreoOC) {
+              window._quillCorreoOC = new Quill('#correo_quill_editor', {
+                theme: 'snow',
+                modules: {
+                  toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link'], ['clean']
+                  ]
+                }
+              });
+            }
+            window._quillCorreoOC.clipboard.dangerouslyPasteHTML(result.cuerpo_html || '');
+          }
+        }
+      }, 350);
     }).fail(function() {
       showErpToast({ type: 'danger', module: 'Compras', title: 'Error de conexión', message: 'No se pudo contactar al servidor.' });
     });
@@ -2142,7 +2198,9 @@
       return;
     }
     const asunto = $('#correo_asunto_edit').val() || $('#correo_asunto').text();
-    const cuerpo = $('#correo_cuerpo_html').html();
+    const cuerpo = (window._quillCorreoOC && window._quillCorreoOC.root)
+      ? window._quillCorreoOC.root.innerHTML
+      : $('#correo_cuerpo_html').html();
     const cc = $('#correo_cc').val();
     const adjuntar = $('#correo_adjuntar_pdf').is(':checked') ? 1 : 0;
 
@@ -2335,7 +2393,49 @@
     $('#doc_notas').val('');
     cargarComentariosOC();
     cargarDocumentosOC();
+    mostrarConexionesModulos(id);
     abrirModal('modalGestionarOrden');
+  };
+
+  function mostrarConexionesModulos(ordenId) {
+    // Obtener datos de la OC para mostrar conexiones con Producción y Ventas/CRM
+    $.post('<?=base_url();?>compras/OrdenesCompra/get_orden_ajax', {
+      id: ordenId,
+      peticion: 'ajax',
+      '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+    }, function(res) {
+      try { res = JSON.parse(res); } catch(e) { return; }
+      if (!res.success || !res.orden) return;
+      var oc = res.orden;
+      var badges = '';
+
+      // Enlace al módulo de Producción
+      badges += '<a href="<?= base_url('produccion') ?>" class="btn btn-sm btn-outline-warning" title="Ver módulo de Producción">' +
+        '<i class="fas fa-industry me-1"></i>Producción</a>';
+
+      // Enlace al módulo CRM/Clientes
+      badges += '<a href="<?= base_url('crm') ?>" class="btn btn-sm btn-outline-info" title="Ver CRM de Clientes">' +
+        '<i class="fas fa-users me-1"></i>CRM Clientes</a>';
+
+      // Enlace a Ventas/Órdenes de Venta
+      badges += '<a href="<?= base_url('ventas') ?>" class="btn btn-sm btn-outline-success" title="Ver Órdenes de Venta">' +
+        '<i class="fas fa-shopping-cart me-1"></i>Ventas</a>';
+
+      // Si tiene origen vinculado (pre-orden desde producción/ventas)
+      if (oc.origen && oc.origen_tipo) {
+        badges += '<span class="badge bg-primary fs-6"><i class="fas fa-link me-1"></i>Origen: ' + oc.origen_tipo + ' #' + oc.origen + '</span>';
+      }
+      if (oc.preorden_id) {
+        badges += '<span class="badge bg-warning text-dark"><i class="fas fa-clipboard-list me-1"></i>Pre-orden #' + oc.preorden_id + '</span>';
+      }
+
+      if (badges) {
+        $('#oc-conexiones-badges').html(badges);
+        $('#oc-conexiones-modulos').removeClass('d-none');
+      } else {
+        $('#oc-conexiones-modulos').addClass('d-none');
+      }
+    });
   };
 
   function cargarComentariosOC() {

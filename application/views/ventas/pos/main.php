@@ -709,11 +709,9 @@ function usarFormulacionActual() {
             <div class="col-md-4">
               <label class="form-label">Tipo de Cliente <span class="text-danger">*</span></label>
               <select class="form-select" id="new_cliente_tipo_cliente" required>
-                <option value="Regular">Regular</option>
+                <option value="Empresa">Empresa</option>
+                <option value="Persona Física">Persona Física</option>
                 <option value="Mostrador">Mostrador</option>
-                <option value="Gobierno">Gobierno</option>
-                <option value="Licitación">Licitación</option>
-                <option value="Distribuidor">Distribuidor</option>
               </select>
             </div>
           </div>
@@ -910,6 +908,7 @@ function verificarCliente() {
       
       // Mostrar contenedor
       $('#info_cliente_seleccionado').slideDown();
+      cargarDescuentos(cliente_id);
   }
 }
 
@@ -942,7 +941,7 @@ function verDetallesCliente() {
 function mostrarModalNuevoCliente() {
     $('#formNuevoClientePOS')[0].reset();
     $('#new_cliente_uso_cfdi').val('G03');
-    $('#new_cliente_tipo_cliente').val('Regular');
+    $('#new_cliente_tipo_cliente').val('Empresa');
     $('#modalNuevoClientePOS').modal('show');
 }
 
@@ -1047,9 +1046,10 @@ function cargarClientes(callback) {
   });
 }
 
-function cargarDescuentos() {
+function cargarDescuentos(clienteId) {
   $.post('<?=base_url();?>ventas/Pos/get_descuentos_ajax', {
-    'peticion': 'ajax',
+    cliente_id: clienteId || '',
+    peticion: 'ajax',
     '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
   }, function(result) {
     result = JSON.parse(result);
@@ -1058,7 +1058,8 @@ function cargarDescuentos() {
       let html = '<option value="">Sin descuento</option>';
       descuentos.forEach(d => {
         const valor = d.tipo_descuento == 'Porcentaje' ? d.valor + '%' : '$' + parseFloat(d.valor).toFixed(2);
-        html += `<option value="${d.id}" data-tipo="${d.tipo_descuento}" data-valor="${d.valor}" data-nombre="${d.nombre}">${d.nombre} (${valor})</option>`;
+        const etiquetaCliente = d.cliente_id ? ' [Cliente]' : '';
+        html += `<option value="${d.id}" data-tipo="${d.tipo_descuento}" data-valor="${d.valor}" data-nombre="${d.nombre}">${d.nombre}${etiquetaCliente} (${valor})</option>`;
       });
       $('#ticket_descuento').html(html);
     }
@@ -1205,13 +1206,19 @@ function agregarAlTicket(id, nombre, precio, stock) {
   if(existe) {
     existe.cantidad++;
   } else {
-    ticketItems.push({
+    const item = {
       id: id,
       nombre: nombre,
       precio: parseFloat(precio),
       cantidad: 1,
       stock: parseFloat(stock)
-    });
+    };
+    if (window.formulacionSeleccionada && window.formulacionSeleccionada.producto_id == id) {
+      item.formulacion_id = window.formulacionSeleccionada.formulacion_id;
+      item.formulacion_version = window.formulacionSeleccionada.version;
+      window.formulacionSeleccionada = null;
+    }
+    ticketItems.push(item);
   }
   
   renderTicket();

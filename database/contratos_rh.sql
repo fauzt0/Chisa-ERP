@@ -78,7 +78,7 @@ CREATE TABLE `vacaciones_empleados` (
 CREATE TABLE IF NOT EXISTS incidencias_empleados (
   id INT(11) NOT NULL AUTO_INCREMENT,
   empleado_id INT(11) NOT NULL,
-  tipo_incidencia ENUM('Retardo', 'Falta', 'Falta Justificada', 'Permiso', 'Incapacidad', 'Suspensión', 'Amonestación', 'Renuncia', 'Otro') NOT NULL,
+  tipo_incidencia ENUM('Retardo', 'Falta', 'Falta Justificada', 'Permiso', 'Incapacidad', 'Suspensión', 'Amonestación', 'Renuncia', 'Otro', 'Horas Extras') NOT NULL,
   fecha_incidencia DATE NOT NULL,
   hora_incidencia TIME NULL COMMENT 'Para retardos',
   descripcion TEXT NULL,

@@ -94,14 +94,13 @@ class Clientes extends MY_Controller {
             
             // Tipo de cliente
             $tipo_badges = [
-                'Regular' => 'primary',
+                'Empresa' => 'primary',
+                'Persona Física' => 'info',
                 'Mostrador' => 'secondary',
-                'Gobierno' => 'success',
-                'Licitación' => 'warning',
-                'Distribuidor' => 'info'
             ];
             $badge_color = $tipo_badges[$cliente->tipo_cliente] ?? 'secondary';
-            $row[] = '<span class="badge bg-' . $badge_color . '">' . $cliente->tipo_cliente . '</span>';
+            $row[] = '<span class="badge bg-' . $badge_color . '">' . $cliente->tipo_cliente . '</span>' .
+                (($cliente->tipo_contacto ?? '') === 'Prospecto' ? ' <span class="badge bg-warning text-dark">Prospecto</span>' : '');
             
             // Estatus
             $estatus_badges = [
@@ -182,12 +181,14 @@ class Clientes extends MY_Controller {
             'limite_credito' => $this->input->post('limite_credito') ?: 0,
             'dias_credito' => $this->input->post('dias_credito') ?: 0,
             'tipo_cliente' => $this->input->post('tipo_cliente'),
+            'tipo_contacto' => $this->input->post('tipo_contacto') ?: 'Cliente',
             'estatus' => $this->input->post('estatus')
         ];
         
         $result = $this->ClientesModel->crear_cliente($data);
         
         if($result) {
+            $this->registrar_bitacora('Cliente creado: ' . $data['razon_social'], 'Ventas');
             echo json_encode(['success' => true, 'message' => 'Cliente creado correctamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al crear cliente']);
@@ -223,12 +224,14 @@ class Clientes extends MY_Controller {
             'limite_credito' => $this->input->post('limite_credito') ?: 0,
             'dias_credito' => $this->input->post('dias_credito') ?: 0,
             'tipo_cliente' => $this->input->post('tipo_cliente'),
+            'tipo_contacto' => $this->input->post('tipo_contacto') ?: 'Cliente',
             'estatus' => $this->input->post('estatus')
         ];
         
         $result = $this->ClientesModel->actualizar_cliente($id, $data);
         
         if($result) {
+            $this->registrar_bitacora('Cliente actualizado ID ' . $id . ': ' . $data['razon_social'], 'Ventas');
             echo json_encode(['success' => true, 'message' => 'Cliente actualizado correctamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar cliente']);
@@ -553,5 +556,77 @@ class Clientes extends MY_Controller {
             return rtrim(rtrim(sprintf('%.10F', (float) $valor), '0'), '.');
         }
         return trim((string) $valor);
+    }
+
+    /**
+     * Lista seguimientos CRM de un cliente (AJAX)
+     */
+    public function get_seguimientos_ajax() {
+        $cliente_id = (int) $this->input->post('cliente_id');
+        if (!$cliente_id) {
+            echo json_encode(['success' => false, 'message' => 'Cliente requerido']);
+            return;
+        }
+
+        $seguimientos = $this->ClientesModel->get_seguimientos($cliente_id);
+        echo json_encode(['success' => true, 'seguimientos' => $seguimientos]);
+    }
+
+    /**
+     * Registra seguimiento CRM (AJAX)
+     */
+    public function crear_seguimiento_ajax() {
+        $cliente_id = (int) $this->input->post('cliente_id');
+        $tipo = $this->input->post('tipo');
+        $fecha = $this->input->post('fecha');
+        $asunto = $this->input->post('asunto');
+        $notas = $this->input->post('notas');
+
+        if (!$cliente_id || !$tipo) {
+            echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+            return;
+        }
+
+        $tipos_validos = ['Llamada', 'Visita', 'Correo', 'WhatsApp', 'Otro'];
+        if (!in_array($tipo, $tipos_validos, true)) {
+            echo json_encode(['success' => false, 'message' => 'Tipo de seguimiento inválido']);
+            return;
+        }
+
+        $usuario_id = (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 1);
+        $data = [
+            'cliente_id' => $cliente_id,
+            'tipo' => $tipo,
+            'fecha' => $fecha ? date('Y-m-d H:i:s', strtotime($fecha)) : date('Y-m-d H:i:s'),
+            'asunto' => $asunto,
+            'notas' => $notas,
+            'usuario_id' => $usuario_id,
+        ];
+
+        if ($this->ClientesModel->crear_seguimiento($data)) {
+            $this->registrar_bitacora('Seguimiento CRM (' . $tipo . ') cliente ID ' . $cliente_id, 'Ventas');
+            echo json_encode(['success' => true, 'message' => 'Seguimiento registrado']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al registrar seguimiento']);
+        }
+    }
+
+    /**
+     * Elimina seguimiento CRM (AJAX)
+     */
+    public function eliminar_seguimiento_ajax() {
+        $id = (int) $this->input->post('id');
+        $cliente_id = (int) $this->input->post('cliente_id');
+        if (!$id || !$cliente_id) {
+            echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+            return;
+        }
+
+        if ($this->ClientesModel->eliminar_seguimiento($id, $cliente_id)) {
+            $this->registrar_bitacora('Seguimiento CRM eliminado ID ' . $id, 'Ventas');
+            echo json_encode(['success' => true, 'message' => 'Seguimiento eliminado']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo eliminar']);
+        }
     }
 }

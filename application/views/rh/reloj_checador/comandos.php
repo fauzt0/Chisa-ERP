@@ -52,15 +52,15 @@
 </div>
 
 <!-- Modal: Nuevo Comando -->
-<div class="modal fade" id="modalComando" tabindex="-1" aria-hidden="true">
+<div class="modal fade rh-modal" id="modalComando" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="formComando" method="post">
                 <input type="hidden" name="<?php echo $this->security->get_csrf_token_name(); ?>" value="<?php echo $this->security->get_csrf_hash(); ?>">
 
-                <div class="modal-header">
-                    <h5 class="modal-title">Encolar Nuevo Comando</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header rh-header-brand text-white">
+                    <h5 class="modal-title text-white">Encolar Nuevo Comando</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">

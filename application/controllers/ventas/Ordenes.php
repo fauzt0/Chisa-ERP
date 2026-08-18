@@ -168,24 +168,21 @@ class Ordenes extends MY_Controller {
                 <i class="fas fa-eye"></i>
             </button>';
             
-            // DEBUG: Agregar información de depuración como atributo data
-            $debug_info = 'data-debug="saldo:'.$orden->saldo_pendiente.' estatus:'.$orden->estatus.'"';
-            
             // Botón de pago si tiene saldo pendiente
             if($orden->saldo_pendiente > 0 && $orden->estatus != 'Cancelada') {
                 $acciones .= '
-                <button class="btn btn-sm btn-success" onclick="mostrarModalPago('.$orden->id.', '.$orden->saldo_pendiente.')" title="Registrar pago" '.$debug_info.'>
+                <button class="btn btn-sm btn-success" onclick="mostrarModalPago('.$orden->id.', '.$orden->saldo_pendiente.')" title="Registrar pago">
                     <i class="fas fa-dollar-sign"></i>
                 </button>';
-            } else {
-                // DEBUG: Agregar comentario HTML para ver por qué no se muestra
-                $acciones .= '<!-- Botón pago NO mostrado: saldo='.$orden->saldo_pendiente.' estatus='.$orden->estatus.' -->';
             }
             
             if($orden->estatus == 'Cotización') {
                 $acciones .= '
                 <button class="btn btn-sm btn-success" onclick="confirmarOrden('.$orden->id.')" title="Confirmar">
                     <i class="fas fa-check"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-primary" onclick="reenviarCotizacion('.$orden->id.')" title="Enviar por email">
+                    <i class="fas fa-envelope"></i>
                 </button>';
             }
             
@@ -194,9 +191,6 @@ class Ordenes extends MY_Controller {
                 <button class="btn btn-sm btn-danger" onclick="cancelarOrden('.$orden->id.')" title="Cancelar">
                     <i class="fas fa-times"></i>
                 </button>';
-            } else {
-                // DEBUG: Agregar comentario HTML
-                $acciones .= '<!-- Botón cancelar NO mostrado: estatus='.$orden->estatus.' -->';
             }
             
             $acciones .= '
@@ -253,6 +247,7 @@ class Ordenes extends MY_Controller {
         $result = $this->VentasModel->confirmar_orden($id);
         
         if($result) {
+            $this->registrar_bitacora('Orden de venta confirmada ID ' . $id, 'Ventas');
             echo json_encode(['success' => true, 'message' => 'Orden confirmada correctamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al confirmar orden']);
@@ -271,15 +266,10 @@ class Ordenes extends MY_Controller {
             return;
         }
         
-        $data = [
-            'estatus' => 'Cancelada',
-            'motivo_cancelacion' => $motivo
-        ];
-        
-        $this->db->where('id', $id);
-        $result = $this->db->update('ordenes_venta', $data);
+        $result = $this->VentasModel->cancelar_orden($id, $motivo);
         
         if($result) {
+            $this->registrar_bitacora('Orden de venta cancelada ID ' . $id . ($motivo ? ': ' . $motivo : ''), 'Ventas');
             echo json_encode(['success' => true, 'message' => 'Orden cancelada']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al cancelar orden']);
@@ -335,6 +325,7 @@ class Ordenes extends MY_Controller {
         $this->db->insert('pagos_ordenes', $data_pago);
         
         if($this->db->affected_rows() > 0) {
+            $this->registrar_bitacora('Pago registrado orden ID ' . $orden_id . ' folio ' . $result->folio, 'Ventas');
             echo json_encode([
                 'success' => true, 
                 'message' => 'Pago registrado correctamente',
@@ -362,5 +353,52 @@ class Ordenes extends MY_Controller {
         $pagos = $this->db->get('pagos_ordenes')->result();
         
         echo json_encode(['success' => true, 'pagos' => $pagos]);
+    }
+
+    /**
+     * Reenvía cotización por email al cliente (AJAX)
+     */
+    public function reenviar_cotizacion_ajax() {
+        $id = (int) $this->input->post('id');
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID no proporcionado']);
+            return;
+        }
+
+        $orden = $this->VentasModel->get_orden_completa($id);
+        if (!$orden || $orden->estatus !== 'Cotización') {
+            echo json_encode(['success' => false, 'message' => 'La orden no es una cotización válida']);
+            return;
+        }
+
+        $cliente = $this->ClientesModel->get_cliente($orden->cliente_id);
+        $email = $cliente->email_facturacion ?: $cliente->email;
+        if (!$email) {
+            echo json_encode(['success' => false, 'message' => 'El cliente no tiene email registrado']);
+            return;
+        }
+
+        $link = base_url('ventas/Pos/imprimir_recibo_template/' . $id . '/1');
+        $mensaje = "Estimado cliente,\n\nAdjuntamos su cotización {$orden->folio} por un total de $" . number_format($orden->total, 2) . " MXN.\n\nPuede consultar e imprimir el documento en:\n{$link}\n\nSaludos,\nERP Chisa Recubrimientos";
+
+        $this->load->library('email');
+        $this->email->from('no-reply@chisarecubrimientos.com.mx', 'ERP CHISA Ventas');
+        $this->email->to($email);
+        $this->email->subject('Cotización ' . $orden->folio . ' - Chisa Recubrimientos');
+        $this->email->message($mensaje);
+        $enviado = $this->email->send();
+
+        $this->registrar_bitacora(
+            'Cotización ' . $orden->folio . ' enviada a ' . $email . ($enviado ? '' : ' (SMTP pendiente de configurar)'),
+            'Ventas'
+        );
+
+        echo json_encode([
+            'success' => true,
+            'message' => $enviado
+                ? 'Cotización enviada a ' . $email
+                : 'Cotización preparada. Si no llega el correo, verifique la configuración SMTP del servidor.',
+            'link' => $link,
+        ]);
     }
 }
