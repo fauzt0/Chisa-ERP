@@ -391,6 +391,7 @@ $stats = $response['stats'] ?? [];
     </div>
     <ul class="nav nav-tabs px-3 pt-2" role="tablist">
       <li class="nav-item"><button class="nav-link active" id="cli-info-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-info" type="button">Información</button></li>
+      <li class="nav-item"><button class="nav-link" id="cli-contactos-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-contactos" type="button">Contactos</button></li>
       <li class="nav-item"><button class="nav-link" id="cli-ventas-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-ventas" type="button">Ventas</button></li>
       <li class="nav-item"><button class="nav-link" id="cli-cotizaciones-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-cotizaciones" type="button">Cotizaciones</button></li>
       <li class="nav-item"><button class="nav-link" id="cli-seguimiento-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-seguimiento" type="button">Seguimiento</button></li>
@@ -398,6 +399,43 @@ $stats = $response['stats'] ?? [];
     <div class="tab-content px-3 py-3">
       <div class="tab-pane fade show active" id="cli-tab-info">
         <table class="table table-sm"><tbody id="cli-detalles"></tbody></table>
+      </div>
+      <div class="tab-pane fade" id="cli-tab-contactos">
+        <div class="mb-3 p-2 border rounded bg-light">
+          <h6 class="mb-2"><i class="fas fa-address-book"></i> <span id="cli-contacto-form-titulo">Nuevo contacto</span></h6>
+          <input type="hidden" id="cli-contacto-edit-id" value="">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <input type="text" class="form-control form-control-sm" id="cli-contacto-nombre" placeholder="Nombre *" maxlength="150">
+            </div>
+            <div class="col-md-6">
+              <input type="text" class="form-control form-control-sm" id="cli-contacto-puesto" placeholder="Puesto" maxlength="100">
+            </div>
+            <div class="col-md-6">
+              <input type="text" class="form-control form-control-sm" id="cli-contacto-telefono" placeholder="Teléfono" maxlength="20">
+            </div>
+            <div class="col-md-6">
+              <input type="email" class="form-control form-control-sm" id="cli-contacto-email" placeholder="Email" maxlength="150">
+            </div>
+            <div class="col-12">
+              <textarea class="form-control form-control-sm" id="cli-contacto-observaciones" rows="2" placeholder="Observaciones..."></textarea>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="cli-contacto-principal">
+                <label class="form-check-label small" for="cli-contacto-principal">Contacto principal</label>
+              </div>
+            </div>
+            <div class="col-md-6 text-md-end">
+              <button type="button" class="btn btn-sm btn-outline-secondary me-1" id="cli-contacto-btn-cancelar" style="display:none;" onclick="limpiarFormContactoCliente()"><i class="fas fa-times"></i> Cancelar</button>
+              <button type="button" class="btn btn-sm btn-primary" onclick="guardarContactoCliente()"><i class="fas fa-save"></i> <span id="cli-contacto-btn-guardar">Agregar</span></button>
+            </div>
+          </div>
+        </div>
+        <div id="cli-contactos-loading" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i></div>
+        <div id="cli-contactos-container" style="display:none;">
+          <div class="list-group list-group-flush" id="cli-contactos-list"></div>
+        </div>
       </div>
       <div class="tab-pane fade" id="cli-tab-ventas">
         <div id="cli-ventas-loading" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i></div>
@@ -555,6 +593,7 @@ $stats = $response['stats'] ?? [];
 let tabla;
 let busquedaCliTimer = null;
 let cliOrdenesActualId = 0;
+let cliContactosCache = [];
 let cliVentasLimit = 10;
 let cliVentasOffset = 0;
 let cliVentasTotal = 0;
@@ -750,11 +789,12 @@ window.verCliente = function(id) {
   oc.show();
 
   $('#cli-detalles').html('<tr><td colspan="2" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i></td></tr>');
-  $('#cli-ventas-container, #cli-cotizaciones-container, #cli-seguimiento-container').hide();
-  $('#cli-ventas-loading, #cli-cotizaciones-loading, #cli-seguimiento-loading').show();
+  $('#cli-ventas-container, #cli-cotizaciones-container, #cli-seguimiento-container, #cli-contactos-container').hide();
+  $('#cli-ventas-loading, #cli-cotizaciones-loading, #cli-seguimiento-loading, #cli-contactos-loading').show();
   $('#cli-ventas-tbody, #cli-cotizaciones-tbody').html('');
   $('#cli-ventas-paginacion, #cli-cotizaciones-paginacion').html('');
-  $('#cli-seguimiento-list').html('');
+  $('#cli-seguimiento-list, #cli-contactos-list').html('');
+  limpiarFormContactoCliente();
 
   $('#cli-btn-editar').off('click').on('click', function() {
     bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasDetalleCliente')).hide();
@@ -768,6 +808,9 @@ window.verCliente = function(id) {
   });
   $('#cli-cotizaciones-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
     if($('#cli-cotizaciones-tbody').is(':empty')) cargarCotizaciones(id);
+  });
+  $('#cli-contactos-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
+    if($('#cli-contactos-list').is(':empty')) cargarContactosCliente(id);
   });
   $('#cli-seguimiento-tab').off('shown.bs.tab').on('shown.bs.tab', function() {
     if($('#cli-seguimiento-list').is(':empty')) cargarSeguimientosCliente(id);
@@ -808,6 +851,16 @@ window.verCliente = function(id) {
     $('#cli-detalles').html(html);
   });
 };
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function formatearFechaMX(fecha) {
   if(!fecha) return '—';
@@ -1163,6 +1216,124 @@ function eliminarSeguimientoCliente(id, clienteId) {
     res = JSON.parse(res);
     notifyShow(res.message, res.success ? 'success' : 'danger');
     if (res.success) cargarSeguimientosCliente(clienteId);
+  });
+}
+
+function limpiarFormContactoCliente() {
+  $('#cli-contacto-edit-id').val('');
+  $('#cli-contacto-nombre, #cli-contacto-puesto, #cli-contacto-telefono, #cli-contacto-email, #cli-contacto-observaciones').val('');
+  $('#cli-contacto-principal').prop('checked', false);
+  $('#cli-contacto-form-titulo').text('Nuevo contacto');
+  $('#cli-contacto-btn-guardar').text('Agregar');
+  $('#cli-contacto-btn-cancelar').hide();
+}
+
+function cargarContactosCliente(clienteId) {
+  $('#cli-contactos-loading').show();
+  $('#cli-contactos-container').hide();
+  $('#cli-contactos-list').html('');
+
+  $.post('<?=base_url();?>ventas/Clientes/get_contactos_ajax', {
+    cliente_id: clienteId,
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(res) {
+    res = JSON.parse(res);
+    $('#cli-contactos-loading').hide();
+
+    if (!res.success || !res.contactos || !res.contactos.length) {
+      cliContactosCache = [];
+      $('#cli-contactos-list').html('<div class="text-muted text-center py-3">Sin contactos adicionales</div>');
+      $('#cli-contactos-container').show();
+      return;
+    }
+
+    cliContactosCache = res.contactos;
+    let html = '';
+    res.contactos.forEach(function(c) {
+      html += '<div class="list-group-item px-0">';
+      html += '<div class="d-flex justify-content-between align-items-start">';
+      html += '<div>';
+      if (parseInt(c.es_principal, 10) === 1) {
+        html += '<span class="badge bg-primary me-1">Principal</span>';
+      }
+      html += '<strong>' + escapeHtml(c.nombre) + '</strong>';
+      if (c.puesto) html += '<div class="small text-muted">' + escapeHtml(c.puesto) + '</div>';
+      if (c.telefono) html += '<div class="small"><i class="fas fa-phone fa-fw"></i> <a href="tel:' + escapeHtml(c.telefono) + '">' + escapeHtml(c.telefono) + '</a></div>';
+      if (c.email) html += '<div class="small"><i class="fas fa-envelope fa-fw"></i> <a href="mailto:' + escapeHtml(c.email) + '">' + escapeHtml(c.email) + '</a></div>';
+      if (c.observaciones) html += '<div class="small mt-1 text-muted">' + escapeHtml(c.observaciones) + '</div>';
+      html += '</div>';
+      html += '<div class="btn-group btn-group-sm">';
+      html += '<button type="button" class="btn btn-outline-primary" onclick="editarContactoCliente(' + c.id + ')" title="Editar"><i class="fas fa-edit"></i></button>';
+      html += '<button type="button" class="btn btn-outline-danger" onclick="eliminarContactoCliente(' + c.id + ',' + clienteId + ')" title="Eliminar"><i class="fas fa-trash"></i></button>';
+      html += '</div></div></div>';
+    });
+    $('#cli-contactos-list').html(html);
+    $('#cli-contactos-container').show();
+  });
+}
+
+function editarContactoCliente(id) {
+  const c = cliContactosCache.find(function(item) { return parseInt(item.id, 10) === parseInt(id, 10); });
+  if (!c) return;
+  $('#cli-contacto-edit-id').val(c.id);
+  $('#cli-contacto-nombre').val(c.nombre || '');
+  $('#cli-contacto-puesto').val(c.puesto || '');
+  $('#cli-contacto-telefono').val(c.telefono || '');
+  $('#cli-contacto-email').val(c.email || '');
+  $('#cli-contacto-observaciones').val(c.observaciones || '');
+  $('#cli-contacto-principal').prop('checked', parseInt(c.es_principal, 10) === 1);
+  $('#cli-contacto-form-titulo').text('Editar contacto');
+  $('#cli-contacto-btn-guardar').text('Actualizar');
+  $('#cli-contacto-btn-cancelar').show();
+  document.getElementById('cli-contacto-nombre').focus();
+}
+
+function guardarContactoCliente() {
+  if (!cliOrdenesActualId) return;
+  const nombre = $('#cli-contacto-nombre').val().trim();
+  if (!nombre) {
+    notifyShow('El nombre del contacto es obligatorio', 'warning');
+    return;
+  }
+
+  const data = {
+    id: $('#cli-contacto-edit-id').val(),
+    cliente_id: cliOrdenesActualId,
+    nombre: nombre,
+    puesto: $('#cli-contacto-puesto').val(),
+    telefono: $('#cli-contacto-telefono').val(),
+    email: $('#cli-contacto-email').val(),
+    es_principal: $('#cli-contacto-principal').is(':checked') ? 1 : 0,
+    observaciones: $('#cli-contacto-observaciones').val(),
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  };
+
+  $.post('<?=base_url();?>ventas/Clientes/guardar_contacto_ajax', data, function(res) {
+    res = JSON.parse(res);
+    notifyShow(res.message, res.success ? 'success' : 'danger');
+    if (res.success) {
+      limpiarFormContactoCliente();
+      cargarContactosCliente(cliOrdenesActualId);
+    }
+  });
+}
+
+function eliminarContactoCliente(id, clienteId) {
+  if (!confirm('¿Eliminar este contacto?')) return;
+  $.post('<?=base_url();?>ventas/Clientes/eliminar_contacto_ajax', {
+    id: id,
+    cliente_id: clienteId,
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(res) {
+    res = JSON.parse(res);
+    notifyShow(res.message, res.success ? 'success' : 'danger');
+    if (res.success) {
+      limpiarFormContactoCliente();
+      cargarContactosCliente(clienteId);
+    }
   });
 }
 

@@ -384,6 +384,76 @@ class ClientesModel extends MY_Model {
     }
 
     /**
+     * Contactos adicionales de un cliente
+     */
+    public function get_contactos($cliente_id) {
+        $this->db->from('contactos_cliente');
+        $this->db->where('cliente_id', (int) $cliente_id);
+        $this->db->where('estatus', 'Activo');
+        $this->db->order_by('es_principal', 'DESC');
+        $this->db->order_by('nombre', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Obtiene un contacto adicional por ID y cliente
+     */
+    public function get_contacto($id, $cliente_id) {
+        $this->db->from('contactos_cliente');
+        $this->db->where('id', (int) $id);
+        $this->db->where('cliente_id', (int) $cliente_id);
+        $this->db->where('estatus', 'Activo');
+        return $this->db->get()->row();
+    }
+
+    /**
+     * Crea o actualiza un contacto adicional
+     */
+    public function guardar_contacto($data, $id = null) {
+        $cliente_id = (int) ($data['cliente_id'] ?? 0);
+        if (!$cliente_id) {
+            return false;
+        }
+
+        $payload = [
+            'nombre' => trim($data['nombre'] ?? ''),
+            'puesto' => trim($data['puesto'] ?? '') ?: null,
+            'telefono' => trim($data['telefono'] ?? '') ?: null,
+            'email' => trim($data['email'] ?? '') ?: null,
+            'es_principal' => !empty($data['es_principal']) ? 1 : 0,
+            'observaciones' => trim($data['observaciones'] ?? '') ?: null,
+            'estatus' => 'Activo',
+        ];
+
+        if ($payload['nombre'] === '') {
+            return false;
+        }
+
+        if (!empty($payload['es_principal'])) {
+            $this->db->where('cliente_id', $cliente_id);
+            $this->db->update('contactos_cliente', ['es_principal' => 0]);
+        }
+
+        if ($id) {
+            $this->db->where('id', (int) $id);
+            $this->db->where('cliente_id', $cliente_id);
+            return $this->db->update('contactos_cliente', $payload);
+        }
+
+        $payload['cliente_id'] = $cliente_id;
+        return $this->db->insert('contactos_cliente', $payload);
+    }
+
+    /**
+     * Baja lógica de un contacto adicional
+     */
+    public function eliminar_contacto($id, $cliente_id) {
+        $this->db->where('id', (int) $id);
+        $this->db->where('cliente_id', (int) $cliente_id);
+        return $this->db->update('contactos_cliente', ['estatus' => 'Inactivo']);
+    }
+
+    /**
      * Importa clientes desde filas parseadas del Excel
      */
     public function importar_masivo(array $rows, $usuario_id = null) {

@@ -629,4 +629,83 @@ class Clientes extends MY_Controller {
             echo json_encode(['success' => false, 'message' => 'No se pudo eliminar']);
         }
     }
+
+    /**
+     * Lista contactos adicionales de un cliente (AJAX)
+     */
+    public function get_contactos_ajax() {
+        $cliente_id = (int) $this->input->post('cliente_id');
+        if (!$cliente_id) {
+            echo json_encode(['success' => false, 'message' => 'Cliente requerido']);
+            return;
+        }
+
+        $contactos = $this->ClientesModel->get_contactos($cliente_id);
+        echo json_encode(['success' => true, 'contactos' => $contactos]);
+    }
+
+    /**
+     * Crea o actualiza un contacto adicional (AJAX)
+     */
+    public function guardar_contacto_ajax() {
+        $id = (int) $this->input->post('id');
+        $cliente_id = (int) $this->input->post('cliente_id');
+        $nombre = trim($this->input->post('nombre') ?? '');
+
+        if (!$cliente_id || $nombre === '') {
+            echo json_encode(['success' => false, 'message' => 'Nombre y cliente son obligatorios']);
+            return;
+        }
+
+        $email = trim($this->input->post('email') ?? '');
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'El email no tiene un formato válido']);
+            return;
+        }
+
+        if ($id) {
+            $existente = $this->ClientesModel->get_contacto($id, $cliente_id);
+            if (!$existente) {
+                echo json_encode(['success' => false, 'message' => 'Contacto no encontrado']);
+                return;
+            }
+        }
+
+        $data = [
+            'cliente_id' => $cliente_id,
+            'nombre' => $nombre,
+            'puesto' => $this->input->post('puesto'),
+            'telefono' => $this->input->post('telefono'),
+            'email' => $email,
+            'es_principal' => $this->input->post('es_principal') ? 1 : 0,
+            'observaciones' => $this->input->post('observaciones'),
+        ];
+
+        if ($this->ClientesModel->guardar_contacto($data, $id ?: null)) {
+            $accion = $id ? 'actualizado' : 'agregado';
+            $this->registrar_bitacora('Contacto CRM ' . $accion . ' (' . $nombre . ') cliente ID ' . $cliente_id, 'Ventas');
+            echo json_encode(['success' => true, 'message' => 'Contacto ' . $accion . ' correctamente']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al guardar contacto']);
+        }
+    }
+
+    /**
+     * Elimina un contacto adicional (AJAX)
+     */
+    public function eliminar_contacto_ajax() {
+        $id = (int) $this->input->post('id');
+        $cliente_id = (int) $this->input->post('cliente_id');
+        if (!$id || !$cliente_id) {
+            echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+            return;
+        }
+
+        if ($this->ClientesModel->eliminar_contacto($id, $cliente_id)) {
+            $this->registrar_bitacora('Contacto CRM eliminado ID ' . $id . ' cliente ID ' . $cliente_id, 'Ventas');
+            echo json_encode(['success' => true, 'message' => 'Contacto eliminado']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo eliminar']);
+        }
+    }
 }
