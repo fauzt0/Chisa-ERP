@@ -193,18 +193,28 @@ class Obras extends MY_Controller {
             // Recalcular totales
             $this->ObrasModel->calcular_totales_obra($obra_id);
 
+            $insumos_result = null;
             $nuevo_estatus = $this->input->post('estatus');
             if ($obra_anterior && $obra_anterior->estatus !== 'Aprobada' && $nuevo_estatus === 'Aprobada') {
                 $obra_actual = $this->ObrasModel->get_obra_detalle($obra_id);
                 if (empty($obra_actual->orden_venta_id)) {
                     $this->ObrasModel->crear_solicitudes_produccion_desde_obra($obra_id);
                 }
+                $usuario_id = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 0);
+                if ($usuario_id > 0) {
+                    $insumos_result = $this->ObrasModel->verificar_insumos_y_preordenes_obra($obra_id, $usuario_id);
+                }
             }
             
-            echo json_encode([
+            $respuesta = [
                 'success' => true,
                 'message' => 'Obra actualizada correctamente'
-            ]);
+            ];
+            if (!empty($insumos_result)) {
+                $this->load->model('Ventas/VentasModel');
+                $respuesta['insumos'] = $this->VentasModel->formatear_insumos_respuesta_json($insumos_result);
+            }
+            echo json_encode($respuesta);
         } else {
             echo json_encode([
                 'success' => false,
@@ -240,38 +250,80 @@ class Obras extends MY_Controller {
      */
     public function agregar_producto_ajax() {
         $obra_id = $this->input->post('obra_id');
-        
-        $data = [
-            'obra_id' => $obra_id,
+
+        $preparado = $this->ObrasModel->preparar_linea_producto_obra([
             'producto_id' => $this->input->post('producto_id'),
-            'cantidad_calculada' => $this->input->post('cantidad_calculada'),
-            'cantidad_ajustada' => $this->input->post('cantidad_ajustada'),
-            'unidad' => $this->input->post('unidad'),
             'area_aplicacion' => $this->input->post('area_aplicacion'),
+            'factor_desperdicio' => $this->input->post('factor_desperdicio'),
+            'formulacion_id' => $this->input->post('formulacion_id'),
             'rendimiento_teorico' => $this->input->post('rendimiento_teorico'),
-            'factor_desperdicio' => $this->input->post('factor_desperdicio') ?: 1.10,
+            'cantidad_ajustada' => $this->input->post('cantidad_ajustada'),
             'notas' => $this->input->post('notas'),
             'seccion_obra' => $this->input->post('seccion_obra'),
             'precio_unitario' => $this->input->post('precio_unitario'),
-            'agregado_por' => $this->session->userdata('user_id') ?: 1
-        ];
-        
+        ]);
+
+        if (empty($preparado['success'])) {
+            echo json_encode($preparado);
+            return;
+        }
+
+        $data = array_merge($preparado['data'], [
+            'obra_id' => $obra_id,
+            'agregado_por' => $this->session->userdata('user_id') ?: 1,
+        ]);
+
         $id = $this->ObrasModel->agregar_producto($data);
-        
-        if($id) {
-            // Recalcular totales de la obra
+
+        if ($id) {
             $this->ObrasModel->calcular_totales_obra($obra_id);
-            
+
+            $usuario_id = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 0);
+            $insumos_result = ($usuario_id > 0)
+                ? $this->ObrasModel->consultar_insumos_obra($obra_id)
+                : null;
+
+            $this->load->model('Ventas/VentasModel');
             echo json_encode([
                 'success' => true,
-                'message' => 'Producto agregado correctamente'
+                'message' => 'Producto agregado correctamente',
+                'calculo' => $preparado['calculo'],
+                'insumos' => $this->VentasModel->formatear_insumos_respuesta_json($insumos_result),
             ]);
         } else {
             echo json_encode([
                 'success' => false,
-                'message' => 'Error al agregar el producto'
+                'message' => 'Error al agregar el producto',
             ]);
         }
+    }
+
+    /**
+     * Calcula materiales para una línea (m² → kg → insumos) sin guardar (P8).
+     */
+    public function calcular_materiales_ajax() {
+        $resultado = $this->ObrasModel->calcular_materiales_linea_obra(
+            (int) $this->input->post('producto_id'),
+            $this->input->post('area_aplicacion'),
+            $this->input->post('factor_desperdicio') ?: 1.10,
+            $this->input->post('formulacion_id') ?: null,
+            $this->input->post('rendimiento_teorico')
+        );
+
+        echo json_encode($resultado);
+    }
+
+    /**
+     * Consolida materiales de toda la obra (P8, solo visualización).
+     */
+    public function materiales_obra_ajax() {
+        $obra_id = (int) $this->input->post('obra_id');
+        if (!$obra_id) {
+            echo json_encode(['success' => false, 'message' => 'ID de obra requerido']);
+            return;
+        }
+
+        echo json_encode($this->ObrasModel->calcular_materiales_obra($obra_id));
     }
     
     /**

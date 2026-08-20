@@ -451,6 +451,51 @@ class Productos extends MY_Controller {
     }
     
     /**
+     * Guarda una formulación completa (cabecera + componentes) en una sola llamada
+     * transaccional. Modo 'nueva' crea versión nueva; 'actualizar' sobreescribe la actual.
+     */
+    public function guardar_formulacion_completa_ajax() {
+        $modo           = $this->input->post('modo') === 'actualizar' ? 'actualizar' : 'nueva';
+        $formulacion_id = $this->input->post('formulacion_id') ?: null;
+        $producto_id    = $this->input->post('producto_id');
+        $componentes_json = $this->input->post('componentes');
+
+        if (empty($producto_id) || empty($this->input->post('cantidad_producida'))) {
+            echo json_encode(['success' => false, 'message' => 'Faltan datos: producto o cantidad producida.']);
+            return;
+        }
+
+        $componentes = json_decode((string)$componentes_json, true);
+        if (!is_array($componentes) || count($componentes) === 0) {
+            echo json_encode(['success' => false, 'message' => 'Agregue al menos un componente.']);
+            return;
+        }
+
+        if ($modo === 'actualizar' && !$formulacion_id) {
+            echo json_encode(['success' => false, 'message' => 'No hay una versión seleccionada para actualizar.']);
+            return;
+        }
+
+        $cabecera = [
+            'producto_id'           => $producto_id,
+            'cliente_id'            => $this->input->post('cliente_id') ?: null,
+            'referencia_cliente'    => $this->input->post('referencia_cliente') ?: null,
+            'nombre_version'        => $this->input->post('nombre_version') ?: 'V1',
+            'descripcion'           => $this->input->post('descripcion'),
+            'comentarios'           => $this->input->post('comentarios') ?: null,
+            'cantidad_producida'    => $this->input->post('cantidad_producida'),
+            'unidad_produccion'     => $this->input->post('unidad_produccion') ?: 'Kg',
+            'rendimiento_m2_por_kg' => $this->input->post('rendimiento_m2_por_kg') ?: null,
+            'costo_mano_obra'       => $this->input->post('costo_mano_obra') ?: 0,
+            'costo_indirecto'       => $this->input->post('costo_indirecto') ?: 0,
+            'usuario_creacion'      => $this->session->userdata('user_id'),
+        ];
+
+        $res = $this->ProductosModel->guardar_formulacion_completa($cabecera, $componentes, $modo, $formulacion_id);
+        echo json_encode($res);
+    }
+
+    /**
      * Agrega un componente a la formulación (AJAX)
      */
     public function agregar_componente_ajax() {
@@ -514,11 +559,22 @@ class Productos extends MY_Controller {
      * Obtiene lista de insumos para select (AJAX)
      */
     public function get_insumos_select_ajax() {
-        $this->db->select('id, codigo, nombre_tecnico, unidad_medida, precio_promedio, stock_actual');
-        $this->db->where('estatus', 'Activo');
-        $this->db->order_by('nombre_tecnico', 'ASC');
-        $insumos = $this->db->get('insumos')->result();
-        
+        // Incluye nombres secundarios (insumos.alias + tabla insumos_alias) para que el
+        // picker permita buscar insumos por como los conocen los trabajadores en planta.
+        $this->db->select("i.id, i.codigo, i.nombre_tecnico, i.alias, i.unidad_medida, i.precio_promedio, i.stock_actual,
+            (SELECT GROUP_CONCAT(ia.alias SEPARATOR ' | ') FROM insumos_alias ia WHERE ia.insumo_id = i.id AND ia.estatus = 'Activo') AS alias_secundarios", false);
+        $this->db->from('insumos i');
+        $this->db->where('i.estatus', 'Activo');
+        $this->db->order_by('i.nombre_tecnico', 'ASC');
+        $insumos = $this->db->get()->result();
+
+        // Texto de búsqueda combinado (nombre + código + todos los alias) para el frontend.
+        foreach ($insumos as $ins) {
+            $ins->buscar = trim(implode(' ', array_filter([
+                $ins->nombre_tecnico, $ins->codigo, $ins->alias, $ins->alias_secundarios,
+            ])));
+        }
+
         echo json_encode(['success' => true, 'insumos' => $insumos]);
     }
     
@@ -1047,6 +1103,57 @@ class Productos extends MY_Controller {
     }
 
     /**
+     * Importa UN archivo Excel arbitrario desde CLI, omitiendo duplicados por defecto.
+     * Uso: php index.php produccion/Productos importar_archivo_cli "doc/CHISA GLASS 2021.xls"
+     * Opcional: agregar "todo" como 2º segmento para NO omitir duplicados.
+     */
+    public function importar_archivo_cli($ruta_rel = null, $modo = 'dedup') {
+        if (!is_cli()) {
+            show_error('Este método solo puede ejecutarse desde la línea de comandos.');
+            return;
+        }
+        // La ruta se pasa por variable de entorno IMPORT_FILE para evitar que CI
+        // parta rutas con espacios/slashes en segmentos de URI.
+        $env_file = getenv('IMPORT_FILE');
+        if ($env_file) { $ruta_rel = $env_file; }
+        $env_modo = getenv('IMPORT_MODE');
+        if ($env_modo) { $modo = $env_modo; }
+        $ruta_rel = $ruta_rel ? urldecode($ruta_rel) : null;
+        if (!$ruta_rel) {
+            echo "ERROR: indica la ruta relativa a public_html/ del archivo.\n";
+            return;
+        }
+
+        $ruta = (strpos($ruta_rel, '/') === 0) ? $ruta_rel : realpath(FCPATH . $ruta_rel);
+        if (!$ruta || !is_readable($ruta)) {
+            echo "ERROR: no se puede leer el archivo: $ruta_rel\n";
+            return;
+        }
+
+        $ext = strtolower(pathinfo($ruta, PATHINFO_EXTENSION));
+        $opciones = ['omitir_duplicados' => ($modo !== 'todo')];
+
+        echo "=== Importando: " . basename($ruta) . " (modo=" . ($opciones['omitir_duplicados'] ? 'dedup' : 'todo') . ") ===\n";
+        try {
+            $resultado = $this->_procesar_importacion_excel($ruta, basename($ruta), $ext, $opciones);
+            $r = $resultado['response'];
+            echo $r['message'] . "\n";
+            echo "Importados: " . count($r['importados'] ?? []) . "\n";
+            echo "Omitidos:   " . count($r['omitidos'] ?? []) . "\n";
+            echo "Errores:    " . count($r['errores'] ?? []) . "\n";
+            foreach (array_slice($r['errores'] ?? [], 0, 15) as $err) {
+                echo "  ERROR: $err\n";
+            }
+            foreach (array_slice($r['importados'] ?? [], 0, 200) as $imp) {
+                $nom = is_array($imp) ? ($imp['producto'] ?? json_encode($imp)) : $imp;
+                echo "  + $nom\n";
+            }
+        } catch (Exception $e) {
+            echo "ERROR FATAL: " . $e->getMessage() . "\n";
+        }
+    }
+
+    /**
      * Procesa un archivo Excel y persiste las formulaciones en BD.
      */
     private function _procesar_importacion_excel($ruta, $nombre_archivo, $ext, $opciones = []) {
@@ -1341,6 +1448,13 @@ class Productos extends MY_Controller {
                     }
 
                     if ($total_kg <= 0) {
+                        // Fallback fichas históricas: en hojas viejas el total del lote no está
+                        // en la celda contigua al "KILOS", sino como único número aislado en la
+                        // columna de kg unas filas más abajo (antes del primer componente).
+                        $total_kg = $this->_total_kg_fallback($matrix, $r, $kilos_col + 1, $maxRow);
+                    }
+
+                    if ($total_kg <= 0) {
                         $ultima_col_a_texto = $col_a;
                         continue;
                     }
@@ -1411,6 +1525,8 @@ class Productos extends MY_Controller {
                 $grupos       = [];
                 $grupo_actual = '__default__';
                 $fmt          = $bloques[$bi]['formato'] ?? 'chisa_glass';
+                $total_kg_bloque = (float)($bloques[$bi]['total_kg'] ?? 0);
+                $kg_derivado_en_bloque = false;
 
                 // Offsets por formato:
                 //   chisa_glass:    B=prop, C=%fase, D=nombre_repetido, E=kg
@@ -1473,6 +1589,15 @@ class Productos extends MY_Controller {
                     $kg      = is_numeric($col_e) ? (float) $col_e : null;
                     $pct_fa  = is_numeric($col_c) ? (float) $col_c : null;
 
+                    // Fallback fichas históricas: si el componente trae % pero no kg,
+                    // derivamos kg = total_lote × proporción (el % es la fuente de verdad y
+                    // el simulador recalcula kg de todos modos). Se marca para trazabilidad.
+                    if ($col_a !== '' && $pct_raw !== null && ($kg === null || $kg <= 0)
+                        && $total_kg_bloque > 0 && $pct_raw > 0 && $pct_raw <= 1.02) {
+                        $kg = round($total_kg_bloque * $pct_raw, 6);
+                        $kg_derivado_en_bloque = true;
+                    }
+
                     if ($col_a !== '' && $pct_raw !== null && $kg !== null && $kg > 0) {
                         if (!isset($grupos[$grupo_actual])) {
                             $grupos[$grupo_actual] = [];
@@ -1490,6 +1615,7 @@ class Productos extends MY_Controller {
                 }
 
                 $bloques[$bi]['grupos'] = $grupos;
+                $bloques[$bi]['kg_derivado'] = $kg_derivado_en_bloque;
                 // Solo agregar bloques con al menos un componente
                 if (!empty($grupos)) {
                     $todos[] = $bloques[$bi];
@@ -1498,6 +1624,30 @@ class Productos extends MY_Controller {
         }
 
         return $todos;
+    }
+
+    /**
+     * Fallback para fichas históricas sin total en la celda contigua a "KILOS".
+     * Busca en las filas posteriores al encabezado el primer número aislado en la
+     * columna de kg ($kg_col) donde col A y col B están vacías (patrón "total bajo
+     * encabezado"). Si encuentra MÁS de un número aislado antes del primer componente
+     * (col B numérica), lo considera ambiguo y devuelve 0 para no importar datos dudosos.
+     */
+    private function _total_kg_fallback($matrix, $r_header, $kg_col, $maxRow) {
+        $candidatos = [];
+        for ($r = $r_header + 1; $r <= min($maxRow, $r_header + 6); $r++) {
+            $a = trim((string)($matrix[$r][1] ?? ''));
+            $b = $matrix[$r][2] ?? null;
+            $kg = $matrix[$r][$kg_col] ?? null;
+            // Si aparece un componente (col A texto + col B numérica) detenemos la búsqueda.
+            if ($a !== '' && is_numeric($b)) break;
+            // Fila de total aislada: A vacía, B vacía, kg numérico > 0.
+            if ($a === '' && ($b === null || $b === '') && is_numeric($kg) && (float)$kg > 0) {
+                $candidatos[] = (float)$kg;
+            }
+        }
+        // Solo aceptamos un único candidato para evitar confundir con valores de fase acuosa.
+        return (count($candidatos) === 1) ? $candidatos[0] : 0.0;
     }
 
     /**
@@ -1590,6 +1740,7 @@ class Productos extends MY_Controller {
                 $cliente_nom ? "Cliente: $cliente_nom" : 'Importado desde Excel.',
                 $archivo_origen ? "Archivo: $archivo_origen" : null,
                 $hoja_origen    ? "Hoja: $hoja_origen"    : null,
+                !empty($pdata['kg_derivado']) ? 'kg calculado desde % (ficha histórica sin kg): verificar en planta.' : null,
             ])),
             'cantidad_producida'    => $total_kg,
             'unidad_produccion'     => 'Kg',

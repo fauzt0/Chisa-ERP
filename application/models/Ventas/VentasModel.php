@@ -58,6 +58,53 @@ class VentasModel extends MY_Model {
         
         return true;
     }
+
+    /**
+     * Solo consulta disponibilidad (sin pre-órdenes). Para cotizaciones y borradores de obra.
+     */
+    public function consultar_insumos_venta($orden_id) {
+        $this->load->model('Produccion/ProductosModel');
+        return $this->ProductosModel->consultar_verificacion_insumos((int) $orden_id, 'venta');
+    }
+
+    /**
+     * Verifica insumos y genera pre-órdenes Pendiente si faltan materias primas.
+     * Solo para documentos de compromiso (Confirmada, En Preparación, Entregada).
+     */
+    public function verificar_insumos_y_preordenes_venta($orden_id, $usuario_id) {
+        $this->load->model('Produccion/ProductosModel');
+
+        $orden = $this->db->select('folio')->where('id', (int) $orden_id)->get('ordenes_venta')->row();
+        $notas = $orden
+            ? ('Verificación automática al crear/confirmar venta ' . $orden->folio)
+            : ('Verificación automática venta ID ' . (int) $orden_id);
+
+        return $this->ProductosModel->procesar_verificacion_insumos_post_creacion(
+            (int) $orden_id,
+            'venta',
+            (int) $usuario_id,
+            $notas
+        );
+    }
+
+    /**
+     * Formatea respuesta de insumos para JSON de controladores.
+     */
+    public function formatear_insumos_respuesta_json($insumos_result) {
+        if (!$insumos_result) {
+            return null;
+        }
+
+        return [
+            'ok'              => !($insumos_result['bloqueada'] ?? false),
+            'mensaje_resumen' => $insumos_result['mensaje_resumen'] ?? '',
+            'solo_consulta'   => !empty($insumos_result['solo_consulta']),
+            'faltantes'       => count($insumos_result['verificacion']['faltantes'] ?? []),
+            'preordenes'      => array_values(array_filter(array_map(function ($p) {
+                return $p->folio ?? null;
+            }, $insumos_result['preordenes']['creadas'] ?? []))),
+        ];
+    }
     
     /**
      * Obtiene una orden con su detalle
@@ -132,6 +179,8 @@ class VentasModel extends MY_Model {
 
     /**
      * Confirma una orden (cambia de Cotización a Confirmada)
+     *
+     * @return array{success:bool, insumos:?array}
      */
     public function confirmar_orden($id) {
         // Verificar si requiere producción
@@ -151,8 +200,18 @@ class VentasModel extends MY_Model {
         if($requiere_produccion) {
             $this->crear_solicitudes_produccion($id);
         }
+
+        $insumos_result = null;
+        $CI =& get_instance();
+        $usuario_id = (int) ($CI->session->userdata('id') ?: $CI->session->userdata('user_id') ?: 0);
+        if ($usuario_id > 0) {
+            $insumos_result = $this->verificar_insumos_y_preordenes_venta($id, $usuario_id);
+        }
         
-        return true;
+        return [
+            'success' => true,
+            'insumos' => $this->formatear_insumos_respuesta_json($insumos_result),
+        ];
     }
     
     /**

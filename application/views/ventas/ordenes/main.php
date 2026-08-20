@@ -601,7 +601,11 @@ window.confirmarOrden = function(id) {
     '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
   }, function(result) {
     result = JSON.parse(result);
-    notifyShow(result.message, result.success ? 'success' : 'danger');
+    let msg = result.message;
+    if (result.success && result.insumos && result.insumos.mensaje_resumen) {
+      msg += '\n\n' + result.insumos.mensaje_resumen;
+    }
+    notifyShow(msg, result.success ? 'success' : 'danger');
     if(result.success) {
       tabla.ajax.reload();
     }

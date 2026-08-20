@@ -157,6 +157,11 @@ $this->load->view('obras/partials/vinculo_venta', [
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tabMateriales" id="linkTabMateriales">
+                            <i class="fas fa-calculator"></i> Cálculo Materiales
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="tab" href="#tabArchivos">
                             <i class="fas fa-folder-open"></i> Archivos
                         </a>
@@ -242,6 +247,40 @@ $this->load->view('obras/partials/vinculo_venta', [
                                     <?php endif; ?>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab Cálculo Materiales (P8) -->
+                    <div class="tab-pane fade" id="tabMateriales">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1">Materiales calculados (m² → kg → insumos)</h5>
+                                <small class="text-muted">Solo visualización. Las pre-órdenes se generan al aprobar la obra (P5).</small>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="cargarMaterialesObra()">
+                                <i class="fas fa-sync-alt"></i> Recalcular
+                            </button>
+                        </div>
+                        <div id="materiales_obra_loading" class="text-center py-4 text-muted d-none">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Calculando materiales…</p>
+                        </div>
+                        <div id="materiales_obra_errores" class="alert alert-warning d-none"></div>
+                        <div id="materiales_obra_resumen" class="row g-3 mb-3 d-none"></div>
+                        <div id="materiales_obra_lineas" class="mb-4 d-none"></div>
+                        <div id="materiales_obra_insumos" class="d-none">
+                            <h6><i class="fas fa-flask"></i> Insumos consolidados (top)</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Insumo</th>
+                                            <th class="text-end">Cantidad</th>
+                                            <th>Unidad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="materiales_obra_insumos_body"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                     
@@ -488,9 +527,16 @@ $this->load->view('obras/partials/vinculo_venta', [
             <div class="modal-body">
                 <!-- Explicación -->
                 <div class="alert alert-info">
-                    <h6><i class="fas fa-info-circle"></i> ¿Cómo calcular las cantidades?</h6>
-                    <p class="mb-1"><strong>Cantidad Calculada:</strong> Resultado del cálculo teórico = (Área ÷ Rendimiento) × Factor Desperdicio</p>
-                    <p class="mb-0"><strong>Cantidad Ajustada:</strong> (Opcional) Cantidad real a usar considerando presentaciones comerciales o condiciones especiales</p>
+                    <h6><i class="fas fa-info-circle"></i> Cálculo automático m² → kg → cubetas → insumos</h6>
+                    <p class="mb-1"><strong>Fórmula:</strong> kg = (m² × factor desperdicio) ÷ rendimiento (m²/kg de la formulación)</p>
+                    <p class="mb-0"><strong>Cubetas:</strong> ⌈kg ÷ cantidad_producida del lote⌉ — usa el motor de formulaciones (sin asumir rendimiento 1.0).</p>
+                </div>
+
+                <input type="hidden" name="formulacion_id" id="formulacionIdObra" value="">
+                <div id="alertaSinRendimiento" class="alert alert-danger d-none">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="alertaSinRendimientoMsg"></span>
+                    <a href="<?=base_url()?>produccion/Productos" target="_blank" class="alert-link ms-1">Abrir formulaciones</a>
                 </div>
                 
                 <form id="formAgregarProducto">
@@ -509,37 +555,54 @@ $this->load->view('obras/partials/vinculo_venta', [
                         </div>
                     </div>
                     
-                    <h6 class="mb-3"><i class="fas fa-calculator"></i> Cálculo Automático</h6>
+                    <h6 class="mb-3"><i class="fas fa-calculator"></i> Área y rendimiento</h6>
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <label class="form-label">Área de Aplicación (m²)</label>
-                            <input type="number" step="0.01" class="form-control" name="area_aplicacion" id="areaAplicacion">
+                            <label class="form-label">Área de Aplicación (m²) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0.01" class="form-control" name="area_aplicacion" id="areaAplicacion" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Rendimiento Teórico (m²/unidad)</label>
-                            <input type="number" step="0.01" class="form-control" name="rendimiento_teorico" id="rendimientoTeorico" placeholder="ej: 10">
+                            <label class="form-label">Rendimiento (m²/kg)</label>
+                            <input type="number" step="0.0001" min="0.0001" class="form-control" name="rendimiento_teorico" id="rendimientoTeorico" placeholder="De formulación" readonly>
+                            <small class="text-muted" id="rendimientoOrigenHint">Se carga de la formulación activa</small>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Factor Desperdicio</label>
-                            <input type="number" step="0.01" class="form-control" name="factor_desperdicio" id="factorDesperdicio" value="1.10">
+                            <input type="number" step="0.01" min="1" class="form-control" name="factor_desperdicio" id="factorDesperdicio" value="1.10">
                             <small class="text-muted">Default: 1.10 (10% extra)</small>
+                        </div>
+                    </div>
+
+                    <div id="panelCalculoMateriales" class="card bg-light mb-3 d-none">
+                        <div class="card-body py-3">
+                            <div class="row text-center g-2 mb-2">
+                                <div class="col"><small class="text-muted d-block">m² efectivos</small><strong id="calcM2Efectivo">—</strong></div>
+                                <div class="col"><small class="text-muted d-block">kg necesarios</small><strong id="calcKg">—</strong></div>
+                                <div class="col"><small class="text-muted d-block">Cubetas</small><strong id="calcCubetas">—</strong></div>
+                            </div>
+                            <div class="table-responsive" style="max-height:160px;">
+                                <table class="table table-sm table-bordered mb-0 bg-white">
+                                    <thead><tr><th>Insumo</th><th class="text-end">Cant.</th><th>Unid.</th></tr></thead>
+                                    <tbody id="calcInsumosTop"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <label class="form-label">Cantidad Calculada <span class="text-danger">*</span></label>
+                            <label class="form-label">Cantidad Calculada (cubetas) <span class="text-danger">*</span></label>
                             <input type="number" step="0.01" class="form-control bg-light" name="cantidad_calculada" id="cantidadCalculada" readonly required>
-                            <small class="text-muted">Se calcula automáticamente</small>
+                            <small class="text-muted">Calculado por el motor de formulaciones</small>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Cantidad Ajustada</label>
-                            <input type="number" step="0.01" class="form-control" name="cantidad_ajustada" placeholder="Opcional">
-                            <small class="text-muted">Cantidad real a usar</small>
+                            <input type="number" step="0.01" class="form-control" name="cantidad_ajustada" id="cantidadAjustada" placeholder="Opcional">
+                            <small class="text-muted">Cubetas reales a usar</small>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Unidad <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="unidad" required>
+                            <label class="form-label">Unidad</label>
+                            <input type="text" class="form-control bg-light" name="unidad" id="unidadProductoObra" readonly>
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -892,46 +955,198 @@ $this->load->view('obras/partials/vinculo_venta', [
                     selectProducto.appendChild(option);
                 });
                 
-                // Auto-llenar unidad y precio al seleccionar producto
-                selectProducto.addEventListener('change', function() {
+                selectProducto.onchange = function() {
                     const selectedOption = this.options[this.selectedIndex];
-                    if(selectedOption.dataset.unidad) {
-                        document.querySelector('#modalAgregarProducto input[name="unidad"]').value = selectedOption.dataset.unidad;
-                    }
-                    if(selectedOption.dataset.precio) {
+                    const productoId = this.value;
+                    if (selectedOption.dataset.precio) {
                         document.querySelector('#modalAgregarProducto input[name="precio_unitario"]').value = selectedOption.dataset.precio;
                     }
-                });
+                    document.getElementById('formulacionIdObra').value = '';
+                    document.getElementById('rendimientoTeorico').value = '';
+                    document.getElementById('rendimientoTeorico').readOnly = true;
+                    document.getElementById('rendimientoOrigenHint').textContent = 'Se carga de la formulación activa';
+                    document.getElementById('alertaSinRendimiento').classList.add('d-none');
+                    document.getElementById('panelCalculoMateriales').classList.add('d-none');
+                    document.getElementById('cantidadCalculada').value = '';
+                    document.getElementById('unidadProductoObra').value = '';
+
+                    if (!productoId) return;
+
+                    const fd = new FormData();
+                    fd.append('producto_id', productoId);
+                    fd.append('<?=$this->security->get_csrf_token_name()?>', '<?=$this->security->get_csrf_hash()?>');
+                    fetch('<?=base_url()?>obras/Obras/get_formulacion_ajax', { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.success && res.formulacion) {
+                                const f = res.formulacion;
+                                document.getElementById('formulacionIdObra').value = f.id;
+                                const rend = parseFloat(f.rendimiento_m2_por_kg || 0);
+                                if (rend > 0) {
+                                    document.getElementById('rendimientoTeorico').value = rend;
+                                    document.getElementById('rendimientoTeorico').readOnly = true;
+                                    document.getElementById('rendimientoOrigenHint').textContent = 'Desde formulación activa (m²/kg)';
+                                } else {
+                                    document.getElementById('rendimientoTeorico').readOnly = false;
+                                    document.getElementById('rendimientoOrigenHint').textContent = 'Falta en formulación — captúrelo aquí o en Producción';
+                                    document.getElementById('alertaSinRendimiento').classList.remove('d-none');
+                                    document.getElementById('alertaSinRendimientoMsg').textContent =
+                                        'La formulación activa no tiene rendimiento m²/kg. Capture el valor o edite la formulación.';
+                                }
+                                document.getElementById('unidadProductoObra').value = 'Cubeta';
+                            } else {
+                                document.getElementById('alertaSinRendimiento').classList.remove('d-none');
+                                document.getElementById('alertaSinRendimientoMsg').textContent = 'Sin formulación activa para este producto.';
+                            }
+                            calcularMaterialesLinea();
+                        });
+                };
             }
         })
         .catch(error => console.error('Error al cargar productos:', error));
     }
 
-    // Calculador automático de cantidades
-    function calcularCantidad() {
-        const area = parseFloat(document.getElementById('areaAplicacion').value) || 0;
-        const rendimiento = parseFloat(document.getElementById('rendimientoTeorico').value) || 0;
-        const factorDesperdicio = parseFloat(document.getElementById('factorDesperdicio').value) || 1.10;
-        
-        if (area > 0 && rendimiento > 0) {
-            const cantidadCalculada = (area / rendimiento) * factorDesperdicio;
-            document.getElementById('cantidadCalculada').value = cantidadCalculada.toFixed(2);
-        } else {
-            document.getElementById('cantidadCalculada').value = '';
-        }
+    const CSRF_OBRA = { '<?=$this->security->get_csrf_token_name()?>': '<?=$this->security->get_csrf_hash()?>' };
+
+    function escHtmlObra(s) {
+        if (s == null) return '—';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
-    // Agregar listeners para cálculo automático
+    let calcTimerObra = null;
+    function calcularMaterialesLinea() {
+        clearTimeout(calcTimerObra);
+        calcTimerObra = setTimeout(_ejecutarCalculoLinea, 350);
+    }
+
+    function _ejecutarCalculoLinea() {
+        const productoId = document.querySelector('#formAgregarProducto select[name="producto_id"]').value;
+        const area = document.getElementById('areaAplicacion').value;
+        if (!productoId || !area || parseFloat(area) <= 0) {
+            document.getElementById('panelCalculoMateriales').classList.add('d-none');
+            document.getElementById('cantidadCalculada').value = '';
+            return;
+        }
+
+        const postData = new FormData();
+        postData.append('producto_id', productoId);
+        postData.append('area_aplicacion', area);
+        postData.append('factor_desperdicio', document.getElementById('factorDesperdicio').value || '1.10');
+        postData.append('formulacion_id', document.getElementById('formulacionIdObra').value || '');
+        postData.append('rendimiento_teorico', document.getElementById('rendimientoTeorico').value || '');
+        Object.keys(CSRF_OBRA).forEach(k => postData.append(k, CSRF_OBRA[k]));
+
+        fetch('<?=base_url()?>obras/Obras/calcular_materiales_ajax', { method: 'POST', body: postData })
+            .then(r => r.json())
+            .then(res => {
+                if (!res.success) {
+                    document.getElementById('panelCalculoMateriales').classList.add('d-none');
+                    document.getElementById('cantidadCalculada').value = '';
+                    if (res.requiere_rendimiento) {
+                        document.getElementById('alertaSinRendimiento').classList.remove('d-none');
+                        document.getElementById('alertaSinRendimientoMsg').textContent = res.message;
+                        document.getElementById('rendimientoTeorico').readOnly = false;
+                    }
+                    return;
+                }
+                document.getElementById('alertaSinRendimiento').classList.add('d-none');
+                document.getElementById('panelCalculoMateriales').classList.remove('d-none');
+                document.getElementById('calcM2Efectivo').textContent = parseFloat(res.m2_efectivo).toFixed(2);
+                document.getElementById('calcKg').textContent = parseFloat(res.kg_necesarios).toFixed(2);
+                document.getElementById('calcCubetas').textContent = res.cubetas;
+                document.getElementById('cantidadCalculada').value = res.cantidad_calculada;
+                document.getElementById('unidadProductoObra').value = res.unidad || 'Cubeta';
+                if (res.formulacion_id) {
+                    document.getElementById('formulacionIdObra').value = res.formulacion_id;
+                }
+
+                let insHtml = '';
+                (res.insumos || []).forEach(ins => {
+                    insHtml += `<tr><td>${escHtmlObra(ins.insumo_nombre)}</td><td class="text-end">${parseFloat(ins.cantidad).toFixed(3)}</td><td>${escHtmlObra(ins.unidad)}</td></tr>`;
+                });
+                document.getElementById('calcInsumosTop').innerHTML = insHtml || '<tr><td colspan="3" class="text-muted text-center">Sin insumos</td></tr>';
+            })
+            .catch(() => {
+                document.getElementById('panelCalculoMateriales').classList.add('d-none');
+            });
+    }
+
     document.getElementById('modalAgregarProducto').addEventListener('shown.bs.modal', function() {
-        // Limpiar campos al abrir modal
         document.getElementById('formAgregarProducto').reset();
         document.getElementById('factorDesperdicio').value = '1.10';
-        
-        // Agregar listeners para cálculo en tiempo real
-        document.getElementById('areaAplicacion').addEventListener('input', calcularCantidad);
-        document.getElementById('rendimientoTeorico').addEventListener('input', calcularCantidad);
-        document.getElementById('factorDesperdicio').addEventListener('input', calcularCantidad);
+        document.getElementById('alertaSinRendimiento').classList.add('d-none');
+        document.getElementById('panelCalculoMateriales').classList.add('d-none');
+        ['areaAplicacion', 'rendimientoTeorico', 'factorDesperdicio'].forEach(id => {
+            document.getElementById(id).removeEventListener('input', calcularMaterialesLinea);
+            document.getElementById(id).addEventListener('input', calcularMaterialesLinea);
+        });
     });
+
+    document.getElementById('linkTabMateriales').addEventListener('shown.bs.tab', function() {
+        cargarMaterialesObra();
+    });
+
+    function cargarMaterialesObra() {
+        const loading = document.getElementById('materiales_obra_loading');
+        const errores = document.getElementById('materiales_obra_errores');
+        loading.classList.remove('d-none');
+        errores.classList.add('d-none');
+
+        const postData = new FormData();
+        postData.append('obra_id', '<?=(int)$obra->id?>');
+        Object.keys(CSRF_OBRA).forEach(k => postData.append(k, CSRF_OBRA[k]));
+
+        fetch('<?=base_url()?>obras/Obras/materiales_obra_ajax', { method: 'POST', body: postData })
+            .then(r => r.json())
+            .then(res => {
+                loading.classList.add('d-none');
+                if (!res.success && (!res.lineas || res.lineas.length === 0)) {
+                    errores.classList.remove('d-none');
+                    errores.innerHTML = '<i class="fas fa-info-circle"></i> ' + escHtmlObra(res.message || 'No hay datos para calcular.');
+                    return;
+                }
+                if (res.hay_errores && res.errores && res.errores.length) {
+                    errores.classList.remove('d-none');
+                    errores.innerHTML = '<strong>Advertencias:</strong><ul class="mb-0">' +
+                        res.errores.map(e => '<li>' + escHtmlObra(e) + '</li>').join('') + '</ul>';
+                }
+                const t = res.totales || {};
+                const resumen = document.getElementById('materiales_obra_resumen');
+                resumen.classList.remove('d-none');
+                resumen.innerHTML = `
+                    <div class="col-md-3"><div class="card text-center"><div class="card-body py-2"><small class="text-muted">m² total</small><h5 class="mb-0">${parseFloat(t.m2_bruto||0).toFixed(2)}</h5></div></div></div>
+                    <div class="col-md-3"><div class="card text-center"><div class="card-body py-2"><small class="text-muted">m² efectivos</small><h5 class="mb-0">${parseFloat(t.m2_efectivo||0).toFixed(2)}</h5></div></div></div>
+                    <div class="col-md-3"><div class="card text-center"><div class="card-body py-2"><small class="text-muted">kg total</small><h5 class="mb-0">${parseFloat(t.kg||0).toFixed(2)}</h5></div></div></div>
+                    <div class="col-md-3"><div class="card text-center"><div class="card-body py-2"><small class="text-muted">cubetas</small><h5 class="mb-0">${parseFloat(t.cubetas||0).toFixed(0)}</h5></div></div></div>`;
+
+                let lineasHtml = '<h6 class="mt-2">Por línea de producto</h6><div class="table-responsive"><table class="table table-sm table-bordered"><thead class="table-light"><tr><th>Producto</th><th>Sección</th><th>m²</th><th>kg</th><th>Cubetas</th></tr></thead><tbody>';
+                (res.lineas || []).forEach(l => {
+                    if (!l.success) return;
+                    lineasHtml += `<tr>
+                        <td>${escHtmlObra(l.producto_nombre)}</td>
+                        <td>${escHtmlObra(l.seccion_obra || '—')}</td>
+                        <td>${l.m2_bruto != null ? parseFloat(l.m2_bruto).toFixed(2) : '—'}</td>
+                        <td>${l.kg_necesarios != null ? parseFloat(l.kg_necesarios).toFixed(2) : '—'}</td>
+                        <td>${l.cubetas != null ? l.cubetas : '—'}</td></tr>`;
+                });
+                lineasHtml += '</tbody></table></div>';
+                const lineasEl = document.getElementById('materiales_obra_lineas');
+                lineasEl.classList.remove('d-none');
+                lineasEl.innerHTML = lineasHtml;
+
+                let insBody = '';
+                (res.insumos_consolidados || []).forEach(ins => {
+                    insBody += `<tr><td>${escHtmlObra(ins.insumo_nombre)} <small class="text-muted">${escHtmlObra(ins.insumo_codigo)}</small></td><td class="text-end">${parseFloat(ins.cantidad).toFixed(3)}</td><td>${escHtmlObra(ins.unidad)}</td></tr>`;
+                });
+                document.getElementById('materiales_obra_insumos_body').innerHTML = insBody || '<tr><td colspan="3" class="text-center text-muted">Sin insumos calculables</td></tr>';
+                document.getElementById('materiales_obra_insumos').classList.remove('d-none');
+            })
+            .catch(() => {
+                loading.classList.add('d-none');
+                errores.classList.remove('d-none');
+                errores.textContent = 'Error al calcular materiales de la obra.';
+            });
+    }
 
     function actualizarObra() {
         const formData = new FormData(document.getElementById('formEditarObra'));
@@ -958,7 +1173,8 @@ $this->load->view('obras/partials/vinculo_venta', [
 
     function guardarProducto() {
         const formData = new FormData(document.getElementById('formAgregarProducto'));
-        
+        Object.keys(CSRF_OBRA).forEach(k => formData.append(k, CSRF_OBRA[k]));
+
         fetch('<?=base_url()?>obras/Obras/agregar_producto_ajax', {
             method: 'POST',
             body: formData
@@ -966,11 +1182,23 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                let msg = data.message;
+                if (data.calculo) {
+                    msg += '\n\nm²→kg: ' + parseFloat(data.calculo.m2_efectivo).toFixed(2) + ' m² → ' +
+                        parseFloat(data.calculo.kg_necesarios).toFixed(2) + ' kg → ' + data.calculo.cubetas + ' cubetas';
+                }
+                if (data.insumos && data.insumos.mensaje_resumen) {
+                    msg += '\n\n' + data.insumos.mensaje_resumen;
+                }
+                alert(msg);
                 $('#modalAgregarProducto').modal('hide');
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                let err = data.message || 'Error al agregar';
+                if (data.requiere_rendimiento) {
+                    err += '\n\nCapture el rendimiento m²/kg en la línea o en Producción > Formulaciones.';
+                }
+                alert(err);
             }
         })
         .catch(error => {

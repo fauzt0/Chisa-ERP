@@ -5,6 +5,9 @@
         </div>
 
         <div class="col-auto ms-auto text-end mt-n1">
+            <a href="<?=base_url()?>produccion/Lotes/consultar" class="btn btn-info me-2">
+                <i class="fas fa-barcode"></i> Consultar Lote
+            </a>
             <a href="<?=base_url()?>produccion/Dashboard" class="btn btn-primary">
                 <i class="fas fa-industry"></i> Ir a Fabricación
             </a>
@@ -117,9 +120,19 @@
         }, 300);
     }
 
+    function etiquetaPrefsQuery() {
+        try {
+            const size = localStorage.getItem('chisa_etiqueta_prefs_size') || '100x50';
+            const zoom = localStorage.getItem('chisa_etiqueta_prefs_zoom') || '100';
+            return 'size=' + encodeURIComponent(size) + '&zoom=' + encodeURIComponent(zoom);
+        } catch (e) {
+            return 'size=100x50&zoom=100';
+        }
+    }
+
     $('#btn_imprimir_modal').click(function() {
         if (currentLoteId) {
-            window.open('<?=base_url()?>produccion/Dashboard/etiqueta_lote/' + currentLoteId, '_blank');
+            window.open('<?=base_url()?>produccion/Dashboard/etiqueta_lote/' + currentLoteId + '?' + etiquetaPrefsQuery(), '_blank');
         }
     });
 

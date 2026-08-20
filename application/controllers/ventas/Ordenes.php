@@ -246,9 +246,13 @@ class Ordenes extends MY_Controller {
         
         $result = $this->VentasModel->confirmar_orden($id);
         
-        if($result) {
+        if(!empty($result['success'])) {
             $this->registrar_bitacora('Orden de venta confirmada ID ' . $id, 'Ventas');
-            echo json_encode(['success' => true, 'message' => 'Orden confirmada correctamente']);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Orden confirmada correctamente',
+                'insumos' => $result['insumos'] ?? null,
+            ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al confirmar orden']);
         }

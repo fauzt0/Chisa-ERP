@@ -4,6 +4,17 @@ let componentesTemporales = [];
 let insumosDisponibles = [];
 let productosDisponibles = [];
 
+// Escapa texto para insertarlo de forma segura en HTML
+function escHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function initProductos() {
   limpiarBackdropsModal();
   inicializarDataTable();
@@ -514,7 +525,11 @@ window.toggleProveedorField = function() {
 window.gestionarFormulacion = function(productoId) {
   $('#formulacion_producto_id').val(productoId);
   componentesTemporales = [];
-  
+
+  // Reset de campos de cabecera antes de cargar
+  $('#formulacion_referencia_cliente, #formulacion_comentarios, #formulacion_rendimiento_m2_por_kg').val('');
+  $('#formulacion_cliente_id').val('');
+
   // Obtener datos del producto
   $.post(BASE_URL+'produccion/Productos/get_producto_ajax', {
     'id': productoId,
@@ -524,7 +539,10 @@ window.gestionarFormulacion = function(productoId) {
     result = JSON.parse(result);
     if(result.success) {
       $('#formulacionProductoNombre').text(result.producto.nombre);
-      
+
+      // Cargar catálogo de clientes para asociar fórmula específica
+      cargarClientesFormulacion();
+
       // Cargar formulación existente
       cargarFormulacion(productoId);
       
@@ -537,6 +555,27 @@ window.gestionarFormulacion = function(productoId) {
   });
 };
 
+// Carga el catálogo de clientes en el selector de la formulación (fórmula específica por cliente)
+function cargarClientesFormulacion() {
+  const $sel = $('#formulacion_cliente_id');
+  if ($sel.data('cargado')) return; // sólo una vez por sesión de página
+  $.post(BASE_URL+'ventas/Clientes/get_clientes_ajax', {
+    'peticion': 'ajax',
+    [CSRF_TOKEN_NAME]: CSRF_HASH
+  }, function(res) {
+    try {
+      const result = JSON.parse(res);
+      if (result.success && result.data) {
+        let options = '<option value="">-- Genérica / sin cliente --</option>';
+        result.data.forEach(c => {
+          options += `<option value="${c.id}">${escHtml(c.razon_social || c.nombre || ('#'+c.id))}</option>`;
+        });
+        $sel.html(options).data('cargado', true);
+      }
+    } catch(e) {}
+  });
+}
+
 function cargarFormulacion(productoId) {
   $.post(BASE_URL+'produccion/Productos/get_formulacion_ajax', {
     'producto_id': productoId,
@@ -545,19 +584,31 @@ function cargarFormulacion(productoId) {
   }, function(result) {
     result = JSON.parse(result);
     if(result.success && result.formulacion) {
-      formulacionActual = result.formulacion;
-      $('#formulacion_id').val(result.formulacion.id);
-      $('#formulacion_nombre_version').val(result.formulacion.nombre_version);
-      $('#formulacion_cantidad_producida').val(result.formulacion.cantidad_producida);
-      $('#formulacion_unidad_produccion').val(result.formulacion.unidad_produccion);
-      $('#formulacion_descripcion').val(result.formulacion.descripcion);
-      $('#formulacion_costo_mano_obra').val(result.formulacion.costo_mano_obra);
-      $('#formulacion_costo_indirecto').val(result.formulacion.costo_indirecto);
-      $('#formulacion_costo_total').val(result.formulacion.costo_total);
-      
+      const f = result.formulacion;
+      formulacionActual = f;
+      $('#formulacion_id').val(f.id);
+      $('#formulacion_nombre_version').val(f.nombre_version);
+      $('#formulacion_cantidad_producida').val(f.cantidad_producida);
+      $('#formulacion_unidad_produccion').val(f.unidad_produccion);
+      $('#formulacion_descripcion').val(f.descripcion);
+      $('#formulacion_costo_mano_obra').val(f.costo_mano_obra);
+      $('#formulacion_costo_indirecto').val(f.costo_indirecto);
+      $('#formulacion_costo_total').val(f.costo_total);
+      // Metadatos de fórmula específica por cliente
+      $('#formulacion_cliente_id').val(f.cliente_id || '');
+      $('#formulacion_referencia_cliente').val(f.referencia_cliente || '');
+      $('#formulacion_comentarios').val(f.comentarios || '');
+      $('#formulacion_rendimiento_m2_por_kg').val(f.rendimiento_m2_por_kg || '');
+
+      // Al existir una versión activa, permitimos actualizarla (sobreescribir)
+      $('#btnActualizarFormulacion').show();
+      $('#formulacionEstadoVersion').html(
+        '<i class="fas fa-code-branch"></i> Editando <strong>' + escHtml(f.nombre_version || ('v'+(f.version||''))) + '</strong> (activa)'
+      );
+
       // Cargar componentes
-      if(result.formulacion.componentes) {
-        componentesTemporales = result.formulacion.componentes.map(c => ({
+      if(f.componentes) {
+        componentesTemporales = f.componentes.map(c => ({
           id: c.id,
           tipo: c.tipo_componente,
           item_id: c.tipo_componente === 'Insumo' ? c.insumo_id : c.producto_id,
@@ -566,6 +617,9 @@ function cargarFormulacion(productoId) {
           cantidad: parseFloat(c.cantidad),
           unidad: c.unidad,
           porcentaje: c.porcentaje != null ? parseFloat(c.porcentaje) : null,
+          grupo_color: c.grupo_color || '',
+          porcentaje_fase_acuosa: c.porcentaje_fase_acuosa != null ? parseFloat(c.porcentaje_fase_acuosa) : null,
+          observaciones: c.observaciones || '',
           costo_unitario: parseFloat(c.costo_unitario),
           subtotal: parseFloat(c.costo_total)
         }));
@@ -574,10 +628,14 @@ function cargarFormulacion(productoId) {
       }
     } else {
       // Nueva formulación
+      formulacionActual = null;
       $('#formulacion_id').val('');
       $('#formulacion_nombre_version').val('V1.0');
       $('#formulacion_cantidad_producida').val('');
-      $('#formulacion_unidad_produccion').val('L');
+      $('#formulacion_unidad_produccion').val('Kg');
+      $('#btnActualizarFormulacion').hide();
+      $('#formulacionEstadoVersion').html('<i class="fas fa-plus-circle"></i> Producto sin formulación: se creará la primera versión');
+      renderizarComponentes();
     }
   });
 }
@@ -590,13 +648,43 @@ function cargarInsumosSelect() {
     result = JSON.parse(result);
     if(result.success) {
       insumosDisponibles = result.insumos;
-      let html = '<option value="">-- Seleccionar Insumo --</option>';
-      result.insumos.forEach(function(ins) {
-        html += `<option value="${ins.id}" data-precio="${ins.precio_promedio}" data-codigo="${ins.codigo}" data-nombre="${ins.nombre_tecnico}">${ins.codigo} - ${ins.nombre_tecnico} ($${parseFloat(ins.precio_promedio).toFixed(2)})</option>`;
+      renderOpcionesInsumo(insumosDisponibles);
+
+      // Filtro en vivo por nombre, código o nombres secundarios (alias)
+      $('#componente_insumo_buscar').off('input').on('input', function() {
+        const q = (this.value || '').toLowerCase().trim();
+        if (!q) { renderOpcionesInsumo(insumosDisponibles); return; }
+        const terminos = q.split(/\s+/);
+        const filtrados = insumosDisponibles.filter(ins => {
+          const texto = (ins.buscar || (ins.codigo + ' ' + ins.nombre_tecnico)).toLowerCase();
+          return terminos.every(t => texto.indexOf(t) !== -1);
+        });
+        renderOpcionesInsumo(filtrados);
       });
-      $('#componente_insumo_id').html(html);
+
+      // Al elegir un insumo, mostrar sus nombres secundarios como pista
+      $('#componente_insumo_id').off('change.alias').on('change.alias', function() {
+        const opt = this.options[this.selectedIndex];
+        const alias = opt ? (opt.getAttribute('data-alias') || '') : '';
+        $('#componente_insumo_alias_hint').text(alias ? ('También conocido como: ' + alias) : '');
+      });
     }
   });
+}
+
+// Dibuja las <option> del selector de insumos (mostrando alias como pista)
+function renderOpcionesInsumo(lista) {
+  let html = '<option value="">-- Seleccionar Insumo --</option>';
+  lista.forEach(function(ins) {
+    const precio = parseFloat(ins.precio_promedio || 0).toFixed(2);
+    const alias = ins.alias_secundarios || ins.alias || '';
+    const aliasTxt = alias ? ` [${alias}]` : '';
+    html += `<option value="${ins.id}" data-precio="${ins.precio_promedio}" data-codigo="${escHtml(ins.codigo)}" data-nombre="${escHtml(ins.nombre_tecnico)}" data-unidad="${escHtml(ins.unidad_medida||'')}" data-alias="${escHtml(alias)}">${escHtml(ins.codigo)} - ${escHtml(ins.nombre_tecnico)}${escHtml(aliasTxt)} ($${precio})</option>`;
+  });
+  const $sel = $('#componente_insumo_id');
+  $sel.html(html);
+  // Si sólo hay un resultado tras filtrar, lo pre-seleccionamos por comodidad
+  if (lista.length === 1) { $sel.val(lista[0].id).trigger('change.alias'); }
 }
 
 function cargarProductosSelect() {
@@ -641,6 +729,7 @@ window.agregarInsumo = function() {
   const cantidad = parseFloat($('#componente_insumo_cantidad').val());
   const unidad = $('#componente_insumo_unidad').val();
   const porcentaje = parseFloat($('#componente_insumo_porcentaje').val()) || null;
+  const grupoColor = ($('#componente_insumo_grupo_color').val() || '').trim();
   const observaciones = $('#componente_insumo_observaciones').val();
   
   if(!insumoId || !cantidad) {
@@ -661,19 +750,22 @@ window.agregarInsumo = function() {
     cantidad: cantidad,
     unidad: unidad,
     porcentaje: porcentaje,
+    grupo_color: grupoColor,
     costo_unitario: precio,
     subtotal: cantidad * precio,
     observaciones: observaciones
   });
   
-  renderizarComponentes();
   recalcularPorcentajesTodos();
+  renderizarComponentes();
   
-  // Limpiar campos
+  // Limpiar campos (conservamos grupo/color para agregar varios del mismo grupo)
   $('#componente_insumo_id').val('');
   $('#componente_insumo_cantidad').val('');
   $('#componente_insumo_porcentaje').val('');
   $('#componente_insumo_observaciones').val('');
+  $('#componente_insumo_buscar').val('').trigger('input').focus();
+  $('#componente_insumo_alias_hint').text('');
 };
 
 window.agregarProducto = function() {
@@ -681,6 +773,7 @@ window.agregarProducto = function() {
   const cantidad = parseFloat($('#componente_producto_cantidad').val());
   const unidad = $('#componente_producto_unidad').val();
   const porcentaje = parseFloat($('#componente_producto_porcentaje').val()) || null;
+  const grupoColor = ($('#componente_producto_grupo_color').val() || '').trim();
   const observaciones = $('#componente_producto_observaciones').val();
   
   if(!productoId || !cantidad) {
@@ -701,13 +794,14 @@ window.agregarProducto = function() {
     cantidad: cantidad,
     unidad: unidad,
     porcentaje: porcentaje,
+    grupo_color: grupoColor,
     costo_unitario: costo,
     subtotal: cantidad * costo,
     observaciones: observaciones
   });
   
-  renderizarComponentes();
   recalcularPorcentajesTodos();
+  renderizarComponentes();
   
   // Limpiar campos
   $('#componente_producto_id').val('');
@@ -731,23 +825,47 @@ function recalcularPorcentajesTodos() {
 function renderizarComponentes() {
   let html = '';
   let total = 0;
+  let totalPct = 0;
   const totalCantidad = componentesTemporales.reduce((s, c) => s + parseFloat(c.cantidad || 0), 0);
-  
+  const grupos = new Set();
+
   if(componentesTemporales.length === 0) {
-    html = '<tr id="noComponentes"><td colspan="7" class="text-center text-muted">No hay componentes agregados</td></tr>';
+    html = '<tr id="noComponentes"><td colspan="8" class="text-center text-muted">No hay componentes agregados</td></tr>';
   } else {
-    componentesTemporales.forEach(function(comp, index) {
+    // Ordenar por grupo/color para agrupar visualmente (los sin grupo van al final)
+    const indexados = componentesTemporales.map((c, i) => ({ c, i }));
+    indexados.sort((a, b) => {
+      const ga = (a.c.grupo_color || '\uffff').toLowerCase();
+      const gb = (b.c.grupo_color || '\uffff').toLowerCase();
+      if (ga < gb) return -1; if (ga > gb) return 1; return a.i - b.i;
+    });
+
+    let grupoPrevio = null;
+    indexados.forEach(function(item) {
+      const comp = item.c;
+      const index = item.i;
+      const grupoActual = comp.grupo_color || '';
+      if (grupoActual) grupos.add(grupoActual);
+
+      // Encabezado de grupo cuando cambia
+      if (grupoActual !== grupoPrevio) {
+        grupoPrevio = grupoActual;
+        const etiqueta = grupoActual ? ('<i class=\"fas fa-palette\"></i> ' + escHtml(grupoActual)) : '<i class=\"fas fa-layer-group\"></i> Sin grupo';
+        html += `<tr class="table-secondary"><td colspan="8" class="py-1"><small class="fw-bold">${etiqueta}</small></td></tr>`;
+      }
+
       const badgeTipo = comp.tipo === 'Insumo' ? 'primary' : 'success';
-      const pct = comp.porcentaje != null ? parseFloat(comp.porcentaje).toFixed(1) : (totalCantidad > 0 ? (comp.cantidad / totalCantidad * 100).toFixed(1) : '-');
-      const pctBadge = parseFloat(pct) >= 40 ? 'bg-danger' : (parseFloat(pct) >= 20 ? 'bg-warning text-dark' : 'bg-info');
+      const pctNum = comp.porcentaje != null ? parseFloat(comp.porcentaje) : (totalCantidad > 0 ? (comp.cantidad / totalCantidad * 100) : 0);
+      const pct = pctNum ? pctNum.toFixed(1) : '-';
+      totalPct += (pctNum || 0);
+      const pctBadge = pctNum >= 40 ? 'bg-danger' : (pctNum >= 20 ? 'bg-warning text-dark' : 'bg-info');
       html += `
         <tr>
           <td><span class="badge bg-${badgeTipo}">${comp.tipo}</span></td>
-          <td><strong>${comp.codigo}</strong><br><small class="text-muted">${comp.nombre}</small></td>
-          <td>${comp.cantidad} ${comp.unidad}</td>
-          <td class="text-center">
-            <span class="badge ${pctBadge}">${pct}%</span>
-          </td>
+          <td><strong>${escHtml(comp.codigo)}</strong><br><small class="text-muted">${escHtml(comp.nombre)}</small>${comp.observaciones ? '<br><small class="text-info"><i class=\"fas fa-sticky-note\"></i> '+escHtml(comp.observaciones)+'</small>' : ''}</td>
+          <td>${comp.cantidad} ${escHtml(comp.unidad)}</td>
+          <td class="text-center"><span class="badge ${pctBadge}">${pct}%</span></td>
+          <td>${grupoActual ? '<span class="badge bg-dark">'+escHtml(grupoActual)+'</span>' : '<span class="text-muted">—</span>'}</td>
           <td>$${parseFloat(comp.costo_unitario || 0).toFixed(2)}</td>
           <td class="text-success"><strong>$${parseFloat(comp.subtotal || 0).toFixed(2)}</strong></td>
           <td>
@@ -760,10 +878,29 @@ function renderizarComponentes() {
       total += parseFloat(comp.subtotal || 0);
     });
   }
-  
+
   $('#tablaComponentes').html(html);
   $('#totalInsumos').text('$' + total.toFixed(2));
-  
+
+  // Total de porcentaje con alerta de coherencia (idealmente ~100%)
+  const $tp = $('#totalPorcentaje');
+  $tp.text(totalPct.toFixed(1) + '%');
+  $tp.removeClass('bg-secondary bg-success bg-warning bg-danger text-dark');
+  if (componentesTemporales.length === 0) {
+    $tp.addClass('bg-secondary');
+  } else if (Math.abs(totalPct - 100) <= 1.5) {
+    $tp.addClass('bg-success');
+  } else if (Math.abs(totalPct - 100) <= 10) {
+    $tp.addClass('bg-warning text-dark');
+  } else {
+    $tp.addClass('bg-danger');
+  }
+
+  // Alimentar el datalist de grupos con los existentes
+  let dlHtml = '';
+  grupos.forEach(g => { dlHtml += `<option value="${escHtml(g)}">`; });
+  $('#listaGruposColor').html(dlHtml);
+
   // Actualizar costo total
   actualizarCostoTotal();
 }
@@ -785,61 +922,80 @@ function actualizarCostoTotal() {
   $('#formulacion_costo_total').val(total.toFixed(2));
 }
 
-window.guardarFormulacion = function() {
+/**
+ * Guarda la formulación en una sola llamada transaccional.
+ * @param {string} modo 'actualizar' = sobreescribe la versión actual; 'nueva' = crea versión nueva.
+ */
+window.guardarFormulacion = function(modo) {
+  modo = (modo === 'actualizar') ? 'actualizar' : 'nueva';
   const productoId = $('#formulacion_producto_id').val();
+  const formulacionId = $('#formulacion_id').val();
   const cantidadProducida = $('#formulacion_cantidad_producida').val();
-  
+
   if(!cantidadProducida) {
     notifyShow('Ingrese la cantidad que produce esta formulación', 'warning');
     return;
   }
-  
   if(componentesTemporales.length === 0) {
     notifyShow('Agregue al menos un componente a la formulación', 'warning');
     return;
   }
-  
-  // Crear formulación
-  $.post(BASE_URL+'produccion/Productos/crear_formulacion_ajax', {
+  if(modo === 'actualizar' && !formulacionId) {
+    notifyShow('No hay una versión activa para actualizar. Use "Guardar como nueva versión".', 'warning');
+    return;
+  }
+  if(modo === 'actualizar' && !confirm('Vas a SOBREESCRIBIR la versión actual. Los componentes anteriores se reemplazarán. ¿Continuar?')) {
+    return;
+  }
+
+  // Serializar componentes para el endpoint unificado
+  const componentes = componentesTemporales.map(function(comp) {
+    return {
+      tipo: comp.tipo,
+      item_id: comp.item_id,
+      cantidad: comp.cantidad,
+      unidad: comp.unidad,
+      porcentaje: (comp.porcentaje != null ? comp.porcentaje : ''),
+      grupo_color: comp.grupo_color || '',
+      porcentaje_fase_acuosa: (comp.porcentaje_fase_acuosa != null ? comp.porcentaje_fase_acuosa : ''),
+      observaciones: comp.observaciones || ''
+    };
+  });
+
+  const $botones = $('#btnActualizarFormulacion, #modalFormulacion .btn-success[onclick^="guardarFormulacion"]');
+  $botones.prop('disabled', true);
+
+  $.post(BASE_URL+'produccion/Productos/guardar_formulacion_completa_ajax', {
+    'modo': modo,
+    'formulacion_id': (modo === 'actualizar' ? formulacionId : ''),
     'producto_id': productoId,
+    'cliente_id': $('#formulacion_cliente_id').val() || '',
+    'referencia_cliente': $('#formulacion_referencia_cliente').val() || '',
     'nombre_version': $('#formulacion_nombre_version').val(),
     'descripcion': $('#formulacion_descripcion').val(),
+    'comentarios': $('#formulacion_comentarios').val() || '',
     'cantidad_producida': cantidadProducida,
     'unidad_produccion': $('#formulacion_unidad_produccion').val(),
+    'rendimiento_m2_por_kg': $('#formulacion_rendimiento_m2_por_kg').val() || '',
     'costo_mano_obra': $('#formulacion_costo_mano_obra').val(),
     'costo_indirecto': $('#formulacion_costo_indirecto').val(),
+    'componentes': JSON.stringify(componentes),
     'peticion': 'ajax',
     [CSRF_TOKEN_NAME]: CSRF_HASH
   }, function(result) {
-    result = JSON.parse(result);
+    try { result = JSON.parse(result); } catch(e) { result = {success:false, message:'Respuesta no válida del servidor'}; }
+    $botones.prop('disabled', false);
     if(result.success) {
-      const formulacionId = result.formulacion_id;
-      
-      // Agregar componentes
-      let componentesGuardados = 0;
-      componentesTemporales.forEach(function(comp) {
-        $.post(BASE_URL+'produccion/Productos/agregar_componente_ajax', {
-          'formulacion_id': formulacionId,
-          'tipo_componente': comp.tipo,
-          'insumo_id': comp.tipo === 'Insumo' ? comp.item_id : null,
-          'producto_id': comp.tipo === 'Producto' ? comp.item_id : null,
-          'cantidad': comp.cantidad,
-          'unidad': comp.unidad,
-          'porcentaje': comp.porcentaje || '',
-          'observaciones': comp.observaciones,
-          'peticion': 'ajax',
-          [CSRF_TOKEN_NAME]: CSRF_HASH
-        }, function() {
-          componentesGuardados++;
-          if(componentesGuardados === componentesTemporales.length) {
-            notifyShow('Formulación guardada correctamente', 'success');
-            cargarFormulacion(productoId);
-          }
-        });
-      });
+      notifyShow(result.message || 'Formulación guardada correctamente', 'success');
+      // Recargar la formulación activa (si guardamos nueva versión no activa, seguirá mostrando la activa)
+      cargarFormulacion(productoId);
+      if (typeof tabla !== 'undefined' && tabla) { try { tabla.ajax.reload(null, false); } catch(e){} }
     } else {
-      notifyShow('Error: ' + result.message, 'danger');
+      notifyShow('Error: ' + (result.message || 'No se pudo guardar'), 'danger');
     }
+  }).fail(function(){
+    $botones.prop('disabled', false);
+    notifyShow('Error de conexión al guardar la formulación', 'danger');
   });
 };
 
@@ -1241,6 +1397,7 @@ window.editarFormulacion = function(productoId, formulacionId) {
   
   $('#formulacion_producto_id').val(productoId);
   componentesTemporales = [];
+  cargarClientesFormulacion();
   
   // Obtener producto
   $.post(BASE_URL+'produccion/Productos/get_producto_ajax', {
@@ -1261,6 +1418,7 @@ window.editarFormulacion = function(productoId, formulacionId) {
         result = JSON.parse(result);
         if(result.success && result.formulacion) {
           const f = result.formulacion;
+          formulacionActual = f;
           $('#formulacion_id').val(f.id);
           $('#formulacion_nombre_version').val(f.nombre_version);
           $('#formulacion_cantidad_producida').val(f.cantidad_producida);
@@ -1269,6 +1427,16 @@ window.editarFormulacion = function(productoId, formulacionId) {
           $('#formulacion_costo_mano_obra').val(f.costo_mano_obra);
           $('#formulacion_costo_indirecto').val(f.costo_indirecto);
           $('#formulacion_costo_total').val(f.costo_total);
+          $('#formulacion_cliente_id').val(f.cliente_id || '');
+          $('#formulacion_referencia_cliente').val(f.referencia_cliente || '');
+          $('#formulacion_comentarios').val(f.comentarios || '');
+          $('#formulacion_rendimiento_m2_por_kg').val(f.rendimiento_m2_por_kg || '');
+
+          $('#btnActualizarFormulacion').show();
+          const activaTxt = (f.es_activa == 1 || f.es_activa === true) ? ' (activa)' : ' (histórica)';
+          $('#formulacionEstadoVersion').html(
+            '<i class="fas fa-code-branch"></i> Editando <strong>' + escHtml(f.nombre_version || ('v'+(f.version||''))) + '</strong>' + activaTxt
+          );
           
           if(f.componentes) {
             componentesTemporales = f.componentes.map(c => ({
@@ -1280,6 +1448,9 @@ window.editarFormulacion = function(productoId, formulacionId) {
               cantidad: parseFloat(c.cantidad),
               unidad: c.unidad,
               porcentaje: c.porcentaje != null ? parseFloat(c.porcentaje) : null,
+              grupo_color: c.grupo_color || '',
+              porcentaje_fase_acuosa: c.porcentaje_fase_acuosa != null ? parseFloat(c.porcentaje_fase_acuosa) : null,
+              observaciones: c.observaciones || '',
               costo_unitario: parseFloat(c.costo_unitario),
               subtotal: parseFloat(c.costo_total)
             }));

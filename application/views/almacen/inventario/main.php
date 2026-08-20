@@ -3,6 +3,11 @@
     <div class="col-auto d-none d-sm-block">
       <h3><i class="fas fa-boxes"></i> <?= $headTitle ?></h3>
     </div>
+    <div class="col-auto ms-auto">
+      <a href="<?=base_url()?>produccion/Lotes/consultar" class="btn btn-outline-info btn-sm">
+        <i class="fas fa-barcode"></i> Consultar lote
+      </a>
+    </div>
   </div>
 
   <!-- Tabs: Insumos y Productos -->

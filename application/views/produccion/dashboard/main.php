@@ -193,6 +193,9 @@ $filtros      = $response['filtros_activos']  ?? [];
     <span class="badge bg-secondary" id="sync-badge" title="Sincronización en tiempo real">
       <i class="fas fa-circle text-success" style="font-size:.55rem;"></i> En vivo
     </span>
+    <button type="button" id="btn-sonido-prod" class="btn btn-sm btn-success" onclick="prodToggleSonido()" title="Alertas sonoras">
+      <i class="fas fa-volume-up"></i>
+    </button>
   </div>
 </div>
 
@@ -204,6 +207,7 @@ $filtros      = $response['filtros_activos']  ?? [];
     <i class="fas fa-clipboard-list"></i>
     <span>PEDIDOS</span>
     <span class="badge bg-warning text-dark ms-1" id="badge-pedidos"><?=count($ordenes)?></span>
+    <span class="badge bg-danger ms-1" id="badge-nuevas-pedidos" data-count="0" style="display:none;" title="Nuevas órdenes recibidas">0</span>
   </button>
   <button class="prod-nav-btn" data-panel="catalogo" onclick="activarPanel('catalogo',this)">
     <i class="fas fa-boxes"></i>
@@ -616,8 +620,12 @@ function actualizarBadgesStock() {
         b.title = 'Stock completo';
       } else if (estado === 'faltante') {
         b.classList.add('bg-danger');
-        b.innerHTML = '<i class="fas fa-exclamation-triangle fa-xs"></i> Sin Insumos';
-        b.title = 'Insumos faltantes';
+        b.innerHTML = '<i class="fas fa-ban fa-xs"></i> Bloqueada';
+        b.title = 'Falta materia prima para producir';
+      } else if (estado === 'bloqueada_preorden') {
+        b.classList.add('bg-danger');
+        b.innerHTML = '<i class="fas fa-clock fa-xs"></i> Bloqueada · Preorden';
+        b.title = 'Pre-orden pendiente de autorización en Compras';
       } else if (estado === 'sin_formulacion') {
         b.classList.add('bg-warning');
         b.innerHTML = '<i class="fas fa-flask fa-xs"></i> Sin Fórmula';
@@ -971,6 +979,122 @@ function escHtml(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// ALERTAS EN TIEMPO REAL DE NUEVAS ÓRDENES (visual + sonora)
+// ═══════════════════════════════════════════════════════════════════
+let prodUltimaVerificacion = Math.floor(Date.now() / 1000);
+let prodAudioCtx = null;
+let prodSonidoActivo = (localStorage.getItem('prod_sonido') !== '0');
+
+// El navegador exige un gesto del usuario antes de reproducir audio: lo habilitamos
+// en la primera interacción con la pantalla táctil.
+function prodInitAudio() {
+  if (!prodAudioCtx) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) prodAudioCtx = new AC();
+    } catch (e) { /* sin soporte de audio */ }
+  }
+  if (prodAudioCtx && prodAudioCtx.state === 'suspended') prodAudioCtx.resume();
+}
+document.addEventListener('click', prodInitAudio, { once: false });
+document.addEventListener('touchstart', prodInitAudio, { once: false });
+
+// Tono de campana de dos notas usando Web Audio (sin depender de archivos .mp3)
+function prodReproducirAlerta() {
+  if (!prodSonidoActivo) return;
+  prodInitAudio();
+  if (!prodAudioCtx) return;
+  const ctx = prodAudioCtx;
+  const notas = [880, 1174.66, 880]; // La5 – Re6 – La5
+  let t = ctx.currentTime;
+  notas.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t + 0.4);
+    t += 0.32;
+  });
+}
+
+function prodToggleSonido() {
+  prodSonidoActivo = !prodSonidoActivo;
+  localStorage.setItem('prod_sonido', prodSonidoActivo ? '1' : '0');
+  prodActualizarIconoSonido();
+  if (prodSonidoActivo) prodReproducirAlerta(); // confirmación audible
+}
+
+function prodActualizarIconoSonido() {
+  const btn = document.getElementById('btn-sonido-prod');
+  if (!btn) return;
+  btn.innerHTML = prodSonidoActivo
+    ? '<i class="fas fa-volume-up"></i>'
+    : '<i class="fas fa-volume-mute"></i>';
+  btn.classList.toggle('btn-success', prodSonidoActivo);
+  btn.classList.toggle('btn-secondary', !prodSonidoActivo);
+  btn.title = prodSonidoActivo ? 'Alertas sonoras activas (clic para silenciar)' : 'Alertas sonoras silenciadas (clic para activar)';
+}
+
+function prodFiltrosActuales() {
+  const estatus = [...document.querySelectorAll('.estatus-chk:checked')].map(c => c.value);
+  return estatus.length ? { estatus: estatus } : {};
+}
+
+function prodChecarNuevasOrdenes() {
+  $.get(BASE_URL + 'produccion/Dashboard/check_nuevas_ordenes_ajax', {
+    ultima_verificacion: prodUltimaVerificacion,
+    filtros: JSON.stringify(prodFiltrosActuales())
+  }, res => {
+    if (!res || !res.success) return;
+    if (res.timestamp) prodUltimaVerificacion = res.timestamp;
+    if (res.hay_nuevas && res.cantidad_nuevas > 0) {
+      prodMostrarAlertaNuevas(res.cantidad_nuevas, res.ordenes_nuevas || []);
+      prodReproducirAlerta();
+    }
+  }, 'json');
+}
+
+function prodMostrarAlertaNuevas(cantidad, ordenes) {
+  const msgEl = document.getElementById('toastMensaje');
+  if (msgEl) {
+    let detalle = ordenes.slice(0, 4).map(o =>
+      '• ' + escHtml(o.folio || ('#' + (o.id||''))) + (o.cliente_nombre ? ' – ' + escHtml(o.cliente_nombre) : '')
+    ).join('<br>');
+    if (cantidad > 4) detalle += '<br>… y ' + (cantidad - 4) + ' más';
+    msgEl.innerHTML = '<strong>' + cantidad + '</strong> nueva(s) orden(es) para producción:<br>' + detalle;
+  }
+  const toastEl = document.getElementById('toastNuevasOrdenes');
+  if (toastEl && window.bootstrap && bootstrap.Toast) {
+    bootstrap.Toast.getOrCreateInstance(toastEl, { autohide: false }).show();
+  }
+  // Badge parpadeante en el botón de Pedidos
+  const badge = document.getElementById('badge-nuevas-pedidos');
+  if (badge) {
+    const actual = parseInt(badge.dataset.count || '0', 10) + cantidad;
+    badge.dataset.count = actual;
+    badge.textContent = actual;
+    badge.style.display = 'inline-block';
+  }
+  // Notificación de escritorio si el usuario la permitió
+  if (window.Notification && Notification.permission === 'granted') {
+    try { new Notification('Producción CHISA', { body: cantidad + ' nueva(s) orden(es) de producción' }); } catch(e){}
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  prodActualizarIconoSonido();
+  if (window.Notification && Notification.permission === 'default') {
+    try { Notification.requestPermission(); } catch(e){}
+  }
+  // Poll de nuevas órdenes cada 20 s
+  setInterval(prodChecarNuevasOrdenes, 20000);
+});
 </script>
 
 <!-- Toast de nuevas órdenes -->

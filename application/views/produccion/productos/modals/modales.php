@@ -380,6 +380,33 @@
             
             <div class="row mt-3">
               <div class="col-md-4">
+                <label class="form-label">Cliente <small class="text-muted">(fórmula específica)</small></label>
+                <select class="form-select" id="formulacion_cliente_id">
+                  <option value="">-- Genérica / sin cliente --</option>
+                </select>
+                <small class="text-muted">Ej: Hospital Regional Chihuahua</small>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Referencia del Cliente</label>
+                <input type="text" class="form-control" id="formulacion_referencia_cliente" placeholder="Nombre/código como lo pide el cliente">
+                <small class="text-muted">Facilita la búsqueda en el histórico</small>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Rendimiento (m²/kg) <small class="text-muted">obras</small></label>
+                <input type="number" step="0.01" class="form-control" id="formulacion_rendimiento_m2_por_kg" placeholder="Ej: 4.5">
+                <small class="text-muted">Para cálculo de materiales por m²</small>
+              </div>
+            </div>
+
+            <div class="row mt-3">
+              <div class="col-12">
+                <label class="form-label">Comentarios / Notas de la formulación</label>
+                <textarea class="form-control" id="formulacion_comentarios" rows="2" placeholder="Notas de proceso, advertencias, nombres secundarios del producto, etc."></textarea>
+              </div>
+            </div>
+
+            <div class="row mt-3">
+              <div class="col-md-4">
                 <label class="form-label">Costo Mano de Obra</label>
                 <div class="input-group">
                   <span class="input-group-text">$</span>
@@ -404,10 +431,20 @@
             </div>
             
             <div class="row mt-3">
-              <div class="col-12">
-                <button type="button" class="btn btn-success" onclick="guardarFormulacion()">
-                  <i class="fas fa-save"></i> Guardar Formulación
+              <div class="col-12 d-flex flex-wrap gap-2 align-items-center">
+                <button type="button" class="btn btn-warning" id="btnActualizarFormulacion" onclick="guardarFormulacion('actualizar')" style="display:none;">
+                  <i class="fas fa-pen"></i> Actualizar versión actual
                 </button>
+                <button type="button" class="btn btn-success" onclick="guardarFormulacion('nueva')">
+                  <i class="fas fa-code-branch"></i> Guardar como nueva versión
+                </button>
+                <span class="text-muted small ms-auto" id="formulacionEstadoVersion"></span>
+              </div>
+              <div class="col-12 mt-2">
+                <small class="text-muted">
+                  <i class="fas fa-info-circle"></i>
+                  <strong>Actualizar</strong> sobreescribe la versión abierta. <strong>Nueva versión</strong> conserva la anterior en el histórico (auditoría).
+                </small>
               </div>
             </div>
           </div>
@@ -441,22 +478,29 @@
                   <i class="fas fa-info-circle"></i> <strong>Agregar Insumos:</strong> Selecciona los insumos que necesitas para fabricar este producto.
                 </div>
                 
-                <div class="row mb-3">
-                  <div class="col-md-5">
+                <div class="row mb-2">
+                  <div class="col-md-12">
+                    <label class="form-label">Buscar insumo <small class="text-muted">(por nombre, código o nombre secundario)</small></label>
+                    <input type="text" class="form-control" id="componente_insumo_buscar" placeholder="Escribe para filtrar… ej. 'blanco', 'TiO2', alias de planta" autocomplete="off">
+                  </div>
+                </div>
+                <div class="row mb-3 align-items-end">
+                  <div class="col-md-4">
                     <label class="form-label">Insumo</label>
-                    <select class="form-select" id="componente_insumo_id">
+                    <select class="form-select" id="componente_insumo_id" size="1">
                       <option value="">-- Seleccionar Insumo --</option>
                     </select>
+                    <small class="text-muted" id="componente_insumo_alias_hint"></small>
                   </div>
                   <div class="col-md-2">
                     <label class="form-label">Cantidad</label>
                     <div class="input-group">
                       <input type="number" step="0.001" class="form-control" id="componente_insumo_cantidad" placeholder="0" oninput="autoCalcularPorcentajeInsumo()">
-                      <select class="form-select" id="componente_insumo_unidad" style="max-width:70px;">
-                        <option value="L">L</option>
-                        <option value="ml">ml</option>
+                      <select class="form-select" id="componente_insumo_unidad" style="max-width:65px;">
                         <option value="Kg">Kg</option>
                         <option value="g">g</option>
+                        <option value="L">L</option>
+                        <option value="ml">ml</option>
                       </select>
                     </div>
                   </div>
@@ -466,19 +510,22 @@
                       <input type="number" step="0.01" class="form-control" id="componente_insumo_porcentaje" placeholder="Auto">
                       <span class="input-group-text">%</span>
                     </div>
-                    <small class="text-muted">Auto-calculado</small>
                   </div>
                   <div class="col-md-2">
-                    <label class="form-label">Observaciones</label>
-                    <input type="text" class="form-control" id="componente_insumo_observaciones" placeholder="Opcional">
+                    <label class="form-label">Grupo/Color <small class="text-muted">opc.</small></label>
+                    <input type="text" class="form-control" id="componente_insumo_grupo_color" placeholder="Ej: Base, Azul" list="listaGruposColor">
                   </div>
                   <div class="col-md-1">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="button" class="btn btn-success w-100" onclick="agregarInsumo()">
+                    <label class="form-label">Notas</label>
+                    <input type="text" class="form-control" id="componente_insumo_observaciones" placeholder="Opc.">
+                  </div>
+                  <div class="col-md-1">
+                    <button type="button" class="btn btn-success w-100" onclick="agregarInsumo()" title="Agregar insumo">
                       <i class="fas fa-plus"></i>
                     </button>
                   </div>
                 </div>
+                <datalist id="listaGruposColor"></datalist>
               </div>
               
               <!-- Tab Productos -->
@@ -487,8 +534,8 @@
                   <i class="fas fa-info-circle"></i> <strong>Productos Base:</strong> Si este producto usa otro producto como base (ej: primer), agrégalo aquí.
                 </div>
                 
-                <div class="row mb-3">
-                  <div class="col-md-5">
+                <div class="row mb-3 align-items-end">
+                  <div class="col-md-4">
                     <label class="form-label">Producto Base</label>
                     <select class="form-select" id="componente_producto_id">
                       <option value="">-- Seleccionar Producto --</option>
@@ -498,11 +545,11 @@
                     <label class="form-label">Cantidad</label>
                     <div class="input-group">
                       <input type="number" step="0.001" class="form-control" id="componente_producto_cantidad" placeholder="0" oninput="autoCalcularPorcentajeProducto()">
-                      <select class="form-select" id="componente_producto_unidad" style="max-width:70px;">
-                        <option value="L">L</option>
-                        <option value="ml">ml</option>
+                      <select class="form-select" id="componente_producto_unidad" style="max-width:65px;">
                         <option value="Kg">Kg</option>
                         <option value="g">g</option>
+                        <option value="L">L</option>
+                        <option value="ml">ml</option>
                       </select>
                     </div>
                   </div>
@@ -512,15 +559,17 @@
                       <input type="number" step="0.01" class="form-control" id="componente_producto_porcentaje" placeholder="Auto">
                       <span class="input-group-text">%</span>
                     </div>
-                    <small class="text-muted">Auto-calculado</small>
                   </div>
                   <div class="col-md-2">
-                    <label class="form-label">Observaciones</label>
-                    <input type="text" class="form-control" id="componente_producto_observaciones" placeholder="Opcional">
+                    <label class="form-label">Grupo/Color <small class="text-muted">opc.</small></label>
+                    <input type="text" class="form-control" id="componente_producto_grupo_color" placeholder="Ej: Base" list="listaGruposColor">
                   </div>
                   <div class="col-md-1">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="button" class="btn btn-success w-100" onclick="agregarProducto()">
+                    <label class="form-label">Notas</label>
+                    <input type="text" class="form-control" id="componente_producto_observaciones" placeholder="Opc.">
+                  </div>
+                  <div class="col-md-1">
+                    <button type="button" class="btn btn-success w-100" onclick="agregarProducto()" title="Agregar producto base">
                       <i class="fas fa-plus"></i>
                     </button>
                   </div>
@@ -536,23 +585,27 @@
               <table class="table table-sm table-bordered">
                 <thead class="table-light">
                   <tr>
-                    <th width="8%">Tipo</th>
-                    <th width="28%">Componente</th>
-                    <th width="13%">Cantidad</th>
+                    <th width="7%">Tipo</th>
+                    <th width="26%">Componente</th>
+                    <th width="12%">Cantidad</th>
                     <th width="8%" class="text-center">%</th>
-                    <th width="13%">Costo Unit.</th>
-                    <th width="13%">Subtotal</th>
-                    <th width="8%">Acciones</th>
+                    <th width="13%">Grupo/Color</th>
+                    <th width="11%">Costo Unit.</th>
+                    <th width="12%">Subtotal</th>
+                    <th width="7%">Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="tablaComponentes">
                   <tr id="noComponentes">
-                    <td colspan="7" class="text-center text-muted">No hay componentes agregados</td>
+                    <td colspan="8" class="text-center text-muted">No hay componentes agregados</td>
                   </tr>
                 </tbody>
                 <tfoot class="table-light">
                   <tr>
-                    <td colspan="5" class="text-end"><strong>Total Insumos:</strong></td>
+                    <td colspan="3" class="text-end"><strong>Totales:</strong></td>
+                    <td class="text-center"><strong id="totalPorcentaje" class="badge bg-secondary">0%</strong></td>
+                    <td></td>
+                    <td class="text-end"><strong>Total Insumos:</strong></td>
                     <td colspan="2"><strong id="totalInsumos">$0.00</strong></td>
                   </tr>
                 </tfoot>

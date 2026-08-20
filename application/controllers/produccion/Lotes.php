@@ -26,6 +26,31 @@ class Lotes extends MY_Controller {
     }
     
     /**
+     * Pantalla de consulta de lote por escaneo (almacén / producción).
+     */
+    public function consultar() {
+        $this->viewData['pageTitle'] = 'Consultar Lote';
+        $this->viewData['headTitle'] = 'Consultar Lote por Código de Barras';
+        $this->viewData['breadcrumb'] = 'Inicio > Producción > Consultar Lote';
+        $this->viewData['pageView'] = 'produccion/lotes/consultar';
+        $this->load->view('layouts/general_template', $this->viewData);
+    }
+
+    /**
+     * AJAX: consulta lote por código de barras.
+     */
+    public function consultar_lote_ajax() {
+        $codigo = trim((string) $this->input->post('codigo_barras'));
+        if ($codigo === '') {
+            echo json_encode(['success' => false, 'message' => 'Ingrese o escanee un código de barras']);
+            return;
+        }
+
+        $result = $this->ProduccionModel->consultar_lote_por_codigo_barras($codigo);
+        echo json_encode($result);
+    }
+
+    /**
      * AJAX para DataTables de lotes
      */
     public function lista_ajax() {

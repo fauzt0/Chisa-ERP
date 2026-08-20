@@ -365,6 +365,91 @@ class ProductosModel extends MY_Model {
         $this->db->where('id', $id);
         return $this->db->delete('detalle_formulacion');
     }
+
+    /**
+     * Guarda una formulación completa (cabecera + componentes) de forma transaccional.
+     * Soporta dos modos:
+     *   - 'nueva'      : crea una nueva versión (para mantener el histórico/auditoría).
+     *   - 'actualizar' : sobreescribe la versión existente ($formulacion_id).
+     *
+     * $componentes es un array de arrays con: tipo, item_id, cantidad, unidad,
+     * porcentaje, grupo_color, porcentaje_fase_acuosa, observaciones.
+     *
+     * @return array ['success'=>bool, 'formulacion_id'=>int, 'message'=>string]
+     */
+    public function guardar_formulacion_completa($cabecera, $componentes, $modo = 'nueva', $formulacion_id = null) {
+        $this->db->trans_start();
+
+        if ($modo === 'actualizar' && $formulacion_id) {
+            // No permitimos cambiar producto_id ni version al actualizar.
+            $update = [
+                'nombre_version'        => $cabecera['nombre_version'],
+                'descripcion'           => $cabecera['descripcion'],
+                'comentarios'           => $cabecera['comentarios'],
+                'cliente_id'            => $cabecera['cliente_id'],
+                'referencia_cliente'    => $cabecera['referencia_cliente'],
+                'cantidad_producida'    => $cabecera['cantidad_producida'],
+                'unidad_produccion'     => $cabecera['unidad_produccion'],
+                'rendimiento_m2_por_kg' => $cabecera['rendimiento_m2_por_kg'],
+                'costo_mano_obra'       => $cabecera['costo_mano_obra'],
+                'costo_indirecto'       => $cabecera['costo_indirecto'],
+            ];
+            $this->db->where('id', $formulacion_id)->update('formulaciones', $update);
+            $this->db->where('formulacion_id', $formulacion_id)->delete('detalle_formulacion');
+            $fid = $formulacion_id;
+        } else {
+            // Nueva versión: siguiente número; la primera del producto queda activa.
+            $this->db->where('producto_id', $cabecera['producto_id']);
+            $tiene = $this->db->count_all_results('formulaciones') > 0;
+
+            $this->db->select_max('version');
+            $this->db->where('producto_id', $cabecera['producto_id']);
+            $row = $this->db->get('formulaciones')->row();
+
+            $cabecera['version']        = ($row->version ?? 0) + 1;
+            $cabecera['es_activa']      = $tiene ? FALSE : TRUE;
+            $cabecera['fecha_creacion'] = date('Y-m-d H:i:s');
+            $this->db->insert('formulaciones', $cabecera);
+            $fid = $this->db->insert_id();
+        }
+
+        // (Re)insertar componentes.
+        $orden = 0;
+        foreach ($componentes as $comp) {
+            $tipo = ($comp['tipo'] === 'Producto') ? 'Producto' : 'Insumo';
+            $row = [
+                'formulacion_id'         => $fid,
+                'tipo_componente'        => $tipo,
+                'insumo_id'              => $tipo === 'Insumo'   ? ($comp['item_id'] ?: null) : null,
+                'producto_id'            => $tipo === 'Producto' ? ($comp['item_id'] ?: null) : null,
+                'cantidad'               => (float)($comp['cantidad'] ?? 0),
+                'unidad'                 => $comp['unidad'] ?? 'Kg',
+                'porcentaje'             => (isset($comp['porcentaje']) && $comp['porcentaje'] !== '' && $comp['porcentaje'] !== null) ? (float)$comp['porcentaje'] : null,
+                'grupo_color'            => (!empty($comp['grupo_color'])) ? $comp['grupo_color'] : null,
+                'porcentaje_fase_acuosa' => (isset($comp['porcentaje_fase_acuosa']) && $comp['porcentaje_fase_acuosa'] !== '' && $comp['porcentaje_fase_acuosa'] !== null) ? (float)$comp['porcentaje_fase_acuosa'] : null,
+                'observaciones'          => $comp['observaciones'] ?? null,
+                'orden'                  => $orden++,
+            ];
+            // Costo unitario desde el catálogo (el trigger calcula costo_total).
+            if ($tipo === 'Insumo' && $row['insumo_id']) {
+                $ins = $this->db->select('precio_promedio')->where('id', $row['insumo_id'])->get('insumos')->row();
+                $row['costo_unitario'] = $ins->precio_promedio ?? 0;
+            } elseif ($tipo === 'Producto' && $row['producto_id']) {
+                $pr = $this->db->select('costo_produccion')->where('id', $row['producto_id'])->get('productos')->row();
+                $row['costo_unitario'] = $pr->costo_produccion ?? 0;
+            } else {
+                $row['costo_unitario'] = 0;
+            }
+            $this->db->insert('detalle_formulacion', $row);
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            return ['success' => false, 'formulacion_id' => null, 'message' => 'Error al guardar la formulación (transacción revertida).'];
+        }
+        return ['success' => true, 'formulacion_id' => $fid, 'message' => ($modo === 'actualizar' ? 'Formulación actualizada.' : 'Nueva versión guardada.')];
+    }
     
     /**
      * Activa una formulación (desactiva las demás del mismo producto)
@@ -566,16 +651,16 @@ class ProductosModel extends MY_Model {
             $this->db->where('DATE(formulaciones.fecha_creacion) <=', $fecha_fin);
         }
         
-        // Búsqueda opcional por nombre de versión, descripción o comentarios
-        if($busqueda && trim($busqueda) != '') {
-            $this->db->group_start();
-            $this->db->like('formulaciones.nombre_version', $busqueda);
-            $this->db->or_like('formulaciones.descripcion', $busqueda);
-            $this->db->or_like('formulaciones.comentarios', $busqueda);
-            $this->db->or_like('clientes.razon_social', $busqueda);
-            $this->db->or_like('clientes.nombre_comercial', $busqueda);
-            $this->db->group_end();
-        }
+        // Búsqueda avanzada por tokens sobre versión, descripción, comentarios,
+        // referencia de cliente y datos del cliente.
+        $this->_aplicar_busqueda_tokens($busqueda, [
+            'formulaciones.nombre_version',
+            'formulaciones.descripcion',
+            'formulaciones.comentarios',
+            'formulaciones.referencia_cliente',
+            'clientes.razon_social',
+            'clientes.nombre_comercial',
+        ]);
         
         $this->db->order_by('formulaciones.version', 'DESC');
         return $this->db->get()->result();
@@ -749,18 +834,49 @@ class ProductosModel extends MY_Model {
         $this->db->join('productos p', 'p.id = f.producto_id', 'left');
         $this->db->join('clientes c', 'c.id = f.cliente_id', 'left');
 
-        if ($termino && strlen(trim($termino)) > 0) {
-            $this->db->group_start();
-            $this->db->like('p.nombre', $termino);
-            $this->db->or_like('p.codigo', $termino);
-            $this->db->or_like('f.nombre_version', $termino);
-            $this->db->or_like('f.referencia_cliente', $termino);
-            $this->db->group_end();
-        }
+        // Búsqueda avanzada por tokens: cada palabra debe aparecer en ALGÚN campo.
+        // Campos: nombre/código/alias del producto, versión, referencia de cliente,
+        // comentarios, descripción y datos del cliente. Permite buscar formulaciones
+        // de clientes antiguos por nombre parcial o nombres secundarios.
+        $campos = [
+            'p.nombre', 'p.codigo', 'p.alias',
+            'f.nombre_version', 'f.referencia_cliente', 'f.comentarios', 'f.descripcion',
+            'c.razon_social', 'c.nombre_comercial',
+        ];
+        $this->_aplicar_busqueda_tokens($termino, $campos);
 
         $this->db->order_by('f.es_activa DESC, f.fecha_creacion DESC');
         $this->db->limit($limite);
         return $this->db->get()->result();
+    }
+
+    /**
+     * Aplica una búsqueda por tokens sobre el query builder actual: divide el término
+     * en palabras y exige que CADA palabra aparezca (LIKE) en al menos uno de los campos.
+     */
+    private function _aplicar_busqueda_tokens($termino, array $campos) {
+        $termino = trim((string)$termino);
+        if ($termino === '') {
+            return;
+        }
+        $tokens = preg_split('/\s+/', $termino);
+        foreach ($tokens as $tok) {
+            $tok = trim($tok);
+            if ($tok === '') {
+                continue;
+            }
+            $this->db->group_start();
+            $primero = true;
+            foreach ($campos as $campo) {
+                if ($primero) {
+                    $this->db->like($campo, $tok);
+                    $primero = false;
+                } else {
+                    $this->db->or_like($campo, $tok);
+                }
+            }
+            $this->db->group_end();
+        }
     }
 
     /**
@@ -990,5 +1106,629 @@ class ProductosModel extends MY_Model {
             'hay_insumos_revision_manual' => $hay_insumos_revision_manual,
             'insumos_faltantes' => $insumos_faltantes,
         ];
+    }
+
+    // =====================================================
+    // VERIFICACIÓN DE INSUMOS PARA VENTAS / OBRAS (P5)
+    // =====================================================
+
+    /**
+     * Obtiene las líneas fabricadas con formulación de una orden de venta u obra.
+     *
+     * @param int    $origen_id
+     * @param string $tipo 'venta' | 'obra'
+     * @return array{lineas: array, sin_formulacion: bool}
+     */
+    private function _obtener_lineas_fabricadas_para_verificacion($origen_id, $tipo = 'venta') {
+        $sin_formulacion = false;
+
+        if ($tipo === 'obra') {
+            $this->db->select('
+                op.producto_id,
+                COALESCE(op.cantidad_ajustada, op.cantidad_calculada, 0) AS cantidad,
+                op.formulacion_id,
+                op.unidad AS unidad_linea,
+                p.unidad_venta,
+                p.nombre AS producto_nombre,
+                p.codigo AS producto_codigo,
+                p.tipo_producto
+            ');
+            $this->db->from('obras_productos op');
+            $this->db->join('productos p', 'p.id = op.producto_id');
+            $this->db->where('op.obra_id', (int) $origen_id);
+            $this->db->where('p.tipo_producto', 'Fabricado');
+            $lineas = $this->db->get()->result();
+        } else {
+            $this->db->select('
+                dov.producto_id,
+                dov.cantidad,
+                dov.formulacion_id,
+                p.unidad_venta,
+                p.nombre AS producto_nombre,
+                p.codigo AS producto_codigo,
+                p.tipo_producto
+            ');
+            $this->db->from('detalle_orden_venta dov');
+            $this->db->join('productos p', 'p.id = dov.producto_id');
+            $this->db->where('dov.orden_venta_id', (int) $origen_id);
+            $this->db->where('p.tipo_producto', 'Fabricado');
+            $lineas = $this->db->get()->result();
+        }
+
+        $lineas_validas = [];
+        foreach ($lineas as $linea) {
+            $cantidad = (float) $linea->cantidad;
+            if ($cantidad <= 0) {
+                continue;
+            }
+
+            $formulacion_id = !empty($linea->formulacion_id) ? (int) $linea->formulacion_id : null;
+            if (!$formulacion_id) {
+                $form_activa = $this->get_formulacion_activa($linea->producto_id);
+                if (!$form_activa) {
+                    $sin_formulacion = true;
+                    continue;
+                }
+                $formulacion_id = (int) $form_activa->id;
+            }
+
+            $lineas_validas[] = (object) [
+                'producto_id'      => (int) $linea->producto_id,
+                'producto_nombre'  => $linea->producto_nombre,
+                'producto_codigo'  => $linea->producto_codigo,
+                'cantidad'         => $cantidad,
+                'formulacion_id'   => $formulacion_id,
+                'unidad_linea'     => $linea->unidad_linea ?? null,
+                'unidad_producto'  => $linea->unidad_venta ?? null,
+            ];
+        }
+
+        return [
+            'lineas'          => $lineas_validas,
+            'sin_formulacion' => $sin_formulacion,
+        ];
+    }
+
+    /**
+     * Normaliza unidades del catálogo (productos.unidad_venta, obras_productos.unidad).
+     */
+    private function _canonical_unidad_linea($unidad) {
+        $u = mb_strtolower(trim((string) $unidad), 'UTF-8');
+        $map = [
+            'litro'  => 'L',
+            'l'      => 'L',
+            'kg'     => 'Kg',
+            'kilogramo' => 'Kg',
+            'g'      => 'g',
+            'mg'     => 'mg',
+            'ml'     => 'ml',
+            'pieza'  => 'Pza',
+            'pza'    => 'Pza',
+            'cubeta' => 'Cubeta',
+            'caja'   => 'Pza',
+        ];
+
+        return $map[$u] ?? trim((string) $unidad);
+    }
+
+    /**
+     * Unidades de contenedor/embalaje: cantidad × cantidad_producida del lote.
+     */
+    private function _es_unidad_conteo_envase($unidad) {
+        $u = mb_strtolower(trim((string) $unidad), 'UTF-8');
+        return in_array($u, ['cubeta', 'pza', 'pieza', 'caja'], true);
+    }
+
+    /**
+     * Unidades que no permiten escalar el BOM de forma segura.
+     */
+    private function _es_unidad_ambigua_escalado($unidad) {
+        $u = mb_strtolower(trim((string) $unidad), 'UTF-8');
+        return in_array($u, ['galon', 'galón', 'metro', 'm2', 'm²', 'servicio', 'otro', 'ton', 'tambo'], true);
+    }
+
+    /**
+     * Resuelve el total del lote para explotar_bom_plano según unidad de línea vs formulación.
+     *
+     * Reglas:
+     *  - Cubeta/Pza/Caja → total = cantidad × cantidad_producida (lote)
+     *  - Kg/L (y g/ml)   → total = cantidad en unidad del lote (sin multiplicar por cantidad_producida)
+     *  - Ambiguo         → success=false (revision_manual, sin preorden)
+     *
+     * @return array{success:bool, kg:float, motivo:?string}
+     */
+    private function _resolver_total_bom_linea($cantidad, $unidad_linea, $unidad_producto, $formulacion_id) {
+        $this->load->helper('unidades');
+
+        $formulacion = $this->db->select('id, cantidad_producida, unidad_produccion')
+            ->where('id', (int) $formulacion_id)
+            ->get('formulaciones')
+            ->row();
+
+        if (!$formulacion) {
+            return ['success' => false, 'kg' => 0.0, 'motivo' => 'Formulación no encontrada'];
+        }
+
+        $cantidad = (float) $cantidad;
+        if ($cantidad <= 0) {
+            return ['success' => false, 'kg' => 0.0, 'motivo' => 'Cantidad de línea inválida'];
+        }
+
+        $unidad_efectiva = $this->_canonical_unidad_linea($unidad_linea ?: $unidad_producto ?: $formulacion->unidad_produccion ?: 'Kg');
+        $unidad_prod     = $this->_canonical_unidad_linea($formulacion->unidad_produccion ?: 'Kg');
+        $cantidad_prod   = (float) ($formulacion->cantidad_producida ?: 0);
+
+        if ($this->_es_unidad_ambigua_escalado($unidad_efectiva)) {
+            return [
+                'success' => false,
+                'kg'      => 0.0,
+                'motivo'  => "Unidad de línea \"{$unidad_efectiva}\" requiere revisión manual para escalar el BOM.",
+            ];
+        }
+
+        // Venta por contenedor (cubeta, pieza, caja)
+        if ($this->_es_unidad_conteo_envase($unidad_efectiva)) {
+            if ($cantidad_prod <= 0) {
+                return [
+                    'success' => false,
+                    'kg'      => 0.0,
+                    'motivo'  => "La formulación no define cantidad_producida para escalar por {$unidad_efectiva}.",
+                ];
+            }
+
+            $familia_prod = unidad_familia($unidad_prod);
+            if ($familia_prod === 'masa' || $familia_prod === 'volumen') {
+                return ['success' => true, 'kg' => $cantidad * $cantidad_prod];
+            }
+
+            return [
+                'success' => false,
+                'kg'      => 0.0,
+                'motivo'  => "Unidad de producción \"{$unidad_prod}\" no compatible con venta por {$unidad_efectiva}.",
+            ];
+        }
+
+        // Venta directa por masa (Kg, g, …)
+        $familia_linea = unidad_familia($unidad_efectiva);
+        if ($familia_linea === 'masa') {
+            if ($cantidad_prod > 0 && unidades_son_compatibles($unidad_efectiva, $unidad_prod)) {
+                $conv_lote = convertir_unidad_insumo($cantidad_prod, $unidad_prod, $unidad_efectiva);
+                if ($conv_lote['success'] && abs($cantidad - $conv_lote['cantidad_convertida']) < 0.0001) {
+                    // Ej.: 19 Kg vendidos de un lote nominal de 19 Kg → 19 kg BOM (no 361)
+                    $conv_kg = convertir_unidad_insumo($cantidad, $unidad_efectiva, 'Kg');
+                    if ($conv_kg['success']) {
+                        return ['success' => true, 'kg' => $conv_kg['cantidad_convertida']];
+                    }
+                }
+            }
+
+            $conv = convertir_unidad_insumo($cantidad, $unidad_efectiva, 'Kg');
+            if ($conv['success']) {
+                return ['success' => true, 'kg' => $conv['cantidad_convertida']];
+            }
+            return ['success' => false, 'kg' => 0.0, 'motivo' => $conv['motivo']];
+        }
+
+        // Venta directa por volumen (L, ml, …)
+        if ($familia_linea === 'volumen') {
+            if ($cantidad_prod > 0 && unidades_son_compatibles($unidad_efectiva, $unidad_prod)) {
+                $conv_lote = convertir_unidad_insumo($cantidad_prod, $unidad_prod, $unidad_efectiva);
+                if ($conv_lote['success'] && abs($cantidad - $conv_lote['cantidad_convertida']) < 0.0001) {
+                    return ['success' => true, 'kg' => $cantidad];
+                }
+            }
+
+            if (unidades_son_compatibles($unidad_efectiva, $unidad_prod)) {
+                $conv = convertir_unidad_insumo($cantidad, $unidad_efectiva, $unidad_prod);
+                if ($conv['success']) {
+                    return ['success' => true, 'kg' => $conv['cantidad_convertida']];
+                }
+            }
+
+            return ['success' => true, 'kg' => $cantidad];
+        }
+
+        return [
+            'success' => false,
+            'kg'      => 0.0,
+            'motivo'  => "Unidad \"{$unidad_efectiva}\" no permite escalar el BOM automáticamente.",
+        ];
+    }
+
+    /**
+     * Verifica insumos teóricos para una línea única de producción (orden_produccion legacy).
+     * Reutiliza explotar_bom_plano + _resolver_total_bom_linea (mismas reglas P5.1).
+     */
+    public function verificar_insumos_linea_produccion($formulacion_id, $cantidad, $unidad_linea, $producto_id) {
+        $this->load->helper('unidades');
+
+        $producto = $this->db->select('nombre, codigo, unidad_venta')
+            ->where('id', (int) $producto_id)
+            ->get('productos')
+            ->row();
+
+        $linea = (object) [
+            'cantidad'        => (float) $cantidad,
+            'unidad_linea'    => $unidad_linea,
+            'unidad_producto' => $producto->unidad_venta ?? null,
+            'formulacion_id'  => (int) $formulacion_id,
+            'producto_id'     => (int) $producto_id,
+            'producto_nombre' => $producto->nombre ?? '',
+            'producto_codigo' => $producto->codigo ?? '',
+        ];
+
+        $revision_manual = [];
+        $mapa_insumos = [];
+
+        $escalado = $this->_resolver_total_bom_linea(
+            $linea->cantidad,
+            $linea->unidad_linea ?? null,
+            $linea->unidad_producto ?? null,
+            $linea->formulacion_id
+        );
+
+        if (!$escalado['success']) {
+            return [
+                'ok'              => false,
+                'faltantes'       => [],
+                'suficientes'     => [],
+                'revision_manual' => [[
+                    'tipo'            => 'linea',
+                    'producto_id'     => $linea->producto_id,
+                    'producto_nombre' => $linea->producto_nombre,
+                    'producto_codigo' => $linea->producto_codigo,
+                    'motivo_revision' => $escalado['motivo'],
+                ]],
+                'sin_formulacion' => false,
+            ];
+        }
+
+        $total_kg = (float) $escalado['kg'];
+        if ($total_kg > 0) {
+            $visitados = [];
+            $bom_plano = $this->explotar_bom_plano($linea->formulacion_id, $total_kg, 0, $visitados);
+
+            foreach ($bom_plano as $item) {
+                if (empty($item['insumo_id'])) {
+                    continue;
+                }
+
+                $insumo_id = (int) $item['insumo_id'];
+                $kg_requeridos = (float) ($item['kg'] ?? 0);
+                if ($kg_requeridos <= 0) {
+                    continue;
+                }
+
+                if (!isset($mapa_insumos[$insumo_id])) {
+                    $insumo_row = $this->db->select('id, codigo, nombre_tecnico, stock_actual, unidad_medida, precio_promedio')
+                        ->where('id', $insumo_id)
+                        ->get('insumos')
+                        ->row();
+
+                    if (!$insumo_row) {
+                        continue;
+                    }
+
+                    $mapa_insumos[$insumo_id] = [
+                        'insumo_id'          => $insumo_id,
+                        'insumo_codigo'      => $insumo_row->codigo,
+                        'insumo_nombre'      => $insumo_row->nombre_tecnico,
+                        'unidad_insumo'      => $insumo_row->unidad_medida,
+                        'unidad_formula'     => 'Kg',
+                        'cantidad_requerida' => 0.0,
+                        'stock_disponible'   => (float) $insumo_row->stock_actual,
+                        'precio_promedio'    => (float) $insumo_row->precio_promedio,
+                    ];
+                }
+
+                $mapa_insumos[$insumo_id]['cantidad_requerida'] += $kg_requeridos;
+            }
+        }
+
+        $faltantes = [];
+        $suficientes = [];
+
+        foreach ($mapa_insumos as $datos) {
+            $conv = convertir_unidad_insumo($datos['cantidad_requerida'], 'Kg', $datos['unidad_insumo']);
+
+            if (!$conv['success']) {
+                $revision_manual[] = array_merge($datos, ['motivo_revision' => $conv['motivo']]);
+                continue;
+            }
+
+            $cantidad_en_unidad_insumo = (float) $conv['cantidad_convertida'];
+            $cantidad_faltante = max(0, round($cantidad_en_unidad_insumo - $datos['stock_disponible'], 6));
+
+            $item = array_merge($datos, [
+                'cantidad_en_unidad_insumo' => $cantidad_en_unidad_insumo,
+                'cantidad_faltante'         => $cantidad_faltante,
+                'disponible'                => $cantidad_faltante <= 0,
+            ]);
+
+            if ($cantidad_faltante > 0) {
+                $faltantes[] = $item;
+            } else {
+                $suficientes[] = $item;
+            }
+        }
+
+        return [
+            'ok'              => empty($faltantes) && empty($revision_manual),
+            'faltantes'       => $faltantes,
+            'suficientes'     => $suficientes,
+            'revision_manual' => $revision_manual,
+            'sin_formulacion' => false,
+        ];
+    }
+
+    /**
+     * Verifica disponibilidad de insumos para una orden de venta u obra.
+     * Usa explotar_bom_plano + conversión segura de unidades (como calcular_insumos_para_proyecto).
+     *
+     * @param int    $origen_id ID orden_venta u obra
+     * @param string $tipo      'venta' | 'obra'
+     * @return array{
+     *   ok: bool,
+     *   faltantes: array,
+     *   suficientes: array,
+     *   revision_manual: array,
+     *   sin_formulacion: bool,
+     *   sin_productos_fabricados: bool,
+     *   productos_analizados: int
+     * }
+     */
+    public function verificar_disponibilidad_insumos_para_orden($origen_id, $tipo = 'venta') {
+        $this->load->helper('unidades');
+
+        $origen_id = (int) $origen_id;
+        $tipo = ($tipo === 'obra') ? 'obra' : 'venta';
+
+        $datos_lineas = $this->_obtener_lineas_fabricadas_para_verificacion($origen_id, $tipo);
+        $lineas = $datos_lineas['lineas'];
+
+        if (empty($lineas)) {
+            return [
+                'ok'                       => true,
+                'faltantes'                => [],
+                'suficientes'              => [],
+                'revision_manual'          => [],
+                'sin_formulacion'          => $datos_lineas['sin_formulacion'],
+                'sin_productos_fabricados' => true,
+                'productos_analizados'     => 0,
+            ];
+        }
+
+        $mapa_insumos = [];
+        $revision_manual = [];
+
+        foreach ($lineas as $linea) {
+            $escalado = $this->_resolver_total_bom_linea(
+                $linea->cantidad,
+                $linea->unidad_linea ?? null,
+                $linea->unidad_producto ?? null,
+                $linea->formulacion_id
+            );
+
+            if (!$escalado['success']) {
+                $revision_manual[] = [
+                    'tipo'            => 'linea',
+                    'producto_id'     => $linea->producto_id,
+                    'producto_nombre' => $linea->producto_nombre,
+                    'producto_codigo' => $linea->producto_codigo,
+                    'motivo_revision' => $escalado['motivo'],
+                ];
+                continue;
+            }
+
+            $total_kg = (float) $escalado['kg'];
+            if ($total_kg <= 0) {
+                continue;
+            }
+
+            $visitados = [];
+            $bom_plano = $this->explotar_bom_plano($linea->formulacion_id, $total_kg, 0, $visitados);
+
+            foreach ($bom_plano as $item) {
+                if (empty($item['insumo_id'])) {
+                    continue;
+                }
+
+                $insumo_id = (int) $item['insumo_id'];
+                $kg_requeridos = (float) ($item['kg'] ?? 0);
+                if ($kg_requeridos <= 0) {
+                    continue;
+                }
+
+                if (!isset($mapa_insumos[$insumo_id])) {
+                    $insumo_row = $this->db->select('id, codigo, nombre_tecnico, stock_actual, unidad_medida, precio_promedio')
+                        ->where('id', $insumo_id)
+                        ->get('insumos')
+                        ->row();
+
+                    if (!$insumo_row) {
+                        continue;
+                    }
+
+                    $mapa_insumos[$insumo_id] = [
+                        'insumo_id'          => $insumo_id,
+                        'insumo_codigo'      => $insumo_row->codigo,
+                        'insumo_nombre'      => $insumo_row->nombre_tecnico,
+                        'unidad_insumo'      => $insumo_row->unidad_medida,
+                        'unidad_formula'     => 'Kg',
+                        'cantidad_requerida' => 0.0,
+                        'stock_disponible'   => (float) $insumo_row->stock_actual,
+                        'precio_promedio'    => (float) $insumo_row->precio_promedio,
+                        'productos_origen'   => [],
+                    ];
+                }
+
+                $mapa_insumos[$insumo_id]['cantidad_requerida'] += $kg_requeridos;
+                $mapa_insumos[$insumo_id]['productos_origen'][$linea->producto_id] = $linea->producto_nombre;
+            }
+        }
+
+        $faltantes = [];
+        $suficientes = [];
+
+        foreach ($mapa_insumos as $insumo_id => $datos) {
+            $unidad_formula = $datos['unidad_formula'] ?: 'Kg';
+            $unidad_insumo  = $datos['unidad_insumo'];
+
+            $conv = convertir_unidad_insumo($datos['cantidad_requerida'], $unidad_formula, $unidad_insumo);
+
+            $item_base = [
+                'insumo_id'          => $datos['insumo_id'],
+                'insumo_codigo'      => $datos['insumo_codigo'],
+                'insumo_nombre'      => $datos['insumo_nombre'],
+                'unidad_insumo'      => $unidad_insumo,
+                'unidad_formula'     => $unidad_formula,
+                'cantidad_requerida' => $datos['cantidad_requerida'],
+                'stock_disponible'   => $datos['stock_disponible'],
+                'precio_promedio'    => $datos['precio_promedio'],
+                'productos_origen'   => array_values($datos['productos_origen']),
+            ];
+
+            if (!$conv['success']) {
+                $revision_manual[] = array_merge($item_base, [
+                    'motivo_revision' => $conv['motivo'],
+                ]);
+                continue;
+            }
+
+            $cantidad_en_unidad_insumo = (float) $conv['cantidad_convertida'];
+            $cantidad_faltante = max(0, round($cantidad_en_unidad_insumo - $datos['stock_disponible'], 6));
+
+            $item = array_merge($item_base, [
+                'cantidad_en_unidad_insumo' => $cantidad_en_unidad_insumo,
+                'cantidad_faltante'         => $cantidad_faltante,
+                'conversion_aplicada'       => !empty($conv['unidad_coincide']) ? false : true,
+            ]);
+
+            if ($cantidad_faltante > 0) {
+                $faltantes[] = $item;
+            } else {
+                $suficientes[] = $item;
+            }
+        }
+
+        usort($faltantes, fn($a, $b) => $b['cantidad_faltante'] <=> $a['cantidad_faltante']);
+
+        return [
+            'ok'                       => empty($faltantes) && empty($revision_manual),
+            'faltantes'                => $faltantes,
+            'suficientes'              => $suficientes,
+            'revision_manual'          => $revision_manual,
+            'sin_formulacion'          => $datos_lineas['sin_formulacion'],
+            'sin_productos_fabricados' => false,
+            'productos_analizados'     => count($lineas),
+        ];
+    }
+
+    /**
+     * Solo consulta disponibilidad (sin crear pre-órdenes). Para cotizaciones y borradores.
+     */
+    public function consultar_verificacion_insumos($origen_id, $tipo = 'venta') {
+        $tipo = ($tipo === 'obra') ? 'obra' : 'venta';
+        $verificacion = $this->verificar_disponibilidad_insumos_para_orden($origen_id, $tipo);
+
+        return $this->_empaquetar_respuesta_verificacion($verificacion, null, true);
+    }
+
+    /**
+     * Verifica insumos y, si hay faltantes, genera pre-órdenes Pendiente hacia Compras.
+     * Usar solo en documentos de compromiso (venta confirmada, obra aprobada, etc.).
+     *
+     * @param int         $origen_id
+     * @param string      $tipo       'venta' | 'obra'
+     * @param int         $usuario_id
+     * @param string|null $notas
+     * @return array
+     */
+    public function procesar_verificacion_insumos_post_creacion($origen_id, $tipo, $usuario_id, $notas = null) {
+        $tipo = ($tipo === 'obra') ? 'obra' : 'venta';
+        $verificacion = $this->verificar_disponibilidad_insumos_para_orden($origen_id, $tipo);
+
+        $preordenes = null;
+        if (!empty($verificacion['faltantes'])) {
+            $faltantes_canonicos = [];
+            foreach ($verificacion['faltantes'] as $f) {
+                if (empty($f['insumo_id']) || ($f['cantidad_faltante'] ?? 0) <= 0 || empty($f['unidad_insumo'])) {
+                    continue;
+                }
+                $faltantes_canonicos[] = [
+                    'insumo_id'         => $f['insumo_id'],
+                    'cantidad_faltante' => (float) $f['cantidad_faltante'],
+                    'unidad_insumo'     => $f['unidad_insumo'],
+                ];
+            }
+
+            if (!empty($faltantes_canonicos)) {
+                $this->load->model('Compras/PreordenesModel');
+                $preordenes = $this->PreordenesModel->crear_preordenes_desde_faltantes(
+                    $faltantes_canonicos,
+                    $tipo,
+                    (int) $origen_id,
+                    (int) $usuario_id,
+                    $notas
+                );
+            }
+        }
+
+        return $this->_empaquetar_respuesta_verificacion($verificacion, $preordenes, false);
+    }
+
+    /**
+     * Arma la respuesta estándar para controladores/UI.
+     */
+    private function _empaquetar_respuesta_verificacion(array $verificacion, $preordenes, $solo_consulta) {
+        return [
+            'verificacion'    => $verificacion,
+            'preordenes'      => $preordenes,
+            'mensaje_resumen' => $this->_construir_resumen_verificacion_insumos($verificacion, $preordenes, $solo_consulta),
+            'bloqueada'       => !$verificacion['ok'] || !empty($verificacion['revision_manual']),
+            'solo_consulta'   => $solo_consulta,
+        ];
+    }
+
+    /**
+     * Texto resumido para mostrar al usuario tras crear venta/obra.
+     */
+    private function _construir_resumen_verificacion_insumos(array $verificacion, $preordenes = null, $solo_consulta = false) {
+        if (!empty($verificacion['sin_productos_fabricados'])) {
+            if ($verificacion['sin_formulacion']) {
+                return 'La orden no incluye productos fabricados con formulación activa.';
+            }
+            return 'La orden no incluye productos fabricados; no se requiere verificación de insumos.';
+        }
+
+        $partes = [];
+
+        if ($verificacion['ok'] && empty($verificacion['revision_manual'])) {
+            $partes[] = 'Insumos OK para producción (' . count($verificacion['suficientes']) . ' insumo(s) verificados).';
+        } elseif ($verificacion['ok'] && !empty($verificacion['revision_manual'])) {
+            $partes[] = 'Stock aparentemente suficiente, pero ' . count($verificacion['revision_manual']) . ' insumo(s) requieren revisión manual de unidades.';
+        } else {
+            $partes[] = 'Faltan ' . count($verificacion['faltantes']) . ' insumo(s) para producir esta orden.';
+            if ($solo_consulta) {
+                $partes[] = 'Las pre-órdenes se generarán al confirmar el documento.';
+            }
+        }
+
+        if ($preordenes && !empty($preordenes['creadas'])) {
+            $folios = array_map(function ($p) {
+                return $p->folio ?? ('#' . $p->id);
+            }, $preordenes['creadas']);
+            $partes[] = 'Se generaron ' . count($folios) . ' pre-orden(es) Pendiente: ' . implode(', ', $folios) . '.';
+        } elseif (!$verificacion['ok'] && (empty($preordenes) || empty($preordenes['creadas']))) {
+            if (!empty($preordenes['errores'])) {
+                $partes[] = 'No se pudieron crear nuevas pre-órdenes (posible duplicado pendiente).';
+            }
+        }
+
+        if (!empty($verificacion['revision_manual'])) {
+            $partes[] = count($verificacion['revision_manual']) . ' insumo(s) con unidades no comparables — revisar en Producción.';
+        }
+
+        return implode(' ', $partes);
     }
 }

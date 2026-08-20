@@ -321,29 +321,40 @@ class ProduccionModel extends CI_Model {
             $data['fecha_inicio'] = date('Y-m-d H:i:s');
         }
         
-        // Si pasa a "Completada", primero descontar stock de insumos
+        // Si pasa a "Completada", validar insumos/pesaje (P6) — no descontar aquí
         if($nuevo_estatus == 'Completada') {
-            // Intentar descontar stock de materia prima
-            $resultado_descuento = $this->descontar_stock_produccion($orden_id);
-            
-            // Si falla el descuento de stock, NO completar la orden
-            if(!$resultado_descuento['success']) {
-                return $resultado_descuento; // Retornar el error tal cual
+            $this->db->select('orden_venta_id');
+            $this->db->where('id', $orden_id);
+            $op_row = $this->db->get('ordenes_produccion')->row();
+
+            if ($op_row && !empty($op_row->orden_venta_id)) {
+                $validacion = $this->puede_completar_produccion($op_row->orden_venta_id, 'venta', false);
+                if (empty($validacion['ok'])) {
+                    return [
+                        'success' => false,
+                        'message' => $validacion['message'],
+                        'tipo_error' => 'insumos_pendientes',
+                    ];
+                }
+            } elseif (!$this->insumos_ya_consumidos('op', $orden_id)) {
+                return [
+                    'success' => false,
+                    'message' => 'Debe confirmar el pesaje y descontar insumos antes de completar.',
+                    'tipo_error' => 'insumos_pendientes',
+                ];
             }
-            
-            // Si el descuento fue exitoso, registrar fecha_completado
+
             $data['fecha_completado'] = date('Y-m-d H:i:s');
         }
         
         $this->db->where('id', $orden_id);
         $actualizado = $this->db->update('ordenes_produccion', $data);
         
-        // Si la actualización fue exitosa y era una completación, incluir detalles del descuento
-        if($actualizado && $nuevo_estatus == 'Completada' && isset($resultado_descuento)) {
+        // Si la actualización fue exitosa y era una completación
+        if($actualizado && $nuevo_estatus == 'Completada') {
             return [
                 'success' => true,
-                'message' => 'Orden completada y stock descontado correctamente',
-                'detalles_descuento' => $resultado_descuento['detalles']
+                'message' => 'Orden completada correctamente',
             ];
         }
         
@@ -351,162 +362,125 @@ class ProduccionModel extends CI_Model {
     }
     
     /**
-     * Descuenta el stock de insumos al completar una orden de producción
-     * Usa transacciones para garantizar atomicidad (todo o nada)
-     * 
+     * Descuenta insumos para una orden de producción legacy (tabla ordenes_produccion).
+     * Usa motor P5.1 (BOM multinivel) y movimientos_inventario. No descuenta dos veces.
+     *
      * @param int $orden_id ID de la orden de producción
      * @return array ['success' => bool, 'message' => string, 'detalles' => array]
      */
     public function descontar_stock_produccion($orden_id) {
-        // Iniciar transacción
-        $this->db->trans_start();
-        
-        try {
-            // 1. Obtener detalles de la orden de producción
-            $this->db->select('op.*, p.nombre as producto_nombre, p.codigo as producto_codigo');
-            $this->db->from('ordenes_produccion op');
-            $this->db->join('productos p', 'p.id = op.producto_id');
-            $this->db->where('op.id', $orden_id);
-            $orden = $this->db->get()->row();
-            
-            if(!$orden) {
-                $this->db->trans_rollback();
-                return [
-                    'success' => false,
-                    'message' => 'Orden de producción no encontrada',
-                    'detalles' => []
-                ];
-            }
-            
-            // 2. Obtener la formulación activa del producto
-            $this->db->select('id');
-            $this->db->where('producto_id', $orden->producto_id);
-            $this->db->where('es_activa', 1);
-            $this->db->order_by('version', 'DESC');
-            $this->db->limit(1);
-            $formulacion = $this->db->get('formulaciones')->row();
-            
-            if(!$formulacion) {
-                $this->db->trans_rollback();
-                return [
-                    'success' => false,
-                    'message' => 'No existe formulación activa para el producto: ' . $orden->producto_nombre,
-                    'detalles' => []
-                ];
-            }
-            
-            // 3. Obtener componentes (insumos) de la formulación
-            $componentes = $this->get_componentes_formulacion($formulacion->id, $orden->cantidad);
-            
-            if(empty($componentes)) {
-                $this->db->trans_rollback();
-                return [
-                    'success' => false,
-                    'message' => 'La formulación no tiene insumos definidos',
-                    'detalles' => []
-                ];
-            }
-            
-            $detalles_descuento = [];
-            $insumos_insuficientes = [];
-            
-            // 4. Validar stock disponible para TODOS los insumos primero
-            foreach($componentes as $componente) {
-                $this->db->select('id, codigo, nombre_tecnico, stock_actual, unidad_medida');
-                $this->db->where('id', $componente->insumo_id);
-                $insumo = $this->db->get('insumos')->row();
-                
-                if(!$insumo) {
-                    $this->db->trans_rollback();
-                    return [
-                        'success' => false,
-                        'message' => 'Insumo ID ' . $componente->insumo_id . ' no encontrado',
-                        'detalles' => []
-                    ];
-                }
-                
-                $cantidad_necesaria = $componente->cantidad_necesaria;
-                $stock_disponible = $insumo->stock_actual;
-                
-                // Verificar si hay suficiente stock
-                if($stock_disponible < $cantidad_necesaria) {
-                    $insumos_insuficientes[] = [
-                        'codigo' => $insumo->codigo,
-                        'nombre' => $insumo->nombre_tecnico,
-                        'necesario' => number_format($cantidad_necesaria, 2),
-                        'disponible' => number_format($stock_disponible, 2),
-                        'faltante' => number_format($cantidad_necesaria - $stock_disponible, 2),
-                        'unidad' => $insumo->unidad_medida
-                    ];
-                }
-                
-                $detalles_descuento[] = [
-                    'insumo_id' => $insumo->id,
-                    'codigo' => $insumo->codigo,
-                    'nombre' => $insumo->nombre_tecnico,
-                    'cantidad_necesaria' => $cantidad_necesaria,
-                    'stock_anterior' => $stock_disponible,
-                    'stock_nuevo' => $stock_disponible - $cantidad_necesaria,
-                    'unidad' => $insumo->unidad_medida
-                ];
-            }
-            
-            // 5. Si hay insumos insuficientes, abortar transacción
-            if(!empty($insumos_insuficientes)) {
-                $this->db->trans_rollback();
-                
-                $mensaje = "Stock insuficiente para completar la orden:\n\n";
-                foreach($insumos_insuficientes as $ins) {
-                    $mensaje .= "• {$ins['codigo']} - {$ins['nombre']}: ";
-                    $mensaje .= "Necesario: {$ins['necesario']} {$ins['unidad']}, ";
-                    $mensaje .= "Disponible: {$ins['disponible']} {$ins['unidad']}, ";
-                    $mensaje .= "Faltante: {$ins['faltante']} {$ins['unidad']}\n";
-                }
-                
-                return [
-                    'success' => false,
-                    'message' => $mensaje,
-                    'detalles' => $insumos_insuficientes,
-                    'tipo_error' => 'stock_insuficiente'
-                ];
-            }
-            
-            // 6. Descontar stock de TODOS los insumos (atomicidad garantizada)
-            foreach($detalles_descuento as $detalle) {
-                // Actualizar stock del insumo
-                $this->db->where('id', $detalle['insumo_id']);
-                $this->db->set('stock_actual', 'stock_actual - ' . $detalle['cantidad_necesaria'], FALSE);
-                $this->db->update('insumos');
-                
-                // TODO: Registrar movimiento en tabla de auditoría (cuando se cree)
-                // Por ahora, el registro queda implícito en la orden de producción
-            }
-            
-            // 7. Commit de la transacción
-            $this->db->trans_complete();
-            
-            if ($this->db->trans_status() === FALSE) {
-                return [
-                    'success' => false,
-                    'message' => 'Error al descontar stock. La transacción fue revertida.',
-                    'detalles' => []
-                ];
-            }
-            
+        $orden_id = (int) $orden_id;
+
+        $this->db->select('op.*, p.nombre as producto_nombre, p.codigo as producto_codigo, p.unidad_venta');
+        $this->db->from('ordenes_produccion op');
+        $this->db->join('productos p', 'p.id = op.producto_id');
+        $this->db->where('op.id', $orden_id);
+        $orden = $this->db->get()->row();
+
+        if (!$orden) {
+            return ['success' => false, 'message' => 'Orden de producción no encontrada', 'detalles' => []];
+        }
+
+        if (!empty($orden->orden_venta_id) && $this->insumos_ya_consumidos('venta', $orden->orden_venta_id)) {
             return [
                 'success' => true,
-                'message' => 'Stock descontado correctamente para ' . count($detalles_descuento) . ' insumo(s)',
-                'detalles' => $detalles_descuento
-            ];
-            
-        } catch (Exception $e) {
-            $this->db->trans_rollback();
-            return [
-                'success' => false,
-                'message' => 'Error al descontar stock: ' . $e->getMessage(),
-                'detalles' => []
+                'message' => 'Insumos ya descontados vía pesaje de la orden de venta vinculada.',
+                'detalles'  => [],
+                'omitido'   => true,
             ];
         }
+
+        if ($this->insumos_ya_consumidos('op', $orden_id)) {
+            return [
+                'success' => true,
+                'message' => 'Insumos ya descontados para esta orden de producción.',
+                'detalles'  => [],
+                'omitido'   => true,
+            ];
+        }
+
+        $this->load->model('Produccion/ProductosModel');
+
+        if (!empty($orden->orden_venta_id)) {
+            $verificacion = $this->get_insumos_requeridos_para_orden($orden->orden_venta_id, 'venta');
+            $ref_tipo = 'venta';
+            $ref_id = (int) $orden->orden_venta_id;
+        } else {
+            $verificacion = $this->ProductosModel->verificar_insumos_linea_produccion(
+                (int) $orden->formulacion_id,
+                (float) $orden->cantidad_programada,
+                $orden->unidad_medida,
+                (int) $orden->producto_id
+            );
+            $ref_tipo = 'op';
+            $ref_id = $orden_id;
+        }
+
+        if (!empty($verificacion['revision_manual'])) {
+            return [
+                'success' => false,
+                'message' => 'Hay insumos con unidades ambiguas que requieren revisión manual.',
+                'detalles' => $verificacion['revision_manual'],
+                'tipo_error' => 'revision_manual',
+            ];
+        }
+
+        $insumos = $verificacion['insumos'] ?? array_merge(
+            $verificacion['faltantes'] ?? [],
+            $verificacion['suficientes'] ?? []
+        );
+
+        if (empty($insumos)) {
+            return ['success' => true, 'message' => 'No hay insumos que descontar.', 'detalles' => []];
+        }
+
+        $faltantes = array_filter($insumos, fn($i) => empty($i['disponible']) && (($i['cantidad_faltante'] ?? $i['faltante'] ?? 0) > 0));
+        if (!empty($faltantes)) {
+            $mensaje = "Stock insuficiente para completar la orden:\n\n";
+            foreach ($faltantes as $ins) {
+                $req = $ins['cantidad_en_unidad_insumo'] ?? $ins['cantidad_requerida'] ?? 0;
+                $fal = $ins['cantidad_faltante'] ?? $ins['faltante'] ?? 0;
+                $mensaje .= '• ' . ($ins['insumo_codigo'] ?? '') . ' - ' . ($ins['insumo_nombre'] ?? '') .
+                    ': Necesario ' . round($req, 3) . ' ' . ($ins['unidad_insumo'] ?? $ins['unidad'] ?? '') .
+                    ', Faltante ' . round($fal, 3) . "\n";
+            }
+            return ['success' => false, 'message' => $mensaje, 'detalles' => array_values($faltantes), 'tipo_error' => 'stock_insuficiente'];
+        }
+
+        $usuario_id = (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 1);
+        $ref = $this->referencia_pesaje($ref_tipo, $ref_id);
+        $pesajes = [];
+
+        foreach ($insumos as $ins) {
+            $cantidad = (float) ($ins['cantidad_en_unidad_insumo'] ?? $ins['cantidad_requerida'] ?? 0);
+            if ($cantidad <= 0) {
+                continue;
+            }
+            $pesajes[] = [
+                'insumo_id'      => (int) $ins['insumo_id'],
+                'cantidad_real'  => $cantidad,
+            ];
+        }
+
+        if (empty($pesajes)) {
+            return ['success' => true, 'message' => 'No hay cantidades teóricas para descontar.', 'detalles' => []];
+        }
+
+        if ($ref_tipo === 'venta') {
+            $resultado = $this->confirmar_pesaje_y_descontar($ref_id, 'venta', $pesajes, $usuario_id);
+        } else {
+            $resultado = $this->_descontar_insumos_por_referencia($ref, $pesajes, $usuario_id, 'OP #' . $orden_id);
+        }
+
+        if (empty($resultado['success'])) {
+            return $resultado;
+        }
+
+        return [
+            'success' => true,
+            'message' => $resultado['message'],
+            'detalles' => $resultado['detalles'] ?? [],
+        ];
     }
     
     /**
@@ -581,136 +555,51 @@ class ProduccionModel extends CI_Model {
      */
     public function get_insumos_requeridos_para_orden($orden_id, $tipo = 'venta') {
         $this->load->model('Produccion/ProductosModel');
+        $verificacion = $this->ProductosModel->verificar_disponibilidad_insumos_para_orden($orden_id, $tipo);
 
-        // 1. Obtener productos de la orden según su tipo
-        if ($tipo === 'obra') {
-            $this->db->select('
-                op.producto_id,
-                op.cantidad_ajustada as cantidad,
-                p.nombre as producto_nombre,
-                p.codigo as producto_codigo,
-                op.formulacion_id
-            ');
-            $this->db->from('obras_productos op');
-            $this->db->join('productos p', 'p.id = op.producto_id');
-            $this->db->where('op.obra_id', $orden_id);
-            $productos = $this->db->get()->result();
-        } else {
-            $this->db->select('
-                dov.producto_id,
-                dov.cantidad,
-                p.nombre as producto_nombre,
-                p.codigo as producto_codigo,
-                dov.formulacion_id
-            ');
-            $this->db->from('detalle_orden_venta dov');
-            $this->db->join('productos p', 'p.id = dov.producto_id');
-            $this->db->where('dov.orden_venta_id', $orden_id);
-            $productos = $this->db->get()->result();
+        if (!empty($verificacion['sin_productos_fabricados'])) {
+            return [
+                'stock_suficiente' => true,
+                'insumos'          => [],
+                'sin_formulacion'  => $verificacion['sin_formulacion'],
+                'sin_productos'    => true,
+                'bloqueada'        => false,
+            ];
         }
 
-        if (empty($productos)) {
-            return ['stock_suficiente' => true, 'insumos' => [], 'sin_formulacion' => false, 'sin_productos' => true];
-        }
-
-        // 2. Para cada producto, obtener su formulación activa y escalar insumos
-        $mapa_insumos = [];   // insumo_id => datos acumulados
-        $sin_formulacion = false;
-
-        foreach ($productos as $prod) {
-            // Usar formulacion_id específica de la línea si existe, o la activa del producto
-            if (!empty($prod->formulacion_id)) {
-                $formulacion_id = $prod->formulacion_id;
-            } else {
-                $this->db->select('id, cantidad_producida');
-                $this->db->where('producto_id', $prod->producto_id);
-                $this->db->where('es_activa', 1);
-                $this->db->limit(1);
-                $form = $this->db->get('formulaciones')->row();
-                if (!$form) {
-                    $sin_formulacion = true;
-                    continue;
-                }
-                $formulacion_id = $form->id;
-            }
-
-            // Obtener datos de la formulación (cantidad base que produce)
-            $formulacion = $this->db->select('id, cantidad_producida, unidad_produccion')
-                ->where('id', $formulacion_id)->get('formulaciones')->row();
-            if (!$formulacion) { $sin_formulacion = true; continue; }
-
-            // Calcular el factor de escala
-            // Ej: formulación produce 19L, se piden 10 unidades (cubetas de 19L) → factor = 10
-            // Si las unidades son directas (Kg) y la formulación produce en la misma unidad, factor = cantidad / cantidad_producida
-            $factor = ($formulacion->cantidad_producida > 0)
-                ? ($prod->cantidad / $formulacion->cantidad_producida)
-                : $prod->cantidad;
-
-            // Obtener los insumos de la formulación con porcentaje
-            $this->db->select('
-                df.insumo_id,
-                df.cantidad,
-                df.unidad,
-                df.porcentaje,
-                i.nombre_tecnico as insumo_nombre,
-                i.codigo as insumo_codigo,
-                i.stock_actual,
-                i.unidad_medida,
-                i.precio_promedio
-            ');
-            $this->db->from('detalle_formulacion df');
-            $this->db->join('insumos i', 'i.id = df.insumo_id');
-            $this->db->where('df.formulacion_id', $formulacion_id);
-            $this->db->where('df.tipo_componente', 'Insumo');
-            $this->db->order_by('df.orden', 'ASC');
-            $componentes = $this->db->get()->result();
-
-            foreach ($componentes as $comp) {
-                $cantidad_requerida = $comp->cantidad * $factor;
-
-                if (isset($mapa_insumos[$comp->insumo_id])) {
-                    // Si el insumo ya apareció en otro producto, acumular
-                    $mapa_insumos[$comp->insumo_id]['cantidad_requerida'] += $cantidad_requerida;
-                } else {
-                    $mapa_insumos[$comp->insumo_id] = [
-                        'insumo_id'          => $comp->insumo_id,
-                        'insumo_nombre'      => $comp->insumo_nombre,
-                        'insumo_codigo'      => $comp->insumo_codigo,
-                        'porcentaje'         => $comp->porcentaje,
-                        'unidad'             => $comp->unidad,
-                        'cantidad_por_unidad'=> $comp->cantidad,            // Kg por cubeta
-                        'cantidad_requerida' => $cantidad_requerida,        // Total necesario
-                        'stock_actual'       => (float)$comp->stock_actual,
-                        'precio_promedio'    => (float)$comp->precio_promedio,
-                    ];
-                }
-            }
-        }
-
-        // 3. Determinar disponibilidad para cada insumo acumulado
         $resultado_insumos = [];
-        $stock_suficiente = true;
 
-        foreach ($mapa_insumos as $datos) {
-            $faltante = max(0, $datos['cantidad_requerida'] - $datos['stock_actual']);
-            $disponible = $faltante == 0;
-            if (!$disponible) $stock_suficiente = false;
+        foreach (array_merge($verificacion['faltantes'], $verificacion['suficientes']) as $item) {
+            $cantidad_req = $item['cantidad_en_unidad_insumo'] ?? $item['cantidad_requerida'];
+            $faltante = (float) ($item['cantidad_faltante'] ?? 0);
+            $disponible = $faltante <= 0;
 
-            $resultado_insumos[] = array_merge($datos, [
-                'faltante'   => $faltante,
-                'disponible' => $disponible,
-                'costo_estimado_faltante' => round($faltante * $datos['precio_promedio'], 2),
-            ]);
+            $resultado_insumos[] = [
+                'insumo_id'               => $item['insumo_id'],
+                'insumo_nombre'           => $item['insumo_nombre'],
+                'insumo_codigo'           => $item['insumo_codigo'],
+                'unidad'                  => $item['unidad_insumo'],
+                'unidad_medida'           => $item['unidad_insumo'],
+                'porcentaje'              => null,
+                'cantidad_por_unidad'     => null,
+                'cantidad_requerida'      => $cantidad_req,
+                'stock_actual'            => $item['stock_disponible'],
+                'precio_promedio'         => $item['precio_promedio'] ?? 0,
+                'faltante'                => $faltante,
+                'disponible'              => $disponible,
+                'costo_estimado_faltante' => round($faltante * ($item['precio_promedio'] ?? 0), 2),
+            ];
         }
 
-        // Ordenar: primero los faltantes
         usort($resultado_insumos, fn($a, $b) => $a['disponible'] - $b['disponible']);
 
         return [
-            'stock_suficiente' => $stock_suficiente,
+            'stock_suficiente' => $verificacion['ok'],
             'insumos'          => $resultado_insumos,
-            'sin_formulacion'  => $sin_formulacion,
+            'sin_formulacion'  => $verificacion['sin_formulacion'],
             'sin_productos'    => false,
+            'bloqueada'        => !$verificacion['ok'] || !empty($verificacion['revision_manual']),
+            'revision_manual'  => $verificacion['revision_manual'],
         ];
     }
 
@@ -740,12 +629,18 @@ class ProduccionModel extends CI_Model {
             $key  = $tipo . '_' . $id;
 
             $verificacion = $this->get_insumos_requeridos_para_orden($id, $tipo);
-            if ($verificacion['sin_formulacion']) {
+            $origen_tipo = ($tipo === 'obra') ? 'obra' : 'venta';
+
+            if ($verificacion['sin_formulacion'] && empty($verificacion['insumos'])) {
                 $resultado[$key] = 'sin_formulacion';
-            } elseif ($verificacion['stock_suficiente']) {
+            } elseif ($verificacion['stock_suficiente'] && empty($verificacion['revision_manual'])) {
                 $resultado[$key] = 'ok';
-            } else {
+            } elseif ($this->_tiene_preordenes_pendientes_origen($origen_tipo, $id)) {
+                $resultado[$key] = 'bloqueada_preorden';
+            } elseif (!$verificacion['stock_suficiente'] || !empty($verificacion['revision_manual'])) {
                 $resultado[$key] = 'faltante';
+            } else {
+                $resultado[$key] = 'ok';
             }
         }
         return $resultado;
@@ -817,28 +712,9 @@ class ProduccionModel extends CI_Model {
     public function procesar_inventario_por_produccion($id, $tipo, $lotes) {
         $this->db->trans_start();
 
-        // 1. OBTENER INSUMOS REQUERIDOS (Para descargar stock)
-        $resultado_insumos = $this->get_insumos_requeridos_para_orden($id, $tipo);
-        
-        foreach ($resultado_insumos['insumos'] as $insumo) {
-            $cantidad = $insumo['cantidad_requerida'];
-            
-            // Insertar movimiento de inventario (Salida de insumo)
-            // El trigger 'trg_actualizar_stock_movimiento' actualizará el stock_actual
-            $mov_insumo = [
-                'insumo_id'       => $insumo['insumo_id'],
-                'tipo_movimiento' => 'Salida',
-                'cantidad'        => $cantidad,
-                'stock_anterior'  => $insumo['stock_actual'],
-                'stock_nuevo'     => $insumo['stock_actual'] - $cantidad,
-                'motivo'          => 'Consumo por producción (' . ($tipo == 'obra' ? 'Obra' : 'Venta') . ' ID: ' . $id . ')',
-                'fecha_movimiento'=> date('Y-m-d H:i:s'),
-                'usuario_id'      => $this->session->userdata('user_id') ?: 1
-            ];
-            $this->db->insert('movimientos_inventario', $mov_insumo);
-        }
+        // P6: los insumos se descuentan SOLO vía confirmar_pesaje_y_descontar().
+        // Aquí únicamente se registra la ENTRADA de producto terminado (lotes).
 
-        // 2. REGISTRAR ENTRADA DE PRODUCTOS TERMINADOS (Vía Lotes)
         foreach ($lotes as $lote) {
             // Obtener stock actual del producto
             $this->db->select('stock_actual');
@@ -871,5 +747,575 @@ class ProduccionModel extends CI_Model {
 
         $this->db->trans_complete();
         return $this->db->trans_status();
+    }
+
+    // =====================================================
+    // P6 — PESAJE REAL Y DESCUENTO DE MATERIA PRIMA
+    // =====================================================
+
+    /** Referencia única de movimientos de pesaje por orden/obra/OP */
+    public function referencia_pesaje($tipo, $id) {
+        $id = (int) $id;
+        if ($tipo === 'op') {
+            return 'PESAJE-op-' . $id;
+        }
+        $tipo = ($tipo === 'obra') ? 'obra' : 'venta';
+        return 'PESAJE-' . $tipo . '-' . $id;
+    }
+
+    /**
+     * Indica si ya se registró el consumo de insumos por pesaje para esta orden/obra.
+     */
+    public function insumos_ya_consumidos($tipo, $id) {
+        $ref = $this->referencia_pesaje($tipo, $id);
+        $this->db->where('tipo_movimiento', 'Salida');
+
+        if ($this->db->field_exists('referencia', 'movimientos_inventario')) {
+            $this->db->where('referencia', $ref);
+        } else {
+            if ($tipo === 'op') {
+                $this->db->like('motivo', 'Pesaje producción OP #' . (int) $id, 'after');
+            } else {
+                $this->db->like('motivo', 'Pesaje producción ' . strtoupper($tipo) . ' #' . (int) $id, 'after');
+            }
+        }
+
+        return $this->db->count_all_results('movimientos_inventario') > 0;
+    }
+
+    /**
+     * Obtiene movimientos de pesaje ya registrados para mostrar restante consumido.
+     */
+    public function get_movimientos_pesaje_orden($tipo, $id) {
+        $ref = $this->referencia_pesaje($tipo, $id);
+        $this->db->select('movimientos_inventario.*, insumos.codigo AS insumo_codigo, insumos.nombre_tecnico AS insumo_nombre, insumos.unidad_medida');
+        $this->db->from('movimientos_inventario');
+        $this->db->join('insumos', 'insumos.id = movimientos_inventario.insumo_id', 'left');
+        $this->db->where('movimientos_inventario.tipo_movimiento', 'Salida');
+
+        if ($this->db->field_exists('referencia', 'movimientos_inventario')) {
+            $this->db->where('movimientos_inventario.referencia', $ref);
+        } else {
+            $this->db->like('movimientos_inventario.motivo', 'Pesaje producción ' . strtoupper($tipo) . ' #' . (int) $id, 'after');
+        }
+
+        $this->db->order_by('movimientos_inventario.fecha_movimiento', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Estado de pesaje + insumos teóricos (motor P5.1) para la UI touch.
+     */
+    public function get_estado_pesaje_orden($id, $tipo) {
+        $this->load->helper('permissions');
+        $tipo_db = ($tipo === 'obra') ? 'obra' : 'venta';
+
+        $verificacion = $this->get_insumos_requeridos_para_orden($id, $tipo_db);
+        $consumido = $this->insumos_ya_consumidos($tipo_db, $id);
+        $movimientos = $consumido ? $this->get_movimientos_pesaje_orden($tipo_db, $id) : [];
+
+        $mapa_consumido = [];
+        foreach ($movimientos as $mov) {
+            $mapa_consumido[$mov->insumo_id] = (float) $mov->cantidad;
+        }
+
+        $insumos_ui = [];
+        foreach ($verificacion['insumos'] as $ins) {
+            $teorico = (float) ($ins['cantidad_requerida'] ?? 0);
+            $pesado = $mapa_consumido[$ins['insumo_id']] ?? null;
+            $stock_actual = (float) ($ins['stock_actual'] ?? 0);
+
+            $insumos_ui[] = array_merge($ins, [
+                'cantidad_teorica'  => $teorico,
+                'cantidad_pesada'   => $pesado,
+                'stock_restante'    => $consumido ? $stock_actual : max(0, $stock_actual - $teorico),
+                'merma_max_pct'     => 20,
+                'merma_max_cantidad'=> round($teorico * 1.20, 6),
+            ]);
+        }
+
+        return [
+            'consumido'          => $consumido,
+            'movimientos'        => $movimientos,
+            'insumos'            => $insumos_ui,
+            'stock_suficiente'   => $verificacion['stock_suficiente'],
+            'bloqueada'          => $consumido ? false : ($verificacion['bloqueada'] ?? !$verificacion['stock_suficiente']),
+            'revision_manual'    => $verificacion['revision_manual'] ?? [],
+            'sin_formulacion'    => $verificacion['sin_formulacion'],
+            'puede_forzar'       => function_exists('tiene_permiso') && tiene_permiso('produccion_ordenes'),
+            'mercancia_lista'    => $consumido || ($verificacion['stock_suficiente'] && empty($verificacion['revision_manual'])),
+        ];
+    }
+
+    /**
+     * Confirma pesaje real, valida merma y descuenta insumos (transaccional).
+     *
+     * @param int    $id
+     * @param string $tipo 'venta'|'obra'
+     * @param array  $pesajes [{insumo_id, cantidad_real}]
+     * @param int    $usuario_id
+     */
+    public function confirmar_pesaje_y_descontar($id, $tipo, array $pesajes, $usuario_id) {
+        $this->load->helper('permissions');
+        $tipo_db = ($tipo === 'obra') ? 'obra' : 'venta';
+
+        if ($this->insumos_ya_consumidos($tipo_db, $id)) {
+            return ['success' => false, 'message' => 'Los insumos de esta orden ya fueron descontados por pesaje anterior.'];
+        }
+
+        if (empty($pesajes)) {
+            return ['success' => false, 'message' => 'No se recibieron cantidades de pesaje.'];
+        }
+
+        $estado = $this->get_estado_pesaje_orden($id, $tipo_db);
+        $teoricos = [];
+        foreach ($estado['insumos'] as $ins) {
+            $teoricos[(int) $ins['insumo_id']] = $ins;
+        }
+
+        $pesados_ids = [];
+        foreach ($pesajes as $item) {
+            $iid = (int) ($item['insumo_id'] ?? 0);
+            if ($iid > 0) {
+                $pesados_ids[$iid] = true;
+            }
+        }
+        foreach ($teoricos as $insumo_id => $teo) {
+            if (empty($teo['disponible'])) {
+                continue;
+            }
+            if (!isset($pesados_ids[$insumo_id])) {
+                return [
+                    'success' => false,
+                    'message' => 'Debe capturar el pesaje de todos los insumos: ' . ($teo['insumo_nombre'] ?? 'insumo'),
+                ];
+            }
+        }
+
+        $ref = $this->referencia_pesaje($tipo_db, $id);
+        $merma_max_pct = 0.20;
+        $puede_exceder = function_exists('tiene_permiso') && tiene_permiso('produccion_ordenes');
+
+        $this->db->trans_start();
+        $detalles = [];
+        $bajo_minimo = [];
+
+        foreach ($pesajes as $item) {
+            $insumo_id = (int) ($item['insumo_id'] ?? 0);
+            $cantidad_real = isset($item['cantidad_real']) ? (float) $item['cantidad_real'] : 0;
+
+            if (!$insumo_id || $cantidad_real <= 0) {
+                continue;
+            }
+
+            if (!isset($teoricos[$insumo_id])) {
+                $this->db->trans_rollback();
+                return ['success' => false, 'message' => 'Insumo ID ' . $insumo_id . ' no pertenece a esta orden.'];
+            }
+
+            $teo = $teoricos[$insumo_id];
+            $cantidad_teorica = (float) ($teo['cantidad_teorica'] ?? 0);
+            $max_permitido = $cantidad_teorica * (1 + $merma_max_pct);
+
+            if ($cantidad_real > $max_permitido && !$puede_exceder) {
+                $this->db->trans_rollback();
+                return [
+                    'success' => false,
+                    'message' => 'El pesaje de ' . ($teo['insumo_nombre'] ?? 'insumo') .
+                        ' excede la merma permitida (máx. ' . round($max_permitido, 3) . ' ' . ($teo['unidad'] ?? '') . ').',
+                ];
+            }
+
+            $insumo = $this->db->select('id, codigo, nombre_tecnico, stock_actual, stock_minimo, unidad_medida, precio_promedio')
+                ->where('id', $insumo_id)
+                ->get('insumos')
+                ->row();
+
+            if (!$insumo) {
+                $this->db->trans_rollback();
+                return ['success' => false, 'message' => 'Insumo ID ' . $insumo_id . ' no encontrado.'];
+            }
+
+            $stock_anterior = (float) $insumo->stock_actual;
+            if ($cantidad_real > $stock_anterior) {
+                $this->db->trans_rollback();
+                return [
+                    'success' => false,
+                    'message' => 'Stock insuficiente de ' . $insumo->nombre_tecnico .
+                        ' (disponible: ' . round($stock_anterior, 3) . ' ' . $insumo->unidad_medida . ').',
+                ];
+            }
+
+            $stock_nuevo = round($stock_anterior - $cantidad_real, 6);
+            $mov = [
+                'insumo_id'       => $insumo_id,
+                'tipo_movimiento' => 'Salida',
+                'cantidad'        => $cantidad_real,
+                'stock_anterior'  => $stock_anterior,
+                'stock_nuevo'     => $stock_nuevo,
+                'motivo'          => 'Pesaje producción ' . strtoupper($tipo_db) . ' #' . (int) $id,
+                'fecha_movimiento'=> date('Y-m-d H:i:s'),
+                'usuario_id'      => (int) $usuario_id,
+            ];
+
+            if ($this->db->field_exists('referencia', 'movimientos_inventario')) {
+                $mov['referencia'] = $ref;
+            }
+
+            if ($this->db->field_exists('costo_unitario', 'movimientos_inventario')) {
+                $mov['costo_unitario'] = (float) ($insumo->precio_promedio ?? 0);
+                $mov['costo_total'] = round($cantidad_real * ($insumo->precio_promedio ?? 0), 2);
+            }
+
+            $this->db->insert('movimientos_inventario', $mov);
+
+            $detalles[] = [
+                'insumo_id'        => $insumo_id,
+                'insumo_codigo'    => $insumo->codigo,
+                'insumo_nombre'    => $insumo->nombre_tecnico,
+                'unidad'           => $insumo->unidad_medida,
+                'cantidad_teorica' => $cantidad_teorica,
+                'cantidad_real'    => $cantidad_real,
+                'stock_anterior'   => $stock_anterior,
+                'stock_restante'   => $stock_nuevo,
+                'merma_pct'        => $cantidad_teorica > 0
+                    ? round((($cantidad_real - $cantidad_teorica) / $cantidad_teorica) * 100, 2)
+                    : 0,
+            ];
+
+            if ($stock_nuevo < (float) $insumo->stock_minimo) {
+                $bajo_minimo[] = [
+                    'insumo_id'         => $insumo_id,
+                    'cantidad_faltante' => max(0, round((float) $insumo->stock_minimo - $stock_nuevo, 6)),
+                    'unidad_insumo'     => $insumo->unidad_medida,
+                    'insumo_nombre'     => $insumo->nombre_tecnico,
+                ];
+            }
+        }
+
+        if (empty($detalles)) {
+            $this->db->trans_rollback();
+            return ['success' => false, 'message' => 'No hay líneas de pesaje válidas para descontar.'];
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            return ['success' => false, 'message' => 'Error de base de datos al registrar el pesaje.'];
+        }
+
+        $preordenes = null;
+        if (!empty($bajo_minimo) && function_exists('tiene_permiso') && tiene_permiso('produccion_preordenes')) {
+            $this->load->model('Compras/PreordenesModel');
+            $faltantes_canonicos = [];
+            foreach ($bajo_minimo as $b) {
+                if ($b['cantidad_faltante'] > 0) {
+                    $faltantes_canonicos[] = [
+                        'insumo_id'         => $b['insumo_id'],
+                        'cantidad_faltante' => $b['cantidad_faltante'],
+                        'unidad_insumo'     => $b['unidad_insumo'],
+                    ];
+                }
+            }
+            if (!empty($faltantes_canonicos)) {
+                $preordenes = $this->PreordenesModel->crear_preordenes_desde_faltantes(
+                    $faltantes_canonicos,
+                    'produccion',
+                    (int) $id,
+                    (int) $usuario_id,
+                    'Reposición post-pesaje ' . strtoupper($tipo_db) . ' #' . (int) $id
+                );
+            }
+        }
+
+        return [
+            'success'  => true,
+            'message'  => 'Pesaje confirmado. Se descontaron ' . count($detalles) . ' insumo(s).',
+            'detalles' => $detalles,
+            'preordenes' => $preordenes,
+            'bajo_minimo' => $bajo_minimo,
+        ];
+    }
+
+    /**
+     * Valida si la orden puede marcarse Completada.
+     */
+    public function puede_completar_produccion($id, $tipo, $forzar = false) {
+        $tipo_db = ($tipo === 'obra') ? 'obra' : 'venta';
+
+        // 5) Forzar solo con permiso + flag explícito (parseado en el controlador)
+        if ($forzar) {
+            $this->load->helper('permissions');
+            if (!function_exists('tiene_permiso') || !tiene_permiso('produccion_ordenes')) {
+                return ['ok' => false, 'message' => 'No tiene permiso para completar sin verificación de insumos.'];
+            }
+            return ['ok' => true, 'message' => 'Completado con autorización de producción.'];
+        }
+
+        // 1) Pesaje ya confirmado — no revalidar stock (ya fue descontado)
+        if ($this->insumos_ya_consumidos($tipo_db, $id)) {
+            return ['ok' => true, 'message' => 'Pesaje confirmado. Lista para completar.'];
+        }
+
+        $verificacion = $this->get_insumos_requeridos_para_orden($id, $tipo_db);
+
+        // 2) Sin insumos que requieran pesaje
+        if (!empty($verificacion['sin_productos'])) {
+            return ['ok' => true, 'message' => 'Sin productos fabricados que requieran insumos.'];
+        }
+        if (empty($verificacion['insumos'])) {
+            return ['ok' => true, 'message' => 'Sin insumos calculables para esta orden.'];
+        }
+
+        // 3) Faltantes o revisión manual
+        if (!empty($verificacion['revision_manual'])) {
+            return [
+                'ok' => false,
+                'message' => 'No se puede completar: hay insumos con unidades ambiguas que requieren revisión manual.',
+                'bloqueada' => true,
+            ];
+        }
+        if (!$verificacion['stock_suficiente']) {
+            return [
+                'ok' => false,
+                'message' => 'No se puede completar: faltan insumos. Genere pre-órdenes o confirme recepción de materia prima.',
+                'bloqueada' => true,
+            ];
+        }
+
+        // 4) Stock OK pero sin pesaje confirmado
+        return [
+            'ok' => false,
+            'message' => 'Debe confirmar el pesaje y descontar los insumos antes de marcar como Completada.',
+            'bloqueada' => true,
+        ];
+    }
+
+    /**
+     * Descuenta insumos registrando movimientos con referencia explícita (OP legacy u otros).
+     */
+    private function _descontar_insumos_por_referencia($referencia, array $pesajes, $usuario_id, $motivo_suffix = '') {
+        $this->db->trans_start();
+        $detalles = [];
+
+        foreach ($pesajes as $item) {
+            $insumo_id = (int) ($item['insumo_id'] ?? 0);
+            $cantidad_real = isset($item['cantidad_real']) ? (float) $item['cantidad_real'] : 0;
+            if (!$insumo_id || $cantidad_real <= 0) {
+                continue;
+            }
+
+            $insumo = $this->db->select('id, codigo, nombre_tecnico, stock_actual, precio_promedio, unidad_medida')
+                ->where('id', $insumo_id)
+                ->get('insumos')
+                ->row();
+
+            if (!$insumo) {
+                $this->db->trans_rollback();
+                return ['success' => false, 'message' => 'Insumo ID ' . $insumo_id . ' no encontrado.'];
+            }
+
+            $stock_anterior = (float) $insumo->stock_actual;
+            if ($cantidad_real > $stock_anterior) {
+                $this->db->trans_rollback();
+                return [
+                    'success' => false,
+                    'message' => 'Stock insuficiente de ' . $insumo->nombre_tecnico .
+                        ' (disponible: ' . round($stock_anterior, 3) . ' ' . $insumo->unidad_medida . ').',
+                ];
+            }
+
+            $stock_nuevo = round($stock_anterior - $cantidad_real, 6);
+            $mov = [
+                'insumo_id'       => $insumo_id,
+                'tipo_movimiento' => 'Salida',
+                'cantidad'        => $cantidad_real,
+                'stock_anterior'  => $stock_anterior,
+                'stock_nuevo'     => $stock_nuevo,
+                'motivo'          => 'Pesaje producción ' . $motivo_suffix,
+                'fecha_movimiento'=> date('Y-m-d H:i:s'),
+                'usuario_id'      => (int) $usuario_id,
+            ];
+
+            if ($this->db->field_exists('referencia', 'movimientos_inventario')) {
+                $mov['referencia'] = $referencia;
+            }
+
+            if ($this->db->field_exists('costo_unitario', 'movimientos_inventario')) {
+                $mov['costo_unitario'] = (float) ($insumo->precio_promedio ?? 0);
+                $mov['costo_total'] = round($cantidad_real * ($insumo->precio_promedio ?? 0), 2);
+            }
+
+            $this->db->insert('movimientos_inventario', $mov);
+
+            $detalles[] = [
+                'insumo_id'      => $insumo_id,
+                'insumo_codigo'  => $insumo->codigo,
+                'insumo_nombre'  => $insumo->nombre_tecnico,
+                'cantidad_real'  => $cantidad_real,
+                'stock_restante' => $stock_nuevo,
+                'unidad'         => $insumo->unidad_medida,
+            ];
+        }
+
+        if (empty($detalles)) {
+            $this->db->trans_rollback();
+            return ['success' => false, 'message' => 'No hay líneas válidas para descontar.'];
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            return ['success' => false, 'message' => 'Error de base de datos al registrar movimientos.'];
+        }
+
+        return [
+            'success'  => true,
+            'message'  => 'Se descontaron ' . count($detalles) . ' insumo(s).',
+            'detalles' => $detalles,
+        ];
+    }
+
+    /**
+     * Indica si hay pre-órdenes Pendiente ligadas a un origen venta/obra.
+     */
+    private function _tiene_preordenes_pendientes_origen($origen_tipo, $origen_id) {
+        if (!$this->db->table_exists('preordenes')) {
+            return false;
+        }
+
+        return $this->db->where('origen_tipo', $origen_tipo)
+            ->where('origen_id', (int) $origen_id)
+            ->where('estatus', 'Pendiente')
+            ->count_all_results('preordenes') > 0;
+    }
+
+    // =====================================================
+    // P7 — ETIQUETAS DE LOTE Y CONSULTA POR CÓDIGO DE BARRAS
+    // =====================================================
+
+    /**
+     * Datos completos de un lote para etiqueta o consulta por escaneo.
+     */
+    public function get_lote_etiqueta_datos($lote_id) {
+        $row = $this->_fetch_lote_etiqueta_row(['lp.id' => (int) $lote_id]);
+        return $row ? $this->_normalizar_datos_etiqueta_lote($row) : null;
+    }
+
+    /**
+     * Consulta un lote por código de barras (AJAX almacén / producción).
+     */
+    public function consultar_lote_por_codigo_barras($codigo_barras) {
+        $codigo_barras = trim((string) $codigo_barras);
+        if ($codigo_barras === '') {
+            return ['success' => false, 'message' => 'Código de barras requerido'];
+        }
+
+        $row = $this->_fetch_lote_etiqueta_row(['lp.codigo_barras' => $codigo_barras]);
+        if (!$row) {
+            return ['success' => false, 'message' => 'Lote no encontrado: ' . $codigo_barras];
+        }
+
+        return [
+            'success' => true,
+            'lote'    => $this->_normalizar_datos_etiqueta_lote($row),
+        ];
+    }
+
+    /**
+     * Query base para lote + producto + formulación + origen venta/obra.
+     */
+    private function _fetch_lote_etiqueta_row(array $where) {
+        $select = 'lp.*, p.nombre AS producto_nombre, p.codigo AS producto_codigo, p.unidad_venta,
+            f.nombre_version AS formulacion_nombre, f.version AS formulacion_version';
+
+        if ($this->db->field_exists('orden_venta_id', 'lotes_produccion')) {
+            $select .= ', ov.folio AS orden_venta_folio, ov.id AS ov_id';
+        }
+        if ($this->db->field_exists('obra_id', 'lotes_produccion')) {
+            $select .= ', o.folio AS obra_folio, o.nombre AS obra_nombre, o.id AS obra_id_col';
+        }
+
+        $this->db->select($select, false);
+        $this->db->from('lotes_produccion lp');
+        $this->db->join('productos p', 'p.id = lp.producto_id', 'left');
+        $this->db->join('formulaciones f', 'f.id = lp.formulacion_id', 'left');
+
+        if ($this->db->field_exists('orden_venta_id', 'lotes_produccion')) {
+            $this->db->join('ordenes_venta ov', 'ov.id = lp.orden_venta_id', 'left');
+        }
+        if ($this->db->field_exists('obra_id', 'lotes_produccion')) {
+            $this->db->join('obras o', 'o.id = lp.obra_id', 'left');
+        }
+
+        foreach ($where as $col => $val) {
+            $this->db->where($col, $val);
+        }
+
+        return $this->db->get()->row();
+    }
+
+    /**
+     * Normaliza fila de lote a estructura estándar para etiqueta y scan.
+     */
+    private function _normalizar_datos_etiqueta_lote($row) {
+        $cantidad = (float) ($row->cantidad ?? 0);
+        $unidad   = trim((string) ($row->unidad ?: 'kg'));
+
+        $orden_venta_folio = $row->orden_venta_folio ?? null;
+        $obra_folio        = $row->obra_folio ?? null;
+        $origen_tipo       = null;
+        $origen_folio      = null;
+        $origen_etiqueta   = '—';
+
+        if (!empty($orden_venta_folio)) {
+            $origen_tipo  = 'venta';
+            $origen_folio = $orden_venta_folio;
+            $origen_etiqueta = 'OV ' . $orden_venta_folio;
+        } elseif (!empty($obra_folio)) {
+            $origen_tipo  = 'obra';
+            $origen_folio = $obra_folio;
+            $origen_etiqueta = 'Obra ' . $obra_folio;
+        } elseif (!empty($row->observaciones) && preg_match('/obra_id:(\d+)/', $row->observaciones, $m)) {
+            $obra = $this->db->select('folio, nombre')->where('id', (int) $m[1])->get('obras')->row();
+            if ($obra) {
+                $origen_tipo     = 'obra';
+                $origen_folio    = $obra->folio;
+                $obra_folio      = $obra->folio;
+                $origen_etiqueta = 'Obra ' . $obra->folio;
+            }
+        }
+
+        $unidad_norm = strtolower($unidad);
+        $es_contenedor = in_array($unidad_norm, ['pza', 'pz', 'pieza', 'cubeta', 'caja', 'bote', 'cubetas'], true);
+        $cubeta_display = number_format($cantidad, 2) . ' ' . $unidad;
+        if ($es_contenedor && $cantidad == 1) {
+            $cubeta_display = '1 ' . ($unidad_norm === 'pza' || $unidad_norm === 'pz' ? 'Cubeta' : ucfirst($unidad));
+        }
+
+        $fecha_raw = $row->fecha_produccion ?? null;
+        $fecha_display = $fecha_raw ? date('d/m/Y H:i', strtotime($fecha_raw)) : '—';
+
+        return [
+            'id'                  => (int) $row->id,
+            'codigo_barras'       => (string) $row->codigo_barras,
+            'producto_nombre'     => (string) ($row->producto_nombre ?? ''),
+            'producto_codigo'     => (string) ($row->producto_codigo ?? ''),
+            'formulacion_nombre'  => (string) ($row->formulacion_nombre ?? ''),
+            'formulacion_version' => (string) ($row->formulacion_version ?? ''),
+            'cantidad'            => $cantidad,
+            'unidad'              => $unidad,
+            'cantidad_display'    => number_format($cantidad, 2) . ' ' . $unidad,
+            'cubeta'              => $cubeta_display,
+            'fecha_produccion'    => $fecha_raw,
+            'fecha_display'       => $fecha_display,
+            'origen_tipo'         => $origen_tipo,
+            'origen_folio'        => $origen_folio,
+            'origen_etiqueta'     => $origen_etiqueta,
+            'orden_venta_folio'   => $orden_venta_folio,
+            'obra_folio'          => $obra_folio,
+            'estatus'             => (string) ($row->estatus ?? ''),
+            'observaciones'       => (string) ($row->observaciones ?? ''),
+        ];
     }
 }

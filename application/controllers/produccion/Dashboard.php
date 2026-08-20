@@ -124,6 +124,23 @@ class Dashboard extends MY_Controller {
             return;
         }
 
+        $this->load->helper('permissions');
+
+        // P6: bloquear Completada sin insumos / sin pesaje (salvo produccion_ordenes)
+        if ($nuevo_estatus === 'Completada') {
+            $forzar = in_array($this->input->post('forzar_sin_insumos'), ['1', 1, 'true', true], true);
+            $validacion = $this->ProduccionModel->puede_completar_produccion($orden_id, $tipo, $forzar);
+            if (empty($validacion['ok'])) {
+                echo json_encode([
+                    'success'   => false,
+                    'message'   => $validacion['message'],
+                    'bloqueada' => !empty($validacion['bloqueada']),
+                    'puede_forzar' => function_exists('tiene_permiso') && tiene_permiso('produccion_ordenes'),
+                ]);
+                return;
+            }
+        }
+
         // Determinar tabla según tipo
         $tabla = ($tipo === 'obra') ? 'obras' : 'ordenes_venta';
 
@@ -324,14 +341,58 @@ class Dashboard extends MY_Controller {
             return;
         }
 
-        $resultado = $this->ProduccionModel->get_insumos_requeridos_para_orden($orden_id, $tipo);
+        $estado = $this->ProduccionModel->get_estado_pesaje_orden($orden_id, $tipo);
 
         echo json_encode([
             'success'          => true,
-            'stock_suficiente' => $resultado['stock_suficiente'],
-            'insumos'          => $resultado['insumos'],
-            'sin_formulacion'  => $resultado['sin_formulacion'],
+            'stock_suficiente' => $estado['stock_suficiente'],
+            'insumos'          => $estado['insumos'],
+            'sin_formulacion'  => $estado['sin_formulacion'],
+            'consumido'        => $estado['consumido'],
+            'bloqueada'        => $estado['bloqueada'],
+            'puede_forzar'     => $estado['puede_forzar'],
+            'revision_manual'  => $estado['revision_manual'],
         ]);
+    }
+
+    /**
+     * Confirma pesaje real y descuenta insumos (P6).
+     */
+    public function confirmar_pesaje_ajax() {
+        $this->load->helper('permissions');
+
+        $orden_id = (int) $this->input->post('orden_id');
+        $tipo     = $this->input->post('tipo');
+        $pesajes_json = $this->input->post('pesajes');
+
+        if (!$orden_id || !$tipo || !$pesajes_json) {
+            echo json_encode(['success' => false, 'message' => 'Parámetros incompletos']);
+            return;
+        }
+
+        $pesajes = json_decode($pesajes_json, true);
+        if (!is_array($pesajes) || count($pesajes) === 0) {
+            echo json_encode(['success' => false, 'message' => 'Pesajes inválidos']);
+            return;
+        }
+
+        $usuario_id = (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 0);
+        if ($usuario_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Sesión inválida']);
+            return;
+        }
+
+        $resultado = $this->ProduccionModel->confirmar_pesaje_y_descontar($orden_id, $tipo, $pesajes, $usuario_id);
+
+        if (!empty($resultado['success'])) {
+            $this->init_controller->insert_log(
+                'Pesaje confirmado ' . strtoupper($tipo) . ' #' . $orden_id . ' (' . count($resultado['detalles'] ?? []) . ' insumos)',
+                $this->session->userdata('email') ?: $this->session->userdata('username'),
+                'Producción'
+            );
+        }
+
+        echo json_encode($resultado);
     }
 
     /**
@@ -447,21 +508,40 @@ class Dashboard extends MY_Controller {
      * Genera la vista de etiqueta imprimible para un lote (sin layout)
      */
     public function etiqueta_lote($lote_id) {
-        $this->db->select('lp.*, p.nombre as producto_nombre, p.codigo as producto_codigo, f.nombre_version as formulacion_nombre');
-        $this->db->from('lotes_produccion lp');
-        $this->db->join('productos p', 'p.id = lp.producto_id');
-        $this->db->join('formulaciones f', 'f.id = lp.formulacion_id', 'left');
-        $this->db->where('lp.id', $lote_id);
-        $lote = $this->db->get()->row();
+        $etiqueta = $this->ProduccionModel->get_lote_etiqueta_datos($lote_id);
 
-        if (!$lote) {
+        if (!$etiqueta) {
             show_404();
             return;
         }
 
-        $data['lote'] = $lote;
-        // Render sin layout (standalone para impresión)
+        $size = $this->input->get('size');
+        if (!in_array($size, ['50x25', '100x50'], true)) {
+            $size = '100x50';
+        }
+        $zoom = (int) ($this->input->get('zoom') ?: 100);
+        if ($zoom < 50 || $zoom > 200) {
+            $zoom = 100;
+        }
+
+        $data = [
+            'etiqueta' => $etiqueta,
+            'lote'     => (object) $etiqueta,
+            'logo_url' => base_url('assets/dist/img/brands/chisa_recubrimientos_logo.jpg'),
+            'size'     => $size,
+            'zoom'     => $zoom,
+        ];
+
         $this->load->view('produccion/dashboard/etiqueta_lote', $data);
+    }
+
+    /**
+     * Consulta lote por código de barras (AJAX — reutilizable en almacén/producción).
+     */
+    public function consultar_lote_ajax() {
+        $codigo = trim((string) $this->input->post('codigo_barras'));
+        $result = $this->ProduccionModel->consultar_lote_por_codigo_barras($codigo);
+        echo json_encode($result);
     }
     // =====================================================
     // ENDPOINTS BOM EXPLOSION + CATÁLOGO TOUCHSCREEN

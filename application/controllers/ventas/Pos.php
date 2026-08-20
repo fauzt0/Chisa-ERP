@@ -141,6 +141,18 @@ class Pos extends MY_Controller {
         // Agregar detalles
         $this->VentasModel->agregar_detalle($orden_id, $detalles);
         
+        // Verificar insumos: solo consulta en cotización; pre-órdenes al comprometer venta
+        $usuario_id = (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 0);
+        $insumos_result = null;
+        if ($usuario_id > 0) {
+            $es_compromiso = in_array($estatus_final, ['Confirmada', 'En Preparación', 'Entregada'], true);
+            if ($es_compromiso) {
+                $insumos_result = $this->VentasModel->verificar_insumos_y_preordenes_venta($orden_id, $usuario_id);
+            } else {
+                $insumos_result = $this->VentasModel->consultar_insumos_venta($orden_id);
+            }
+        }
+        
         // Obtener orden con totales calculados
         $orden_creada = $this->VentasModel->get_orden_completa($orden_id);
         
@@ -227,7 +239,8 @@ class Pos extends MY_Controller {
             'success' => true, 
             'message' => 'Venta registrada correctamente',
             'orden_id' => $orden_id,
-            'folio' => $orden->folio
+            'folio' => $orden->folio,
+            'insumos' => $this->VentasModel->formatear_insumos_respuesta_json($insumos_result),
         ]);
     }
     

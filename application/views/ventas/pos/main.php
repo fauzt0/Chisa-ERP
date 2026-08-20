@@ -809,6 +809,16 @@ function initSelect2() {
 </script>
 
 <script>
+function escHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 let ticketItems = [];
 let clientes = [];
 let descuentos = [];
@@ -1490,11 +1500,18 @@ function procesarVenta(estatus) {
     if(result.success) {
       // Limpiar ticket
       cancelarTicket();
+
+      let insumosHtml = '';
+      if (result.insumos && result.insumos.mensaje_resumen) {
+        const insIcon = result.insumos.ok ? 'check-circle text-success' : 'exclamation-triangle text-warning';
+        insumosHtml = `<p class="mb-2 small"><i class="fas fa-${insIcon} me-1"></i>${escHtml(result.insumos.mensaje_resumen)}</p>`;
+      }
       
       // Mostrar selector de template de recibo
       Swal.fire({
         title: '¡Venta registrada!',
-        html: `<p class="mb-2">Folio: <strong>${result.folio}</strong></p>
+        html: `<p class="mb-2">Folio: <strong>${escHtml(result.folio)}</strong></p>
+               ${insumosHtml}
                <p class="mb-3 text-muted">Selecciona el diseño del recibo:</p>
                <div class="d-flex justify-content-center gap-2">
                  <a href="<?=base_url()?>ventas/Pos/imprimir_recibo_template/${result.orden_id}/1" target="_blank"

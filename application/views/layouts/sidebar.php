@@ -126,6 +126,7 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Dashboard">Fabricación Dashboard</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Productos">Productos y Fórmulas</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Lotes">Control de Lotes</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Lotes/consultar">Consultar Lote</a></li>
         </ul>
       </li>
       

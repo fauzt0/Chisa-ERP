@@ -649,6 +649,17 @@ class ObrasModel extends CI_Model {
         }
         $this->VentasModel->agregar_detalle($orden_id, $detalles);
 
+        $tiene_preordenes_obra = $this->db->where('origen_tipo', 'obra')
+            ->where('origen_id', (int) $obra_id)
+            ->where('estatus', 'Pendiente')
+            ->count_all_results('preordenes') > 0;
+
+        if ($tiene_preordenes_obra) {
+            $insumos_result = $this->VentasModel->consultar_insumos_venta($orden_id);
+        } else {
+            $insumos_result = $this->VentasModel->verificar_insumos_y_preordenes_venta($orden_id, $usuario_id);
+        }
+
         $this->db->where('id', $obra_id);
         $this->db->update('obras', ['orden_venta_id' => $orden_id]);
 
@@ -657,8 +668,39 @@ class ObrasModel extends CI_Model {
             'success' => true,
             'message' => 'Orden de venta ' . $orden->folio . ' generada correctamente',
             'orden_venta_id' => $orden_id,
-            'orden_venta_folio' => $orden->folio
+            'orden_venta_folio' => $orden->folio,
+            'insumos' => [
+                'ok'              => !($insumos_result['bloqueada'] ?? false),
+                'mensaje_resumen' => $insumos_result['mensaje_resumen'] ?? '',
+            ],
         ];
+    }
+
+    /**
+     * Solo consulta disponibilidad (sin pre-órdenes). Para obra en borrador.
+     */
+    public function consultar_insumos_obra($obra_id) {
+        $this->load->model('Produccion/ProductosModel');
+        return $this->ProductosModel->consultar_verificacion_insumos((int) $obra_id, 'obra');
+    }
+
+    /**
+     * Verifica insumos y genera pre-órdenes. Solo al aprobar obra o en flujos de compromiso.
+     */
+    public function verificar_insumos_y_preordenes_obra($obra_id, $usuario_id) {
+        $this->load->model('Produccion/ProductosModel');
+
+        $obra = $this->db->select('folio')->where('id', (int) $obra_id)->get('obras')->row();
+        $notas = $obra
+            ? ('Verificación automática obra ' . $obra->folio)
+            : ('Verificación automática obra ID ' . (int) $obra_id);
+
+        return $this->ProductosModel->procesar_verificacion_insumos_post_creacion(
+            (int) $obra_id,
+            'obra',
+            (int) $usuario_id,
+            $notas
+        );
     }
 
     /**
@@ -710,5 +752,308 @@ class ObrasModel extends CI_Model {
         }
 
         return true;
+    }
+
+    // =====================================================
+    // P8 — CÁLCULO m² → kg → insumos (motor ProductosModel)
+    // =====================================================
+
+    /**
+     * Calcula materiales para una línea de obra: m² → kg → cubetas → insumos.
+     * No usa el fallback rendimiento=1.0 del simulador general.
+     *
+     * @param int        $producto_id
+     * @param float|null $area_m2
+     * @param float      $factor_desperdicio
+     * @param int|null   $formulacion_id
+     * @param float|null $rendimiento_override_m2_kg  Captura en línea si falta en formulación
+     */
+    public function calcular_materiales_linea_obra($producto_id, $area_m2, $factor_desperdicio = 1.0, $formulacion_id = null, $rendimiento_override_m2_kg = null) {
+        $this->load->model('Produccion/ProductosModel');
+
+        $producto_id = (int) $producto_id;
+        $area_m2 = $area_m2 !== null && $area_m2 !== '' ? (float) $area_m2 : 0;
+        $factor_desperdicio = max(1.0, (float) ($factor_desperdicio ?: 1.0));
+
+        if ($area_m2 <= 0) {
+            return ['success' => false, 'message' => 'Ingrese el área de aplicación en m².'];
+        }
+
+        if ($formulacion_id) {
+            $formulacion = $this->ProductosModel->get_formulacion_completa((int) $formulacion_id);
+        } else {
+            $formulacion = $this->ProductosModel->get_formulacion_activa($producto_id);
+            if ($formulacion) {
+                $formulacion = $this->ProductosModel->get_formulacion_completa($formulacion->id);
+            }
+        }
+
+        if (!$formulacion) {
+            return [
+                'success' => false,
+                'message' => 'El producto no tiene formulación activa. Asigne una en Producción > Productos.',
+                'requiere_formulacion' => true,
+                'producto_id' => $producto_id,
+            ];
+        }
+
+        $rendimiento_form = !empty($formulacion->rendimiento_m2_por_kg) ? (float) $formulacion->rendimiento_m2_por_kg : 0;
+        $rendimiento_override = $rendimiento_override_m2_kg !== null && $rendimiento_override_m2_kg !== ''
+            ? (float) $rendimiento_override_m2_kg
+            : 0;
+        $rendimiento_efectivo = $rendimiento_form > 0 ? $rendimiento_form : $rendimiento_override;
+
+        if ($rendimiento_efectivo <= 0) {
+            return [
+                'success' => false,
+                'requiere_rendimiento' => true,
+                'message' => 'La formulación no tiene rendimiento m²/kg. Captúrelo en la formulación o en el campo de esta línea.',
+                'formulacion_id' => (int) $formulacion->id,
+                'formulacion_nombre' => $formulacion->nombre_version ?? '',
+                'producto_id' => $producto_id,
+                'url_formulacion' => base_url('produccion/Productos'),
+            ];
+        }
+
+        $m2_bruto = $area_m2;
+        $m2_efectivo = round($m2_bruto * $factor_desperdicio, 4);
+        $kg_necesarios = round($m2_efectivo / $rendimiento_efectivo, 4);
+        $cantidad_lote = (float) ($formulacion->cantidad_producida ?: 0);
+        if ($cantidad_lote <= 0) {
+            return [
+                'success' => false,
+                'message' => 'La formulación no define cantidad_producida (kg por cubeta/lote).',
+                'formulacion_id' => (int) $formulacion->id,
+            ];
+        }
+
+        $cubetas = (int) ceil($kg_necesarios / $cantidad_lote);
+        $unidad_cantidad = $this->_unidad_cubeta_formulacion($formulacion);
+
+        $motor = $this->ProductosModel->calcular_insumos_para_proyecto((int) $formulacion->id, $cubetas, null);
+        if (!$motor) {
+            return ['success' => false, 'message' => 'No se pudo calcular insumos con el motor de formulaciones.'];
+        }
+
+        $insumos_top = $this->_extraer_insumos_top_desde_motor($motor, 15);
+
+        return [
+            'success' => true,
+            'producto_id' => $producto_id,
+            'formulacion_id' => (int) $formulacion->id,
+            'formulacion_version' => $formulacion->version ?? null,
+            'formulacion_nombre' => $formulacion->nombre_version ?? '',
+            'rendimiento_m2_por_kg' => $rendimiento_efectivo,
+            'rendimiento_origen' => $rendimiento_form > 0 ? 'formulacion' : 'linea',
+            'factor_desperdicio' => $factor_desperdicio,
+            'm2_bruto' => $m2_bruto,
+            'm2_efectivo' => $m2_efectivo,
+            'kg_necesarios' => $kg_necesarios,
+            'cubetas' => $cubetas,
+            'cantidad_calculada' => $cubetas,
+            'unidad' => $unidad_cantidad,
+            'cantidad_producida_lote' => $cantidad_lote,
+            'unidad_produccion' => $formulacion->unidad_produccion ?? 'Kg',
+            'insumos' => $insumos_top,
+            'hay_insumos_faltantes' => !empty($motor['hay_insumos_faltantes']),
+            'hay_insumos_revision_manual' => !empty($motor['hay_insumos_revision_manual']),
+            'formula_texto' => 'kg = (m² × factor) ÷ rendimiento_m²/kg; cubetas = ⌈kg ÷ cantidad_producida⌉',
+        ];
+    }
+
+    /**
+     * Calcula y consolida materiales de todas las líneas de una obra.
+     */
+    public function calcular_materiales_obra($obra_id) {
+        $obra = $this->get_obra_detalle($obra_id);
+        if (!$obra) {
+            return ['success' => false, 'message' => 'Obra no encontrada'];
+        }
+
+        if (empty($obra->productos)) {
+            return ['success' => false, 'message' => 'La obra no tiene productos para calcular.'];
+        }
+
+        $lineas = [];
+        $mapa_insumos = [];
+        $errores = [];
+        $totales = ['m2_bruto' => 0, 'm2_efectivo' => 0, 'kg' => 0, 'cubetas' => 0];
+
+        foreach ($obra->productos as $producto) {
+            $area = $producto->area_aplicacion !== null ? (float) $producto->area_aplicacion : 0;
+            $factor = (float) ($producto->factor_desperdicio ?: 1.0);
+
+            if ($area <= 0) {
+                $cantidad = (float) ($producto->cantidad_ajustada ?: $producto->cantidad_calculada ?: 0);
+                if ($cantidad <= 0) {
+                    $errores[] = ($producto->producto_nombre ?? 'Producto') . ': sin área m² ni cantidad.';
+                    continue;
+                }
+
+                $this->load->model('Produccion/ProductosModel');
+                $formulacion_id = (int) ($producto->formulacion_id ?: 0);
+                if (!$formulacion_id) {
+                    $fa = $this->ProductosModel->get_formulacion_activa($producto->producto_id);
+                    $formulacion_id = $fa ? (int) $fa->id : 0;
+                }
+                if (!$formulacion_id) {
+                    $errores[] = ($producto->producto_nombre ?? 'Producto') . ': sin formulación.';
+                    continue;
+                }
+
+                $motor = $this->ProductosModel->calcular_insumos_para_proyecto($formulacion_id, $cantidad, null);
+                if (!$motor) {
+                    $errores[] = ($producto->producto_nombre ?? 'Producto') . ': error al calcular por cubetas.';
+                    continue;
+                }
+
+                $linea_res = [
+                    'success' => true,
+                    'producto_nombre' => $producto->producto_nombre,
+                    'producto_codigo' => $producto->producto_codigo,
+                    'seccion_obra' => $producto->seccion_obra,
+                    'modo' => 'cubetas_directas',
+                    'cubetas' => $cantidad,
+                    'kg_necesarios' => $motor['kg_necesarios'] ?? null,
+                    'm2_bruto' => null,
+                    'm2_efectivo' => null,
+                    'insumos' => $this->_extraer_insumos_top_desde_motor($motor, 8),
+                ];
+            } else {
+                $linea_res = $this->calcular_materiales_linea_obra(
+                    (int) $producto->producto_id,
+                    $area,
+                    $factor,
+                    !empty($producto->formulacion_id) ? (int) $producto->formulacion_id : null,
+                    $producto->rendimiento_teorico
+                );
+                $linea_res['producto_nombre'] = $producto->producto_nombre;
+                $linea_res['producto_codigo'] = $producto->producto_codigo;
+                $linea_res['seccion_obra'] = $producto->seccion_obra;
+                $linea_res['modo'] = 'm2';
+            }
+
+            if (empty($linea_res['success'])) {
+                $errores[] = ($producto->producto_nombre ?? 'Producto') . ': ' . ($linea_res['message'] ?? 'Error de cálculo');
+                $lineas[] = $linea_res;
+                continue;
+            }
+
+            $lineas[] = $linea_res;
+            if (!empty($linea_res['m2_bruto'])) {
+                $totales['m2_bruto'] += (float) $linea_res['m2_bruto'];
+                $totales['m2_efectivo'] += (float) $linea_res['m2_efectivo'];
+            }
+            if (!empty($linea_res['kg_necesarios'])) {
+                $totales['kg'] += (float) $linea_res['kg_necesarios'];
+            }
+            $totales['cubetas'] += (float) ($linea_res['cubetas'] ?? 0);
+
+            foreach ($linea_res['insumos'] as $ins) {
+                $key = (int) $ins['insumo_id'];
+                if (!isset($mapa_insumos[$key])) {
+                    $mapa_insumos[$key] = $ins;
+                } else {
+                    $mapa_insumos[$key]['cantidad'] += (float) $ins['cantidad'];
+                }
+            }
+        }
+
+        $insumos_consolidados = array_values($mapa_insumos);
+        usort($insumos_consolidados, fn($a, $b) => $b['cantidad'] <=> $a['cantidad']);
+
+        return [
+            'success' => empty($errores) || !empty($lineas),
+            'obra_id' => (int) $obra_id,
+            'obra_folio' => $obra->folio,
+            'lineas' => $lineas,
+            'totales' => $totales,
+            'insumos_consolidados' => array_slice($insumos_consolidados, 0, 25),
+            'errores' => $errores,
+            'hay_errores' => !empty($errores),
+        ];
+    }
+
+    /**
+     * Prepara datos validados para insertar en obras_productos (servidor).
+     */
+    public function preparar_linea_producto_obra(array $input) {
+        $producto_id = (int) ($input['producto_id'] ?? 0);
+        $area = isset($input['area_aplicacion']) && $input['area_aplicacion'] !== ''
+            ? (float) $input['area_aplicacion']
+            : 0;
+        $factor = (float) ($input['factor_desperdicio'] ?? 1.10);
+        $formulacion_id = !empty($input['formulacion_id']) ? (int) $input['formulacion_id'] : null;
+        $rendimiento_override = isset($input['rendimiento_teorico']) && $input['rendimiento_teorico'] !== ''
+            ? (float) $input['rendimiento_teorico']
+            : null;
+
+        if ($area <= 0) {
+            return [
+                'success' => false,
+                'message' => 'El área de aplicación (m²) es obligatoria para el cálculo automático.',
+            ];
+        }
+
+        $calculo = $this->calcular_materiales_linea_obra(
+            $producto_id,
+            $area,
+            $factor,
+            $formulacion_id,
+            $rendimiento_override
+        );
+
+        if (empty($calculo['success'])) {
+            return $calculo;
+        }
+
+        return [
+            'success' => true,
+            'data' => [
+                'producto_id' => $producto_id,
+                'cantidad_calculada' => $calculo['cantidad_calculada'],
+                'unidad' => $calculo['unidad'],
+                'area_aplicacion' => $area,
+                'rendimiento_teorico' => $calculo['rendimiento_m2_por_kg'],
+                'factor_desperdicio' => $factor,
+                'formulacion_id' => $calculo['formulacion_id'],
+                'formulacion_version' => $calculo['formulacion_version'],
+                'notas' => $input['notas'] ?? null,
+                'seccion_obra' => $input['seccion_obra'] ?? null,
+                'precio_unitario' => $input['precio_unitario'] ?? null,
+                'cantidad_ajustada' => !empty($input['cantidad_ajustada']) ? (float) $input['cantidad_ajustada'] : null,
+            ],
+            'calculo' => $calculo,
+        ];
+    }
+
+    private function _unidad_cubeta_formulacion($formulacion) {
+        $u = strtolower(trim((string) ($formulacion->unidad_produccion ?? '')));
+        if (in_array($u, ['pza', 'pz', 'pieza', 'cubeta', 'caja'], true)) {
+            return ucfirst($u === 'pz' ? 'Pza' : ($u === 'pza' ? 'Pza' : $u));
+        }
+        return 'Cubeta';
+    }
+
+    private function _extraer_insumos_top_desde_motor(array $motor, $limite = 15) {
+        $lista = [];
+        foreach ($motor['componentes'] ?? [] as $comp) {
+            if (($comp->tipo_componente ?? '') !== 'Insumo' || empty($comp->insumo_id)) {
+                continue;
+            }
+            $cantidad = (float) ($comp->cantidad_en_unidad_insumo ?? $comp->cantidad_escalada ?? 0);
+            if ($cantidad <= 0) {
+                continue;
+            }
+            $lista[] = [
+                'insumo_id' => (int) $comp->insumo_id,
+                'insumo_codigo' => $comp->insumo_codigo ?? '',
+                'insumo_nombre' => $comp->insumo_nombre ?? '',
+                'unidad' => $comp->insumo_unidad_medida ?? ($comp->unidad ?? ''),
+                'cantidad' => round($cantidad, 4),
+            ];
+        }
+        usort($lista, fn($a, $b) => $b['cantidad'] <=> $a['cantidad']);
+        return array_slice($lista, 0, (int) $limite);
     }
 }

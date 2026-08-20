@@ -1,4 +1,5 @@
 <?php
+$this->load->helper('permissions');
 $registro = $response['registro'] ?? null;
 $tipo = $response['tipo'] ?? 'orden_venta';
 $es_obra = ($tipo === 'obra');
@@ -251,7 +252,7 @@ $icono = $es_obra ? 'hard-hat' : 'file-invoice';
         <div class="card">
             <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
                 <h5 class="mb-0">
-                    <i class="fas fa-flask"></i> Insumos Requeridos para Producción
+                    <i class="fas fa-weight"></i> Pesaje de Insumos (Teórico vs Real)
                 </h5>
                 <button class="btn btn-sm btn-light" onclick="cargarInsumosRequeridos()" title="Actualizar">
                     <i class="fas fa-sync-alt"></i>
@@ -262,6 +263,19 @@ $icono = $es_obra ? 'hard-hat' : 'file-invoice';
                     <div class="text-center py-4 text-muted">
                         <i class="fas fa-spinner fa-spin fa-2x"></i>
                         <p class="mt-2">Cargando insumos...</p>
+                    </div>
+                </div>
+                <div id="pesaje_acciones" class="p-3 border-top bg-light d-none">
+                    <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> Merma permitida: hasta 20% sobre teórico.
+                            <?php if (tiene_permiso('produccion_ordenes')): ?>
+                            <span class="text-warning">Con permiso producción puede exceder.</span>
+                            <?php endif; ?>
+                        </small>
+                        <button type="button" class="btn btn-primary btn-lg" id="btn_confirmar_pesaje" onclick="confirmarPesaje()">
+                            <i class="fas fa-check-double"></i> Confirmar pesaje y descontar
+                        </button>
                     </div>
                 </div>
             </div>
@@ -479,6 +493,9 @@ function initDashboardDetalle() {
         window.ORDEN_ID = <?=$registro->id?>;
         window.ORDEN_TIPO = '<?=$es_obra ? 'obra' : 'venta'?>';
         window.FOLIO = '<?=addslashes($registro->folio)?>';
+        window.PUEDE_FORZAR_COMPLETAR = <?= (function_exists('tiene_permiso') && tiene_permiso('produccion_ordenes')) ? 'true' : 'false' ?>;
+        window.CSRF_NAME = '<?=$this->security->get_csrf_token_name()?>';
+        window.CSRF_HASH = '<?=$this->security->get_csrf_hash()?>';
     }
 
     // Inicializar el monitoreo cuando la página esté lista
@@ -613,38 +630,52 @@ function actualizarEstatus() {
     if(!confirm('¿Está seguro de cambiar el estatus a "' + nuevoEstatus + '"?')) {
         return;
     }
+
+    let forzarSinInsumos = 0;
+    if (nuevoEstatus === 'Completada' && insumosData && insumosData.bloqueada && !insumosData.consumido && window.PUEDE_FORZAR_COMPLETAR) {
+        if (confirm('La orden está bloqueada por insumos. ¿Desea completar de todas formas? (requiere permiso producción)')) {
+            forzarSinInsumos = 1;
+        } else {
+            return;
+        }
+    }
     
     const btn = event.target;
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+    const postData = {
+        orden_id: ORDEN_ID,
+        tipo:     ORDEN_TIPO,
+        estatus:  nuevoEstatus,
+        forzar_sin_insumos: forzarSinInsumos
+    };
+    postData[window.CSRF_NAME] = window.CSRF_HASH;
     
     $.ajax({
         url: '<?=base_url()?>produccion/Dashboard/actualizar_estatus_ajax',
         method: 'POST',
-        data: {
-            orden_id: ORDEN_ID,
-            tipo:     ORDEN_TIPO,
-            estatus:  nuevoEstatus
-        },
+        data: postData,
         dataType: 'json',
         success: function(response) {
             if(response.success) {
-                // Si se generaron lotes, recargar solo esa sección (sin reload completo)
                 if (response.lotes_generados && response.lotes_generados.length > 0) {
                     let msg = response.message + `<br><small><strong>${response.lotes_generados.length}</strong> lote(s) generado(s) con código de barras.</small>`;
                     notifyShow(msg, 'success');
-                    // Recargar secciones dinámicas
                     cargarLotesOrden();
                     cargarInsumosRequeridos();
-                    // Actualizar badge de estatus en el header
                     setTimeout(() => location.reload(), 2000);
                 } else {
                     notifyShow(response.message || 'Estatus actualizado', 'success');
                     setTimeout(() => location.reload(), 1200);
                 }
             } else {
-                notifyShow('Error: ' + response.message, 'danger');
+                let msg = response.message || 'Error al actualizar';
+                if (response.bloqueada) {
+                    msg += '<br><small>Confirme el pesaje de insumos o genere pre-órdenes en Compras.</small>';
+                }
+                notifyShow(msg, 'danger');
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
@@ -728,7 +759,8 @@ function cargarInsumosRequeridos() {
 
     $.post('<?=base_url()?>produccion/Dashboard/verificar_stock_ajax', {
         orden_id: ORDEN_ID,
-        tipo: ORDEN_TIPO
+        tipo: ORDEN_TIPO,
+        [window.CSRF_NAME]: window.CSRF_HASH
     }, function(res) {
         insumosData = res;
         renderizarTablaInsumos(res);
@@ -740,11 +772,13 @@ function cargarInsumosRequeridos() {
 function renderizarTablaInsumos(res) {
     const alerta = $('#alerta_stock');
     const msg    = $('#alerta_stock_msg');
+    const accionesPesaje = $('#pesaje_acciones');
 
     if (res.sin_formulacion) {
         alerta.removeClass('d-none alert-success alert-danger alert-secondary').addClass('alert-warning');
         msg.html('<i class="fas fa-exclamation-triangle"></i> <strong>Advertencia:</strong> Uno o más productos de esta orden no tienen formulación activa asignada. Configure la formulación en <a href="<?=base_url()?>produccion/Productos" class="alert-link">Gestión de Productos</a>.');
         $('#tabla_insumos_container').html('<div class="alert alert-warning m-3"><i class="fas fa-flask"></i> Sin formulación configurada para calcular insumos.</div>');
+        accionesPesaje.addClass('d-none');
         return;
     }
 
@@ -752,31 +786,37 @@ function renderizarTablaInsumos(res) {
         alerta.removeClass('d-none alert-danger alert-warning alert-secondary').addClass('alert-success');
         msg.html('<i class="fas fa-check-circle"></i> <strong>No se requieren insumos</strong> (productos sin formulación de insumos definida).');
         $('#tabla_insumos_container').html('<div class="alert alert-info m-3">No hay insumos calculables para esta orden.</div>');
+        accionesPesaje.addClass('d-none');
         return;
     }
 
-    if (res.stock_suficiente) {
+    if (res.consumido) {
         alerta.removeClass('d-none alert-danger alert-warning alert-secondary').addClass('alert-success');
-        msg.html('<i class="fas fa-check-circle fa-lg"></i> <strong>¡Stock suficiente!</strong> Todos los insumos están disponibles para iniciar producción.');
+        msg.html('<i class="fas fa-check-circle fa-lg"></i> <strong>Pesaje confirmado.</strong> Los insumos ya fueron descontados del inventario.');
+        accionesPesaje.addClass('d-none');
+    } else if (res.stock_suficiente) {
+        alerta.removeClass('d-none alert-danger alert-warning alert-secondary').addClass('alert-success');
+        msg.html('<i class="fas fa-check-circle fa-lg"></i> <strong>Stock suficiente.</strong> Capture el pesaje real y confirme para descontar.');
+        accionesPesaje.removeClass('d-none');
+        $('#btn_preorden').addClass('d-none');
     } else {
         alerta.removeClass('d-none alert-success alert-warning alert-secondary').addClass('alert-danger');
         const nFaltantes = res.insumos.filter(i => !i.disponible).length;
-        msg.html(`<i class="fas fa-times-circle fa-lg"></i> <strong>Stock insuficiente.</strong> Faltan ${nFaltantes} insumo(s) para producir esta orden.`);
+        msg.html(`<i class="fas fa-ban fa-lg"></i> <strong>Orden bloqueada por falta de materia prima.</strong> Faltan ${nFaltantes} insumo(s). No se puede completar hasta recibir material.`);
         $('#btn_preorden').removeClass('d-none');
+        accionesPesaje.addClass('d-none');
     }
 
-    // Construir tabla
+    const esConsumido = !!res.consumido;
     let html = `
     <div class="table-responsive">
-      <table class="table table-sm table-hover mb-0">
+      <table class="table table-sm table-hover mb-0" id="tabla_pesaje_insumos">
         <thead class="table-dark">
           <tr>
             <th>Insumo</th>
-            <th class="text-center">%</th>
-            <th class="text-center">Cant./Unidad</th>
-            <th class="text-center">Total Requerido</th>
-            <th class="text-center">Disponible</th>
-            <th class="text-center">Faltante</th>
+            <th class="text-center">Teórico</th>
+            <th class="text-center">Stock actual</th>
+            ${esConsumido ? '<th class="text-center">Pesado</th><th class="text-center">Restante</th>' : '<th class="text-center">Pesaje real</th><th class="text-center">Máx. (+20%)</th>'}
             <th class="text-center">Estado</th>
           </tr>
         </thead>
@@ -784,26 +824,46 @@ function renderizarTablaInsumos(res) {
     `;
 
     res.insumos.forEach(insumo => {
+        const teorico = parseFloat(insumo.cantidad_teorica ?? insumo.cantidad_requerida ?? 0);
+        const stock = parseFloat(insumo.stock_actual ?? 0);
+        const unidad = insumo.unidad || '';
+        const maxMerma = parseFloat(insumo.merma_max_cantidad ?? (teorico * 1.2));
+        const pesado = insumo.cantidad_pesada != null ? parseFloat(insumo.cantidad_pesada) : null;
+        const restante = parseFloat(insumo.stock_restante ?? Math.max(0, stock - teorico));
         const estadoBadge = insumo.disponible
             ? '<span class="badge bg-success"><i class="fas fa-check"></i> OK</span>'
             : `<span class="badge bg-danger"><i class="fas fa-times"></i> Faltante</span>`;
         const rowClass = insumo.disponible ? '' : 'table-danger';
-        const pct = insumo.porcentaje ? parseFloat(insumo.porcentaje).toFixed(1) + '%' : '-';
-        const faltanteStr = insumo.faltante > 0 
-            ? `<strong class="text-danger">${parseFloat(insumo.faltante).toFixed(3)}</strong><br><small class="text-muted">≈ $${parseFloat(insumo.costo_estimado_faltante).toLocaleString('es-MX', {minimumFractionDigits: 2})}</small>`
-            : '<span class="text-success">0</span>';
+
+        let colPesaje = '';
+        if (esConsumido) {
+            colPesaje = `
+              <td class="text-center"><strong>${pesado != null ? pesado.toFixed(3) : '-'}</strong> ${unidad}</td>
+              <td class="text-center text-success"><strong>${restante.toFixed(3)}</strong> ${unidad}</td>`;
+        } else {
+            const defaultVal = teorico > 0 ? teorico.toFixed(3) : '';
+            colPesaje = `
+              <td class="text-center" style="min-width:120px;">
+                <input type="number" step="0.001" min="0"
+                       class="form-control form-control-lg text-center input-pesaje"
+                       data-insumo-id="${insumo.insumo_id}"
+                       data-teorico="${teorico}"
+                       data-max="${maxMerma}"
+                       data-unidad="${unidad}"
+                       value="${defaultVal}" ${!insumo.disponible ? 'disabled title="Sin stock"' : ''}>
+              </td>
+              <td class="text-center text-muted">${maxMerma.toFixed(3)} ${unidad}</td>`;
+        }
 
         html += `
           <tr class="${rowClass}">
             <td>
-              <strong>${insumo.insumo_nombre}</strong><br>
-              <small class="text-muted">${insumo.insumo_codigo}</small>
+              <strong>${escHtml(insumo.insumo_nombre)}</strong><br>
+              <small class="text-muted">${escHtml(insumo.insumo_codigo)}</small>
             </td>
-            <td class="text-center"><span class="badge bg-secondary">${pct}</span></td>
-            <td class="text-center">${parseFloat(insumo.cantidad_por_unidad).toFixed(3)} ${insumo.unidad}</td>
-            <td class="text-center"><strong>${parseFloat(insumo.cantidad_requerida).toFixed(3)} ${insumo.unidad}</strong></td>
-            <td class="text-center">${parseFloat(insumo.stock_actual).toFixed(3)} ${insumo.unidad}</td>
-            <td class="text-center">${faltanteStr}</td>
+            <td class="text-center"><strong>${teorico.toFixed(3)}</strong> ${unidad}</td>
+            <td class="text-center">${stock.toFixed(3)} ${unidad}</td>
+            ${colPesaje}
             <td class="text-center">${estadoBadge}</td>
           </tr>
         `;
@@ -811,6 +871,81 @@ function renderizarTablaInsumos(res) {
 
     html += `</tbody></table></div>`;
     $('#tabla_insumos_container').html(html);
+}
+
+function escHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function confirmarPesaje() {
+    if (!insumosData || !insumosData.insumos || insumosData.consumido) return;
+
+    const pesajes = [];
+    let hayError = false;
+
+    document.querySelectorAll('.input-pesaje').forEach(input => {
+        if (input.disabled) return;
+        const val = parseFloat(input.value);
+        const teorico = parseFloat(input.dataset.teorico || 0);
+        const max = parseFloat(input.dataset.max || 0);
+        const insumoId = parseInt(input.dataset.insumoId, 10);
+
+        if (isNaN(val) || val <= 0) {
+            hayError = true;
+            return;
+        }
+        if (val > max && !window.PUEDE_FORZAR_COMPLETAR) {
+            alert('El pesaje de un insumo excede la merma máxima permitida (20%).');
+            hayError = true;
+            return;
+        }
+        pesajes.push({ insumo_id: insumoId, cantidad_real: val });
+    });
+
+    if (hayError || pesajes.length === 0) {
+        alert('Revise los valores de pesaje. Todos los insumos disponibles deben tener cantidad > 0.');
+        return;
+    }
+
+    if (!confirm('¿Confirmar pesaje y descontar ' + pesajes.length + ' insumo(s) del inventario?')) {
+        return;
+    }
+
+    const btn = document.getElementById('btn_confirmar_pesaje');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+    const postData = {
+        orden_id: ORDEN_ID,
+        tipo: ORDEN_TIPO,
+        pesajes: JSON.stringify(pesajes)
+    };
+    postData[window.CSRF_NAME] = window.CSRF_HASH;
+
+    $.post('<?=base_url()?>produccion/Dashboard/confirmar_pesaje_ajax', postData, function(res) {
+        if (res.success) {
+            let msg = res.message;
+            if (res.preordenes && res.preordenes.creadas && res.preordenes.creadas.length > 0) {
+                const folios = res.preordenes.creadas.map(p => p.folio || p.id).join(', ');
+                msg += ' Pre-órdenes por stock bajo mínimo: ' + folios;
+            }
+            notifyShow(msg, 'success');
+            cargarInsumosRequeridos();
+        } else {
+            notifyShow(res.message || 'Error al confirmar pesaje', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-double"></i> Confirmar pesaje y descontar';
+        }
+    }, 'json').fail(function() {
+        notifyShow('Error de comunicación al confirmar pesaje', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-double"></i> Confirmar pesaje y descontar';
+    });
 }
 
 // =====================================================
@@ -942,6 +1077,16 @@ function imprimirEtiqueta() {
 /**
  * Carga los lotes de producción generados para esta orden (AJAX)
  */
+function etiquetaPrefsQuery() {
+    try {
+        var s = localStorage.getItem('chisa_etiqueta_prefs_size') || '100x50';
+        var z = localStorage.getItem('chisa_etiqueta_prefs_zoom') || '100';
+        return 'size=' + encodeURIComponent(s) + '&zoom=' + encodeURIComponent(z);
+    } catch (e) {
+        return 'size=100x50&zoom=100';
+    }
+}
+
 function cargarLotesOrden() {
     $.post('<?=base_url()?>produccion/Dashboard/get_lotes_orden_ajax', {
         orden_id: ORDEN_ID,
@@ -994,18 +1139,18 @@ function cargarLotesOrden() {
                         <strong>${lote.producto_nombre || '—'}</strong>
                         <br><small class="text-muted">${lote.producto_codigo || ''}</small>
                     </td>
-                    <td class="text-center">${parseFloat(lote.cantidad_producida).toFixed(2)} ${lote.unidad || ''}</td>
+                    <td class="text-center">${parseFloat(lote.cantidad || lote.cantidad_producida || 0).toFixed(2)} ${lote.unidad || ''}</td>
                     <td class="text-center"><small>${fechaDisplay}</small></td>
                     <td class="text-center">
                         <span class="badge bg-${estadoClass}">${lote.estatus}</span>
                     </td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-primary"
-                            onclick="verEtiquetaLote(${lote.id}, '${lote.codigo_barras}', '${(lote.producto_nombre||'').replace(/'/g,"\\'")}', '${lote.cantidad_producida}', '${lote.unidad||''}', '${fechaDisplay}')"
+                            onclick="verEtiquetaLote(${lote.id}, '${lote.codigo_barras}', '${(lote.producto_nombre||'').replace(/'/g,"\\'")}', '${lote.cantidad || lote.cantidad_producida || 0}', '${lote.unidad||''}', '${fechaDisplay}')"
                             title="Ver etiqueta">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <a href="<?=base_url()?>produccion/Dashboard/etiqueta_lote/${lote.id}" target="_blank"
+                        <a href="<?=base_url()?>produccion/Dashboard/etiqueta_lote/${lote.id}?${etiquetaPrefsQuery()}" target="_blank"
                            class="btn btn-sm btn-outline-success" title="Imprimir etiqueta (página completa)">
                             <i class="fas fa-print"></i>
                         </a>
