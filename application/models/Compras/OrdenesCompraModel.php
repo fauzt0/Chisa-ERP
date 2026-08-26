@@ -107,7 +107,8 @@ class OrdenesCompraModel extends MY_Model {
             proveedores.rfc AS rfc_proveedor, proveedores.telefono AS telefono_proveedor,
             proveedores.email AS email_proveedor, proveedores.direccion AS direccion_proveedor,
             proveedores.ciudad AS ciudad_proveedor, proveedores.estado AS estado_proveedor,
-            proveedores.codigo_postal AS cp_proveedor');
+            proveedores.codigo_postal AS cp_proveedor,
+            proveedores.contacto_principal AS attn');
         $this->db->from($this->tableName);
         $this->db->join('proveedores', 'proveedores.id = ordenes_compra.proveedor_id', 'left');
         $this->db->where('ordenes_compra.id', $id);

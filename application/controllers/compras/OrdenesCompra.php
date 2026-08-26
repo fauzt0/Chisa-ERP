@@ -206,7 +206,8 @@ class OrdenesCompra extends MY_Controller {
         
         $this->load->model('Config/EmpresaModel');
         $empresa = $this->EmpresaModel->get_config();
-        
+        $this->load->helper('numeros_letras');
+
         $this->load->view('compras/ordenes_compra/pdf_oc', [
             'orden'    => $orden,
             'detalles' => $detalles,
@@ -1168,6 +1169,7 @@ class OrdenesCompra extends MY_Controller {
         $detalles = $orden->detalles ?? [];
         $this->load->model('Config/EmpresaModel');
         $empresa = $this->EmpresaModel->get_config();
+        $this->load->helper('numeros_letras');
 
         $html = $this->load->view('compras/ordenes_compra/pdf_oc', [
             'orden'    => $orden,
