@@ -1388,6 +1388,7 @@ class Productos extends MY_Controller {
             $bloques    = [];
             $cli_nombre = null;
             $cli_cubetas= 1;
+            $ref_cliente_pre = null;
             $refs_vistos = []; // deduplicar bloques con mismo nombre en la misma hoja
 
             $ultima_col_a_texto = '';
@@ -1411,7 +1412,17 @@ class Productos extends MY_Controller {
                         $cli_nombre = trim(preg_replace('/^(VENTA\s+)?/i', '', $resto));
                     }
                     $ultima_col_a_texto = '';
+                    $ref_cliente_pre = null;
                     continue;
+                }
+
+                // Nombre de cliente en filas previas al bloque KILOS (ej. "HOSPITAL JUAREZ")
+                $col_b_vacia = ($col_b_raw === null || $col_b_raw === '' || $col_b_raw === 0);
+                if ($col_b_vacia && $this->_parece_nombre_cliente_import($col_a, $col_a_raw) && $cli_nombre === null) {
+                    $cli_nombre = $col_a;
+                }
+                if ($col_b_vacia && $this->_parece_referencia_cliente_import($col_a)) {
+                    $ref_cliente_pre = $col_a;
                 }
 
                 // Detectar fila de producto: "KILOS" en cols 3-5
@@ -1481,11 +1492,12 @@ class Productos extends MY_Controller {
                     $refs_vistos[$clave_dedup] = true;
 
                     $bloques[] = [
-                        'row'           => $r,
-                        'ref'           => $ref,
-                        'total_kg'      => $total_kg,
-                        'cliente'       => $cli_nombre,
-                        'cubetas'       => $cli_cubetas,
+                        'row'               => $r,
+                        'ref'               => $ref,
+                        'total_kg'          => $total_kg,
+                        'cliente'           => $cli_nombre,
+                        'referencia_cliente'=> $this->_extraer_referencia_cliente_import($ref, $ref_cliente_pre),
+                        'cubetas'           => $cli_cubetas,
                         'descripcion'   => '',
                         'grupos'        => [],
                         'formato'       => $formato,
@@ -1495,6 +1507,7 @@ class Productos extends MY_Controller {
                     ];
                     $cli_nombre  = null;
                     $cli_cubetas = 1;
+                    $ref_cliente_pre = null;
                     $ultima_col_a_texto = '';
                 } else {
                     if ($col_a !== '' && !is_numeric($col_a_raw)) {
@@ -1680,10 +1693,66 @@ class Productos extends MY_Controller {
     /**
      * Guarda una formulación parseada del Excel en la BD.
      */
+    private function _parece_nombre_cliente_import($col_a, $col_a_raw) {
+        if ($col_a === '') {
+            return false;
+        }
+        if (is_int($col_a_raw) && (int) $col_a_raw > 40000) {
+            return false;
+        }
+        if (preg_match('/^\d+$/', $col_a)) {
+            return false;
+        }
+        if (preg_match('/^\d+\s+(CUBETAS?|TAMBOS?)\b/i', $col_a)) {
+            return false;
+        }
+        if (preg_match('/^\d+\s+LTS?\b/i', $col_a)) {
+            return false;
+        }
+        if (stripos($col_a, 'CHISA') !== false) {
+            return false;
+        }
+        if (stripos($col_a, 'KILOS') !== false) {
+            return false;
+        }
+        if (preg_match('/^HOJA\b/i', $col_a)) {
+            return false;
+        }
+        return true;
+    }
+
+    private function _parece_referencia_cliente_import($texto) {
+        $t = trim((string) $texto);
+        if ($t === '' || preg_match('/^\d{5}$/', $t) || preg_match('/^\d+$/', $t)) {
+            return false;
+        }
+        return (bool) preg_match('/^[A-Z]{1,4}[\s.\-–]*\d/i', $t);
+    }
+
+    private function _normalizar_referencia_cliente_import($ref) {
+        $ref = trim((string) $ref);
+        $ref = preg_replace('/\s*-\s*/', '-', $ref);
+        return trim(preg_replace('/\s+/', ' ', $ref));
+    }
+
+    private function _extraer_referencia_cliente_import($ref_producto, $pre = null) {
+        if (preg_match('/\bREF\.?\s*(.+)$/i', $ref_producto, $m)) {
+            return $this->_normalizar_referencia_cliente_import(trim($m[1]));
+        }
+        if ($pre && $this->_parece_referencia_cliente_import($pre)) {
+            return $this->_normalizar_referencia_cliente_import($pre);
+        }
+        if (preg_match('/\b([A-Z]{1,4}\s*[-–.]?\s*\d{2}\s*[-–.]?\s*\d+)\b/i', $ref_producto, $m)) {
+            return $this->_normalizar_referencia_cliente_import($m[1]);
+        }
+        return null;
+    }
+
     private function _guardar_formulacion_importada($pdata) {
         $ref            = $pdata['ref'];
         $total_kg       = $pdata['total_kg'];
         $cliente_nom    = $pdata['cliente'] ?? null;
+        $referencia_cli = $pdata['referencia_cliente'] ?? null;
         $descripcion    = $pdata['descripcion'] ?? '';
         $grupos         = $pdata['grupos'] ?? [];
         $hoja_origen    = $pdata['hoja_origen'] ?? null;
@@ -1734,6 +1803,7 @@ class Productos extends MY_Controller {
         $this->db->insert('formulaciones', [
             'producto_id'        => $producto->id,
             'cliente_id'         => $cliente_id,
+            'referencia_cliente' => $referencia_cli,
             'nombre_version'        => 'V' . $version . ($cliente_nom ? " – $cliente_nom" : ''),
             'descripcion'           => $descripcion,
             'comentarios'           => implode(' | ', array_filter([

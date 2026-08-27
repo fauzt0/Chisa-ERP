@@ -1,30 +1,51 @@
 <?php
+$h = static function ($s) {
+    return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+};
+$fixUtf8 = static function ($s) {
+    $s = (string) $s;
+    if ($s !== '' && preg_match('/Ã|Â|â€/', $s)) {
+        $fixed = utf8_decode($s);
+        if ($fixed !== false && $fixed !== '') {
+            return $fixed;
+        }
+    }
+    return $s;
+};
+
 $emp = $empresa ?? null;
 $logoUrl = !empty($emp->logo) ? base_url($emp->logo) : base_url('assets/dist/img/brands/chisa_recubrimientos_logo.jpg');
 
-$nombreCliente = $emp->razon_social ?? 'Chisa Recubrimientos';
-$nombreComercialCliente = trim($emp->nombre_comercial ?? '');
-$rfcCliente = trim($emp->rfc ?? '');
-$telefonoCliente = trim($emp->telefono ?? '');
-$emailCliente = trim($emp->email ?? '');
+$nombreCliente = $fixUtf8($emp->razon_social ?? 'Chisa Recubrimientos');
+$nombreComercialCliente = $fixUtf8(trim($emp->nombre_comercial ?? ''));
+$rfcCliente = $fixUtf8(trim($emp->rfc ?? ''));
+$telefonoCliente = $fixUtf8(trim($emp->telefono ?? ''));
+$emailCliente = $fixUtf8(trim($emp->email ?? ''));
+
+$calleCliente = $fixUtf8(trim(($emp->calle ?? '') . ' ' . ($emp->numero_exterior ?? '') . ' ' . ($emp->numero_interior ?? '')));
+$coloniaCliente = $fixUtf8(trim($emp->colonia ?? ''));
+$ciudadCliente = $fixUtf8(trim($emp->ciudad ?? ''));
+$estadoCliente = $fixUtf8(trim($emp->estado ?? ''));
+$cpCliente = $fixUtf8(trim($emp->codigo_postal ?? ''));
 
 $direccionCliente = trim(implode(', ', array_filter([
-    trim(($emp->calle ?? '') . ' ' . ($emp->numero_exterior ?? '') . ' ' . ($emp->numero_interior ?? '')),
-    $emp->colonia ?? '',
-    $emp->ciudad ?? '',
-    $emp->estado ?? '',
-    $emp->codigo_postal ?? '',
+    $calleCliente,
+    $coloniaCliente,
+    $ciudadCliente,
+    $estadoCliente,
+    $cpCliente,
 ])));
-if (!$direccionCliente) {
-    $direccionCliente = 'México';
+$tieneDireccionReal = ($calleCliente !== '' || $coloniaCliente !== '' || $ciudadCliente !== '');
+if (!$tieneDireccionReal && preg_match('/^M[eé]xico$/ui', $direccionCliente)) {
+    $direccionCliente = '';
 }
 
-$direccionProveedor = trim(implode(', ', array_filter([
+$direccionProveedor = $fixUtf8(trim(implode(', ', array_filter([
     trim($orden->direccion_proveedor ?? ''),
     $orden->ciudad_proveedor ?? '',
     $orden->estado_proveedor ?? '',
     $orden->cp_proveedor ?? '',
-])));
+]))));
 
 $fechaElaboracion = !empty($orden->fecha_orden)
     ? date('d/m/Y', strtotime($orden->fecha_orden))
@@ -39,7 +60,7 @@ $importeLetra = function_exists('numero_a_letras_mxn') ? numero_a_letras_mxn($to
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Orden de Compra - <?=htmlspecialchars($orden->folio)?></title>
+  <title>Orden de Compra - <?=$h($orden->folio)?></title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #222; background: #fff; }
@@ -113,11 +134,11 @@ $importeLetra = function_exists('numero_a_letras_mxn') ? numero_a_letras_mxn($to
   <table>
     <tr>
       <td class="hdr-logo">
-        <img src="<?=$logoUrl?>" alt="<?=htmlspecialchars($nombreCliente)?>">
+        <img src="<?=$logoUrl?>" alt="<?=$h($nombreCliente)?>">
       </td>
       <td class="hdr-title">
         <div class="titulo">Orden de Compra</div>
-        <div class="folio">N&deg; <?=htmlspecialchars($orden->folio)?></div>
+        <div class="folio">N&deg; <?=$h($orden->folio)?></div>
         <div class="fecha">Fecha de elaboraci&oacute;n: <?=$fechaElaboracion?></div>
       </td>
       <td class="hdr-meta">
@@ -125,10 +146,10 @@ $importeLetra = function_exists('numero_a_letras_mxn') ? numero_a_letras_mxn($to
         <div><strong>Entrega estimada:</strong><br><?=date('d/m/Y', strtotime($orden->fecha_entrega_estimada))?></div><br>
         <?php endif; ?>
         <?php if (!empty($orden->forma_pago)): ?>
-        <div><strong>Forma de pago:</strong><br><?=htmlspecialchars($orden->forma_pago)?></div>
+        <div><strong>Forma de pago:</strong><br><?=$h($orden->forma_pago)?></div>
         <?php endif; ?>
         <?php if (!empty($orden->condiciones_pago)): ?>
-        <div style="margin-top:4px;"><strong>Condiciones:</strong><br><?=htmlspecialchars($orden->condiciones_pago)?></div>
+        <div style="margin-top:4px;"><strong>Condiciones:</strong><br><?=$h($orden->condiciones_pago)?></div>
         <?php endif; ?>
       </td>
     </tr>
@@ -142,43 +163,45 @@ $importeLetra = function_exists('numero_a_letras_mxn') ? numero_a_letras_mxn($to
         <div class="bloque-titulo">Proveedor</div>
         <div class="bloque-cuerpo">
           <?php if (!empty($orden->attn)): ?>
-          <p><span class="lbl">At&rsquo;n:</span> <?=htmlspecialchars($orden->attn)?></p>
+          <p><span class="lbl">At&rsquo;n:</span> <?=$h($orden->attn)?></p>
           <?php endif; ?>
-          <p><span class="lbl">Raz&oacute;n social:</span> <?=htmlspecialchars($orden->razon_social ?? '—')?></p>
+          <p><span class="lbl">Raz&oacute;n social:</span> <?=$h($orden->razon_social ?? '—')?></p>
           <?php if (!empty($orden->nombre_comercial)): ?>
-          <p><span class="lbl">Nombre comercial:</span> <?=htmlspecialchars($orden->nombre_comercial)?></p>
+          <p><span class="lbl">Nombre comercial:</span> <?=$h($orden->nombre_comercial)?></p>
           <?php endif; ?>
           <?php if (!empty($orden->rfc_proveedor)): ?>
-          <p><span class="lbl">RFC:</span> <?=htmlspecialchars($orden->rfc_proveedor)?></p>
+          <p><span class="lbl">RFC:</span> <?=$h($orden->rfc_proveedor)?></p>
           <?php endif; ?>
           <?php if (!empty($orden->telefono_proveedor)): ?>
-          <p><span class="lbl">Tel&eacute;fono:</span> <?=htmlspecialchars($orden->telefono_proveedor)?></p>
+          <p><span class="lbl">Tel&eacute;fono:</span> <?=$h($orden->telefono_proveedor)?></p>
           <?php endif; ?>
           <?php if (!empty($orden->email_proveedor)): ?>
-          <p><span class="lbl">Correo:</span> <?=htmlspecialchars($orden->email_proveedor)?></p>
+          <p><span class="lbl">Correo:</span> <?=$h($orden->email_proveedor)?></p>
           <?php endif; ?>
           <?php if ($direccionProveedor): ?>
-          <p><span class="lbl">Direcci&oacute;n:</span> <?=htmlspecialchars($direccionProveedor)?></p>
+          <p><span class="lbl">Direcci&oacute;n:</span> <?=$h($direccionProveedor)?></p>
           <?php endif; ?>
         </div>
       </td>
       <td style="width:50%; padding-left:8px;">
         <div class="bloque-titulo">Cliente</div>
         <div class="bloque-cuerpo">
-          <p><span class="lbl">Raz&oacute;n social:</span> <?=htmlspecialchars($nombreCliente)?></p>
+          <p><span class="lbl">Raz&oacute;n social:</span> <?=$h($nombreCliente)?></p>
           <?php if ($nombreComercialCliente): ?>
-          <p><span class="lbl">Nombre comercial:</span> <?=htmlspecialchars($nombreComercialCliente)?></p>
+          <p><span class="lbl">Nombre comercial:</span> <?=$h($nombreComercialCliente)?></p>
           <?php endif; ?>
           <?php if ($rfcCliente): ?>
-          <p><span class="lbl">RFC:</span> <?=htmlspecialchars($rfcCliente)?></p>
+          <p><span class="lbl">RFC:</span> <?=$h($rfcCliente)?></p>
           <?php endif; ?>
           <?php if ($telefonoCliente): ?>
-          <p><span class="lbl">Tel&eacute;fono:</span> <?=htmlspecialchars($telefonoCliente)?></p>
+          <p><span class="lbl">Tel&eacute;fono:</span> <?=$h($telefonoCliente)?></p>
           <?php endif; ?>
           <?php if ($emailCliente): ?>
-          <p><span class="lbl">Correo:</span> <?=htmlspecialchars($emailCliente)?></p>
+          <p><span class="lbl">Correo:</span> <?=$h($emailCliente)?></p>
           <?php endif; ?>
-          <p><span class="lbl">Direcci&oacute;n:</span> <?=htmlspecialchars($direccionCliente)?></p>
+          <?php if ($direccionCliente): ?>
+          <p><span class="lbl">Direcci&oacute;n:</span> <?=$h($direccionCliente)?></p>
+          <?php endif; ?>
         </div>
       </td>
     </tr>
@@ -207,11 +230,11 @@ $importeLetra = function_exists('numero_a_letras_mxn') ? numero_a_letras_mxn($to
       ?>
       <tr>
         <td class="col-cant"><?=number_format((float) $item->cantidad_solicitada, 2)?></td>
-        <td class="col-unid"><?=htmlspecialchars($item->unidad_medida)?></td>
+        <td class="col-unid"><?=$h($item->unidad_medida)?></td>
         <td class="col-desc">
-          <?=htmlspecialchars($descripcion)?>
+          <?=$h($descripcion)?>
           <?php if ($codigo): ?>
-          <span class="codigo-linea">C&oacute;digo: <?=htmlspecialchars($codigo)?></span>
+          <span class="codigo-linea">C&oacute;digo: <?=$h($codigo)?></span>
           <?php endif; ?>
         </td>
         <td class="col-pu">$<?=number_format((float) $item->precio_unitario, 2)?></td>
@@ -226,7 +249,7 @@ $importeLetra = function_exists('numero_a_letras_mxn') ? numero_a_letras_mxn($to
   <?php if ($importeLetra): ?>
   <div class="letra-box">
     <span class="lbl">Importe con letra:</span>
-    <?=htmlspecialchars($importeLetra)?>
+    <?=$h($importeLetra)?>
   </div>
   <?php endif; ?>
 
@@ -253,7 +276,7 @@ $importeLetra = function_exists('numero_a_letras_mxn') ? numero_a_letras_mxn($to
   <?php if (!empty($orden->observaciones)): ?>
   <div class="notas">
     <strong>Observaciones / Condiciones</strong>
-    <?=nl2br(htmlspecialchars($orden->observaciones))?>
+    <?=nl2br($h($orden->observaciones))?>
   </div>
   <?php endif; ?>
 
