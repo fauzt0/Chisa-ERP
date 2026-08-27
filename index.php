@@ -66,7 +66,12 @@
 switch (ENVIRONMENT)
 {
 	case 'development':
-		error_reporting(-1);
+		// PHP 8.1+ deprecations (dynamic properties, etc.) flood CI 3.1.13 pages.
+		if (version_compare(PHP_VERSION, '8.1', '>=')) {
+			error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+		} else {
+			error_reporting(-1);
+		}
 		ini_set('display_errors', 1);
 	break;
 
