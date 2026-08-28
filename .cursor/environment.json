@@ -1,0 +1,13 @@
+{
+  "name": "Chisa ERP (CodeIgniter 3 / PHP 7.4 / MariaDB)",
+  "user": "ubuntu",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "erp-web",
+      "command": "CI_ENV=development php -S 0.0.0.0:8080 -t /workspace /workspace/.cursor/php-router.php"
+    }
+  ],
+  "ports": [8080]
+}
