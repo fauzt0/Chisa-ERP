@@ -35,7 +35,9 @@
 	      var m = document.cookie.match(/(?:^|; )erp_theme=([^;]*)/);
 	      t = m ? decodeURIComponent(m[1]) : null;
 	    }
-	    document.documentElement.setAttribute('data-bs-theme', (t === 'dark') ? 'dark' : 'light');
+	    var theme = (t === 'dark') ? 'dark' : 'light';
+	    document.documentElement.setAttribute('data-bs-theme', theme);
+	    document.documentElement.style.backgroundColor = (theme === 'dark') ? '#202634' : '#ffffff';
 	  } catch (e) {}
 	})();
 	</script>

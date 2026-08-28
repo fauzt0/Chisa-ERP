@@ -49,6 +49,9 @@
 	    var root = document.documentElement;
 	    root.setAttribute('data-bs-theme', theme);
 	    root.setAttribute('data-sidebar-theme', theme === 'dark' ? 'dark' : 'dark');
+	    // Paint the correct background immediately to avoid a white flash while
+	    // app.css is still loading on reload/navigation.
+	    root.style.backgroundColor = (theme === 'dark') ? '#202634' : '#ffffff';
 	  } catch (e) {}
 	})();
 	</script>

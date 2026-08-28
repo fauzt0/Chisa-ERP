@@ -99,7 +99,7 @@
       </li>
       
       <li class="nav-item nav-theme-toggle">
-        <a class="nav-icon js-theme-toggle" href="#" role="button" title="Cambiar tema" aria-label="Cambiar tema">
+        <a class="nav-icon erp-theme-toggle" href="#" role="button" title="Cambiar tema" aria-label="Cambiar tema">
           <div class="position-relative">
             <i class="align-middle text-body fas fa-moon" data-theme-icon aria-hidden="true"></i>
           </div>

@@ -21,7 +21,7 @@
    fa-sun (dark) by theme-toggle.js. These rules are a no-JS fallback so the
    control is always visible and legible.
    --------------------------------------------------------------------------- */
-.nav-theme-toggle .js-theme-toggle {
+.nav-theme-toggle .erp-theme-toggle {
   cursor: pointer;
 }
 .nav-theme-toggle [data-theme-icon] {

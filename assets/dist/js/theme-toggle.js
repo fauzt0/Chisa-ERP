@@ -6,7 +6,7 @@
      new tabs and new sessions (and is readable server-side if ever needed).
    - Applies the theme to <html data-bs-theme> immediately (a matching pre-paint
      snippet in the page <head> prevents any flash of the wrong theme).
-   - Binds via event delegation, so every `.js-theme-toggle` works on every
+   - Binds via event delegation, so every `.erp-theme-toggle` works on every
      view without re-binding and without breaking on navigation.
    - Keeps the navbar icon (fa-moon / fa-sun) and its aria-label in sync.
    ============================================================================= */
@@ -70,7 +70,7 @@
       icon.classList.add('fas', isDark ? 'fa-sun' : 'fa-moon');
     });
     // Accessibility + tooltip on the control itself.
-    document.querySelectorAll('.js-theme-toggle').forEach(function (btn) {
+    document.querySelectorAll('.erp-theme-toggle').forEach(function (btn) {
       var label = isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
       btn.setAttribute('aria-label', label);
       btn.setAttribute('title', label);
@@ -108,7 +108,7 @@
   // the template's app.js calls stopPropagation() on navbar clicks (it does),
   // which would otherwise prevent a bubble-phase listener from ever firing.
   function onToggleClick(ev) {
-    var trigger = ev.target && ev.target.closest ? ev.target.closest('.js-theme-toggle') : null;
+    var trigger = ev.target && ev.target.closest ? ev.target.closest('.erp-theme-toggle') : null;
     if (trigger) {
       ev.preventDefault();
       ev.stopPropagation();
@@ -119,7 +119,7 @@
 
   // Direct-bind fallback for any toggles present at load time.
   function bindDirect() {
-    document.querySelectorAll('.js-theme-toggle').forEach(function (el) {
+    document.querySelectorAll('.erp-theme-toggle').forEach(function (el) {
       if (el.dataset.themeBound) return;
       el.dataset.themeBound = '1';
       el.addEventListener('click', function (ev) {
