@@ -104,14 +104,30 @@
   // Apply immediately (re-affirms the pre-paint value and syncs the icon).
   applyTheme(resolveTheme(), { persist: false });
 
-  // Event delegation: one listener handles every current/future toggle.
-  document.addEventListener('click', function (ev) {
-    var trigger = ev.target.closest ? ev.target.closest('.js-theme-toggle') : null;
+  // Event delegation in the CAPTURE phase so the toggle keeps working even if
+  // the template's app.js calls stopPropagation() on navbar clicks (it does),
+  // which would otherwise prevent a bubble-phase listener from ever firing.
+  function onToggleClick(ev) {
+    var trigger = ev.target && ev.target.closest ? ev.target.closest('.js-theme-toggle') : null;
     if (trigger) {
       ev.preventDefault();
+      ev.stopPropagation();
       toggleTheme();
     }
-  });
+  }
+  document.addEventListener('click', onToggleClick, true);
+
+  // Direct-bind fallback for any toggles present at load time.
+  function bindDirect() {
+    document.querySelectorAll('.js-theme-toggle').forEach(function (el) {
+      if (el.dataset.themeBound) return;
+      el.dataset.themeBound = '1';
+      el.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        toggleTheme();
+      });
+    });
+  }
 
   // Keep multiple tabs in sync.
   window.addEventListener('storage', function (ev) {
@@ -120,12 +136,14 @@
     }
   });
 
-  // Re-sync the icon once the DOM (and lucide/FontAwesome) are ready.
+  // Re-sync the icon and direct-bind once the DOM is ready.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
+      bindDirect();
       updateToggleUI(currentTheme());
     });
   } else {
+    bindDirect();
     updateToggleUI(currentTheme());
   }
 
