@@ -98,11 +98,10 @@
         </div>
       </li>
       
-      <li class="nav-item nav-theme-toggle dropdown">
-        <a class="nav-icon js-theme-toggle" href="#">
+      <li class="nav-item nav-theme-toggle">
+        <a class="nav-icon js-theme-toggle" href="#" role="button" title="Cambiar tema" aria-label="Cambiar tema">
           <div class="position-relative">
-            <i class="align-middle text-body nav-theme-toggle-light" data-lucide="sun"></i>
-            <i class="align-middle text-body nav-theme-toggle-dark" data-lucide="moon"></i>
+            <i class="align-middle text-body fas fa-moon" data-theme-icon aria-hidden="true"></i>
           </div>
         </a>
       </li>
