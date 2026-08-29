@@ -13,6 +13,7 @@
 ## 🟡 Estatus del proyecto
 
 - [X] Desarrollo
+- [ ] Iteraciones
 - [ ] Pruebas — checklist manual pendiente en `doc/CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (hoja de resultados vacía)
 - [X] Despliegue — en producción: `https://erp.chisarecubrimientos.com.mx`
 
