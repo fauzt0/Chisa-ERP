@@ -1,45 +1,159 @@
-<?php // Only emit the chart script when the "Nuevos Clientes" widget is authorized. ?>
-<?php if (isset($response['datos_grafica'])): ?>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var canvas = document.getElementById("chartjs-dashboard-bar");
-    if (!canvas || typeof Chart === "undefined") return;
-    var primary = (window.cssVariables && window.cssVariables.primary) || "#3f80ea";
-    new Chart(canvas, {
-      type: "bar",
-      data: {
-        labels: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
-        datasets: [{
-          label: "Nuevos Clientes",
-          backgroundColor: primary,
-          borderColor: primary,
-          hoverBackgroundColor: primary,
-          hoverBorderColor: primary,
-          data: <?= json_encode($response['datos_grafica']) ?>,
-          barPercentage: .75,
-          categoryPercentage: .5
-        }]
-      },
-      options: {
-        maintainAspectRatio: false,
-        legend: { display: false },
-        scales: {
-          yAxes: [{ gridLines: { display: false }, ticks: { stepSize: 20 }, stacked: true }],
-          xAxes: [{ gridLines: { color: "transparent" }, stacked: true }]
-        }
-      }
-    });
-  });
-</script>
-<?php endif; ?>
-
 <script>
 /* ---------------------------------------------------------------------------
- * Main dashboard — per-user customizable widget layout (show/hide + reorder)
+ * Main dashboard — permission-gated charts (data only emitted for authorized
+ * widgets) + per-user customizable layout (show/hide + reorder).
+ * The global `Chart` (v3, provided by app.js) is reused; no CDN needed.
  * ------------------------------------------------------------------------- */
 (function () {
   "use strict";
 
+  // Chart payloads are ONLY present when the controller authorized that widget.
+  var CHART_DATA = {
+    ventas_mensuales: <?= isset($response['ventas_mensuales']) ? json_encode($response['ventas_mensuales']) : 'null' ?>,
+    clientes:         <?= isset($response['datos_grafica'])   ? json_encode($response['datos_grafica'])   : 'null' ?>,
+    compras_mes:      <?= isset($response['compras_mes'])      ? json_encode($response['compras_mes'])      : 'null' ?>,
+    top_proveedores:  <?= isset($response['top_proveedores'])  ? json_encode($response['top_proveedores'])  : 'null' ?>,
+    distribucion:     <?= isset($response['distribucion_tipo'])? json_encode($response['distribucion_tipo']): 'null' ?>
+  };
+
+  var MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  var charts = [];
+
+  function cssVar(name, fallback) {
+    try {
+      var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return v || fallback;
+    } catch (e) { return fallback; }
+  }
+  function palette() {
+    var cv = window.cssVariables || {};
+    return {
+      primary: cv.primary || cssVar('--bs-primary', '#3f80ea'),
+      success: cv.success || cssVar('--bs-success', '#4bbf73'),
+      warning: cv.warning || cssVar('--bs-warning', '#e5a54b'),
+      danger:  cv.danger  || cssVar('--bs-danger',  '#d9534f'),
+      info:    cv.info    || cssVar('--bs-info',    '#1f9bcf'),
+      purple:  '#6f42c1'
+    };
+  }
+  function themeColors() {
+    return {
+      text: cssVar('--bs-body-color', '#495057'),
+      grid: cssVar('--bs-border-color', 'rgba(0,0,0,.1)')
+    };
+  }
+  function baseScales() {
+    var t = themeColors();
+    return {
+      y: { beginAtZero: true, ticks: { color: t.text }, grid: { color: t.grid } },
+      x: { ticks: { color: t.text }, grid: { display: false } }
+    };
+  }
+  function noLegend() { return { legend: { display: false } }; }
+
+  function makeChart(canvasId, config) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === "undefined") return;
+    try {
+      var c = new Chart(canvas, config);
+      charts.push(c);
+    } catch (e) { /* ignore a single chart failure */ }
+  }
+
+  function initCharts() {
+    var p = palette();
+
+    // Ventas mensuales (line)
+    if (CHART_DATA.ventas_mensuales) {
+      makeChart("chart-ventas-mensuales", {
+        type: "line",
+        data: { labels: MESES, datasets: [{ label: "Ventas", data: CHART_DATA.ventas_mensuales,
+          borderColor: p.success, backgroundColor: p.success + "33", fill: true, tension: .35, pointRadius: 3 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: noLegend(), scales: baseScales() }
+      });
+    }
+
+    // Nuevos clientes (bar)
+    if (CHART_DATA.clientes) {
+      makeChart("chartjs-dashboard-bar", {
+        type: "bar",
+        data: { labels: MESES, datasets: [{ label: "Nuevos Clientes", data: CHART_DATA.clientes,
+          backgroundColor: p.primary, borderRadius: 4, maxBarThickness: 28 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: noLegend(), scales: baseScales() }
+      });
+    }
+
+    // Compras por mes (bar) — labels are YYYY-MM
+    if (CHART_DATA.compras_mes) {
+      var cLabels = CHART_DATA.compras_mes.map(function (r) {
+        var parts = String(r.mes).split("-");
+        return parts.length === 2 ? (MESES[parseInt(parts[1], 10) - 1] + " " + parts[0].slice(2)) : r.mes;
+      });
+      var cData = CHART_DATA.compras_mes.map(function (r) { return parseFloat(r.total_mes) || 0; });
+      makeChart("chart-compras-mes", {
+        type: "bar",
+        data: { labels: cLabels, datasets: [{ label: "Compras", data: cData,
+          backgroundColor: p.warning, borderRadius: 4, maxBarThickness: 28 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: noLegend(), scales: baseScales() }
+      });
+    }
+
+    // Top proveedores (horizontal bar)
+    if (CHART_DATA.top_proveedores) {
+      var tLabels = CHART_DATA.top_proveedores.map(function (r) {
+        var n = r.nombre_comercial || r.razon_social || "—";
+        return n.length > 22 ? n.slice(0, 21) + "…" : n;
+      });
+      var tData = CHART_DATA.top_proveedores.map(function (r) { return parseFloat(r.total_comprado) || 0; });
+      makeChart("chart-top-proveedores", {
+        type: "bar",
+        data: { labels: tLabels, datasets: [{ label: "Comprado", data: tData,
+          backgroundColor: p.primary, borderRadius: 4 }] },
+        options: {
+          indexAxis: "y", responsive: true, maintainAspectRatio: false,
+          plugins: noLegend(),
+          scales: (function () { var s = baseScales(); s.x.grid.display = true; return s; })()
+        }
+      });
+    }
+
+    // Distribución por tipo (doughnut)
+    if (CHART_DATA.distribucion) {
+      var dLabels = CHART_DATA.distribucion.map(function (r) { return r.tipo_proveedor || "Sin tipo"; });
+      var dData = CHART_DATA.distribucion.map(function (r) { return parseInt(r.total, 10) || 0; });
+      makeChart("chart-distribucion-prov", {
+        type: "doughnut",
+        data: { labels: dLabels, datasets: [{ data: dData,
+          backgroundColor: [p.primary, p.warning, p.success, p.info, p.danger, p.purple] }] },
+        options: { responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom", labels: { color: themeColors().text } } } }
+      });
+    }
+  }
+
+  // Restyle chart axes/legend on theme change so they stay readable.
+  function restyleCharts() {
+    var t = themeColors();
+    charts.forEach(function (c) {
+      if (c.options && c.options.scales) {
+        ["x", "y"].forEach(function (ax) {
+          if (c.options.scales[ax]) {
+            if (c.options.scales[ax].ticks) c.options.scales[ax].ticks.color = t.text;
+            if (c.options.scales[ax].grid)  c.options.scales[ax].grid.color = t.grid;
+          }
+        });
+      }
+      if (c.options && c.options.plugins && c.options.plugins.legend && c.options.plugins.legend.labels) {
+        c.options.plugins.legend.labels.color = t.text;
+      }
+      try { c.update(); } catch (e) {}
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", initCharts);
+  document.addEventListener("erp:themechange", restyleCharts);
+
+  // ---- Per-user customizable layout (show/hide + reorder) ------------------
   var USER_ID = <?= (int)($response['user_id'] ?? 0) ?>;
   var STORAGE_KEY = "erp_dashboard_layout_" + USER_ID;
 
@@ -48,52 +162,38 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       var parsed = JSON.parse(raw);
-      return {
-        order: Array.isArray(parsed.order) ? parsed.order : [],
-        hidden: Array.isArray(parsed.hidden) ? parsed.hidden : []
-      };
+      return { order: Array.isArray(parsed.order) ? parsed.order : [],
+               hidden: Array.isArray(parsed.hidden) ? parsed.hidden : [] };
     } catch (e) { return null; }
   }
-
   function writeLayout(layout) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch (e) {}
   }
-
   function getContainer() { return document.getElementById("dashboard-widgets"); }
   function getWidgets() {
     var c = getContainer();
     return c ? Array.prototype.slice.call(c.querySelectorAll(".dashboard-widget")) : [];
   }
+  function refitCharts() { try { window.dispatchEvent(new Event("resize")); } catch (e) {} }
 
-  // Apply a saved layout to the DOM. Only reorders/hides widgets that actually
-  // exist (i.e. authorized ones) — a tampered layout cannot reveal a widget the
-  // server never rendered.
   function applyLayout(layout) {
     var container = getContainer();
     if (!container || !layout) return;
-
     var byId = {};
     getWidgets().forEach(function (el) { byId[el.getAttribute("data-widget-id")] = el; });
-
     if (layout.order && layout.order.length) {
-      layout.order.forEach(function (id) {
-        if (byId[id]) container.appendChild(byId[id]);
-      });
+      layout.order.forEach(function (id) { if (byId[id]) container.appendChild(byId[id]); });
       getWidgets().forEach(function (el) {
-        if (layout.order.indexOf(el.getAttribute("data-widget-id")) === -1) {
-          container.appendChild(el);
-        }
+        if (layout.order.indexOf(el.getAttribute("data-widget-id")) === -1) container.appendChild(el);
       });
     }
-
     var hidden = layout.hidden || [];
     getWidgets().forEach(function (el) {
-      var id = el.getAttribute("data-widget-id");
-      el.classList.toggle("widget-hidden", hidden.indexOf(id) !== -1);
+      el.classList.toggle("widget-hidden", hidden.indexOf(el.getAttribute("data-widget-id")) !== -1);
     });
+    refitCharts();
   }
 
-  // Build the config modal list from the CURRENT dashboard DOM (authorized only).
   function buildConfigList() {
     var list = document.getElementById("dashboardConfigList");
     if (!list) return;
@@ -103,7 +203,6 @@
       var title = el.getAttribute("data-widget-title") || id;
       var group = el.getAttribute("data-widget-group") || "";
       var visible = !el.classList.contains("widget-hidden");
-
       var item = document.createElement("div");
       item.className = "dash-config-item";
       item.setAttribute("data-widget-id", id);
@@ -117,7 +216,6 @@
         '</div>';
       list.appendChild(item);
     });
-
     if (window.dragula && !list._drake) {
       list._drake = window.dragula([list], {
         moves: function (el, container, handle) {
@@ -141,30 +239,23 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     applyLayout(readLayout());
-
     var modal = document.getElementById("dashboardConfigModal");
-    if (modal) {
-      modal.addEventListener("show.bs.modal", buildConfigList);
-    }
+    if (modal) modal.addEventListener("show.bs.modal", buildConfigList);
 
     var saveBtn = document.getElementById("dashboardConfigSave");
-    if (saveBtn) {
-      saveBtn.addEventListener("click", function () {
-        var layout = collectLayoutFromConfig();
-        writeLayout(layout);
-        applyLayout(layout);
-        var m = window.bootstrap && modal ? bootstrap.Modal.getInstance(modal) : null;
-        if (m) m.hide();
-      });
-    }
+    if (saveBtn) saveBtn.addEventListener("click", function () {
+      var layout = collectLayoutFromConfig();
+      writeLayout(layout);
+      applyLayout(layout);
+      var m = window.bootstrap && modal ? bootstrap.Modal.getInstance(modal) : null;
+      if (m) m.hide();
+    });
 
     var resetBtn = document.getElementById("dashboardConfigReset");
-    if (resetBtn) {
-      resetBtn.addEventListener("click", function () {
-        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-        location.reload();
-      });
-    }
+    if (resetBtn) resetBtn.addEventListener("click", function () {
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      location.reload();
+    });
   });
 })();
 </script>

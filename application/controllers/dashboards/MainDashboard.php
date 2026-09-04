@@ -31,8 +31,13 @@ class MainDashboard extends MY_Controller {
       'insumos_resumen'    => array('perm' => 'almacen_insumos',        'title' => 'Inventario de Insumos',   'group' => 'Almacén'),
       'empleados_resumen'  => array('perm' => 'rh_empleados_consult',   'title' => 'Empleados',               'group' => 'Recursos Humanos'),
       'stock_bajo'         => array('perm' => 'almacen_insumos',        'title' => 'Alerta de Stock Bajo',    'group' => 'Almacén'),
-      'clientes_chart'     => array('perm' => 'clientes_consult',       'title' => 'Nuevos Clientes',         'group' => 'Clientes'),
-      'ultimas_ordenes'    => array('perm' => 'ventas_ordenes_consult', 'title' => 'Últimas Órdenes de Venta','group' => 'Ventas'),
+      // Chart widgets (permission-gated, same as the module pages they mirror).
+      'ventas_chart'         => array('perm' => 'ventas_ordenes_consult', 'title' => 'Ventas Mensuales',            'group' => 'Ventas'),
+      'clientes_chart'       => array('perm' => 'clientes_consult',       'title' => 'Nuevos Clientes',             'group' => 'Clientes'),
+      'compras_chart'        => array('perm' => 'compras_ordenes_consult','title' => 'Compras por Mes',             'group' => 'Compras'),
+      'proveedores_top_chart'=> array('perm' => 'proveedores_consult',    'title' => 'Top Proveedores',             'group' => 'Proveedores'),
+      'proveedores_tipo_chart'=>array('perm' => 'proveedores_consult',    'title' => 'Proveedores por Tipo',        'group' => 'Proveedores'),
+      'ultimas_ordenes'      => array('perm' => 'ventas_ordenes_consult', 'title' => 'Últimas Órdenes de Venta',    'group' => 'Ventas'),
     );
   }
 
@@ -102,6 +107,18 @@ class MainDashboard extends MY_Controller {
     if (isset($authorized['clientes_chart'])) {
       $this->load->model('Ventas/ClientesModel');
       $data['datos_grafica'] = $this->ClientesModel->get_nuevos_clientes_mensuales_anio();
+    }
+    if (isset($authorized['ventas_chart'])) {
+      if (!isset($this->VentasModel)) { $this->load->model('Ventas/VentasModel'); }
+      $data['ventas_mensuales'] = $this->VentasModel->get_ventas_mensuales_anio();
+    }
+    // Proveedores/compras chart widgets share one advanced-stats query.
+    if (isset($authorized['compras_chart']) || isset($authorized['proveedores_top_chart']) || isset($authorized['proveedores_tipo_chart'])) {
+      if (!isset($this->ProveedoresModel)) { $this->load->model('Compras/ProveedoresModel'); }
+      $avanzadas = $this->ProveedoresModel->get_estadisticas_avanzadas();
+      if (isset($authorized['compras_chart']))         { $data['compras_mes']       = $avanzadas['compras_mes']; }
+      if (isset($authorized['proveedores_top_chart'])) { $data['top_proveedores']   = $avanzadas['top_proveedores']; }
+      if (isset($authorized['proveedores_tipo_chart'])){ $data['distribucion_tipo'] = $avanzadas['distribucion_tipo']; }
     }
 
     // Attach the resolved data to each authorized widget so the view stays dumb

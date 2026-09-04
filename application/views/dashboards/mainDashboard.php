@@ -27,7 +27,11 @@ $widget_sizes = [
   'insumos_resumen'     => 'col-12 col-sm-6 col-xxl-3',
   'empleados_resumen'   => 'col-12 col-sm-6 col-xxl-3',
   'stock_bajo'          => 'col-12',
-  'clientes_chart'      => 'col-12',
+  'ventas_chart'          => 'col-12 col-lg-6',
+  'clientes_chart'        => 'col-12 col-lg-6',
+  'compras_chart'         => 'col-12 col-lg-6',
+  'proveedores_top_chart' => 'col-12 col-lg-6',
+  'proveedores_tipo_chart'=> 'col-12 col-lg-4',
   'ultimas_ordenes'     => 'col-12',
 ];
 ?>
@@ -39,6 +43,9 @@ $widget_sizes = [
 #dashboard-widgets .dashboard-widget.widget-hidden { display: none !important; }
 .dash-stat-icon { width: 44px; height: 44px; border-radius: 10px; display: inline-flex;
   align-items: center; justify-content: center; font-size: 1.15rem; }
+/* Fixed-height, responsive chart area so canvases size correctly in the grid. */
+.dash-chart-wrap { position: relative; width: 100%; height: 280px; }
+.dash-chart-wrap canvas { max-width: 100%; }
 .dash-toolbar .btn { white-space: nowrap; }
 /* Config modal list */
 #dashboardConfigList .dash-config-item { display: flex; align-items: center; gap: .75rem;
@@ -250,11 +257,47 @@ $widget_sizes = [
         <?php endif; ?>
         <?php break;
 
+        case 'ventas_chart': ?>
+        <div class="card flex-fill w-100">
+          <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-chart-line me-1 text-success"></i>Ventas Mensuales (Año Actual)</h5></div>
+          <div class="card-body">
+            <div class="dash-chart-wrap"><canvas id="chart-ventas-mensuales"></canvas></div>
+          </div>
+        </div>
+        <?php break;
+
         case 'clientes_chart': ?>
         <div class="card flex-fill w-100">
-          <div class="card-header"><h5 class="card-title mb-0">Nuevos Clientes (Año Actual)</h5></div>
-          <div class="card-body d-flex w-100">
-            <div class="align-self-center chart chart-lg w-100"><canvas id="chartjs-dashboard-bar"></canvas></div>
+          <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-user-plus me-1 text-primary"></i>Nuevos Clientes (Año Actual)</h5></div>
+          <div class="card-body">
+            <div class="dash-chart-wrap"><canvas id="chartjs-dashboard-bar"></canvas></div>
+          </div>
+        </div>
+        <?php break;
+
+        case 'compras_chart': ?>
+        <div class="card flex-fill w-100">
+          <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-chart-bar me-1 text-warning"></i>Compras por Mes (12 meses)</h5></div>
+          <div class="card-body">
+            <div class="dash-chart-wrap"><canvas id="chart-compras-mes"></canvas></div>
+          </div>
+        </div>
+        <?php break;
+
+        case 'proveedores_top_chart': ?>
+        <div class="card flex-fill w-100">
+          <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-trophy me-1 text-warning"></i>Top 5 Proveedores (por monto)</h5></div>
+          <div class="card-body">
+            <div class="dash-chart-wrap"><canvas id="chart-top-proveedores"></canvas></div>
+          </div>
+        </div>
+        <?php break;
+
+        case 'proveedores_tipo_chart': ?>
+        <div class="card flex-fill w-100">
+          <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-chart-pie me-1 text-info"></i>Proveedores por Tipo</h5></div>
+          <div class="card-body d-flex align-items-center justify-content-center">
+            <div class="dash-chart-wrap"><canvas id="chart-distribucion-prov"></canvas></div>
           </div>
         </div>
         <?php break;
