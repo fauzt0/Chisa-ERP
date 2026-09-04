@@ -43,7 +43,7 @@
   // both themes without depending on computed CSS variables.
   function themeColors() {
     return isDarkTheme()
-      ? { text: '#c2c9d1', grid: 'rgba(255,255,255,0.12)' }
+      ? { text: '#e9ecef', grid: 'rgba(255,255,255,0.16)' }
       : { text: '#495057', grid: 'rgba(0,0,0,0.08)' };
   }
   function baseScales() {
@@ -135,34 +135,25 @@
     }
   }
 
-  // Restyle chart axes/legend on theme change so they stay readable.
-  function restyleCharts() {
-    var t = themeColors();
-    charts.forEach(function (c) {
-      if (c.options && c.options.scales) {
-        ["x", "y"].forEach(function (ax) {
-          if (c.options.scales[ax]) {
-            if (c.options.scales[ax].ticks) c.options.scales[ax].ticks.color = t.text;
-            if (c.options.scales[ax].grid)  c.options.scales[ax].grid.color = t.grid;
-          }
-        });
-      }
-      if (c.options && c.options.plugins && c.options.plugins.legend && c.options.plugins.legend.labels) {
-        c.options.plugins.legend.labels.color = t.text;
-      }
-      try { c.update(); } catch (e) {}
-    });
+  // Fully rebuild charts on theme change so axis/legend colors are re-applied
+  // from scratch (more reliable than mutating options + update()).
+  function destroyCharts() {
+    charts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+    charts = [];
+  }
+  var rebuildTimer = null;
+  function rebuildCharts() {
+    // Debounced: the custom event and the MutationObserver may both fire.
+    if (rebuildTimer) clearTimeout(rebuildTimer);
+    rebuildTimer = setTimeout(function () { destroyCharts(); initCharts(); }, 60);
   }
 
   document.addEventListener("DOMContentLoaded", initCharts);
-  // Recolor on theme change via BOTH the custom event and a MutationObserver on
-  // the <html data-bs-theme> attribute, so it works regardless of how the theme
-  // was toggled.
-  document.addEventListener("erp:themechange", restyleCharts);
+  document.addEventListener("erp:themechange", rebuildCharts);
   try {
     var themeObserver = new MutationObserver(function (muts) {
       for (var i = 0; i < muts.length; i++) {
-        if (muts[i].attributeName === "data-bs-theme") { restyleCharts(); break; }
+        if (muts[i].attributeName === "data-bs-theme") { rebuildCharts(); break; }
       }
     });
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-bs-theme"] });
