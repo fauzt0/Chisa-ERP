@@ -36,11 +36,15 @@
       purple:  '#6f42c1'
     };
   }
+  function isDarkTheme() {
+    return document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  }
+  // Deterministic (attribute-based) colors so chart text/grid stay readable in
+  // both themes without depending on computed CSS variables.
   function themeColors() {
-    return {
-      text: cssVar('--bs-body-color', '#495057'),
-      grid: cssVar('--bs-border-color', 'rgba(0,0,0,.1)')
-    };
+    return isDarkTheme()
+      ? { text: '#c2c9d1', grid: 'rgba(255,255,255,0.12)' }
+      : { text: '#495057', grid: 'rgba(0,0,0,0.08)' };
   }
   function baseScales() {
     var t = themeColors();
