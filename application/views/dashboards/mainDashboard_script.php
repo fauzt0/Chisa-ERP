@@ -155,7 +155,18 @@
   }
 
   document.addEventListener("DOMContentLoaded", initCharts);
+  // Recolor on theme change via BOTH the custom event and a MutationObserver on
+  // the <html data-bs-theme> attribute, so it works regardless of how the theme
+  // was toggled.
   document.addEventListener("erp:themechange", restyleCharts);
+  try {
+    var themeObserver = new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        if (muts[i].attributeName === "data-bs-theme") { restyleCharts(); break; }
+      }
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-bs-theme"] });
+  } catch (e) {}
 
   // ---- Per-user customizable layout (show/hide + reorder) ------------------
   var USER_ID = <?= (int)($response['user_id'] ?? 0) ?>;
