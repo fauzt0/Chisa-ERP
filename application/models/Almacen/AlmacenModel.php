@@ -250,7 +250,9 @@ class AlmacenModel extends CI_Model {
         $this->db->from('obras o');
         $this->db->join('clientes c', 'c.id = o.cliente_id');
         $this->db->join('obras_productos op', 'op.obra_id = o.id');
-        $this->db->where_in('o.estatus', ['Confirmada', 'En Proceso']);
+        // FIX BUG (2026-09-07): 'Confirmada'/'En Proceso' no existen en el ENUM de obras.estatus
+        // Valores correctos: 'Aprobada' y 'En Ejecución'
+        $this->db->where_in('o.estatus', ['Aprobada', 'En Ejecución']);
         $this->db->group_by('o.id');
         $this->db->order_by('o.fecha_creacion', 'DESC');
         
@@ -329,12 +331,11 @@ class AlmacenModel extends CI_Model {
                     'producto_id' => $producto['producto_id'],
                     'tipo_movimiento' => 'Salida',
                     'cantidad' => $producto['cantidad_entregar'],
-                    'motivo' => $data['tipo_origen'] == 'Orden Venta' ? 
-                        'Entrega de orden ' . $folio : 
+                    'motivo' => $data['tipo_origen'] == 'Orden Venta' ?
+                        'Entrega de orden ' . $folio :
                         'Entrega de obra ' . $folio,
                     'usuario_id' => $data['usuario_id'],
-                    'referencia_tipo' => 'Entrega',
-                    'referencia_id' => $entrega_id
+                    // FIX: referencia_tipo/referencia_id no existen en movimientos_productos
                 ];
                 
                 // El modelo de productos maneja el registro

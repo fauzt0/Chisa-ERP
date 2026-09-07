@@ -4,25 +4,23 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class ObrasModel extends CI_Model {
     
     /**
-     * Genera el siguiente folio de obra (OB-00001, OB-00002, etc.)
+     * Genera el siguiente folio de obra (OB-00001, OB-00002, …)
+     *
+     * FIX BUG-1 (2026-09-07): la versión anterior usaba ORDER BY id DESC LIMIT 1
+     * con intval(), lo que devolvía 0 para folios no numéricos (p. ej. OB-TEST-002)
+     * y colisionaba con OB-00001 (UNIQUE). Ahora se calcula el MAX numérico sobre
+     * TODAS las filas (activas e inactivas) porque el índice UNIQUE incluye ambas.
+     * Folios no numéricos castean a 0 y nunca distorsionan el MAX.
      */
     public function generar_folio() {
-        $this->db->select('folio');
-        $this->db->from('obras');
-        $this->db->like('folio', 'OB-', 'after');
-        $this->db->order_by('id', 'DESC');
-        $this->db->limit(1);
-        
-        $result = $this->db->get()->row();
-        
-        if($result) {
-            // Extraer el número del último folio
-            $ultimo_numero = intval(substr($result->folio, 3));
-            $nuevo_numero = $ultimo_numero + 1;
-        } else {
-            $nuevo_numero = 1;
-        }
-        
+        $row = $this->db
+            ->select('MAX(CAST(SUBSTRING(folio, 4) AS UNSIGNED)) AS max_folio', false)
+            ->from('obras')
+            ->like('folio', 'OB-', 'after')
+            ->get()->row();
+
+        $nuevo_numero = ($row && $row->max_folio !== null) ? (int) $row->max_folio + 1 : 1;
+
         return 'OB-' . str_pad($nuevo_numero, 5, '0', STR_PAD_LEFT);
     }
     
