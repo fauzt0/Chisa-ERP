@@ -1027,6 +1027,53 @@ class ObrasModel extends CI_Model {
         ];
     }
 
+    /**
+     * Obtiene resumen de entregas de productos de una obra
+     * Devuelve cada obra_producto con cantidad calculada, ajustada, entregada y pendiente.
+     */
+    public function get_entregas_obra($obra_id) {
+        $this->db->select('
+            op.id as obra_producto_id,
+            p.nombre as producto_nombre,
+            p.codigo as producto_codigo,
+            op.seccion_obra,
+            op.unidad,
+            op.cantidad_calculada,
+            op.cantidad_ajustada,
+            COALESCE(op.cantidad_entregada, 0) as cantidad_entregada,
+            (COALESCE(op.cantidad_ajustada, op.cantidad_calculada) - COALESCE(op.cantidad_entregada, 0)) as cantidad_pendiente,
+            op.precio_unitario
+        ');
+        $this->db->from('obras_productos op');
+        $this->db->join('productos p', 'p.id = op.producto_id');
+        $this->db->where('op.obra_id', (int) $obra_id);
+        $this->db->order_by('op.fecha_agregado', 'ASC');
+
+        $productos = $this->db->get()->result();
+
+        // Historial de entregas para esta obra
+        $this->db->select('
+            ea.folio,
+            ea.fecha_entrega,
+            ea.estatus,
+            dea.obra_producto_id,
+            dea.cantidad_entregada,
+            p.nombre as producto_nombre
+        ');
+        $this->db->from('entregas_almacen ea');
+        $this->db->join('detalle_entregas_almacen dea', 'dea.entrega_id = ea.id');
+        $this->db->join('productos p', 'p.id = dea.producto_id');
+        $this->db->where('ea.obra_id', (int) $obra_id);
+        $this->db->where('ea.estatus', 'Activa');
+        $this->db->order_by('ea.fecha_entrega', 'DESC');
+        $historial = $this->db->get()->result();
+
+        return [
+            'productos' => $productos,
+            'historial' => $historial,
+        ];
+    }
+
     private function _unidad_cubeta_formulacion($formulacion) {
         $u = strtolower(trim((string) ($formulacion->unidad_produccion ?? '')));
         if (in_array($u, ['pza', 'pz', 'pieza', 'cubeta', 'caja'], true)) {

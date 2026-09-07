@@ -415,6 +415,7 @@ $total_pages = 5;
             <div><span class="lbl">ESTIMACIÓN No.:</span> ÚNICA</div>
             <div><span class="lbl">FECHA:</span> <?=$fechaDocLarga?></div>
             <div><span class="lbl">PERIODO DE EJECUCIÓN:</span> <?=$periodoEjecucion?></div>
+            <div><span class="lbl">SEMANA:</span> <?=date('W')?></div>
         </div>
     </div>
 
@@ -501,6 +502,7 @@ $total_pages = 5;
             <div><span class="lbl">No. ESTIMACIÓN:</span> ÚNICA</div>
             <div><span class="lbl">PARTIDA:</span> <?=htmlspecialchars($concepto_principal)?></div>
             <div><span class="lbl">FECHA:</span> <?=$fechaDoc?> &nbsp; <span class="lbl">PERIODO:</span> <?=$periodoEjecucion?></div>
+            <div><span class="lbl">SEMANA:</span> <?=date('W')?></div>
             <div><span class="lbl">PRES. REF.:</span> <?=$obra->folio?></div>
         </div>
     </div>

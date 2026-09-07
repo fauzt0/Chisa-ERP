@@ -99,5 +99,13 @@ $route['rh/RelojChecador/ejecutar_sync_empleados_rh'] = 'rh/RelojChecador/ejecut
 $route['rh/RelojChecador/vaciar_cola_sync_empleados_rh'] = 'rh/RelojChecador/vaciar_cola_sync_empleados_rh';
 $route['rh/RelojChecador/reencolar_cola_sync_empleados_rh'] = 'rh/RelojChecador/reencolar_cola_sync_empleados_rh';
 
+// Obras
+$route['obras/Obras'] = 'obras/Obras/index';
+$route['obras/Obras/(:any)'] = 'obras/Obras/$1';
+
+// Almacén — Entregas
+$route['almacen/Entregas'] = 'almacen/Entregas/index';
+$route['almacen/Entregas/(:any)'] = 'almacen/Entregas/$1';
+
 //Errors
 $route['deny'] = 'Errors/deny';

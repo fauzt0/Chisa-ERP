@@ -712,6 +712,19 @@ class Obras extends MY_Controller {
     }
 
     /**
+     * Obtiene el resumen de entregas de productos de una obra (AJAX)
+     */
+    public function get_entregas_obra_ajax() {
+        $obra_id = (int) $this->input->get('obra_id');
+        if (!$obra_id) {
+            echo json_encode(['success' => false, 'message' => 'ID de obra requerido']);
+            return;
+        }
+        $entregas = $this->ObrasModel->get_entregas_obra($obra_id);
+        echo json_encode(['success' => true, 'entregas' => $entregas]);
+    }
+
+    /**
      * Confirma la orden de venta vinculada y envía a producción (AJAX)
      */
     public function confirmar_orden_venta_ajax() {

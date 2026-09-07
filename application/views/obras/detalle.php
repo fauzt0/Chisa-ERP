@@ -181,6 +181,11 @@ $this->load->view('obras/partials/vinculo_venta', [
                             <i class="fas fa-money-bill-wave"></i> Pagos
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tabEntregas" id="linkTabEntregas">
+                            <i class="fas fa-truck"></i> Entregas
+                        </a>
+                    </li>
                 </ul>
             </div>
             <div class="card-body">
@@ -500,6 +505,26 @@ $this->load->view('obras/partials/vinculo_venta', [
                         </div>
                     </div>
 
+
+                    </div><!-- /tabPagos -->
+
+                    <!-- Tab Entregas -->
+                    <div class="tab-pane fade" id="tabEntregas">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1"><i class="fas fa-truck"></i> Seguimiento de Entregas</h5>
+                                <small class="text-muted">Estado de entrega por producto. Actualizado desde Almacén.</small>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="cargarEntregasObra()">
+                                <i class="fas fa-sync-alt"></i> Actualizar
+                            </button>
+                        </div>
+                        <div id="entregas_loading" class="text-center py-4 text-muted d-none">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Cargando...</p>
+                        </div>
+                        <div id="entregas_productos" class="table-responsive mb-4"></div>
+                        <div id="entregas_historial"></div>
+                    </div><!-- /tabEntregas -->
 
                 </div>
             </div>
@@ -1158,16 +1183,19 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Éxito', message: data.message });
+                else alert(data.message);
                 $('#modalEditarObra').modal('hide');
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al actualizar la obra');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al actualizar la obra' });
+            else alert('Error al actualizar la obra');
         });
     }
 
@@ -1184,26 +1212,29 @@ $this->load->view('obras/partials/vinculo_venta', [
             if(data.success) {
                 let msg = data.message;
                 if (data.calculo) {
-                    msg += '\n\nm²→kg: ' + parseFloat(data.calculo.m2_efectivo).toFixed(2) + ' m² → ' +
+                    msg += ' | m²→kg: ' + parseFloat(data.calculo.m2_efectivo).toFixed(2) + ' m² → ' +
                         parseFloat(data.calculo.kg_necesarios).toFixed(2) + ' kg → ' + data.calculo.cubetas + ' cubetas';
                 }
                 if (data.insumos && data.insumos.mensaje_resumen) {
-                    msg += '\n\n' + data.insumos.mensaje_resumen;
+                    msg += ' | ' + data.insumos.mensaje_resumen;
                 }
-                alert(msg);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Producto agregado', message: msg });
+                else alert(msg);
                 $('#modalAgregarProducto').modal('hide');
                 location.reload();
             } else {
                 let err = data.message || 'Error al agregar';
                 if (data.requiere_rendimiento) {
-                    err += '\n\nCapture el rendimiento m²/kg en la línea o en Producción > Formulaciones.';
+                    err += ' — Capture el rendimiento m²/kg en la línea o en Producción > Formulaciones.';
                 }
-                alert(err);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: err });
+                else alert(err);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al agregar el producto');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al agregar el producto' });
+            else alert('Error al agregar el producto');
         });
     }
 
@@ -1222,15 +1253,16 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Eliminado', message: data.message });
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al eliminar el producto');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al eliminar el producto' });
         });
     }
 
@@ -1244,16 +1276,17 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Archivo subido', message: data.message });
                 $('#modalSubirArchivo').modal('hide');
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al subir el archivo');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al subir el archivo' });
         });
     }
 
@@ -1272,15 +1305,16 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Eliminado', message: data.message });
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al eliminar el archivo');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al eliminar el archivo' });
         });
     }
 
@@ -1294,16 +1328,17 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Comentario agregado', message: data.message });
                 document.getElementById('formComentario').reset();
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al agregar el comentario');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al agregar el comentario' });
         });
     }
 
@@ -1355,12 +1390,14 @@ $this->load->view('obras/partials/vinculo_venta', [
         const saldoPendiente = <?=$obra->saldo_pendiente ?? 0?>;
         
         if(monto > saldoPendiente) {
-            alert('El monto no puede ser mayor al saldo pendiente');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'warning', module: 'Obras', title: 'Atención', message: 'El monto no puede ser mayor al saldo pendiente' });
+            else alert('El monto no puede ser mayor al saldo pendiente');
             return;
         }
         
         if(monto <= 0) {
-            alert('El monto debe ser mayor a 0');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'warning', module: 'Obras', title: 'Atención', message: 'El monto debe ser mayor a 0' });
+            else alert('El monto debe ser mayor a 0');
             return;
         }
         
@@ -1371,16 +1408,17 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Pago registrado', message: data.message });
                 $('#modalRegistrarPago').modal('hide');
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al registrar el pago');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al registrar el pago' });
         });
     }
     function verRecibo(pagoId) {
@@ -1458,15 +1496,16 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Pago cancelado', message: data.message });
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al cancelar el pago');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al cancelar el pago' });
         });
     }
 
@@ -1510,7 +1549,8 @@ $this->load->view('obras/partials/vinculo_venta', [
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al cargar formulación');
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al cargar formulación' });
+                else alert('Error al cargar formulación');
             });
     }
     function renderFormulacionObra(f) {
@@ -1584,7 +1624,8 @@ $this->load->view('obras/partials/vinculo_venta', [
     }
     function seleccionarFormulacionObra(id_formulacion, version) {
         if (!currentProductoObraId) {
-            alert('Primero agrega el producto a la obra');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'warning', module: 'Obras', title: 'Atención', message: 'Primero agrega el producto a la obra' });
+            else alert('Primero agrega el producto a la obra');
             $('#modalFormulacionObra').modal('hide');
             return;
         }
@@ -1599,16 +1640,19 @@ $this->load->view('obras/partials/vinculo_venta', [
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Formulación V' + version + ' asignada correctamente');
+                    if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Formulación asignada', message: 'Formulación V' + version + ' asignada correctamente' });
+                    else alert('Formulación V' + version + ' asignada correctamente');
                     $('#modalFormulacionObra').modal('hide');
                     location.reload();
                 } else {
-                    alert('Error: ' + data.message);
+                    if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                    else alert('Error: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al actualizar formulación');
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al actualizar formulación' });
+                else alert('Error al actualizar formulación');
             });
     }
     function usarFormulacionActualObra() {
@@ -1616,5 +1660,85 @@ $this->load->view('obras/partials/vinculo_venta', [
             const version = $('#lbl_form_version_obra').text().replace('V', '').split(' ')[0];
             seleccionarFormulacionObra(currentFormulacionActivaIdObra, version);
         }
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Tab Entregas — Seguimiento de entregas por producto
+    // ──────────────────────────────────────────────────────
+    document.getElementById('linkTabEntregas').addEventListener('shown.bs.tab', function() {
+        cargarEntregasObra();
+    });
+
+    function cargarEntregasObra() {
+        const loading = document.getElementById('entregas_loading');
+        loading.classList.remove('d-none');
+        document.getElementById('entregas_productos').innerHTML = '';
+        document.getElementById('entregas_historial').innerHTML = '';
+
+        fetch('<?=base_url()?>obras/Obras/get_entregas_obra_ajax?obra_id=<?=(int)$obra->id?>')
+            .then(r => r.json())
+            .then(res => {
+                loading.classList.add('d-none');
+                if (!res.success) {
+                    document.getElementById('entregas_productos').innerHTML =
+                        '<div class="alert alert-warning">' + escHtmlObra(res.message) + '</div>';
+                    return;
+                }
+
+                const prods = res.entregas.productos || [];
+                if (prods.length === 0) {
+                    document.getElementById('entregas_productos').innerHTML =
+                        '<p class="text-muted text-center py-3">Sin productos en esta obra.</p>';
+                } else {
+                    let html = '<h6 class="mb-2">Estado por producto</h6><table class="table table-sm table-hover table-bordered">';
+                    html += '<thead class="table-dark"><tr><th>Producto</th><th>Sección</th><th>Solicitado</th><th>Entregado</th><th>Pendiente</th><th>Unidad</th><th>% Avance</th></tr></thead><tbody>';
+                    prods.forEach(p => {
+                        const solicitado = parseFloat(p.cantidad_ajustada || p.cantidad_calculada || 0);
+                        const entregado = parseFloat(p.cantidad_entregada || 0);
+                        const pendiente = Math.max(solicitado - entregado, 0);
+                        const pct = solicitado > 0 ? Math.min((entregado / solicitado) * 100, 100) : 0;
+                        const color = pct >= 100 ? 'success' : (pct > 0 ? 'warning' : 'danger');
+                        html += `<tr>
+                            <td><strong>${escHtmlObra(p.producto_nombre)}</strong><br><small class="text-muted">${escHtmlObra(p.producto_codigo)}</small></td>
+                            <td>${escHtmlObra(p.seccion_obra || '—')}</td>
+                            <td class="text-center">${parseFloat(solicitado).toFixed(2)}</td>
+                            <td class="text-center text-success fw-bold">${parseFloat(entregado).toFixed(2)}</td>
+                            <td class="text-center ${pendiente > 0 ? 'text-danger' : 'text-success'}">${parseFloat(pendiente).toFixed(2)}</td>
+                            <td class="text-center">${escHtmlObra(p.unidad)}</td>
+                            <td style="min-width:100px">
+                                <div class="progress" style="height:18px;">
+                                    <div class="progress-bar bg-${color}" role="progressbar" style="width:${pct.toFixed(0)}%">${pct.toFixed(0)}%</div>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    document.getElementById('entregas_productos').innerHTML = html;
+                }
+
+                const hist = res.entregas.historial || [];
+                if (hist.length > 0) {
+                    let hhtml = '<h6 class="mt-3 mb-2">Historial de entregas</h6><table class="table table-sm table-striped">';
+                    hhtml += '<thead class="table-light"><tr><th>Folio</th><th>Fecha</th><th>Producto</th><th>Cantidad</th></tr></thead><tbody>';
+                    hist.forEach(h => {
+                        hhtml += `<tr>
+                            <td><strong>${escHtmlObra(h.folio)}</strong></td>
+                            <td>${new Date(h.fecha_entrega).toLocaleDateString('es-MX')}</td>
+                            <td>${escHtmlObra(h.producto_nombre)}</td>
+                            <td class="text-end">${parseFloat(h.cantidad_entregada).toFixed(2)}</td>
+                        </tr>`;
+                    });
+                    hhtml += '</tbody></table>';
+                    document.getElementById('entregas_historial').innerHTML = hhtml;
+                } else {
+                    document.getElementById('entregas_historial').innerHTML =
+                        '<p class="text-muted small mt-2"><i class="fas fa-info-circle"></i> Aún no hay entregas registradas para esta obra. Las entregas se gestionan desde el módulo <strong>Almacén &gt; Entregas</strong>.</p>';
+                }
+            })
+            .catch(() => {
+                loading.classList.add('d-none');
+                document.getElementById('entregas_productos').innerHTML =
+                    '<div class="alert alert-danger">Error al cargar entregas.</div>';
+            });
     }
 </script>
