@@ -506,8 +506,6 @@ $this->load->view('obras/partials/vinculo_venta', [
                     </div>
 
 
-                    </div><!-- /tabPagos -->
-
                     <!-- Tab Entregas -->
                     <div class="tab-pane fade" id="tabEntregas">
                         <div class="d-flex justify-content-between align-items-center mb-3">

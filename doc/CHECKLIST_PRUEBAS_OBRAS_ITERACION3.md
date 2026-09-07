@@ -126,6 +126,9 @@ El controller usaba `$this->session->userdata('user_id')` pero la sesión guarda
 **BUG-7 — MAYOR: `AlmacenModel::registrar_entrega()` insertaba columnas inexistentes en `movimientos_productos`. CORREGIDO 2026-09-07.**
 El `$movimiento_data` incluía `referencia_tipo` y `referencia_id` que no existen en la tabla `movimientos_productos`. Corrección: campos eliminados del array. `application/models/Almacen/AlmacenModel.php` líneas 330-340.
 
+**BUG-8 — MAYOR (visual): footer descolocado en el detalle de obra. CORREGIDO 2026-09-07.**
+`application/views/obras/detalle.php` tenía un `</div><!-- /tabPagos -->` duplicado (introducido en el commit `89bba19`, junto con el tab Entregas) que cerraba `tab-content` antes de tiempo y dejaba el documento con un `</div>` de más. El navegador usaba ese cierre sobrante para cerrar `<main>` **y** `.main`, por lo que el footer `#erp-main-footer` quedaba fuera de `.main` (hijo de `.wrapper`, contenedor flex-row) y se mostraba arriba/descolocado en lugar de al final de la página. Corrección: eliminado el `</div>` sobrante; el tab Entregas quedó dentro de `tab-content` y el balance de `<div>` del archivo quedó en net 0 (verificado por script; `php -l` sin errores).
+
 ---
 
 ## 10. Hallazgos y observaciones
