@@ -1,0 +1,171 @@
+/* =============================================================================
+   theme.css — Centralized Dark/Light theme layer for the CHISA ERP
+   -----------------------------------------------------------------------------
+   The base color tokens live in app.css (Bootstrap 5.3 `[data-bs-theme]`).
+   This file only:
+     1. Controls the navbar theme-toggle icon state.
+     2. Remaps hardcoded "light" surfaces / text so nothing becomes
+        unreadable (dark-on-dark or light-on-light) in either theme.
+     3. Guarantees form controls, tables, cards and list groups keep
+        WCAG-AA contrast in dark mode across every module.
+
+   Scope: content area (#erp-main-content) + shared components. The branded
+   sidebar (estilos.css, #32338E) and print/paper documents are left untouched.
+   Add the `.keep-light` class to any element that must stay light in dark mode
+   (e.g. printable previews).
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   1. Theme toggle icon (navbar)
+   The single <i data-theme-icon> is swapped between fa-moon (light) and
+   fa-sun (dark) by theme-toggle.js. These rules are a no-JS fallback so the
+   control is always visible and legible.
+   --------------------------------------------------------------------------- */
+.nav-theme-toggle .erp-theme-toggle {
+  cursor: pointer;
+}
+.nav-theme-toggle [data-theme-icon] {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+/* Legacy dual-icon markup fallback (sun = light indicator, moon = dark). */
+.nav-theme-toggle-dark {
+  display: none;
+}
+html[data-bs-theme="dark"] .nav-theme-toggle-light {
+  display: none;
+}
+html[data-bs-theme="dark"] .nav-theme-toggle-dark {
+  display: inline-block;
+}
+
+/* -----------------------------------------------------------------------------
+   2. DARK MODE — neutralize hardcoded light surfaces & dark text
+   --------------------------------------------------------------------------- */
+
+/* Bootstrap "light" surface utilities inside the content area. */
+html[data-bs-theme="dark"] #erp-main-content .bg-light,
+html[data-bs-theme="dark"] #erp-main-content .bg-white:not(.keep-light):not(#contenidoContratoModal):not(.recibo-paper):not(.recibo-item):not(.documento-print) {
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
+/* Dark-text utilities flip to the readable body/emphasis color. */
+html[data-bs-theme="dark"] #erp-main-content .text-dark,
+html[data-bs-theme="dark"] #erp-main-content .text-black,
+html[data-bs-theme="dark"] #erp-main-content .card .text-dark,
+html[data-bs-theme="dark"] #erp-main-content table .text-dark,
+html[data-bs-theme="dark"] #erp-main-content .form-label.text-dark {
+  color: var(--bs-emphasis-color) !important;
+}
+
+/* Inline hardcoded light backgrounds (charts/placeholders/panels).
+   `!important` in a stylesheet overrides non-important inline styles. Paper
+   documents are excluded via :not() and the `.keep-light` opt-out. */
+html[data-bs-theme="dark"] #erp-main-content [style*="background:#fff"]:not(.keep-light):not(.recibo-paper):not(.recibo-item):not(.documento-print),
+html[data-bs-theme="dark"] #erp-main-content [style*="background: #fff"]:not(.keep-light):not(.recibo-paper):not(.recibo-item):not(.documento-print),
+html[data-bs-theme="dark"] #erp-main-content [style*="background-color:#fff"]:not(.keep-light):not(.recibo-paper):not(.recibo-item):not(.documento-print),
+html[data-bs-theme="dark"] #erp-main-content [style*="background-color: #fff"]:not(.keep-light):not(.recibo-paper):not(.recibo-item):not(.documento-print),
+html[data-bs-theme="dark"] #erp-main-content [style*="background:#f8f9fa"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content [style*="background-color:#f8f9fa"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content [style*="background-color: #f8f9fa"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content [style*="background:#f5f5f5"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content [style*="background-color:#f5f5f5"]:not(.keep-light) {
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+/* Inline hardcoded dark text on those flipped surfaces. */
+html[data-bs-theme="dark"] #erp-main-content [style*="color:#000"]:not(.keep-light):not(.recibo-paper):not(.recibo-item):not(.documento-print),
+html[data-bs-theme="dark"] #erp-main-content [style*="color: #000"]:not(.keep-light):not(.recibo-paper):not(.recibo-item):not(.documento-print),
+html[data-bs-theme="dark"] #erp-main-content [style*="color:#333"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content [style*="color: #333"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content [style*="color:#212529"]:not(.keep-light) {
+  color: var(--bs-body-color) !important;
+}
+
+/* Form controls across the WHOLE content area (app.css covers the base, this
+   guarantees custom-sized/hardcoded inputs stay readable). */
+html[data-bs-theme="dark"] #erp-main-content .form-control,
+html[data-bs-theme="dark"] #erp-main-content .form-select,
+html[data-bs-theme="dark"] #erp-main-content textarea.form-control,
+html[data-bs-theme="dark"] #erp-main-content .input-group-text {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+html[data-bs-theme="dark"] #erp-main-content .form-control::placeholder,
+html[data-bs-theme="dark"] #erp-main-content textarea.form-control::placeholder {
+  color: var(--bs-secondary-color);
+  opacity: 1;
+}
+html[data-bs-theme="dark"] #erp-main-content .form-control:focus,
+html[data-bs-theme="dark"] #erp-main-content .form-select:focus,
+html[data-bs-theme="dark"] #erp-main-content textarea.form-control:focus {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-primary);
+}
+/* Inputs whose background was hardcoded white inline. */
+html[data-bs-theme="dark"] #erp-main-content input:not([type="checkbox"]):not([type="radio"])[style*="#fff"]:not(.keep-light) {
+  background-color: var(--bs-body-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
+/* "Light" tables. */
+html[data-bs-theme="dark"] #erp-main-content .table-light,
+html[data-bs-theme="dark"] #erp-main-content .table-light > :not(caption) > * > * {
+  --bs-table-bg: var(--bs-tertiary-bg);
+  --bs-table-color: var(--bs-body-color);
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
+/* List groups with a light header/background. */
+html[data-bs-theme="dark"] #erp-main-content .list-group-item.bg-light,
+html[data-bs-theme="dark"] #erp-main-content .list-group-item[style*="#f8f9fa"]:not(.keep-light) {
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
+/* Cards / panels that hardcode a white background inline. */
+html[data-bs-theme="dark"] #erp-main-content .card[style*="background:#fff"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content .card[style*="background-color:#fff"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content .card[style*="background: #fff"]:not(.keep-light) {
+  background-color: var(--bs-secondary-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
+/* Muted text can be too dim on dark surfaces — nudge toward AA. */
+html[data-bs-theme="dark"] #erp-main-content .text-muted,
+html[data-bs-theme="dark"] #erp-main-content .small.text-muted {
+  color: var(--bs-secondary-color) !important;
+}
+
+/* Horizontal rules / borders that were hardcoded light. */
+html[data-bs-theme="dark"] #erp-main-content [style*="border:1px solid #ddd"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content [style*="border: 1px solid #ddd"]:not(.keep-light),
+html[data-bs-theme="dark"] #erp-main-content [style*="border:1px solid #eee"]:not(.keep-light) {
+  border-color: var(--bs-border-color) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   3. LIGHT MODE — keep it explicit and high-contrast
+   Elements with `data-bs-theme="default"` (legacy) render with light tokens,
+   but we force the attribute to "light" in JS. This block guards against any
+   accidental low-contrast text on light surfaces.
+   --------------------------------------------------------------------------- */
+html[data-bs-theme="light"] #erp-main-content .text-white:not(.badge):not(.btn):not([class*="bg-"]) {
+  /* white text with no colored background would be invisible on light */
+  color: var(--bs-body-color) !important;
+}
+
+/* Smooth, non-jarring transition when toggling. */
+body,
+#erp-main-content,
+.card,
+.navbar,
+.form-control,
+.form-select,
+.table {
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}

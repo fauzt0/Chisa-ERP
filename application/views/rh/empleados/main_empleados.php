@@ -16,6 +16,12 @@
   #datatables-empleados .empleado-acciones .btn {
     margin: 0;
   }
+  /* --- Contraste AA (especialmente en tema claro) --------------------------- */
+  /* Subtítulos secundarios de las tarjetas de estadísticas: gris más oscuro. */
+  html[data-bs-theme="light"] .rh-stat-cards small.text-muted,
+  html[data-bs-theme="light"] .rh-stat-cards .text-muted { color:#565e66 !important; }
+  /* Texto "warning" sobre fondos claros -> tono emphasis legible (ambos temas). */
+  .rh-stat-cards .text-warning { color: var(--bs-warning-text-emphasis) !important; }
 </style>
 <div class="container-fluid p-0">
 
@@ -82,7 +88,7 @@
                class="btn btn-sm btn-outline-danger px-2 py-0" style="font-size:0.72rem;"
                title="Faltan: <?php echo htmlspecialchars(implode(', ', $exp['faltantes'])); ?>">
               <?php echo htmlspecialchars($exp['nombre']); ?>
-              <span class="badge bg-light text-danger ms-1"><?php echo (int)$exp['total_faltantes']; ?></span>
+              <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle ms-1"><?php echo (int)$exp['total_faltantes']; ?></span>
             </a>
           <?php endforeach; ?>
         </div>
@@ -101,7 +107,7 @@
     <div class="alert-message">
       <strong><i class="fas fa-clock"></i> Solicitudes Pendientes:</strong> Hay <strong><?php echo $response['vacaciones_pendientes']; ?></strong> solicitudes de vacaciones esperando aprobación.
       <div class="mt-1">
-          <button class="btn btn-sm btn-light" onclick="abrirTodasSolicitudes()">Revisar Solicitudes</button>
+          <button class="btn btn-sm btn-primary" onclick="abrirTodasSolicitudes()">Revisar Solicitudes</button>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -123,7 +129,7 @@
   <?php endif; ?>
 
   <!-- Cards de estadísticas RH -->
-  <div class="row">
+  <div class="row rh-stat-cards">
     <!-- Total Empleados -->
     <div class="col-lg-6 col-xl-3 d-flex">
       <div class="card flex-fill">

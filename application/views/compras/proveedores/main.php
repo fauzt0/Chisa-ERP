@@ -16,7 +16,17 @@
   <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
    
   <!-- Titulo de la pagina -->
-  <h1 class="h3 mb-3"><?php echo $headTitle;?></h1>
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0"><?php echo $headTitle;?></h1>
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnToggleResumenProv"
+            aria-expanded="true" aria-controls="proveedores-resumen">
+      <i class="fas fa-chevron-up me-1" id="iconToggleResumenProv"></i>
+      <span id="txtToggleResumenProv">Ocultar resumen</span>
+    </button>
+  </div>
+
+  <!-- Resumen colapsable (tarjetas + estadísticas). El estado se recuerda por usuario. -->
+  <div id="proveedores-resumen">
 
   <!-- Cards de estadísticas -->
   <div class="row">
@@ -191,6 +201,40 @@
       </div>
     </div>
   </div>
+  </div><!-- /#proveedores-resumen -->
+
+  <script>
+  (function () {
+    var KEY  = 'erp_proveedores_resumen_collapsed_<?= (int)$this->session->userdata('id') ?>';
+    var wrap = document.getElementById('proveedores-resumen');
+    var btn  = document.getElementById('btnToggleResumenProv');
+    var icon = document.getElementById('iconToggleResumenProv');
+    var txt  = document.getElementById('txtToggleResumenProv');
+    if (!wrap || !btn) return;
+
+    function apply(collapsed) {
+      wrap.classList.toggle('d-none', collapsed);
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      if (icon) {
+        icon.classList.toggle('fa-chevron-up', !collapsed);
+        icon.classList.toggle('fa-chevron-down', collapsed);
+      }
+      if (txt) txt.textContent = collapsed ? 'Mostrar resumen' : 'Ocultar resumen';
+      // Charts render inside this section; nudge them to refit when shown.
+      if (!collapsed) { try { window.dispatchEvent(new Event('resize')); } catch (e) {} }
+    }
+
+    var saved = null;
+    try { saved = localStorage.getItem(KEY); } catch (e) {}
+    apply(saved === '1');
+
+    btn.addEventListener('click', function () {
+      var collapsed = !wrap.classList.contains('d-none');
+      apply(collapsed);
+      try { localStorage.setItem(KEY, collapsed ? '1' : '0'); } catch (e) {}
+    });
+  })();
+  </script>
 
   <!-- Tabla de proveedores -->
   <div class="row">

@@ -1,50 +1,156 @@
+/* =============================================================================
+   theme-toggle.js — CHISA ERP Dark/Light theme controller
+   -----------------------------------------------------------------------------
+   - Single source of truth for the active theme ("light" | "dark").
+   - Persists to BOTH localStorage and a cookie so the choice survives reloads,
+     new tabs and new sessions (and is readable server-side if ever needed).
+   - Applies the theme to <html data-bs-theme> immediately (a matching pre-paint
+     snippet in the page <head> prevents any flash of the wrong theme).
+   - Binds via event delegation, so every `.erp-theme-toggle` works on every
+     view without re-binding and without breaking on navigation.
+   - Keeps the navbar icon (fa-moon / fa-sun) and its aria-label in sync.
+   ============================================================================= */
 (function () {
-  var STORAGE_KEY = 'appstack-config-theme';
-  var MAP = {
-    default: { bsTheme: 'light', sidebarTheme: 'dark' },
-    light: { bsTheme: 'light', sidebarTheme: 'light' },
-    colored: { bsTheme: 'light', sidebarTheme: 'colored' },
-    dark: { bsTheme: 'dark', sidebarTheme: 'dark' }
-  };
+  'use strict';
 
-  function applyThemeName(name) {
-    var spec = MAP[name] || MAP.default;
+  var STORAGE_KEY = 'appstack-config-theme'; // kept for backward compatibility
+  var COOKIE_KEY = 'erp_theme';
+  var SIDEBAR_THEME = 'dark'; // sidebar is brand-colored via CSS; value is cosmetic
+
+  // Normalize any stored/legacy value to a real Bootstrap theme.
+  function normalize(value) {
+    return value === 'dark' ? 'dark' : 'light';
+  }
+
+  function readCookie(name) {
+    var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  function writeCookie(name, value) {
+    try {
+      var oneYear = 60 * 60 * 24 * 365;
+      document.cookie =
+        name + '=' + encodeURIComponent(value) + ';path=/;max-age=' + oneYear + ';SameSite=Lax';
+    } catch (e) {}
+  }
+
+  // Resolve the theme that should be active right now.
+  function resolveTheme() {
+    var stored = null;
+    try {
+      stored = localStorage.getItem(STORAGE_KEY);
+    } catch (e) {}
+    if (stored === null) {
+      stored = readCookie(COOKIE_KEY);
+    }
+    if (stored === 'dark' || stored === 'light') {
+      return stored;
+    }
+    // Legacy values ("default"/"colored") -> light. Otherwise honor the
+    // attribute already on <html>, else fall back to light.
+    if (stored) {
+      return normalize(stored);
+    }
+    return document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  function persist(theme) {
+    try {
+      localStorage.setItem(STORAGE_KEY, theme);
+    } catch (e) {}
+    writeCookie(COOKIE_KEY, theme);
+  }
+
+  function updateToggleUI(theme) {
+    var isDark = theme === 'dark';
+    // New single-icon markup: <i data-theme-icon>.
+    document.querySelectorAll('[data-theme-icon]').forEach(function (icon) {
+      icon.classList.remove('fa-sun', 'fa-moon', 'fas');
+      icon.classList.add('fas', isDark ? 'fa-sun' : 'fa-moon');
+    });
+    // Accessibility + tooltip on the control itself.
+    document.querySelectorAll('.erp-theme-toggle').forEach(function (btn) {
+      var label = isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('title', label);
+      btn.setAttribute('role', 'button');
+    });
+  }
+
+  function applyTheme(theme, opts) {
+    theme = normalize(theme);
     var root = document.documentElement;
-    root.setAttribute('data-bs-theme', spec.bsTheme);
-    root.setAttribute('data-sidebar-theme', spec.sidebarTheme);
+    root.setAttribute('data-bs-theme', theme);
+    root.setAttribute('data-sidebar-theme', theme === 'dark' ? 'dark' : SIDEBAR_THEME);
+    if (!opts || opts.persist !== false) {
+      persist(theme);
+    }
+    updateToggleUI(theme);
     try {
-      localStorage.setItem(STORAGE_KEY, name);
+      document.dispatchEvent(new CustomEvent('erp:themechange', { detail: { theme: theme } }));
     } catch (e) {}
+    return theme;
   }
 
-  function currentName() {
-    try {
-      var stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && MAP[stored]) {
-        return stored;
-      }
-    } catch (e) {}
-    return document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'default';
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
   }
 
-  applyThemeName(currentName());
+  function toggleTheme() {
+    applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+  }
 
-  function bind() {
-    document.querySelectorAll('.js-theme-toggle').forEach(function (el) {
-      if (el.dataset.themeBound) {
-        return;
-      }
+  // Apply immediately (re-affirms the pre-paint value and syncs the icon).
+  applyTheme(resolveTheme(), { persist: false });
+
+  // Event delegation in the CAPTURE phase so the toggle keeps working even if
+  // the template's app.js calls stopPropagation() on navbar clicks (it does),
+  // which would otherwise prevent a bubble-phase listener from ever firing.
+  function onToggleClick(ev) {
+    var trigger = ev.target && ev.target.closest ? ev.target.closest('.erp-theme-toggle') : null;
+    if (trigger) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      toggleTheme();
+    }
+  }
+  document.addEventListener('click', onToggleClick, true);
+
+  // Direct-bind fallback for any toggles present at load time.
+  function bindDirect() {
+    document.querySelectorAll('.erp-theme-toggle').forEach(function (el) {
+      if (el.dataset.themeBound) return;
       el.dataset.themeBound = '1';
       el.addEventListener('click', function (ev) {
         ev.preventDefault();
-        applyThemeName(currentName() === 'dark' ? 'default' : 'dark');
+        toggleTheme();
       });
     });
   }
 
+  // Keep multiple tabs in sync.
+  window.addEventListener('storage', function (ev) {
+    if (ev.key === STORAGE_KEY && ev.newValue) {
+      applyTheme(ev.newValue, { persist: false });
+    }
+  });
+
+  // Re-sync the icon and direct-bind once the DOM is ready.
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bind);
+    document.addEventListener('DOMContentLoaded', function () {
+      bindDirect();
+      updateToggleUI(currentTheme());
+    });
   } else {
-    bind();
+    bindDirect();
+    updateToggleUI(currentTheme());
   }
+
+  // Expose a tiny API for other scripts if needed.
+  window.ErpTheme = {
+    get: currentTheme,
+    set: function (t) { applyTheme(t); },
+    toggle: toggleTheme
+  };
 })();

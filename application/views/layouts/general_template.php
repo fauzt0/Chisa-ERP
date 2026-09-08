@@ -20,6 +20,7 @@
 	<link href="<?php echo base_url();?>assets/dist/css/app.css" rel="stylesheet">	
 	<link href="<?php echo base_url();?>assets/dist/css/estilos.css?v=<?php echo time(); ?>" rel="stylesheet">
 	<link href="<?php echo base_url();?>assets/dist/css/demo-presentacion.css?v=<?php echo time(); ?>" rel="stylesheet">
+	<link href="<?php echo base_url();?>assets/dist/css/theme.css?v=<?php echo time(); ?>" rel="stylesheet">
 	<?php $this->load->view('rh/partials/modal_styles'); ?>
 	<script>
 	(function () {
@@ -34,17 +35,23 @@
 	})();
 	</script>
 	<script>
+	/* Pre-paint theme application (prevents flash of the wrong theme).
+	   Reads localStorage first, then the erp_theme cookie; any legacy value
+	   ("default"/"colored") resolves to light. Kept in sync with theme-toggle.js. */
 	(function () {
 	  try {
 	    var t = localStorage.getItem('appstack-config-theme');
-	    var root = document.documentElement;
-	    if (t === 'dark') {
-	      root.setAttribute('data-bs-theme', 'dark');
-	      root.setAttribute('data-sidebar-theme', 'dark');
-	    } else if (t === 'light') {
-	      root.setAttribute('data-bs-theme', 'light');
-	      root.setAttribute('data-sidebar-theme', 'light');
+	    if (t === null) {
+	      var m = document.cookie.match(/(?:^|; )erp_theme=([^;]*)/);
+	      t = m ? decodeURIComponent(m[1]) : null;
 	    }
+	    var theme = (t === 'dark') ? 'dark' : 'light';
+	    var root = document.documentElement;
+	    root.setAttribute('data-bs-theme', theme);
+	    root.setAttribute('data-sidebar-theme', theme === 'dark' ? 'dark' : 'dark');
+	    // Paint the correct background immediately to avoid a white flash while
+	    // app.css is still loading on reload/navigation.
+	    root.style.backgroundColor = (theme === 'dark') ? '#202634' : '#ffffff';
 	  } catch (e) {}
 	})();
 	</script>

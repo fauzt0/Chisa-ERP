@@ -15,6 +15,22 @@
 	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
 
 	<link href="<?php echo base_url();?>assets/dist/css/app.css" rel="stylesheet">
+	<link href="<?php echo base_url();?>assets/dist/css/theme.css?v=<?php echo time(); ?>" rel="stylesheet">
+	<script>
+	/* Respect the saved theme so the 2FA page matches the rest of the app. */
+	(function () {
+	  try {
+	    var t = localStorage.getItem('appstack-config-theme');
+	    if (t === null) {
+	      var m = document.cookie.match(/(?:^|; )erp_theme=([^;]*)/);
+	      t = m ? decodeURIComponent(m[1]) : null;
+	    }
+	    var theme = (t === 'dark') ? 'dark' : 'light';
+	    document.documentElement.setAttribute('data-bs-theme', theme);
+	    document.documentElement.style.backgroundColor = (theme === 'dark') ? '#202634' : '#ffffff';
+	  } catch (e) {}
+	})();
+	</script>
 </head>
 
 <body>  
