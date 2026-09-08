@@ -309,7 +309,13 @@ $this->load->view('obras/partials/vinculo_venta', [
                                     <div class="card">
                                         <div class="card-body text-center">
                                             <?php if(in_array($archivo->extension, ['.jpg', '.jpeg', '.png', '.gif'])): ?>
-                                                <img src="<?=base_url().$archivo->ruta_archivo?>" class="img-fluid mb-2" alt="<?=$archivo->nombre_original?>">
+                                                <?php
+                                                $ruta = $archivo->ruta_archivo;
+                                                if (strpos($ruta, '/') === 0 && strpos($ruta, FCPATH) === 0) {
+                                                    $ruta = substr($ruta, strlen(FCPATH));
+                                                }
+                                                ?>
+                                                <img src="<?=base_url().$ruta?>" class="img-fluid mb-2" alt="<?=$archivo->nombre_original?>">
                                             <?php else: ?>
                                                 <i class="fas fa-file fa-4x mb-2 text-secondary"></i>
                                             <?php endif; ?>

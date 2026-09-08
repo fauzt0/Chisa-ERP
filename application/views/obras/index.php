@@ -487,6 +487,12 @@ function seleccionarCliente(clienteId, clienteNombre) {
 }
 
 function guardarObra() {
+    const nombreInput = document.querySelector('#formNuevaObra input[name="nombre"]');
+    if (!nombreInput || !nombreInput.value.trim() || !document.getElementById('clienteIdSeleccionado').value) {
+        alert('El nombre de la obra y el cliente son obligatorios');
+        return;
+    }
+
     const formData = new FormData(document.getElementById('formNuevaObra'));
     
     fetch('<?=base_url()?>obras/Obras/guardar_ajax', {

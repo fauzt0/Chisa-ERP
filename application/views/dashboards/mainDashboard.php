@@ -3,6 +3,7 @@
     <div class="col-auto d-none d-sm-block">
       <h3>Inicio ERP</h3>
     </div>
+  </div>
 
   
   <?php
@@ -202,5 +203,6 @@
       </table>
     </div>
   </div>
+</div>
 </div>
 

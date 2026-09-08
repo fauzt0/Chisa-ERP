@@ -106,28 +106,32 @@ class CotizacionesModel extends MY_Model {
     }
 
     public function generar_folio() {
-        $year = date('Y');
-        $prefijo = 'COT-' . $year . '-';
-        $this->db->select('folio');
-        $this->db->from($this->tableName);
-        $this->db->like('folio', $prefijo, 'after');
-        $this->db->order_by('id', 'DESC');
-        $this->db->limit(1);
-        $ultimo = $this->db->get()->row();
-        $numero = $ultimo ? (int) substr($ultimo->folio, strlen($prefijo)) + 1 : 1;
+        $prefijo = 'COT-' . date('Y') . '-';
+        $pos = strlen($prefijo) + 1;
+
+        $row = $this->db
+            ->select('MAX(CAST(SUBSTRING(folio, ' . $pos . ') AS UNSIGNED)) AS max_folio', false)
+            ->from($this->tableName)
+            ->like('folio', $prefijo, 'after')
+            ->get()->row();
+
+        $numero = ($row && $row->max_folio !== null) ? (int) $row->max_folio + 1 : 1;
+
         return $prefijo . str_pad($numero, 4, '0', STR_PAD_LEFT);
     }
 
     public function generar_grupo_folio() {
-        $year = date('Y');
-        $prefijo = 'GRP-COT-' . $year . '-';
-        $this->db->select('grupo_folio');
-        $this->db->from($this->tableName);
-        $this->db->like('grupo_folio', $prefijo, 'after');
-        $this->db->order_by('id', 'DESC');
-        $this->db->limit(1);
-        $ultimo = $this->db->get()->row();
-        $numero = $ultimo ? (int) substr($ultimo->grupo_folio, strlen($prefijo)) + 1 : 1;
+        $prefijo = 'GRP-COT-' . date('Y') . '-';
+        $pos = strlen($prefijo) + 1;
+
+        $row = $this->db
+            ->select('MAX(CAST(SUBSTRING(grupo_folio, ' . $pos . ') AS UNSIGNED)) AS max_folio', false)
+            ->from($this->tableName)
+            ->like('grupo_folio', $prefijo, 'after')
+            ->get()->row();
+
+        $numero = ($row && $row->max_folio !== null) ? (int) $row->max_folio + 1 : 1;
+
         return $prefijo . str_pad($numero, 4, '0', STR_PAD_LEFT);
     }
 

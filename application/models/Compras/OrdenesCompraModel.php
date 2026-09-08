@@ -365,22 +365,17 @@ class OrdenesCompraModel extends MY_Model {
      * Genera folio único para orden
      */
     private function generar_folio() {
-        $year = date('Y');
-        $prefijo = 'OC-' . $year . '-';
-        
-        $this->db->select('folio');
-        $this->db->from($this->tableName);
-        $this->db->like('folio', $prefijo, 'after');
-        $this->db->order_by('id', 'DESC');
-        $this->db->limit(1);
-        $ultimo = $this->db->get()->row();
-        
-        if($ultimo) {
-            $numero = intval(substr($ultimo->folio, strlen($prefijo))) + 1;
-        } else {
-            $numero = 1;
-        }
-        
+        $prefijo = 'OC-' . date('Y') . '-';
+        $pos = strlen($prefijo) + 1;
+
+        $row = $this->db
+            ->select('MAX(CAST(SUBSTRING(folio, ' . $pos . ') AS UNSIGNED)) AS max_folio', false)
+            ->from($this->tableName)
+            ->like('folio', $prefijo, 'after')
+            ->get()->row();
+
+        $numero = ($row && $row->max_folio !== null) ? (int) $row->max_folio + 1 : 1;
+
         return $prefijo . str_pad($numero, 4, '0', STR_PAD_LEFT);
     }
     

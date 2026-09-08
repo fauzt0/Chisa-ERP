@@ -116,9 +116,20 @@ class Obras extends MY_Controller {
      * Guarda una nueva obra (AJAX)
      */
     public function guardar_ajax() {
+        $nombre = trim((string) $this->input->post('nombre'));
+        if ($nombre === '') {
+            echo json_encode(['success' => false, 'message' => 'El nombre de la obra es obligatorio']);
+            return;
+        }
+        $cliente_id = (int) $this->input->post('cliente_id');
+        if ($cliente_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Debe seleccionar un cliente']);
+            return;
+        }
+
         $data = [
-            'nombre' => $this->input->post('nombre'),
-            'cliente_id' => $this->input->post('cliente_id'),
+            'nombre' => $nombre,
+            'cliente_id' => $cliente_id,
             'direccion' => $this->input->post('direccion'),
             'ciudad' => $this->input->post('ciudad'),
             'estado' => $this->input->post('estado'),
@@ -414,7 +425,7 @@ class Obras extends MY_Controller {
                 'obra_id' => $obra_id,
                 'nombre_original' => $upload_data['orig_name'],
                 'nombre_archivo' => $upload_data['file_name'],
-                'ruta_archivo' => $upload_data['full_path'],
+                'ruta_archivo' => 'uploads/obras/' . $obra_id . '/' . $upload_data['file_name'],
                 'tipo_archivo' => $upload_data['file_type'],
                 'extension' => $upload_data['file_ext'],
                 'tamano' => $upload_data['file_size'] * 1024, // Convertir a bytes
@@ -576,8 +587,10 @@ class Obras extends MY_Controller {
             return;
         }
         
-        $response['pago'] = $pago;
-        $this->load->view('obras/recibo', $response);
+        $this->viewData['pageTitle'] = 'Recibo de Pago';
+        $this->viewData['pageView']  = 'obras/recibo';
+        $this->viewData['pago']      = $pago;
+        $this->load->view('layouts/general_template', $this->viewData);
     }
     
     /**

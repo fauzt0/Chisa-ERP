@@ -254,8 +254,14 @@ class ObrasModel extends CI_Model {
         $this->db->where('id', $archivo_id);
         $archivo = $this->db->get('obras_archivos')->row();
         
-        if($archivo && file_exists($archivo->ruta_archivo)) {
-            unlink($archivo->ruta_archivo);
+        if ($archivo) {
+            $ruta = $archivo->ruta_archivo;
+            if (strpos($ruta, '/') !== 0) {
+                $ruta = FCPATH . ltrim($ruta, '/');
+            }
+            if (file_exists($ruta)) {
+                unlink($ruta);
+            }
         }
         
         $this->db->where('id', $archivo_id);
@@ -386,21 +392,14 @@ class ObrasModel extends CI_Model {
      * Genera el siguiente folio de recibo (REC-00001, REC-00002, etc.)
      */
     public function generar_folio_recibo() {
-        $this->db->select('folio_recibo');
-        $this->db->from('obras_pagos');
-        $this->db->like('folio_recibo', 'REC-', 'after');
-        $this->db->order_by('id', 'DESC');
-        $this->db->limit(1);
-        
-        $result = $this->db->get()->row();
-        
-        if($result) {
-            $ultimo_numero = intval(substr($result->folio_recibo, 4));
-            $nuevo_numero = $ultimo_numero + 1;
-        } else {
-            $nuevo_numero = 1;
-        }
-        
+        $row = $this->db
+            ->select('MAX(CAST(SUBSTRING(folio_recibo, 5) AS UNSIGNED)) AS max_folio', false)
+            ->from('obras_pagos')
+            ->like('folio_recibo', 'REC-', 'after')
+            ->get()->row();
+
+        $nuevo_numero = ($row && $row->max_folio !== null) ? (int) $row->max_folio + 1 : 1;
+
         return 'REC-' . str_pad($nuevo_numero, 5, '0', STR_PAD_LEFT);
     }
     
