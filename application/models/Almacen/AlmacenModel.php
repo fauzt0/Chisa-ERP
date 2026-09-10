@@ -222,7 +222,7 @@ class AlmacenModel extends CI_Model {
             p.nombre as producto_nombre,
             p.stock_actual,
             p.unidad_venta,
-            (dov.cantidad - dov.cantidad_entregada) as pendiente_entregar
+            (dov.cantidad - COALESCE(dov.cantidad_entregada, 0)) as pendiente_entregar
         ');
         $this->db->from('detalle_orden_venta dov');
         $this->db->join('productos p', 'p.id = dov.producto_id');
@@ -244,7 +244,7 @@ class AlmacenModel extends CI_Model {
             o.*,
             c.razon_social as cliente_nombre,
             COUNT(op.id) as total_productos,
-            SUM(op.cantidad_ajustada) as cantidad_total,
+            SUM(COALESCE(op.cantidad_ajustada, op.cantidad_calculada, 0)) as cantidad_total,
             SUM(COALESCE(op.cantidad_entregada, 0)) as cantidad_entregada_total
         ');
         $this->db->from('obras o');
@@ -275,15 +275,17 @@ class AlmacenModel extends CI_Model {
         }
         
         // Productos de la obra
+        // FIX (2026-09-10, hallazgo F): cantidad_ajustada es NULL cuando la línea nunca se ajustó
+        // manualmente; sin COALESCE el modal de entrega mostraba "null"/0 y no permitía entregar.
         $this->db->select('
             op.*,
-            op.cantidad_ajustada as cantidad,
+            COALESCE(op.cantidad_ajustada, op.cantidad_calculada, 0) as cantidad,
             COALESCE(op.cantidad_entregada, 0) as cantidad_entregada,
             p.codigo as producto_codigo,
             p.nombre as producto_nombre,
             p.stock_actual,
             p.unidad_venta,
-            (op.cantidad_ajustada - COALESCE(op.cantidad_entregada, 0)) as pendiente_entregar
+            (COALESCE(op.cantidad_ajustada, op.cantidad_calculada, 0) - COALESCE(op.cantidad_entregada, 0)) as pendiente_entregar
         ');
         $this->db->from('obras_productos op');
         $this->db->join('productos p', 'p.id = op.producto_id');

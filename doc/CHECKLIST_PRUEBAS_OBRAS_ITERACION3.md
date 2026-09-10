@@ -14,7 +14,7 @@
 | 1.1 | Crear obra `TEST-QA-OBRA-001` con cliente real, dirección, fechas y anticipo 30% | Obra creada con folio `OB-XXXXX`, totales calculados | ✅ **CORREGIDO** | Folio `OB-00003` generado correctamente con `OB-TEST-002` inactiva presente. `success:true, obra_id:11`. BUG-1 corregido en `ObrasModel::generar_folio()` (fix: MAX numérico sobre todas las filas). |
 | 1.2 | Editar estatus a "En Cotización" | Estatus cambia, sin disparar preórdenes | ✅ | `actualizar_ajax` OK → BD confirmó `estatus='En Cotización'`. Sin pre-órdenes. |
 | 1.3 | Editar descuento 10% → recalcula totales | Subtotal, IVA, total actualizados | ✅ | Descuento 10% → -$5,000; IVA $7,200; Total $52,200 (matemáticamente correcto). |
-| 1.4 | Validar campos obligatorios vacíos | Error / form no se envía | ✅ **CORREGIDO** | Al probar, `guardar_ajax` aceptó nombre vacío → creó la obra `OB-00004` (soft-deleted de inmediato). Validación agregada el 2026-09-07 (server-side en `guardar_ajax` + client-side en `guardarObra()`). Pendiente re-ejecutar el caso en la próxima sesión QA (ver §9 BUG-4). |
+| 1.4 | Validar campos obligatorios vacíos | Error / form no se envía | ✅ **CORREGIDO Y RE-EJECUTADO 2026-09-10** | Al probar, `guardar_ajax` aceptó nombre vacío → creó la obra `OB-00004` (soft-deleted de inmediato). Validación agregada el 2026-09-07 (server-side en `guardar_ajax` + client-side en `guardarObra()`). **Re-ejecutado el 2026-09-10** con 4 escenarios (ver §11.3): nombre vacío, nombre solo espacios, cliente 0 → los tres rechazados con `success:false`; control positivo → obra creada OK (`OB-00005`, soft-deleted). Sin filas nuevas tras los casos negativos. |
 
 ## 2. Cálculo de materiales
 
@@ -116,9 +116,9 @@ Fix: creada `application/views/obras/recibo.php` (fragmento autocontenido, balan
 `subir_archivo_ajax` guardaba `ruta_archivo = $upload_data['full_path']` (ruta absoluta del servidor, `Obras.php:417`) y `detalle.php:312` la imprimía como `src="<?= base_url() . $archivo->ruta_archivo ?>"` → URL inválida (`https://dominio//home/admin/...`) → la imagen no cargaba.
 Fix: `subir_archivo_ajax()` ahora guarda la ruta relativa `uploads/obras/{obra_id}/{file_name}`; el preview de `detalle.php` normaliza rutas legacy absolutas (strip de `FCPATH`) y `ObrasModel::eliminar_archivo()` resuelve la ruta física antes de `unlink()`. Commit `dad4cd3`. No se migraron registros viejos (el manejo legacy los cubre).
 
-**BUG-4 — MENOR: `guardar_ajax` acepta nombre de obra vacío. CORREGIDO 2026-09-07.**
+**BUG-4 — MENOR: `guardar_ajax` acepta nombre de obra vacío. CORREGIDO 2026-09-07 — RE-VERIFICADO 2026-09-10.**
 Repro: POST a `obras/Obras/guardar_ajax` con `nombre=''` → `success:true`, obra creada. Obra `OB-00004` (nombre vacío) creada durante prueba → soft-deleted de inmediato.
-Fix: validación server-side en `guardar_ajax()` (`trim()` del nombre y `cliente_id > 0`, responde `success:false` con mensaje) + validación client-side en `guardarObra()` (`index.php`). Commit `dad4cd3`. Pendiente: re-ejecutar el caso 1.4 en la próxima sesión QA.
+Fix: validación server-side en `guardar_ajax()` (`trim()` del nombre y `cliente_id > 0`, responde `success:false` con mensaje) + validación client-side en `guardarObra()` (`index.php`). Commit `dad4cd3`. **Re-ejecutado el 2026-09-10** con 4 escenarios (incluido control positivo), ver §11.3: nombre vacío y solo espacios → `success:false` "El nombre de la obra es obligatorio"; `cliente_id=0` → `success:false` "Debe seleccionar un cliente"; alta válida → `success:true` con folio `OB-00005`.
 
 **BUG-5 — MAYOR: `AlmacenModel::get_obras_pendientes()` filtraba por estatus inválidos (pendiente de formalizar en BD). CORREGIDO 2026-09-07.**
 El método usaba `WHERE estatus IN ('Confirmada','En Proceso')` — valores inexistentes en el ENUM de `obras.estatus`. Corrección: reemplazados por `'Aprobada'` y `'En Ejecución'`. `application/models/Almacen/AlmacenModel.php` línea 254.
@@ -141,5 +141,62 @@ El `$movimiento_data` incluía `referencia_tipo` y `referencia_id` que no existe
 - **C.** BUG-1 corregido permanentemente: la query usa MAX numérico, folios no numéricos no interfieren.
 - **D.** Ninguna formulación activa de productos muestreados define `rendimiento_m2_por_kg`; el cálculo de obra depende de captura manual por línea. Pendiente de negocio: poblar rendimientos en `Producción > Productos`.
 - **E.** Generadores de folio con el mismo patrón defectuoso (ORDER BY id DESC + intval/cast) — **CORREGIDOS 2026-09-07** con `MAX(CAST(SUBSTRING(...) AS UNSIGNED))` (mismo enfoque del BUG-1), commit `dad4cd3`: `Compras/OrdenesCompraModel.php::generar_folio()`, `Compras/CotizacionesModel.php::generar_folio()` y `::generar_grupo_folio()`, `Obras/ObrasModel.php::generar_folio_recibo()`.
-- **F.** Tab Entregas en modal de entrega (AlmacenModel): la columna `Entregado` del modal muestra 0.00 incluso después de entregas (no se refresca). Hallazgo cosmético, no crítico.
+- **F.** *(CORREGIDO 2026-09-10)* Modal de entrega de obra (`almacen/Entregas`): las columnas **Pedido / Pendiente / A Entregar** se calculaban con `op.cantidad_ajustada`, que es **NULL** cuando la línea de obra nunca se ajustó manualmente (caso normal: solo existe `cantidad_calculada`). Sin `COALESCE`, la API devolvía `cantidad = null` y `pendiente_entregar = null`, y el JS del modal imprimía `null` y calculaba `Math.min(null, stock)` → **input "A Entregar" en 0/negativo, impidiendo registrar la entrega**. Causa raíz confirmada sobre la obra 11 (2 filas con `cantidad_ajustada = NULL`, `cantidad_entregada = 1.00`). Fix: `AlmacenModel::get_obra_detalle()` y `::get_obras_pendientes()` ahora usan `COALESCE(op.cantidad_ajustada, op.cantidad_calculada, 0)` (mismo criterio que ya usaba el tab Entregas del detalle de obra); `get_orden_detalle()` con `COALESCE(dov.cantidad_entregada, 0)`; y en `views/almacen/entregas/main.php` se añadió el helper `fmtCantidad()` + clamp a ≥0 del máximo/valor del input en ambos modales (obra y OV).
 - **G.** *(2026-09-10)* Correcciones de BUG-2/3/4 y del hallazgo E integradas en `iteracion-3` (commit `dad4cd3`, pusheado a `origin`). El fix del dashboard del prompt de pendientes (T5) fue superado por la reescritura del dashboard del agente cloud, integrada en el merge `f008279`. Pendiente: validación manual de UI post-merge (dashboard por permisos, toggle de tema, login) y merge de `iteracion-3` → `main`.
+- **H.** *(2026-09-10)* `Obras::guardar_ajax()` valida `nombre` y `cliente_id`, pero **no** valida `direccion`: si se envía el POST sin ese campo (el formulario lo marca `required`, por lo que no ocurre desde la UI), la inserción falla con `Error Number: 1048 Column 'direccion' cannot be null`. Mejora sugerida para iteración 4: validar también `direccion` server-side y responder `success:false` en lugar de propagar el error de BD.
+
+---
+
+## 11. Pase previo a la validación manual *(2026-09-10)*
+
+Objetivo: dejar la rama lista para **una sola** pasada de validación manual. Se cerraron los dos cosméticos pendientes, se re-ejecutó el caso 1.4 y se hizo un smoke test de rutas post-merge. **No se agregaron funcionalidades nuevas.**
+
+### 11.1 Cambios aplicados
+
+| # | Cambio | Archivo | Cómo se verificó |
+|---|--------|---------|------------------|
+| 1 | El mensaje "Aún no hay entregas registradas…" del tab Entregas ahora es un **link real** a `almacen/Entregas` (antes era un `<strong>`) | `application/views/obras/detalle.php` (~línea 1739) | Render del detalle: contiene `href="https://erp.chisarecubrimientos.com.mx/almacen/Entregas"`; `php -l` OK |
+| 2 | **Hallazgo F** — `COALESCE(cantidad_ajustada, cantidad_calculada, 0)` en `get_obra_detalle()` y `get_obras_pendientes()`; `COALESCE(cantidad_entregada, 0)` en `get_orden_detalle()` | `application/models/Almacen/AlmacenModel.php` | Consulta replicada antes/después: `cantidad` pasó de `NULL` a `1.00` y `pendiente_entregar` de `NULL` a `0.00` |
+| 3 | **Hallazgo F** (front) — helper `fmtCantidad()` + clamp a ≥ 0 del `max`/`value` del input "A Entregar" en los modales de obra y de OV | `application/views/almacen/entregas/main.php` | `node --check` sobre el JS extraído: OK; el HTML servido incluye `fmtCantidad` |
+
+> Contexto del hallazgo F: el modal usaba `cantidad_ajustada`, que es NULL cuando la línea de obra nunca se ajustó a mano (solo tiene `cantidad_calculada`, que es el caso normal). Eso producía celdas `null` y un input en 0, bloqueando la entrega. El tab Entregas del detalle de obra ya usaba el criterio `COALESCE(ajustada, calculada)`; ahora ambos coinciden.
+
+### 11.2 Smoke test post-merge (rec. 4)
+
+Ejecutado con `curl` sobre `https://erp.chisarecubrimientos.com.mx` (usuario `presentacion@chisa.mx`) + render por CLI de las vistas del módulo.
+
+| Ruta / Recurso | Método | HTTP | Resultado |
+|---|---|---|---|
+| `/` (login) y `POST /authenticate` | GET/POST | 200 / 303 | Login OK, sesión creada (sin 2FA: el entorno resuelve a `development`) |
+| `/dashboard` | GET | 200 (118 KB) | Sin errores PHP |
+| `/almacen/Entregas` | GET | 200 (72 KB) | Sin errores PHP |
+| `/obras/Obras` | GET | 307 → `/deny` | **No es un bug**: el usuario demo no tiene permisos del módulo Obras (ver §11.4) |
+| `/obras/Obras/detalle/2` | GET | 307 → `/deny` | Ídem |
+| `/ventas/ObrasVentas` | GET | 307 → `/deny` | Ídem |
+| `obras/Obras`, `ventas/ObrasVentas`, `obras/Obras/detalle/1`, `almacen/Entregas` | CLI | — | Render completo (97 KB / 83 KB / 171 KB / 96 KB) sin `Fatal error`, `Parse error` ni `Uncaught` |
+| `/assets/dist/js/theme-toggle.js`, `/assets/dist/css/theme.css` | GET | 200 | Assets del merge disponibles |
+| `general_template` → `theme-toggle.js` | — | — | Incluido en el layout |
+| `almacen/Entregas/get_obra_detalle_ajax` (obra 11 y 2) | POST | 200 | `success:true`; obra 11 ya devuelve `cantidad:1.00 / pendiente:0.00` (antes `null`) |
+
+Errores PHP detectados en las rutas alcanzables: **0**.
+
+### 11.3 Caso 1.4 re-ejecutado (BUG-4)
+
+Ejecutado por CLI (`php index.php obras/Obras/guardar_ajax`; `MY_Controller` omite sesión/permisos en CLI, por lo que se prueba exactamente el mismo código de validación del endpoint). Snapshot de BD: `obras_total=5, max_id=12, activas=2` antes y después de los casos negativos.
+
+| Escenario | Payload | Respuesta del endpoint | ¿Creó obra? |
+|---|---|---|---|
+| 1.4a nombre vacío | `nombre="", cliente_id=1` | `{"success":false,"message":"El nombre de la obra es obligatorio"}` | No |
+| 1.4b nombre solo espacios | `nombre="   ", cliente_id=1` | `{"success":false,"message":"El nombre de la obra es obligatorio"}` | No |
+| 1.4c sin cliente | `nombre="TEST-QA-VALIDACION-BUG4", cliente_id=0` | `{"success":false,"message":"Debe seleccionar un cliente"}` | No |
+| 1.4d control positivo | `nombre="TEST-QA-VALIDACION-BUG4", cliente_id=1, direccion=...` | `{"success":true,"message":"Obra creada correctamente","obra_id":13}` → folio `OB-00005` | Sí (limpiada) |
+
+El control positivo confirma que la validación no bloquea el alta legítima y que el folio sigue generándose correctamente (BUG-1).
+
+**Limpieza:** obra `OB-00005` (id 13, `TEST-QA-VALIDACION-BUG4`) → `activo=0`; sin filas dependientes (`obras_productos/pagos/archivos/comentarios` = 0, preórdenes = 0). Estado final: 2 obras activas (`OB-00001`, `OB-00002`).
+
+### 11.4 Notas para la validación manual
+
+1. **El usuario demo `presentacion@chisa.mx` NO tiene permisos del módulo Obras** (revisado en `privilege`: sus permisos son de compras/proveedores/RH). Para validar Obras hay que entrar con una cuenta con permisos de Obras: ids **1** (`soporte2@especialistasweb.com.mx`), **6** (`ggeneral@chisarecubrimientos.com.mx`) o **7** (`facturacion@chisarecubrimientos.com.mx`).
+2. El servidor resuelve `ENVIRONMENT = development` (no hay `CI_ENV` en nginx ni en `.htaccess`), así que el login **no pide 2FA** y los errores de PHP se muestran en pantalla. Conviene decidirlo explícitamente antes de la validación: si se espera probar 2FA, hay que ejecutar con `CI_ENV=production`.
+3. Pendiente de la validación manual: dashboard por permisos, toggle de tema, login y el resto de bloques A–G de `doc/CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md`; después, PR de `iteracion-3` → `main`.

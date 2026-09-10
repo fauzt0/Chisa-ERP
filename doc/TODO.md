@@ -54,14 +54,15 @@
 
 ## 🟡 Pendientes de Obras / Iteración 4
 
-- [ ] Validación manual de UI tras el merge del agente cloud (dashboard por permisos, toggle de tema, login/2FA)
+- [ ] Validación manual de UI tras el merge del agente cloud (dashboard por permisos, toggle de tema, login/2FA). **Ojo:** el usuario demo `presentacion@chisa.mx` no tiene permisos del módulo Obras; usar una cuenta con permisos (ids 1, 6 o 7).
 - [ ] Integrar `iteracion-3` → `main` (PR) una vez validado
 - [ ] API de paquetería "Tres Guerras" (diseño listo en `doc/PLAN_ENVIOS_TRES_GUERRAS.md`)
 - [ ] Tab "Entregas" también en la vista CRM Ventas (`ventas/obras/detalle.php`)
 - [ ] Mover el SQL directo de `Obras::actualizar_ajax` al modelo (auditoría B5, diferido)
 - [ ] Limpiar residuos de pruebas antiguas: OVs `OV-TEST-001`, `OV-2026-0004` y cliente ficticio "Empresa de Prueba S.A."
 - [ ] Negocio: poblar `rendimiento_m2_por_kg` en formulaciones activas (Producción > Productos)
-- [ ] Cosméticos: link real en "Aún no hay entregas" (detalle de obra) y columna "Entregado" del modal de entrega
+- [ ] Validar `direccion` server-side en `Obras::guardar_ajax()` (hoy el formulario la marca `required`; sin ella la BD responde error 1048) — hallazgo H del checklist de Obras
+- [X] Cosméticos de Obras: link real en "Aún no hay entregas" (detalle de obra) y columnas del modal de entrega (`COALESCE` + `fmtCantidad`) — corregidos 2026-09-10
 
 ## 🟡 Pendientes Facturación
 

@@ -1736,7 +1736,7 @@ $this->load->view('obras/partials/vinculo_venta', [
                     document.getElementById('entregas_historial').innerHTML = hhtml;
                 } else {
                     document.getElementById('entregas_historial').innerHTML =
-                        '<p class="text-muted small mt-2"><i class="fas fa-info-circle"></i> Aún no hay entregas registradas para esta obra. Las entregas se gestionan desde el módulo <strong>Almacén &gt; Entregas</strong>.</p>';
+                        '<p class="text-muted small mt-2"><i class="fas fa-info-circle"></i> Aún no hay entregas registradas para esta obra. Las entregas se gestionan desde el módulo <a href="<?=base_url('almacen/Entregas')?>">Almacén &gt; Entregas</a>.</p>';
                 }
             })
             .catch(() => {
