@@ -14,7 +14,7 @@
 | 1.1 | Crear obra `TEST-QA-OBRA-001` con cliente real, dirección, fechas y anticipo 30% | Obra creada con folio `OB-XXXXX`, totales calculados | ✅ **CORREGIDO** | Folio `OB-00003` generado correctamente con `OB-TEST-002` inactiva presente. `success:true, obra_id:11`. BUG-1 corregido en `ObrasModel::generar_folio()` (fix: MAX numérico sobre todas las filas). |
 | 1.2 | Editar estatus a "En Cotización" | Estatus cambia, sin disparar preórdenes | ✅ | `actualizar_ajax` OK → BD confirmó `estatus='En Cotización'`. Sin pre-órdenes. |
 | 1.3 | Editar descuento 10% → recalcula totales | Subtotal, IVA, total actualizados | ✅ | Descuento 10% → -$5,000; IVA $7,200; Total $52,200 (matemáticamente correcto). |
-| 1.4 | Validar campos obligatorios vacíos | Error / form no se envía | ❌ **BUG-4** | `guardar_ajax` acepta nombre vacío → crea obra `OB-00004` (activo=0, soft-deleted de inmediato). Falta validación server-side en `guardar_ajax`. No implementado (ver §9 BUG-4). |
+| 1.4 | Validar campos obligatorios vacíos | Error / form no se envía | ✅ **CORREGIDO** | Al probar, `guardar_ajax` aceptó nombre vacío → creó la obra `OB-00004` (soft-deleted de inmediato). Validación agregada el 2026-09-07 (server-side en `guardar_ajax` + client-side en `guardarObra()`). Pendiente re-ejecutar el caso en la próxima sesión QA (ver §9 BUG-4). |
 
 ## 2. Cálculo de materiales
 
@@ -73,7 +73,7 @@
 | 7.2 | Rutas `almacen/Entregas` funcionan | Sin 404 | ✅ | Carga OK |
 | 7.3 | Toasts `showErpToast` reemplazan alert() en detalle | Sin popups nativos | ✅ | Por código: acciones AJAX del detalle usan `showErpToast`; sin `alert()` nativos (confirm() sólo en eliminaciones) |
 | 7.4 | Pagos: registrar, ver recibo, cancelar | Sin errores | ✅ | Pago TEST-QA $100 registrado (pago_id=2) → total $2,100; modal "Ver Recibo" (REC-00001) OK; cancelado → totales revertidos a $2,000.00 (pago queda `activo=0`) |
-| 7.5 | Archivos: subir, eliminar | Sin errores | ✅ | TEST-QA-archivo.png subido (id=1) y eliminado (fila + archivo físico). ⚠️ Ver BUG-3 (preview roto al subir) |
+| 7.5 | Archivos: subir, eliminar | Sin errores | ✅ | TEST-QA-archivo.png subido (id=1) y eliminado (fila + archivo físico). BUG-3 (preview roto al subir) corregido el 2026-09-07 (ver §9 BUG-3). |
 | 7.6 | Comentarios: agregar | Sin errores | ⏭️ SKIP | No existe endpoint para eliminar comentarios (`obras_comentarios`); un TEST-QA dejaría residuo permanente no limpiable por UI |
 
 ---
@@ -93,7 +93,7 @@
 
 | Área | Estado |
 |------|--------|
-| Alta/edición obra | ✅ **BUG-1 CORREGIDO** (OB-00003 generado correctamente). ⚠️ BUG-4 nuevo: falta validación nombre vacío. |
+| Alta/edición obra | ✅ **BUG-1 y BUG-4 CORREGIDOS** (OB-00003 generado correctamente; validación de nombre/cliente agregada en `guardar_ajax`). |
 | Cálculo materiales | ✅ Con matices (2.1-2.3 OK, 2.4 ⚠️ dato histórico) |
 | Vinculación OV | ✅ (3.1 y 3.4 ejecutados; 3.2-3.3 confirmados por código) |
 | Materiales → Producción | ✅ (pre-órdenes generadas y no duplicadas) |
@@ -108,14 +108,17 @@
 **BUG-1 — CRÍTICO: no se podía crear ninguna obra nueva. CORREGIDO 2026-09-07.**
 Fix: `application/models/Obras/ObrasModel.php` — `generar_folio()` rediseñado para calcular `MAX(CAST(SUBSTRING(folio,4) AS UNSIGNED))` sobre todas las filas (activas e inactivas), ignorando folios no numéricos. Verificación: con `OB-TEST-002` inactiva presente → folio generado `OB-00003` ✅.
 
-**BUG-2 — MENOR: ruta huérfana de recibo rota (pendiente).**
-`GET /obras/Obras/ver_recibo/2` → "Unable to load the requested file: **obras/recibo.php**" (la vista no existe; controller `obras/Obras.php:571`). Sin enlace desde la UI (el detalle usa modal con `get_pagos_ajax`), pero el endpoint público rompe.
+**BUG-2 — MENOR: ruta huérfana de recibo rota. CORREGIDO 2026-09-07.**
+`GET /obras/Obras/ver_recibo/2` → "Unable to load the requested file: **obras/recibo.php**" (la vista no existía; controller `obras/Obras.php:571`). Sin enlace desde la UI (el detalle usa modal con `get_pagos_ajax`), pero el endpoint público rompía.
+Fix: creada `application/views/obras/recibo.php` (fragmento autocontenido, balance `<div>` 0) y `ver_recibo()` ahora renderiza con el layout `layouts/general_template` (`viewData['pageTitle'|'pageView'|'pago']`). Commit `dad4cd3`. Verificado: `php -l` OK y `get_pago()` devuelve todos los campos usados por la vista.
 
-**BUG-3 — MENOR: preview de archivos subidos roto (pendiente).**
-`subir_archivo_ajax` guarda `ruta_archivo = $upload_data['full_path']` (ruta absoluta del servidor, `Obras.php:417`) y `detalle.php:312` la imprime como `src="<?= base_url() . $archivo->ruta_archivo ?>"` → URL inválida (`https://dominio//home/admin/...`) → la imagen no carga. Afecta vista previa/descarga de archivos.
+**BUG-3 — MENOR: preview de archivos subidos roto. CORREGIDO 2026-09-07.**
+`subir_archivo_ajax` guardaba `ruta_archivo = $upload_data['full_path']` (ruta absoluta del servidor, `Obras.php:417`) y `detalle.php:312` la imprimía como `src="<?= base_url() . $archivo->ruta_archivo ?>"` → URL inválida (`https://dominio//home/admin/...`) → la imagen no cargaba.
+Fix: `subir_archivo_ajax()` ahora guarda la ruta relativa `uploads/obras/{obra_id}/{file_name}`; el preview de `detalle.php` normaliza rutas legacy absolutas (strip de `FCPATH`) y `ObrasModel::eliminar_archivo()` resuelve la ruta física antes de `unlink()`. Commit `dad4cd3`. No se migraron registros viejos (el manejo legacy los cubre).
 
-**BUG-4 — MENOR: `guardar_ajax` acepta nombre de obra vacío (pendiente).**
-Repro: POST a `obras/Obras/guardar_ajax` con `nombre=''` → `success:true`, obra creada. Falta validación server-side en el controlador. Fix sugerido: agregar `if(empty($this->input->post('nombre')))` antes del insert. Obra `OB-00004` (nombre vacío) creada durante prueba → soft-deleted de inmediato.
+**BUG-4 — MENOR: `guardar_ajax` acepta nombre de obra vacío. CORREGIDO 2026-09-07.**
+Repro: POST a `obras/Obras/guardar_ajax` con `nombre=''` → `success:true`, obra creada. Obra `OB-00004` (nombre vacío) creada durante prueba → soft-deleted de inmediato.
+Fix: validación server-side en `guardar_ajax()` (`trim()` del nombre y `cliente_id > 0`, responde `success:false` con mensaje) + validación client-side en `guardarObra()` (`index.php`). Commit `dad4cd3`. Pendiente: re-ejecutar el caso 1.4 en la próxima sesión QA.
 
 **BUG-5 — MAYOR: `AlmacenModel::get_obras_pendientes()` filtraba por estatus inválidos (pendiente de formalizar en BD). CORREGIDO 2026-09-07.**
 El método usaba `WHERE estatus IN ('Confirmada','En Proceso')` — valores inexistentes en el ENUM de `obras.estatus`. Corrección: reemplazados por `'Aprobada'` y `'En Ejecución'`. `application/models/Almacen/AlmacenModel.php` línea 254.
@@ -137,5 +140,6 @@ El `$movimiento_data` incluía `referencia_tipo` y `referencia_id` que no existe
 - **B.** Residuos de iteraciones anteriores (NO TEST-QA, NO tocados): OVs `OV-TEST-001` y `OV-2026-0004` + cliente ficticio "Empresa de Prueba S.A." en Almacén/CRM. Recomendación: cancelarlos/verificarlos.
 - **C.** BUG-1 corregido permanentemente: la query usa MAX numérico, folios no numéricos no interfieren.
 - **D.** Ninguna formulación activa de productos muestreados define `rendimiento_m2_por_kg`; el cálculo de obra depende de captura manual por línea. Pendiente de negocio: poblar rendimientos en `Producción > Productos`.
-- **E.** Generadores de folio con el mismo patrón defectuoso (ORDER BY id DESC + intval/cast) — NO corregidos, solo reportados: `Compras/OrdenesCompraModel.php:367-385`, `Compras/CotizacionesModel.php:108-130` (generar_folio y generar_grupo_folio), `Obras/ObrasModel.php:388-404` (generar_folio_recibo).
+- **E.** Generadores de folio con el mismo patrón defectuoso (ORDER BY id DESC + intval/cast) — **CORREGIDOS 2026-09-07** con `MAX(CAST(SUBSTRING(...) AS UNSIGNED))` (mismo enfoque del BUG-1), commit `dad4cd3`: `Compras/OrdenesCompraModel.php::generar_folio()`, `Compras/CotizacionesModel.php::generar_folio()` y `::generar_grupo_folio()`, `Obras/ObrasModel.php::generar_folio_recibo()`.
 - **F.** Tab Entregas en modal de entrega (AlmacenModel): la columna `Entregado` del modal muestra 0.00 incluso después de entregas (no se refresca). Hallazgo cosmético, no crítico.
+- **G.** *(2026-09-10)* Correcciones de BUG-2/3/4 y del hallazgo E integradas en `iteracion-3` (commit `dad4cd3`, pusheado a `origin`). El fix del dashboard del prompt de pendientes (T5) fue superado por la reescritura del dashboard del agente cloud, integrada en el merge `f008279`. Pendiente: validación manual de UI post-merge (dashboard por permisos, toggle de tema, login) y merge de `iteracion-3` → `main`.
