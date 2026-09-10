@@ -1,0 +1,525 @@
+[
+  {
+    "imagen": "entrenamiento21.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "PINTU FLEX",
+      "codigo_o_referencia": "M-325",
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 27.0,
+      "unidad": "Kg",
+      "presentacion": "Cubeta"
+    },
+    "componentes": [
+      {
+        "nombre": "ANTIESPUMANTE",
+        "porcentaje": 0.1,
+        "cantidad": 0.027,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "RESINA QE-220S",
+        "porcentaje": 15.0,
+        "cantidad": 4.05,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "RESINA QE-2383",
+        "porcentaje": 15.0,
+        "cantidad": 4.05,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "CAOLIN",
+        "porcentaje": 20.0,
+        "cantidad": 5.4,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "BIOXIDO DETITANEO",
+        "porcentaje": 20.0,
+        "cantidad": 5.4,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "BERMOCOL481FQ",
+        "porcentaje": 0.3,
+        "cantidad": 0.081,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "TEXANOL",
+        "porcentaje": null,
+        "cantidad": 0.675,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "MONOETILENGLICOL",
+        "porcentaje": null,
+        "cantidad": 0.27,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "AMONIACO",
+        "porcentaje": 0.12,
+        "cantidad": 0.0324,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "ADECIDE",
+        "porcentaje": 0.2,
+        "cantidad": 0.054,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "DISPERSANTE",
+        "porcentaje": 0.4,
+        "cantidad": 0.108,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "TRIPOLIFOSFATO DEPOTASIO",
+        "porcentaje": 0.1,
+        "cantidad": 0.027,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "AGUA",
+        "porcentaje": 25.28,
+        "cantidad": 6.8256,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 27.0,
+      "costo_total": null,
+      "precio_venta": null
+    },
+    "dudas": [
+      "Porcentajes fragmentados por OCR: TEXANOL '50%' (x≈617) y MONOETILENGLICOL '00%' (x≈642), sin dígitos iniciales; quedaron en null. Las cantidades implican 2.50% (0.675/27.000) y 1.00% (0.270/27.000) respectivamente.",
+      "El texto 'M-325' aparece aislado dos veces (y≈188 y y≈656, centro de la hoja); se registró como posible código/referencia de producto, sin confirmar.",
+      "Bloque duplicado de nombres en y≈547 (BIOXIDO DE TITANEO, '6BERMOCOL481FQ' con un '6' pegado, TEXANOL, MONOETILENGLICOL) junto a rótulos CUBETA/KILOS; no se usó para cantidades.",
+      "Verificación aritmética correcta: suma de porcentajes = 100.00%; suma de cantidades = 27.000 Kg = lote; cada porcentaje × 27.000 ≈ cantidad.",
+      "No se detectaron columnas de precio ni subtotales.",
+      "Lecturas limpias: 'BIOXIDO DETITANEO' → 'BIÓXIDO DE TITANEO'; 'TRIPOLIFOSFATO DEPOTASIO' → 'TRIPOLIFOSFATO DE POTASIO'; 'RESINAQE-220S' (OCR pegado) → 'RESINA QE-220S'."
+    ],
+    "confianza": 0.85
+  },
+  {
+    "imagen": "entrenamiento22.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "CHISA PLUS",
+      "codigo_o_referencia": "C/QE220-S C/QE2383",
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 27.0,
+      "unidad": "Kg",
+      "presentacion": "Cubeta"
+    },
+    "componentes": [
+      {
+        "nombre": "ANTIESPUMANTE",
+        "porcentaje": 0.1,
+        "cantidad": 0.027,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "RESINA QE220-S",
+        "porcentaje": 19.0,
+        "cantidad": 5.13,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "RESINA QE2383",
+        "porcentaje": 19.0,
+        "cantidad": 5.13,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "BLANCOFIJO MICRO",
+        "porcentaje": 10.0,
+        "cantidad": 2.7,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINA CLORADA S-25",
+        "porcentaje": 0.5,
+        "cantidad": 0.135,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "BIOXIDODETITANEO R-902",
+        "porcentaje": 22.0,
+        "cantidad": 5.94,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "BERMOCOLL481-FQ",
+        "porcentaje": 0.36,
+        "cantidad": 0.097,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "TEXANOL",
+        "porcentaje": 2.5,
+        "cantidad": 0.675,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "MONOETILENGLICOL",
+        "porcentaje": 1.0,
+        "cantidad": 0.27,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "AMONIACO",
+        "porcentaje": 0.1,
+        "cantidad": 0.027,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "ADECIDE",
+        "porcentaje": 0.2,
+        "cantidad": 0.054,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "DIPERSANTE",
+        "porcentaje": 0.4,
+        "cantidad": 0.108,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "EDENOL DOA",
+        "porcentaje": 0.4,
+        "cantidad": 0.108,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "AGUA",
+        "porcentaje": 24.44,
+        "cantidad": 6.599,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 27.0,
+      "costo_total": null,
+      "precio_venta": null
+    },
+    "dudas": [
+      "El bloque superior derecho dice literalmente 'C/QE220-S C/QE2383 CHISA PLUS' (y≈107-111, x≈801-849); se tomó 'CHISA PLUS' como nombre de producto y 'C/QE220-S C/QE2383' como posible referencia/variante, sin confirmar.",
+      "Ruido OCR pegado a porcentajes: '10.00%B', '0.50%F', '22.00%B' (letras sueltas ignoradas).",
+      "Nombres literales conservados con lectura limpia probable: 'DIPERSANTE' → 'DISPERSANTE'; 'BLANCOFIJO MICRO' → 'BLANCO FIJO MICRO'; 'BIOXIDODETITANEO R-902' → 'BIÓXIDO DE TITANEO R-902'; 'RESINA QE220-S'/'RESINA QE2383' → 'RESINA QE-220S'/'RESINA QE-2383'.",
+      "'BLANCOFIJO MICRO' y 'PARAFINA CLORADA S-25' se tomaron como dos componentes separados porque cada uno tiene porcentaje y cantidad propios (10.00%/2.700 y 0.50%/0.135); podrían formar un nombre compuesto.",
+      "Verificación aritmética correcta: suma de porcentajes = 100.00%; suma de cantidades = 27.000 Kg = lote. (0.36% × 27.000 = 0.0972, OCR 0.097; 24.44% × 27.000 = 6.5988, OCR 6.599; redondeos consistentes).",
+      "Bloque duplicado de nombres en y≈518-523 (BERMOCOLL481-FQ, BLANCO FIJO MICRO, PARAFINA CLORADA S-25, BIOXIDO DE TITANEO R-902, TEXANOL); no se usó para cantidades.",
+      "No se detectaron columnas de precio ni subtotales."
+    ],
+    "confianza": 0.88
+  },
+  {
+    "imagen": "rendimientos.jpeg",
+    "tipo_documento": "rendimientos",
+    "filas": [
+      {
+        "producto": "MORTERO PLASTICO",
+        "presentacion": "Cubeta",
+        "m2": 16,
+        "m2_texto_literal": "16M2",
+        "dudoso": false
+      },
+      {
+        "producto": "MORTERO PLASTICO",
+        "presentacion": "Galon",
+        "m2": 3,
+        "m2_texto_literal": "3M2",
+        "dudoso": false
+      },
+      {
+        "producto": "ARENA SILICA",
+        "presentacion": "Cubeta",
+        "m2": 22,
+        "m2_texto_literal": "22M2",
+        "dudoso": false
+      },
+      {
+        "producto": "ARENA SILICA",
+        "presentacion": "Galon",
+        "m2": 4,
+        "m2_texto_literal": "4M2",
+        "dudoso": false
+      },
+      {
+        "producto": "SELLADORI.(PRAIMER)",
+        "presentacion": "Cubeta",
+        "m2": 90,
+        "m2_texto_literal": "90M2",
+        "dudoso": false
+      },
+      {
+        "producto": "SELLADORI.(PRAIMER)",
+        "presentacion": "Galon",
+        "m2": 18,
+        "m2_texto_literal": "18M2",
+        "dudoso": false
+      },
+      {
+        "producto": "SELLADORF.(VITRO GLASSECO)",
+        "presentacion": "Cubeta",
+        "m2": 190,
+        "m2_texto_literal": "190M2",
+        "dudoso": false
+      },
+      {
+        "producto": "SELLADORF.(VITRO GLASSECO)",
+        "presentacion": "Galon",
+        "m2": 38,
+        "m2_texto_literal": "38M2",
+        "dudoso": false
+      },
+      {
+        "producto": "PASTA PARA TEXTURIZARINT.",
+        "presentacion": "Cubeta",
+        "m2": null,
+        "m2_texto_literal": "14-16M2",
+        "dudoso": false
+      },
+      {
+        "producto": "PASTA PARA TEXTURIZARINT.",
+        "presentacion": "Galon",
+        "m2": null,
+        "m2_texto_literal": "3-4M2",
+        "dudoso": false
+      },
+      {
+        "producto": "PASTA PARA TEXTURIZAR EXT.",
+        "presentacion": "Cubeta",
+        "m2": null,
+        "m2_texto_literal": "12-14M2",
+        "dudoso": false
+      },
+      {
+        "producto": "PASTA PARA TEXTURIZAR EXT.",
+        "presentacion": "Galon",
+        "m2": null,
+        "m2_texto_literal": "2-3M2",
+        "dudoso": false
+      },
+      {
+        "producto": "MARMOPLAST",
+        "presentacion": "Cubeta",
+        "m2": 7,
+        "m2_texto_literal": "7M2",
+        "dudoso": false
+      },
+      {
+        "producto": "MARMOPLAST",
+        "presentacion": "Galon",
+        "m2": 1,
+        "m2_texto_literal": "1M2",
+        "dudoso": false
+      },
+      {
+        "producto": "CASCARA DENARANJA",
+        "presentacion": "Cubeta",
+        "m2": null,
+        "m2_texto_literal": "32M230-3",
+        "dudoso": true
+      },
+      {
+        "producto": "CASCARA DENARANJA",
+        "presentacion": "Galon",
+        "m2": 6,
+        "m2_texto_literal": "6M2",
+        "dudoso": false
+      },
+      {
+        "producto": "PRIMERP/IMPERMEABILIZAR",
+        "presentacion": "Cubeta",
+        "m2": 80,
+        "m2_texto_literal": "80M2",
+        "dudoso": false
+      },
+      {
+        "producto": "MARMOFLEX",
+        "presentacion": "Cubeta",
+        "m2": 5,
+        "m2_texto_literal": "5M2",
+        "dudoso": true
+      },
+      {
+        "producto": "MARMOFLEX",
+        "presentacion": "Galon",
+        "m2": 30,
+        "m2_texto_literal": "30M2",
+        "dudoso": true
+      },
+      {
+        "producto": "CHISA GLASS",
+        "presentacion": "Cubeta",
+        "m2": null,
+        "m2_texto_literal": "55-60M2",
+        "dudoso": false
+      },
+      {
+        "producto": "CHISA GLASS",
+        "presentacion": "Galon",
+        "m2": null,
+        "m2_texto_literal": "11-12M2",
+        "dudoso": false
+      },
+      {
+        "producto": "PINTUFLEX",
+        "presentacion": "Cubeta",
+        "m2": 90,
+        "m2_texto_literal": "90M2",
+        "dudoso": false
+      },
+      {
+        "producto": "PINTUFLEX",
+        "presentacion": "Galon",
+        "m2": 18,
+        "m2_texto_literal": "18M2",
+        "dudoso": false
+      },
+      {
+        "producto": "CHISA PLUS",
+        "presentacion": "Cubeta",
+        "m2": 90,
+        "m2_texto_literal": "90M2",
+        "dudoso": false
+      },
+      {
+        "producto": "CHISA PLUS",
+        "presentacion": "Galon",
+        "m2": 18,
+        "m2_texto_literal": "18M2",
+        "dudoso": false
+      },
+      {
+        "producto": "PINTURA ANTIBACTERIAL",
+        "presentacion": "Cubeta",
+        "m2": 90,
+        "m2_texto_literal": "90M2",
+        "dudoso": false
+      },
+      {
+        "producto": "PINTURA ANTIBACTERIAL",
+        "presentacion": "Galon",
+        "m2": 18,
+        "m2_texto_literal": "18M2",
+        "dudoso": false
+      },
+      {
+        "producto": "RODILLO",
+        "presentacion": null,
+        "m2": null,
+        "m2_texto_literal": "250M.",
+        "dudoso": false
+      },
+      {
+        "producto": "BROCHA",
+        "presentacion": null,
+        "m2": null,
+        "m2_texto_literal": "350M.",
+        "dudoso": false
+      },
+      {
+        "producto": "LIJAS MEDIANAS",
+        "presentacion": null,
+        "m2": null,
+        "m2_texto_literal": "20A30M.",
+        "dudoso": false
+      },
+      {
+        "producto": "IMASKING",
+        "presentacion": null,
+        "m2": null,
+        "m2_texto_literal": "12.5M.2",
+        "dudoso": false
+      },
+      {
+        "producto": "PAPEL",
+        "presentacion": null,
+        "m2": null,
+        "m2_texto_literal": "250M.",
+        "dudoso": false
+      }
+    ],
+    "dudas": [
+      "Columnas centrales borrosas NO interpretadas ni usadas (marcadas como dudosas): MORTERO PLASTICO → '25' (x≈256) y 'manes' (x≈309); su fila GALON → 'a' (x≈257), 'Wmese' (x≈282), 'dm' (x≈408); CHISA GLASS → 'Jsxt' (x≈202), 'SS.' (x≈287), '5' (x≈290), '90m2' (x≈343); BROCHA → '69-' (x≈232) y '20' (x≈273); LIJAS MEDIANAS → '14' (x≈245) y '30' (x≈281); IMASKING → '16:20' (x≈10) y 'SOmL' (x≈412); PAPEL → '4' (x≈254) y '10.33' (x≈259).",
+      "MARMOFLEX inconsistente: CUBETA '5M2' (y≈564) menor que GALON '30M2' (y≈586); probables valores intercambiados o mal leídos; se conservaron los literales con dudoso=true.",
+      "CASCARA DENARANJA CUBETA: literal '32M230-3' no interpretable (¿'32M2' seguido de residuo '30-3'?); m2 quedó en null.",
+      "Rendimientos en rango ('14-16M2', '3-4M2', '12-14M2', '2-3M2', '55-60M2', '11-12M2') quedaron con m2=null; el texto literal está en m2_texto_literal.",
+      "PRIMERP/IMPERMEABILIZAR solo aparece con CUBETA '80M2' (y≈538); no se detectó su fila GALON.",
+      "Filas RODILLO, BROCHA, LIJAS MEDIANAS, IMASKING y PAPEL no traen presentación CUBETA/GALON ni m² (sus rendimientos van en 'M.'/'A M.'); m2=null y literales conservados.",
+      "Fragmentos sueltos al pie de la captura, sin estructura de tabla y no interpretados: 'ki' (y≈941), 'a/cneS' (y≈1010), '028' (y≈1088), 'caja' (y≈1089), '449.80' (y≈1110), 'omplemento' (y≈1148), 'M' (y≈1252).",
+      "Encabezados detectados: 'PRODUCTO' (y≈84, x≈202) y 'RENDIMIENTO' (y≈88, x≈612); no se detectaron encabezados de CUBETA/GALON.",
+      "Lecturas limpias probables: 'CASCARA DENARANJA' → 'CÁSCARA DE NARANJA'; 'SELLADORI.(PRAIMER)' → 'SELLADOR I. (PRIMER)'; 'SELLADORF.(VITRO GLASSECO)' → 'SELLADOR F. (VITRO GLASSECO)'; 'PASTA PARA TEXTURIZARINT.' → 'PASTA PARA TEXTURIZAR INT.'; 'IMASKING' → probable 'MASKING'."
+    ],
+    "confianza": 0.8
+  }
+]

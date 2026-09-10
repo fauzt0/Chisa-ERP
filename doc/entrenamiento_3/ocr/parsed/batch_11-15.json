@@ -1,0 +1,467 @@
+[
+  {
+    "imagen": "entrenamiento11.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "SOLUCION FASE ACUOSA",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 600.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "AMONIACO",
+        "porcentaje": 0.02,
+        "cantidad": 0.12,
+        "unidad": "Kg",
+        "precio_unitario": 40.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "GOMA DEXHATAN",
+        "porcentaje": 0.58,
+        "cantidad": 3.48,
+        "unidad": "Kg",
+        "precio_unitario": 200.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "SKEN M-8",
+        "porcentaje": 0.35,
+        "cantidad": 2.1,
+        "unidad": "Kg",
+        "precio_unitario": 200.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "ADECIDE",
+        "porcentaje": 0.4,
+        "cantidad": 2.4,
+        "unidad": "Kg",
+        "precio_unitario": 99.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "SULFATO DE SODIO",
+        "porcentaje": 0.12,
+        "cantidad": 0.72,
+        "unidad": "Kg",
+        "precio_unitario": 50.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "NATROSOLTILOSE",
+        "porcentaje": 0.19,
+        "cantidad": 1.14,
+        "unidad": "Kg",
+        "precio_unitario": 230.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "AGUA",
+        "porcentaje": 98.34,
+        "cantidad": 590.04,
+        "unidad": "Kg",
+        "precio_unitario": 0.0,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 600.0,
+      "costo_total": 1656.6,
+      "precio_venta": null
+    },
+    "dudas": [
+      "'819' en la columna resumen (fila de precios, sin decimales por OCR): coincide con la suma de precios unitarios (40+200+200+99+50+230+0).",
+      "El total 600.000 se repite como columna resumen a la izquierda y bajo el rótulo 'KILOS' a la derecha.",
+      "Nombres pegados por OCR: 'NATROSOLTILOSE' (lectura separada: 'NATROSOL TILOSE'); en la fila de porcentajes aparecen 'GOMADEXHATAN' y 'SULFATODESODIO' (lecturas: 'GOMA DEXHATAN', 'SULFATO DE SODIO')."
+    ],
+    "confianza": 0.9
+  },
+  {
+    "imagen": "entrenamiento12.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "BASE ORGANICA NARANJA",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": "HOJA N12",
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 1.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "LECITINA DESOYA",
+        "porcentaje": 0.07,
+        "cantidad": 0.001,
+        "unidad": "Kg",
+        "precio_unitario": 120.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "AGUA",
+        "porcentaje": 0.14,
+        "cantidad": null,
+        "unidad": "Kg",
+        "precio_unitario": 0.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DE AEROSIL",
+        "porcentaje": 16.44,
+        "cantidad": 0.164,
+        "unidad": "Kg",
+        "precio_unitario": 106.35,
+        "subtipo": null
+      },
+      {
+        "nombre": "TINTAAZUL",
+        "porcentaje": 17.23,
+        "cantidad": null,
+        "unidad": "Kg",
+        "precio_unitario": 180.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "CARBONATO DEOMYA CAR 1-T",
+        "porcentaje": 17.61,
+        "cantidad": 0.176,
+        "unidad": "Kg",
+        "precio_unitario": 6.89,
+        "subtipo": null
+      },
+      {
+        "nombre": "TIXOGELEZ-100",
+        "porcentaje": 1.41,
+        "cantidad": 0.014,
+        "unidad": "Kg",
+        "precio_unitario": 158.67,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 23.51,
+        "cantidad": 0.235,
+        "unidad": "Kg",
+        "precio_unitario": 30.59,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DERESINA",
+        "porcentaje": 23.59,
+        "cantidad": 0.236,
+        "unidad": "Kg",
+        "precio_unitario": 148.0,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 1.0,
+      "costo_total": 92.8,
+      "precio_venta": null
+    },
+    "dudas": [
+      "Fila de cantidades con OCR inconsistente: '0.164' aparece 3 veces (x=520, 544, 569), ocupando las columnas de AGUA y TINTAAZUL (probable duplicado del valor de SOLUCION DE AEROSIL); por porcentaje×lote (1.000 kg) correspondería AGUA 0.001 (0.14%) y TINTAAZUL 0.172 (17.23%), por lo que esas cantidades quedan en null.",
+      "La suma de cantidades legibles (0.001+0.164+0.176+0.014+0.235+0.236 = 0.826) no completa el lote por las dos cantidades no legibles.",
+      "La columna resumen izquierda muestra cantidad 1.000, suma de precios unitarios $750.50 y costo total $92.80.",
+      "En cabecera, junto a 'BASE ORGANICA NARANJA', aparece 'AZULYROJO CARMIN' (¿color o segunda línea del nombre de producto?).",
+      "Nombres pegados por OCR: 'LECITINA DESOYA' ('LECITINA DE SOYA'), 'TINTAAZUL' ('TINTA AZUL'), 'CARBONATO DEOMYA CAR 1-T' ('CARBONATO DE OMYA CAR 1-T'), 'TIXOGELEZ-100' ('TIXOGEL EZ-100'), 'SOLUCION DERESINA' ('SOLUCION DE RESINA')."
+    ],
+    "confianza": 0.6
+  },
+  {
+    "imagen": "entrenamiento13.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "BASE ORGANICA NEGRA",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": "HOJA N11",
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 200.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "AGUA",
+        "porcentaje": 0.18,
+        "cantidad": 0.36,
+        "unidad": "Kg",
+        "precio_unitario": 0.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DEAEROSIL200",
+        "porcentaje": 21.89,
+        "cantidad": 43.78,
+        "unidad": "Kg",
+        "precio_unitario": 106.35,
+        "subtipo": null
+      },
+      {
+        "nombre": "LECITINA DESOYA",
+        "porcentaje": 0.1,
+        "cantidad": 0.2,
+        "unidad": "Kg",
+        "precio_unitario": 120.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINA CLORADA(S-52)",
+        "porcentaje": 1.58,
+        "cantidad": 3.16,
+        "unidad": "Kg",
+        "precio_unitario": 51.32,
+        "subtipo": null
+      },
+      {
+        "nombre": "TINTANEGRA",
+        "porcentaje": 3.76,
+        "cantidad": 7.52,
+        "unidad": "Kg",
+        "precio_unitario": 120.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "CARBONATODEOMYA CAR1-T",
+        "porcentaje": 23.43,
+        "cantidad": 46.86,
+        "unidad": "Kg",
+        "precio_unitario": 6.89,
+        "subtipo": null
+      },
+      {
+        "nombre": "TIXO GELEZ-100",
+        "porcentaje": 1.87,
+        "cantidad": 3.74,
+        "unidad": "Kg",
+        "precio_unitario": 156.67,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 16.7,
+        "cantidad": 33.4,
+        "unidad": "Kg",
+        "precio_unitario": 30.59,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DE RESINA",
+        "porcentaje": 30.49,
+        "cantidad": 60.98,
+        "unidad": "Kg",
+        "precio_unitario": 148.0,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 200.0,
+      "costo_total": 16700.0,
+      "precio_venta": null
+    },
+    "dudas": [
+      "En cabecera, junto a 'BASE ORGANICA NEGRA', aparece 'VERDE CROMO' (¿color o segundo componente/fase?).",
+      "Columna resumen izquierda: '739.818' (coincide con la suma de precios unitarios) y '$16,700.' con decimales truncados por OCR (la suma de subtotales da ≈$16,700.1).",
+      "Nombres pegados por OCR: 'SOLUCION DEAEROSIL200' ('SOLUCION DE AEROSIL 200'), 'TINTANEGRA' ('TINTA NEGRA'), 'CARBONATODEOMYA CAR1-T' ('CARBONATO DE OMYA CAR 1-T'), 'TIXO GELEZ-100' ('TIXOGEL EZ-100')."
+    ],
+    "confianza": 0.85
+  },
+  {
+    "imagen": "entrenamiento14.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "BASE ORGANICA ROJO OXIDO",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": "HOJA N°10",
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 200.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "AGUA",
+        "porcentaje": 0.19,
+        "cantidad": 0.38,
+        "unidad": "Kg",
+        "precio_unitario": 0.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DEAEROSIL200",
+        "porcentaje": 22.16,
+        "cantidad": 44.32,
+        "unidad": "Kg",
+        "precio_unitario": 106.35,
+        "subtipo": null
+      },
+      {
+        "nombre": "LECITINA DESOYA",
+        "porcentaje": 0.1,
+        "cantidad": 0.2,
+        "unidad": "Kg",
+        "precio_unitario": 120.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINA CLORADA(S-52)",
+        "porcentaje": 0.95,
+        "cantidad": 1.9,
+        "unidad": "Kg",
+        "precio_unitario": 51.18,
+        "subtipo": null
+      },
+      {
+        "nombre": "PIGMENTOROJO OXIDO",
+        "porcentaje": 5.93,
+        "cantidad": 11.86,
+        "unidad": "Kg",
+        "precio_unitario": 99.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "CARBONATO DEOMYA CAR1-T",
+        "porcentaje": 23.73,
+        "cantidad": 47.46,
+        "unidad": "Kg",
+        "precio_unitario": 6.89,
+        "subtipo": null
+      },
+      {
+        "nombre": "TIXOGELEZ-100",
+        "porcentaje": 1.9,
+        "cantidad": 3.8,
+        "unidad": "Kg",
+        "precio_unitario": 158.67,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 14.18,
+        "cantidad": 28.36,
+        "unidad": "Kg",
+        "precio_unitario": 30.59,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DERESINA",
+        "porcentaje": 30.86,
+        "cantidad": 61.72,
+        "unidad": "Kg",
+        "precio_unitario": 148.0,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 200.0,
+      "costo_total": 16940.85,
+      "precio_venta": null
+    },
+    "dudas": [
+      "Columna resumen izquierda: '720.68' (coincide con la suma de precios unitarios) y $16,940.85 (costo total; coincide con la suma de subtotales).",
+      "Nombres pegados por OCR: 'SOLUCION DEAEROSIL200' ('SOLUCION DE AEROSIL 200'), 'PIGMENTOROJO OXIDO' ('PIGMENTO ROJO OXIDO'), 'CARBONATO DEOMYA CAR1-T' ('CARBONATO DE OMYA CAR 1-T'), 'LECITINA DESOYA' ('LECITINA DE SOYA'), 'SOLUCION DERESINA' ('SOLUCION DE RESINA')."
+    ],
+    "confianza": 0.9
+  },
+  {
+    "imagen": "entrenamiento15.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "SOLUCION FASE ACUOSA",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 600.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "AMONIACO",
+        "porcentaje": 0.02,
+        "cantidad": 0.12,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "GOMADEXHATAN",
+        "porcentaje": 0.58,
+        "cantidad": 3.48,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "SKEN M-8",
+        "porcentaje": 0.42,
+        "cantidad": 2.52,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "ADECIDE",
+        "porcentaje": 0.42,
+        "cantidad": 2.52,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "SULFATO DE SODIO",
+        "porcentaje": 0.12,
+        "cantidad": 0.72,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "NATROSOL TILOSE",
+        "porcentaje": 0.19,
+        "cantidad": 1.14,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "AGUA",
+        "porcentaje": 98.25,
+        "cantidad": 589.5,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 600.0,
+      "costo_total": null,
+      "precio_venta": null
+    },
+    "dudas": [
+      "El OCR no incluye filas de precios ni subtotales (solo cantidades); precio_unitario y costo_total quedan en null.",
+      "Nombre 'GOMADEXHATAN' (lectura separada: 'GOMA DEXHATAN')."
+    ],
+    "confianza": 0.85
+  }
+]

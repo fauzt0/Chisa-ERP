@@ -1,0 +1,457 @@
+[
+  {
+    "imagen": "entrenamiento16.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "BASE ORGANICA BLANCA",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 1000.0,
+      "unidad": "Kg",
+      "presentacion": null
+    },
+    "componentes": [
+      {
+        "nombre": "AGUA",
+        "porcentaje": 0.18,
+        "cantidad": 1.8,
+        "unidad": "Kg",
+        "precio_unitario": 0.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DEAEROSIL200",
+        "porcentaje": 21.3,
+        "cantidad": 213.0,
+        "unidad": "Kg",
+        "precio_unitario": 106.35,
+        "subtipo": null
+      },
+      {
+        "nombre": "ANTITERRA204",
+        "porcentaje": 0.04,
+        "cantidad": 0.4,
+        "unidad": "Kg",
+        "precio_unitario": 385.92,
+        "subtipo": null
+      },
+      {
+        "nombre": "LECITINADESOYA",
+        "porcentaje": 0.1,
+        "cantidad": 1.0,
+        "unidad": "Kg",
+        "precio_unitario": 120.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINA CLORADA(S-52)",
+        "porcentaje": 1.8,
+        "cantidad": 18.0,
+        "unidad": "Kg",
+        "precio_unitario": 51.18,
+        "subtipo": null
+      },
+      {
+        "nombre": "CARBONATO DEOMYA CAR 1T",
+        "porcentaje": 9.1,
+        "cantidad": 91.0,
+        "unidad": "Kg",
+        "precio_unitario": 6.89,
+        "subtipo": null
+      },
+      {
+        "nombre": "BIOXIDODETITANEO",
+        "porcentaje": 17.16,
+        "cantidad": 171.6,
+        "unidad": "Kg",
+        "precio_unitario": 95.0,
+        "subtipo": null
+      },
+      {
+        "nombre": "TIXOGELEZ-100",
+        "porcentaje": 1.81,
+        "cantidad": 18.1,
+        "unidad": "Kg",
+        "precio_unitario": 158.67,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 17.26,
+        "cantidad": 172.6,
+        "unidad": "Kg",
+        "precio_unitario": 30.59,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DE RESINA",
+        "porcentaje": 31.25,
+        "cantidad": 312.5,
+        "unidad": "Kg",
+        "precio_unitario": 148.0,
+        "subtipo": null
+      }
+    ],
+    "variantes": [],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 1000.0,
+      "costo_total": 95178.909,
+      "precio_venta": null
+    },
+    "dudas": [
+      "Rótulo del total leído '$95.178.909' (puntos en vez de comas): se interpreta $95,178.909 y coincide exactamente con la suma de subtotales (0 + 22,652.550 + 154.368 + 120.000 + 921.240 + 626.990 + 16,302.000 + 2,871.927 + 5,279.834 + 46,250.000).",
+      "'1102.6' sin símbolo $ = suma de precios unitarios; el precio de AGUA se imprime como $0.00 y su subtotal $0.000.",
+      "'0.18%AGUA' con cantidad 1.800 Kg: porcentaje de agua atípicamente bajo; verificar.",
+      "Nombres con OCR pegado (se conserva el literal): 'SOLUCION DEAEROSIL200' (¿SOLUCION DE AEROSIL 200?), 'LECITINADESOYA' (¿LECITINA DE SOYA?), 'CARBONATO DEOMYA CAR 1T' (¿CARBONATO DE OMYA CAR 1T?; en y=594 se lee 'CARBONATODEOMYACAR1T'), 'BIOXIDODETITANEO' (¿BIOXIDO DE TITANEO?), 'TIXOGELEZ-100' (¿TIXOGEL EZ-100?).",
+      "Sin código, hoja ni cliente visibles; único rótulo de unidad: KILOS."
+    ],
+    "confianza": 0.9
+  },
+  {
+    "imagen": "entrenamiento17.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "SOLUCION DEAEROSIL200",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 213.0,
+      "unidad": "Kg",
+      "presentacion": null
+    },
+    "componentes": [
+      {
+        "nombre": "SOLUCION DE PLIOWAY E-CH",
+        "porcentaje": 38.2,
+        "cantidad": 81.366,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 49.66,
+        "cantidad": 105.776,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "AEROSIL200",
+        "porcentaje": 12.14,
+        "cantidad": 25.858,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      }
+    ],
+    "variantes": [],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 213.0,
+      "costo_total": null,
+      "precio_venta": null
+    },
+    "dudas": [
+      "Título leído 'SOLUCION DEAEROSIL200' (probable 'SOLUCION DE AEROSIL 200'); el mismo texto 'AEROSIL200' aparece como componente.",
+      "'213.000' aparece dos veces: columna total izquierda y panel derecho junto a 'KILOS'; ambas coinciden con el lote.",
+      "Verificación: 38.20%×213=81.366; 49.66%×213=105.776; 12.14%×213=25.858.",
+      "Sin precios, subtotales, presentación ni códigos visibles."
+    ],
+    "confianza": 0.88
+  },
+  {
+    "imagen": "entrenamiento18.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "BASEORGANICA BLANCA",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 1000.0,
+      "unidad": "Kg",
+      "presentacion": null
+    },
+    "componentes": [
+      {
+        "nombre": "AGUA",
+        "porcentaje": 0.18,
+        "cantidad": 1.8,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DEAEROSIL200",
+        "porcentaje": 21.3,
+        "cantidad": 213.0,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "ANTITERRA204",
+        "porcentaje": 0.04,
+        "cantidad": 0.4,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "LECITINA DESOYA",
+        "porcentaje": 0.1,
+        "cantidad": 1.0,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINA CLORADA（S-52)",
+        "porcentaje": 1.8,
+        "cantidad": 18.0,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "CARBONATODEOMYA CAR1T",
+        "porcentaje": 9.1,
+        "cantidad": 91.0,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "BIOXIDO DETITANEO",
+        "porcentaje": 17.16,
+        "cantidad": 171.6,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "TIXOGELEZ-100",
+        "porcentaje": 1.81,
+        "cantidad": 18.1,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 17.26,
+        "cantidad": 172.6,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "SOLUCION DE RESINA",
+        "porcentaje": 31.25,
+        "cantidad": 312.5,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      }
+    ],
+    "variantes": [],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 1000.0,
+      "costo_total": null,
+      "precio_venta": null
+    },
+    "dudas": [
+      "Misma formulación que entrenamiento16 (BASE ORGANICA BLANCA, lote 1000.000) pero sin filas de precios/subtotales en el OCR.",
+      "'0.18%AGUA' con cantidad 1.800 Kg: porcentaje de agua atípicamente bajo; verificar.",
+      "Nombres con OCR pegado (se conserva el literal): 'SOLUCION DEAEROSIL200' (¿SOLUCION DE AEROSIL 200?), 'LECITINA DESOYA' (¿LECITINA DE SOYA?), 'CARBONATODEOMYA CAR1T' (en y=625 se lee también 'CARBONATO DEOMYA CAR1T'), 'BIOXIDO DETITANEO' (¿BIOXIDO DE TITANEO?).",
+      "Se conserva el paréntesis de ancho completo en 'PARAFINA CLORADA（S-52)' tal como lo capturó el OCR.",
+      "Sin código, hoja ni cliente visibles; único rótulo de unidad: KILOS (1000.000)."
+    ],
+    "confianza": 0.9
+  },
+  {
+    "imagen": "entrenamiento19.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "SOLUCION DE RESINA EC-1",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 393.866,
+      "unidad": "Kg",
+      "presentacion": null
+    },
+    "componentes": [
+      {
+        "nombre": "ANTITERRA 204",
+        "porcentaje": 0.64,
+        "cantidad": 2.521,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOL D-40",
+        "porcentaje": 49.68,
+        "cantidad": 195.673,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      },
+      {
+        "nombre": "PLIOWAY EC-1",
+        "porcentaje": 49.68,
+        "cantidad": 195.673,
+        "unidad": "Kg",
+        "precio_unitario": null,
+        "subtipo": null
+      }
+    ],
+    "variantes": [],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 393.866,
+      "costo_total": null,
+      "precio_venta": null
+    },
+    "dudas": [
+      "'EXXOL' y 'D-40' detectados en líneas separadas (y≈98-102 y y≈194; 'D-40' reaparece en y≈698): se unió como 'EXXOL D-40'.",
+      "'393.866' aparece como total izquierdo y en el panel derecho junto a 'KILOS'.",
+      "Verificación: 0.64%×393.866=2.521; 49.68%×393.866=195.673 (×2).",
+      "Sin precios, subtotales, presentación ni códigos visibles."
+    ],
+    "confianza": 0.85
+  },
+  {
+    "imagen": "entrenamiento20-grupo.jpeg",
+    "tipo_documento": "formulacion_grupo",
+    "producto": {
+      "nombre": "CHISA GLASSREF T034",
+      "codigo_o_referencia": "T034",
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 19.35,
+      "unidad": "Kg",
+      "presentacion": null
+    },
+    "componentes": [
+      {
+        "nombre": "FASE ACUOSA",
+        "porcentaje": 45.0,
+        "cantidad": 8.706,
+        "unidad": "Kg",
+        "precio_unitario": 3.2,
+        "subtipo": null
+      },
+      {
+        "nombre": "VERDE",
+        "porcentaje": null,
+        "cantidad": 0.475,
+        "unidad": "Kg",
+        "precio_unitario": 48.59,
+        "subtipo": null
+      },
+      {
+        "nombre": "AZUL",
+        "porcentaje": null,
+        "cantidad": 0.082,
+        "unidad": "Kg",
+        "precio_unitario": 44.14,
+        "subtipo": null
+      },
+      {
+        "nombre": "NEGRO",
+        "porcentaje": null,
+        "cantidad": 0.108,
+        "unidad": "Kg",
+        "precio_unitario": 48.59,
+        "subtipo": null
+      },
+      {
+        "nombre": "ROJO",
+        "porcentaje": null,
+        "cantidad": 0.236,
+        "unidad": "Kg",
+        "precio_unitario": 48.88,
+        "subtipo": null
+      },
+      {
+        "nombre": "AMARILLO",
+        "porcentaje": null,
+        "cantidad": 0.359,
+        "unidad": "Kg",
+        "precio_unitario": 48.85,
+        "subtipo": null
+      },
+      {
+        "nombre": "BLANCO",
+        "porcentaje": null,
+        "cantidad": 9.384,
+        "unidad": "Kg",
+        "precio_unitario": 56.78,
+        "subtipo": null
+      }
+    ],
+    "variantes": [
+      {
+        "color": "NEGRO",
+        "porcentaje_color": 4.6,
+        "cantidad_color": 0.89,
+        "costo_total": null,
+        "precio_unitario": null
+      },
+      {
+        "color": "BLANCO",
+        "porcentaje_color": 85.0,
+        "cantidad_color": 16.448,
+        "costo_total": null,
+        "precio_unitario": null
+      },
+      {
+        "color": "AZUL",
+        "porcentaje_color": 5.2,
+        "cantidad_color": 1.006,
+        "costo_total": null,
+        "precio_unitario": null
+      },
+      {
+        "color": "AMARILLO",
+        "porcentaje_color": 5.2,
+        "cantidad_color": 1.006,
+        "costo_total": null,
+        "precio_unitario": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 19.35,
+      "costo_total": 621.7,
+      "precio_venta": null
+    },
+    "dudas": [
+      "Grupo de 4 sub-formulaciones que suman el lote: NEGRO 0.890 + BLANCO 16.448 + AZUL 1.006 + AMARILLO 1.006 = 19.350 Kg (4.60%+85.00%+5.20%+5.20%=100.00%).",
+      "Sus colorantes suman exactamente los del bloque base: NEGRO 0.015+0.039+0.054=0.108; VERDE 0.475; AMARILLO 0.181+0.029+0.149=0.359; BLANCO 8.865+0.306+0.213=9.384; ROJO 0.098+0.138=0.236; AZUL 0.082.",
+      "Sub-recetas (OCR literal): NEGRO '100.00% 3.00% 97.00%' con 0.490 Kg = NEGRO 0.015 + VERDE 0.475; BLANCO '100.00% 2.00% 98.00%' con 9.046 Kg = AMARILLO 0.181 + BLANCO 8.865; AZUL '100.00% 7.02% 5.23% 17.71% 14.81% 55.23%' con 0.553 Kg = NEGRO 0.039 + AMARILLO 0.029 + ROJO 0.098 + AZUL 0.082 + BLANCO 0.306; AMARILLO '100.00% 9.72% 25.00% 26.86% 38.42%' con 0.553 Kg = NEGRO 0.054 + ROJO 0.138 + AMARILLO 0.149 + BLANCO 0.213.",
+      "FASE ACUOSA 45.00% en cada variante (impreso); kg de FASE por variante (fila '0.401 / 7.401 / 0.453 / 0.453') = 45% del lote de cada variante.",
+      "Precios corregidos por aritmética: OCR '548.59'→48.59 y '544.14'→44.14 (0.475×48.59=23.08 y 0.082×44.14=3.62, subtotales impresos); OCR '$2786'→27.86 (8.706×3.20).",
+      "Totales impresos del bloque base: 593.84 (subtotal colorantes), 27.86 (FASE ACUOSA) y 621.70 (total); $3.20/Kg de FASE ACUOSA. Las variantes no muestran precios.",
+      "Aparecen rótulos 'COLORCREMA' (columna junto a BLANCO), 'COLORAZUL' (junto a AZUL) y 'COLORCAFE' (junto a AMARILLO) sin % ni Kg propios: podrían ser nombres de variante o etiquetas de color; no se incluyeron como componentes.",
+      "Nombres repetidos en y≈524-527 (VERDE, AMARILLO, NEGRO, ROJO, BLANCO): probable doble lectura de la fila de nombres o columna extra; no se usó.",
+      "El % de cada colorante del bloque base no está impreso (sólo Kg, precio y subtotal); se dejó null. El 45.00% sí está impreso en las 4 variantes; en el bloque base se infiere de 8.706/19.350."
+    ],
+    "confianza": 0.55
+  }
+]

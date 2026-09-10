@@ -1,0 +1,353 @@
+[
+  {
+    "imagen": "lista-precios-1.jpeg",
+    "tipo_documento": "lista_precios",
+    "vigencia": "LISTA DE PRECIOS 2025",
+    "filas": [
+      {
+        "categoria": "SELLADORES",
+        "producto": "SELLADORACRILICO4648GALON",
+        "rendimiento_teorico": "18-20m2",
+        "precio_sin_iva": 277.07,
+        "descripcion": "precursor de adherencia para distintos recubrimientos"
+      },
+      {
+        "categoria": "SELLADORES",
+        "producto": "SELLADORACRILICO4648CUBETA",
+        "rendimiento_teorico": "90-100m2",
+        "precio_sin_iva": 907.37,
+        "descripcion": "acabado TRANSPARENTE Y BRILLANTE"
+      },
+      {
+        "categoria": "SELLADORES",
+        "producto": "VITROGLASSECOLOGICO GALON",
+        "rendimiento_teorico": "30-32m2",
+        "precio_sin_iva": 1244.19,
+        "descripcion": "protector para algunos recubrimientos"
+      },
+      {
+        "categoria": "SELLADORES",
+        "producto": "VITROGLASSECOLOGICOCUBETA",
+        "rendimiento_teorico": "180-190m2",
+        "precio_sin_iva": 5023.57,
+        "descripcion": null
+      },
+      {
+        "categoria": "SELLADORES",
+        "producto": "HEALERGLASSKIT1LT.C/ESPATULA",
+        "rendimiento_teorico": "1.7-2.1m2",
+        "precio_sin_iva": 262.05,
+        "descripcion": "resanador de superficies masilla para lisar superficie interiores y exteriores"
+      },
+      {
+        "categoria": "PREPARADORES DE SUPERFICIE",
+        "producto": "REDYPLASTF",
+        "rendimiento_teorico": "25-30m2",
+        "precio_sin_iva": 987.11,
+        "descripcion": "Y yeso masilla para alisar superficies interiores y exteriores emirugosas panel de cemento"
+      },
+      {
+        "categoria": "PREPARADORES DE SUPERFICIE",
+        "producto": "REDYPLASTM",
+        "rendimiento_teorico": "18-22m2",
+        "precio_sin_iva": 1042.79,
+        "descripcion": "masilla para alisar superficies interiores y exteriores rugosas panel mampostera"
+      },
+      {
+        "categoria": "PREPARADORES DE SUPERFICIE",
+        "producto": "REDYPLASTG",
+        "rendimiento_teorico": "12-14m2",
+        "precio_sin_iva": 1103.44,
+        "descripcion": null
+      },
+      {
+        "categoria": "PREPARADORES DE SUPERFICIE",
+        "producto": "MORTEROPLASTICOMALLA350-400",
+        "rendimiento_teorico": "16-18m2",
+        "precio_sin_iva": 1205.56,
+        "descripcion": "Producto que por sus componentes proporciona dureza anclaje a superficie lisas o que por sus características"
+      },
+      {
+        "categoria": "PREPARADORES DE SUPERFICIE",
+        "producto": "ARENASILICAMALLA250-300",
+        "rendimiento_teorico": "22-25m2",
+        "precio_sin_iva": 1188.64,
+        "descripcion": "Producto que por sus componentes proporciona a la lisa superficies como el aplanado de mezcla o a las previamente tratadas con el producto mortero plastico, para recibir un acabado o recubrimiento que requiera la superficie totalmente lisa, logrando una excelente dureza"
+      },
+      {
+        "categoria": "PASTAS ARQUITECTONICAS",
+        "producto": "DECOPASTA GALON",
+        "rendimiento_teorico": "3.2-3.6m2",
+        "precio_sin_iva": 184.75,
+        "descripcion": "Pasta arquitectonica economica para interiores y ext. puede ser con grano o sin grano."
+      },
+      {
+        "categoria": "PASTAS ARQUITECTONICAS",
+        "producto": "DECOPASTA CUBETA",
+        "rendimiento_teorico": "16-18m2",
+        "precio_sin_iva": 804.86,
+        "descripcion": null
+      },
+      {
+        "categoria": "PASTAS ARQUITECTONICAS",
+        "producto": "CHISAPLASTGALON",
+        "rendimiento_teorico": "3-4m2",
+        "precio_sin_iva": 258.27,
+        "descripcion": "Pasta arquitectonica economica para interiores y ext., puede ser con grano o sin grano."
+      },
+      {
+        "categoria": "PASTAS ARQUITECTONICAS",
+        "producto": "CHISA PLAST CUBETA",
+        "rendimiento_teorico": "16-20m2",
+        "precio_sin_iva": 1016.34,
+        "descripcion": null
+      },
+      {
+        "categoria": "PASTAS ARQUITECTONICAS",
+        "producto": "CHISAPLASTPLUS GALON",
+        "rendimiento_teorico": "4-5m2",
+        "precio_sin_iva": 1106.56,
+        "descripcion": "Recubrimiento con apariencia de cantera y hojuelas minerales multicolor"
+      },
+      {
+        "categoria": "PASTAS ARQUITECTONICAS",
+        "producto": "CHISAPLASTPLUS CUBETA",
+        "rendimiento_teorico": "24-26m2",
+        "precio_sin_iva": 3400.29,
+        "descripcion": null
+      },
+      {
+        "categoria": "PASTAS ARQUITECTONICAS",
+        "producto": "MARMOPLASTGALON",
+        "rendimiento_teorico": "1.4-2m2",
+        "precio_sin_iva": 292.22,
+        "descripcion": "Pasta precursora para aplicacion de grano de marmol lanzado."
+      },
+      {
+        "categoria": "PASTAS ARQUITECTONICAS",
+        "producto": "MARMOPLASTCUBETA",
+        "rendimiento_teorico": "7-10m2",
+        "precio_sin_iva": 1391.16,
+        "descripcion": null
+      }
+    ],
+    "dudas": [
+      "Varias filas CUBETA no tienen descripción detectada en la columna DESCRIPCION: VITROGLASSECOLOGICOCUBETA, REDYPLASTG, DECOPASTA CUBETA, CHISAPLASTPLUS CUBETA y MARMOPLASTCUBETA (se dejaron en null).",
+      "HEALERGLASSKIT1LT.C/ESPATULA: el final de la descripción quedó ilegible en el OCR ('exterioreirmentruosasanel'); solo se transcribió la parte legible.",
+      "REDYPLASTF: la descripción inicia con 'Yyeso' y contiene 'emirugosas'; lecturas dudosas (posible 'Y yeso' y 'y muy rugosas').",
+      "REDYPLASTM: 'panelmampostera' posiblemente es 'panel mampostería'.",
+      "MORTEROPLASTICOMALLA350-400: la descripción parece truncada ('...o que por sus características').",
+      "ARENASILICAMALLA250-300: fragmento OCR dudoso 'alalisea' (se leyó 'a la lisa').",
+      "CHISA PLAST CUBETA: OCR '1,016.348rano.'; se interpretó precio 1016.34 y el sobrante '8rano.' como cola de descripción 'grano.'; no se detectó el resto de su descripción.",
+      "Se conservó el espaciado irregular del OCR en nombres como 'VITROGLASSECOLOGICO GALON' y 'CHISA PLAST CUBETA' (lectura limpia: 'VITRO GLASS ECOLOGICO GALON' / 'CHISA PLAST CUBETA')."
+    ],
+    "confianza": 0.85
+  },
+  {
+    "imagen": "lista-precios2.jpeg",
+    "tipo_documento": "lista_precios",
+    "vigencia": "LISTA DE PRECIOS 2025",
+    "filas": [
+      {
+        "categoria": "PINTURAS ARQUITECTONICAS",
+        "producto": "PRAIMERGLASSCUBETA",
+        "rendimiento_teorico": "85-90m2",
+        "precio_sin_iva": 1028.18,
+        "descripcion": "Primario base agua, para diversos recubrimientos."
+      },
+      {
+        "categoria": "PINTURAS ARQUITECTONICAS",
+        "producto": "CHISAVINIL GALON",
+        "rendimiento_teorico": "18-19.6m2",
+        "precio_sin_iva": 418.55,
+        "descripcion": "Pintura vinil-acrilica mate para interiores y exteriores"
+      },
+      {
+        "categoria": "PINTURAS ARQUITECTONICAS",
+        "producto": "CHISAVINIL CUBETA",
+        "rendimiento_teorico": "90-95m2",
+        "precio_sin_iva": 1334.31,
+        "descripcion": null
+      },
+      {
+        "categoria": "PINTURAS ARQUITECTONICAS",
+        "producto": "PINTUFLEXGALON",
+        "rendimiento_teorico": "18-19.6m2",
+        "precio_sin_iva": 487.74,
+        "descripcion": "Pintura vinil-acrilica semimate para interiores y exteriores"
+      },
+      {
+        "categoria": "PINTURAS ARQUITECTONICAS",
+        "producto": "PINTUFLEXCUBETA",
+        "rendimiento_teorico": "90-95m2",
+        "precio_sin_iva": 2410.87,
+        "descripcion": null
+      },
+      {
+        "categoria": "PINTURAS ARQUITECTONICAS",
+        "producto": "CHISAPLUS GALON",
+        "rendimiento_teorico": "18-19.6m2",
+        "precio_sin_iva": 658.89,
+        "descripcion": "Pintura vinil-acrilica brillante para interiores y exteriores"
+      },
+      {
+        "categoria": "PINTURAS ARQUITECTONICAS",
+        "producto": "CHISAPLUS CUBETA",
+        "rendimiento_teorico": "90-95m2",
+        "precio_sin_iva": 2840.13,
+        "descripcion": null
+      },
+      {
+        "categoria": "PINTURAS ARQUITECTONICAS",
+        "producto": "PROTECTPLUS GALON",
+        "rendimiento_teorico": "18-19.6m2",
+        "precio_sin_iva": 823.61,
+        "descripcion": "Pintura antibacterial para interiores y exteriores."
+      },
+      {
+        "categoria": "PINTURAS ARQUITECTONICAS",
+        "producto": "PROTECTPLUSCUBETA",
+        "rendimiento_teorico": "90-95m2",
+        "precio_sin_iva": 4118.19,
+        "descripcion": null
+      },
+      {
+        "categoria": "SHELL HARD (CASCARA DE NARANJA)",
+        "producto": "SHELL HARD(CASCARA DENARANJA) GALON",
+        "rendimiento_teorico": "4-5m2",
+        "precio_sin_iva": 423.02,
+        "descripcion": null
+      },
+      {
+        "categoria": "SHELL HARD (CASCARA DE NARANJA)",
+        "producto": "SHELLHARD(CASCARA DE NARANJA) CUBETA",
+        "rendimiento_teorico": "20-25m2",
+        "precio_sin_iva": 1704.15,
+        "descripcion": null
+      },
+      {
+        "categoria": "SHELL HARD (CASCARA DE NARANJA)",
+        "producto": "SHELLHARD LISO(CASCARALISO) GALON",
+        "rendimiento_teorico": "5-6m2",
+        "precio_sin_iva": 495.83,
+        "descripcion": "Recubrimiento Aseptico"
+      },
+      {
+        "categoria": "SHELL HARD (CASCARA DE NARANJA)",
+        "producto": "SHELLHARD LISO(CASCARA LISO) CUBETA",
+        "rendimiento_teorico": "25-30m2",
+        "precio_sin_iva": 2183.04,
+        "descripcion": null
+      },
+      {
+        "categoria": "CHISA GLASS",
+        "producto": "CHISA GLASSMICRO",
+        "rendimiento_teorico": "65-70m2",
+        "precio_sin_iva": 4797.13,
+        "descripcion": "Recubrimiento multicolor 100% lavable con gran variedad de colores"
+      },
+      {
+        "categoria": "CHISA GLASS",
+        "producto": "CHISA GLASSTEXTURADO",
+        "rendimiento_teorico": "55-60m2",
+        "precio_sin_iva": 4797.13,
+        "descripcion": null
+      },
+      {
+        "categoria": "CHISA GLASS",
+        "producto": "TRICOLORPLUS",
+        "rendimiento_teorico": "150-190m2",
+        "precio_sin_iva": 7805.79,
+        "descripcion": null
+      },
+      {
+        "categoria": "CHISA GLASS",
+        "producto": "CORTPLAST",
+        "rendimiento_teorico": "20-25m2",
+        "precio_sin_iva": 4393.11,
+        "descripcion": null
+      },
+      {
+        "categoria": "CHISA GLASS",
+        "producto": "CHISA MARGALON",
+        "rendimiento_teorico": "24-26m2",
+        "precio_sin_iva": 875.93,
+        "descripcion": "Estucado veneciano con alto brillo que da la apariencia de una placa de marmol."
+      },
+      {
+        "categoria": "CHISA GLASS",
+        "producto": "CHISAMARCUBETA",
+        "rendimiento_teorico": "120-130m2",
+        "precio_sin_iva": 3597.23,
+        "descripcion": null
+      },
+      {
+        "categoria": "POLYCOLOR",
+        "producto": "POLY-COLOR(ESCAMA)",
+        "rendimiento_teorico": "250gr./1m2",
+        "precio_sin_iva": 251.24,
+        "descripcion": null
+      },
+      {
+        "categoria": "POLYCOLOR",
+        "producto": "POLY-PLAST",
+        "rendimiento_teorico": "22-25m2",
+        "precio_sin_iva": 2373.64,
+        "descripcion": null
+      },
+      {
+        "categoria": "POLYCOLOR",
+        "producto": "POLYTANO9000(RESINA EPOXICA)",
+        "rendimiento_teorico": "10-12m2",
+        "precio_sin_iva": 3827.67,
+        "descripcion": "Recubrimiento epoxico p/pisos multicolor, resistente y duradero."
+      },
+      {
+        "categoria": "GRANOS DE MARMOL",
+        "producto": "MARMOFLEXREF.BLANCO",
+        "rendimiento_teorico": "5m2",
+        "precio_sin_iva": 4433.2,
+        "descripcion": "Grano de marmol planchado"
+      },
+      {
+        "categoria": "GRANOS DE MARMOL",
+        "producto": "MARMOFLEXREF.COLOR",
+        "rendimiento_teorico": "5m2",
+        "precio_sin_iva": 4759.76,
+        "descripcion": "Grano de marmol planchado"
+      },
+      {
+        "categoria": "IMPERMEABILIZANTE",
+        "producto": "IMPERGLASS3ANOS",
+        "rendimiento_teorico": "45-50m2",
+        "precio_sin_iva": 2089.25,
+        "descripcion": "Impermeabilizante de 3 años"
+      },
+      {
+        "categoria": "IMPERMEABILIZANTE",
+        "producto": "IMPERGLASS5ANOS",
+        "rendimiento_teorico": "45-50m2",
+        "precio_sin_iva": 2994.38,
+        "descripcion": "Impermeabilizante de 5 años"
+      },
+      {
+        "categoria": "IMPERMEABILIZANTE",
+        "producto": "IMPERGLASS7ANOS",
+        "rendimiento_teorico": "45-50m2",
+        "precio_sin_iva": 3693.85,
+        "descripcion": "Impermeabilizante de 7 años"
+      }
+    ],
+    "dudas": [
+      "Sin descripción detectada en: CHISAVINIL CUBETA, PINTUFLEX CUBETA, CHISAPLUS CUBETA, PROTECTPLUS CUBETA, SHELL HARD (CASCARA DE NARANJA) GALON y CUBETA, SHELL HARD LISO CUBETA, CHISA GLASS TEXTURADO, TRICOLORPLUS, CORTPLAST, CHISAMARCUBETA, POLY-COLOR(ESCAMA) y POLY-PLAST (se dejaron en null).",
+      "La descripción 'Recubrimiento Aseptico' es la única detectada en la zona de los 4 SHELL HARD; se asignó a SHELLHARD LISO(CASCARALISO) GALON, pero podría aplicar a otras filas SHELL HARD.",
+      "Categoría leída como 'POLYCOLOR CORT' + 'PLAST'; se usó 'POLYCOLOR' (los fragmentos podrían indicar otra lectura, p.ej. 'POLYCOLOR CORTPLAST').",
+      "En la categoría IMPERMEABILIZANTE se detectó un fragmento 'S' aislado debajo (posible 'IMPERMEABILIZANTES' o salto de línea).",
+      "POLYTANO9000(RESINA EPOXICA): la celda de producto trae 3 líneas adicionales ('KITDE15KGSCONSIDERADOAUN', 'REND.DE1.544KGS/M2INCLUYE', 'CATALIZADOR'); lectura limpia: 'POLYTANO 9000 (RESINA EPOXICA) KIT DE 15 KGS CONSIDERADO A UN REND. DE 1.544 KGS/M2 INCLUYE CATALIZADOR'.",
+      "Descripciones de IMPERGLASS normalizadas de 'de3 affos' / 'de 5 anos' / 'de7anos' a 'de 3 años' / 'de 5 años' / 'de 7 años'.",
+      "PRAIMERGLASSCUBETA: probable 'PRIMER GLASS CUBETA' (OCR 'PRAIMER').",
+      "SHELL HARD(CASCARA DENARANJA) GALON: nombre sin espacio entre 'DE' y 'NARANJA' tal como lo dio el OCR; lectura limpia: 'SHELL HARD (CASCARA DE NARANJA) GALON'."
+    ],
+    "confianza": 0.8
+  }
+]

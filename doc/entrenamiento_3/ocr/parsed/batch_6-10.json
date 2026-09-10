@@ -1,0 +1,362 @@
+[
+  {
+    "imagen": "entrenamiento6.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "TINTA ROJO CARMIN",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": "HOJA N°7",
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 200.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "porcentaje": 2.5,
+        "cantidad": 5.0,
+        "unidad": "Kg",
+        "precio_unitario": 153.62,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINA CLORADA",
+        "porcentaje": 12.5,
+        "cantidad": 25.0,
+        "unidad": "Kg",
+        "precio_unitario": 36.53,
+        "subtipo": null
+      },
+      {
+        "nombre": "AZULDEFTALOZANINA",
+        "porcentaje": 25.0,
+        "cantidad": 50.0,
+        "unidad": "Kg",
+        "precio_unitario": 48.34,
+        "subtipo": null
+      },
+      {
+        "nombre": "PLIOWAYEC-1",
+        "porcentaje": 14.17,
+        "cantidad": 28.34,
+        "unidad": "Kg",
+        "precio_unitario": 137.34,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 45.83,
+        "cantidad": 91.66,
+        "unidad": "Kg",
+        "precio_unitario": 19.14,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 200.0,
+      "costo_total": null,
+      "precio_venta": 394.97
+    },
+    "dudas": [
+      "YAZUL: fragmento aislado (y=644, x=1083) sin contexto; posible texto 'Y AZUL'; no asociado a componente ni producto",
+      "Costo total no detectado en el OCR: la fila de totales no tiene importe en la columna de subtotales; suma de los 5 subtotales = 9744.94",
+      "Subtotal OCR '$3.892.22' interpretado como 3892.22 (coincide con 28.340 x $137.34)",
+      "Precio 394.97 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "ANTITERRA204: mejor lectura separada 'ANTITERRA 204'",
+      "AZULDEFTALOZANINA: mejor lectura separada 'AZUL DE FTALOCIANINA' (OCR: FTALOZANINA)",
+      "PLIOWAYEC-1: nombre pegado (posible 'PLIOWAY EC-1')",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "confianza": 0.75
+  },
+  {
+    "imagen": "entrenamiento7.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "TINTA ROJA",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": "HOJA N°6",
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 60.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "porcentaje": 2.0,
+        "cantidad": 1.2,
+        "unidad": "Kg",
+        "precio_unitario": 153.62,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINA CLORADAS-52",
+        "porcentaje": 16.0,
+        "cantidad": 9.6,
+        "unidad": "Kg",
+        "precio_unitario": 36.53,
+        "subtipo": null
+      },
+      {
+        "nombre": "ROJO OXIDO",
+        "porcentaje": 32.0,
+        "cantidad": 19.2,
+        "unidad": "Kg",
+        "precio_unitario": 48.34,
+        "subtipo": null
+      },
+      {
+        "nombre": "PLIOWAYE-CH",
+        "porcentaje": 15.0,
+        "cantidad": 9.0,
+        "unidad": "Kg",
+        "precio_unitario": 137.34,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 35.0,
+        "cantidad": 21.0,
+        "unidad": "Kg",
+        "precio_unitario": 19.14,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 60.0,
+      "costo_total": 3101.16,
+      "precio_venta": 394.97
+    },
+    "dudas": [
+      "Cantidad '0006' leída como 9.000 (coincide con subtotal $1,236.06 = 9.000 x $137.34)",
+      "Cantidad '009'6' (OCR) leída como 9.600 (coincide con subtotal $350.69 = 9.600 x $36.53)",
+      "Cantidad del pie '00009' leída como 60.000 (coincide con la fila de totales)",
+      "Precio 394.97 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "PARAFINA CLORADAS-52: mejor lectura separada 'PARAFINA CLORADA S-52'",
+      "PLIOWAYE-CH: nombre pegado (posible 'PLIOWAY E-CH')",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "confianza": 0.75
+  },
+  {
+    "imagen": "entrenamiento8.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "TINTA NEGRA",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": null,
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 50.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "porcentaje": 2.0,
+        "cantidad": 1.0,
+        "unidad": "Kg",
+        "precio_unitario": 153.62,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINA CLORADA",
+        "porcentaje": 8.0,
+        "cantidad": 4.0,
+        "unidad": "Kg",
+        "precio_unitario": 36.53,
+        "subtipo": null
+      },
+      {
+        "nombre": "NEGRO OXIDO",
+        "porcentaje": 50.0,
+        "cantidad": 25.0,
+        "unidad": "Kg",
+        "precio_unitario": 32.25,
+        "subtipo": null
+      },
+      {
+        "nombre": "PLIOWAYE-CH",
+        "porcentaje": 13.0,
+        "cantidad": 6.5,
+        "unidad": "Kg",
+        "precio_unitario": 137.34,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 27.0,
+        "cantidad": 13.5,
+        "unidad": "Kg",
+        "precio_unitario": 19.14,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 50.0,
+      "costo_total": 2257.09,
+      "precio_venta": 378.88
+    },
+    "dudas": [
+      "No aparece clave de HOJA en el OCR (hoja_o_clave = null)",
+      "Precio 378.88 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "confianza": 0.9
+  },
+  {
+    "imagen": "entrenamiento9.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "TINTA VERDE CROMO",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": "HOJA N°8",
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 52.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "porcentaje": 2.0,
+        "cantidad": 1.04,
+        "unidad": "Kg",
+        "precio_unitario": 153.62,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINA CLORADA(S-52)",
+        "porcentaje": 8.0,
+        "cantidad": 4.16,
+        "unidad": "Kg",
+        "precio_unitario": 36.53,
+        "subtipo": null
+      },
+      {
+        "nombre": "VERDECROMO",
+        "porcentaje": 48.0,
+        "cantidad": 24.96,
+        "unidad": "Kg",
+        "precio_unitario": 29.06,
+        "subtipo": null
+      },
+      {
+        "nombre": "PLIOWAYEC-1",
+        "porcentaje": 14.0,
+        "cantidad": 7.28,
+        "unidad": "Kg",
+        "precio_unitario": 137.34,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 28.0,
+        "cantidad": 14.56,
+        "unidad": "Kg",
+        "precio_unitario": 19.14,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 52.0,
+      "costo_total": 2315.58,
+      "precio_venta": 375.69
+    },
+    "dudas": [
+      "Precio 375.69 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "PLIOWAYEC-1: nombre pegado (posible 'PLIOWAY EC-1')",
+      "VERDECROMO: mejor lectura separada 'VERDE CROMO'",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "confianza": 0.9
+  },
+  {
+    "imagen": "entrenamiento10.jpeg",
+    "tipo_documento": "formulacion",
+    "producto": {
+      "nombre": "TINTA AMARILLO OXIDO",
+      "codigo_o_referencia": null,
+      "hoja_o_clave": "HOJA N°5",
+      "cliente": null
+    },
+    "lote": {
+      "cantidad": 63.0,
+      "unidad": "Kg",
+      "presentacion": "Kg"
+    },
+    "componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "porcentaje": 2.0,
+        "cantidad": 1.26,
+        "unidad": "Kg",
+        "precio_unitario": 153.62,
+        "subtipo": null
+      },
+      {
+        "nombre": "PARAFINACLORADAS-52",
+        "porcentaje": 16.0,
+        "cantidad": 10.08,
+        "unidad": "Kg",
+        "precio_unitario": 36.53,
+        "subtipo": null
+      },
+      {
+        "nombre": "TINTA AMARILLO OXIDO",
+        "porcentaje": 32.0,
+        "cantidad": 20.16,
+        "unidad": "Kg",
+        "precio_unitario": 28.06,
+        "subtipo": null
+      },
+      {
+        "nombre": "PLIOWAYE-CH",
+        "porcentaje": 14.0,
+        "cantidad": 8.82,
+        "unidad": "Kg",
+        "precio_unitario": 137.34,
+        "subtipo": null
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "porcentaje": 36.0,
+        "cantidad": 22.68,
+        "unidad": "Kg",
+        "precio_unitario": 19.14,
+        "subtipo": null
+      }
+    ],
+    "totales": {
+      "porcentaje": 100.0,
+      "cantidad": 63.0,
+      "costo_total": 2772.9,
+      "precio_venta": 374.69
+    },
+    "dudas": [
+      "YCANARIO: fragmento aislado (y=748, x=1069) sin contexto; posible texto 'Y CANARIO'; no asociado a componente",
+      "Subtotal OCR '$193.5' usado literal; 1.260 x $153.62 = 193.56",
+      "Costo total OCR '$2,772.9' usado literal; suma de subtotales = 2772.91",
+      "Celda de porcentaje de la primera fila muestra '2.00%ANTITERRA' (recortado); columna de nombre: ANTITERRA204",
+      "Precio 374.69 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "PARAFINACLORADAS-52: mejor lectura separada 'PARAFINA CLORADA S-52'",
+      "PLIOWAYE-CH: nombre pegado (posible 'PLIOWAY E-CH')",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "confianza": 0.8
+  }
+]
