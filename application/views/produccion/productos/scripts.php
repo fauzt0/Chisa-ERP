@@ -115,16 +115,23 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
   position: relative;
   z-index: 10;
   pointer-events: auto;
+  overflow: hidden;
 }
 .produccion-productos-page .panel-filtros .panel-filtros-header {
   background: var(--prod-bg);
   border-bottom: 2px solid var(--prod-border);
-  padding: 0.65rem 1.25rem;
+  padding: 0.7rem 1.25rem;
+  color: var(--prod-text);
+}
+.produccion-productos-page .panel-filtros-title {
   font-weight: 700;
   font-size: 0.9rem;
   color: var(--prod-text);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+.produccion-productos-page .panel-filtros-body {
+  padding: 1.25rem 1.5rem;
 }
 .produccion-productos-page .panel-filtros label {
   font-weight: 600;
@@ -132,7 +139,7 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
   color: var(--prod-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
 }
 .produccion-productos-page .panel-filtros .form-control,
 .produccion-productos-page .panel-filtros .form-select {
@@ -150,11 +157,138 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
   font-size: 1.05rem;
   font-weight: 500;
 }
+
+/* Badge de filtros activos (header) */
+.produccion-productos-page .badge-filtros-activos {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: var(--prod-accent-light);
+  color: var(--prod-primary-dark);
+  border: 1px solid rgba(5, 150, 105, 0.35);
+}
+.produccion-productos-page .btn-limpiar-filtros {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.produccion-productos-page .btn-limpiar-filtros:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Bloque de búsqueda: input-group con icono */
+.produccion-productos-page .input-group-buscar .input-group-text {
+  border: 2px solid var(--prod-border);
+  border-right: 0;
+  background: var(--prod-bg);
+  color: var(--prod-text-muted);
+  border-radius: 8px 0 0 8px;
+}
+.produccion-productos-page .input-group-buscar .form-control {
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+}
+.produccion-productos-page .input-group-buscar .form-control:focus {
+  box-shadow: none;
+}
+.produccion-productos-page .input-group-buscar:focus-within {
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.2);
+  border-radius: 8px;
+}
+.produccion-productos-page .input-group-buscar:focus-within .input-group-text,
+.produccion-productos-page .input-group-buscar:focus-within .form-control {
+  border-color: var(--prod-primary);
+}
+.produccion-productos-page .chips-label {
+  font-weight: 600;
+}
 .produccion-productos-page .btn-chip-buscar {
   font-size: 0.8rem;
   font-weight: 600;
   border-radius: 20px;
   padding: 0.2rem 0.65rem;
+}
+
+/* Separador de grupo "Filtros" */
+.produccion-productos-page .filtros-separador {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.15rem 0 0.85rem;
+}
+.produccion-productos-page .filtros-separador span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--prod-text-muted);
+  flex: 0 0 auto;
+}
+.produccion-productos-page .filtros-separador::after {
+  content: "";
+  flex: 1 1 auto;
+  border-top: 1px dashed var(--prod-border);
+}
+
+/* Estado "filtro activo" en selects */
+.produccion-productos-page .panel-filtros .form-select.is-filtro-activo {
+  border-color: var(--prod-primary);
+  background-color: rgba(30, 64, 175, 0.05);
+  font-weight: 600;
+}
+
+/* ── Modo oscuro (hereda tokens Bootstrap 5.3) ───────────────────────── */
+html[data-bs-theme="dark"] .produccion-productos-page .panel-filtros {
+  background: var(--bs-secondary-bg);
+  border-color: var(--bs-border-color);
+}
+html[data-bs-theme="dark"] .produccion-productos-page .panel-filtros .panel-filtros-header {
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+  border-bottom-color: var(--bs-border-color);
+}
+html[data-bs-theme="dark"] .produccion-productos-page .panel-filtros-title {
+  color: var(--bs-body-color);
+}
+html[data-bs-theme="dark"] .produccion-productos-page .panel-filtros label {
+  color: var(--bs-secondary-color);
+}
+html[data-bs-theme="dark"] .produccion-productos-page .panel-filtros .form-control,
+html[data-bs-theme="dark"] .produccion-productos-page .panel-filtros .form-select {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+html[data-bs-theme="dark"] .produccion-productos-page .input-group-buscar .input-group-text {
+  background: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-secondary-color);
+}
+html[data-bs-theme="dark"] .produccion-productos-page .filtros-separador span {
+  color: var(--bs-secondary-color);
+}
+html[data-bs-theme="dark"] .produccion-productos-page .filtros-separador::after {
+  border-top-color: var(--bs-border-color);
+}
+html[data-bs-theme="dark"] .produccion-productos-page .badge-filtros-activos {
+  background: rgba(16, 185, 129, 0.18);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+html[data-bs-theme="dark"] .produccion-productos-page .panel-filtros .form-select.is-filtro-activo {
+  border-color: #60a5fa;
+  background-color: rgba(96, 165, 250, 0.12);
+}
+
+/* Responsive del panel de filtros */
+@media (max-width: 768px) {
+  .produccion-productos-page .panel-filtros-body { padding: 1rem; }
+  .produccion-productos-page .panel-filtros .panel-filtros-header { padding: 0.65rem 1rem; }
 }
 
 .produccion-productos-page .panel-tabla {
@@ -264,3 +398,59 @@ if (typeof window.jQuery !== 'undefined' && typeof window.$ === 'undefined') {
 }
 </style>
 <script src="<?= base_url(); ?>assets/dist/js/produccion_productos.js?v=<?= time(); ?>"></script>
+<script>
+/* UI del panel de filtros: contador de filtros activos, botón "Limpiar"
+   contextual y resalte de selects con valor. Solo añade comportamiento de UI;
+   no altera la lógica de filtrado de produccion_productos.js. */
+(function () {
+  function ready(fn) {
+    if (document.readyState !== 'loading') { fn(); }
+    else { document.addEventListener('DOMContentLoaded', fn); }
+  }
+  ready(function () {
+    var busca = document.getElementById('buscarProductos');
+    var selects = ['filtroTipo', 'filtroEstatus', 'filtroStock']
+      .map(function (id) { return document.getElementById(id); });
+    var badge = document.getElementById('contadorFiltrosProductos');
+    var btnLimpiar = document.getElementById('btnLimpiarFiltrosProductos');
+    if (!busca || !badge || !btnLimpiar) { return; }
+
+    function actualizarEstadoFiltros() {
+      var n = 0;
+      if (busca.value.trim() !== '') { n++; }
+      selects.forEach(function (sel) {
+        if (!sel) { return; }
+        var activo = sel.value !== '';
+        sel.classList.toggle('is-filtro-activo', activo);
+        if (activo) { n++; }
+      });
+      if (n > 0) {
+        badge.textContent = n + (n === 1 ? ' filtro activo' : ' filtros activos');
+        badge.classList.remove('d-none');
+        btnLimpiar.disabled = false;
+      } else {
+        badge.textContent = '';
+        badge.classList.add('d-none');
+        btnLimpiar.disabled = true;
+      }
+    }
+
+    busca.addEventListener('input', actualizarEstadoFiltros);
+    selects.forEach(function (sel) {
+      if (sel) { sel.addEventListener('change', actualizarEstadoFiltros); }
+    });
+    // El handler original de produccion_productos.js corre primero (limpia
+    // valores / aplica chip); recalculamos justo después en un microtask.
+    btnLimpiar.addEventListener('click', function () {
+      setTimeout(actualizarEstadoFiltros, 0);
+    });
+    document.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('.btn-chip-buscar')) {
+        setTimeout(actualizarEstadoFiltros, 0);
+      }
+    });
+
+    actualizarEstadoFiltros();
+  });
+})();
+</script>

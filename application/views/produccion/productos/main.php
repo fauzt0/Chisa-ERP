@@ -141,20 +141,38 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
 <div class="row mb-3 productos-filtros-panel">
   <div class="col-12">
     <div class="panel-filtros">
-      <div class="panel-filtros-header"><i class="fas fa-filter me-2"></i>Buscar y filtrar productos</div>
-      <div class="card-body">
-        <div class="row g-3 align-items-end">
-          <div class="col-lg-4 col-md-6">
-            <label for="buscarProductos"><i class="fas fa-search me-1"></i> Buscar producto</label>
+      <div class="panel-filtros-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span class="panel-filtros-title"><i class="fas fa-filter me-2"></i>Buscar y filtrar productos</span>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge-filtros-activos d-none" id="contadorFiltrosProductos" aria-live="polite"></span>
+          <button type="button" class="btn btn-sm btn-outline-secondary btn-limpiar-filtros" id="btnLimpiarFiltrosProductos" disabled>
+            <i class="fas fa-eraser me-1"></i> Limpiar
+          </button>
+        </div>
+      </div>
+      <div class="panel-filtros-body">
+        <!-- Bloque 1: búsqueda de texto libre -->
+        <div class="filtros-busqueda">
+          <label for="buscarProductos"><i class="fas fa-search me-1"></i> Buscar producto</label>
+          <div class="input-group input-group-buscar">
+            <span class="input-group-text" aria-hidden="true"><i class="fas fa-search"></i></span>
             <input type="text" class="form-control" id="buscarProductos"
                    placeholder="Ej: BASE ORGANICA BLANCA, TINTA NEGRA, CHISA GLASS..." autocomplete="off">
-            <div class="d-flex flex-wrap gap-1 mt-2">
-              <?php foreach (['BASE ORGANICA BLANCA','TINTA NEGRA','SOLUCION FASE ACUOSA','CHISA GLASS'] as $chip): ?>
-              <button type="button" class="btn btn-sm btn-outline-primary btn-chip-buscar" data-term="<?= htmlspecialchars($chip) ?>"><?= htmlspecialchars($chip) ?></button>
-              <?php endforeach; ?>
-            </div>
           </div>
-          <div class="col-lg-2 col-md-6">
+          <div class="chips-sugerencias d-flex flex-wrap align-items-center gap-2 mt-2">
+            <span class="chips-label text-muted small">Sugerencias:</span>
+            <?php foreach (['BASE ORGANICA BLANCA','TINTA NEGRA','SOLUCION FASE ACUOSA','CHISA GLASS'] as $chip): ?>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-chip-buscar" data-term="<?= htmlspecialchars($chip) ?>"><?= htmlspecialchars($chip) ?></button>
+            <?php endforeach; ?>
+          </div>
+        </div>
+
+        <!-- Separador de grupo -->
+        <div class="filtros-separador"><span>Filtros</span></div>
+
+        <!-- Bloque 2: filtros por atributo -->
+        <div class="row g-3">
+          <div class="col-lg-4 col-md-4">
             <label for="filtroTipo">Tipo</label>
             <select class="form-select" id="filtroTipo">
               <option value="">Todos</option>
@@ -162,7 +180,7 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
               <option value="Reventa">Reventa</option>
             </select>
           </div>
-          <div class="col-lg-2 col-md-4">
+          <div class="col-lg-4 col-md-4">
             <label for="filtroEstatus">Estatus</label>
             <select class="form-select" id="filtroEstatus">
               <option value="">Todos</option>
@@ -171,18 +189,13 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
               <option value="Descontinuado">Descontinuado</option>
             </select>
           </div>
-          <div class="col-lg-2 col-md-4">
+          <div class="col-lg-4 col-md-4">
             <label for="filtroStock">Stock</label>
             <select class="form-select" id="filtroStock">
               <option value="">Todos</option>
               <option value="bajo">Stock bajo</option>
               <option value="ok">Stock OK</option>
             </select>
-          </div>
-          <div class="col-lg-2 col-md-4">
-            <button type="button" class="btn btn-outline-dark w-100 btn-accion-principal" id="btnLimpiarFiltrosProductos">
-              <i class="fas fa-eraser"></i> Limpiar
-            </button>
           </div>
         </div>
       </div>
