@@ -1,0 +1,970 @@
+[
+  {
+    "ocr_nombre": "ADECIDE",
+    "nombre_canonico": "ADECIDE",
+    "tipo": "Insumo",
+    "insumo_id": "112",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 7,
+    "imagenes": [
+      "entrenamiento1.jpeg",
+      "entrenamiento11.jpeg",
+      "entrenamiento15.jpeg",
+      "entrenamiento2.jpeg",
+      "entrenamiento21.jpeg",
+      "entrenamiento22.jpeg",
+      "entrenamiento5.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-8732E08C)"
+  },
+  {
+    "ocr_nombre": "AEROSIL200",
+    "nombre_canonico": "AEROSIL   200",
+    "tipo": "Insumo",
+    "insumo_id": "118",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento17.jpeg",
+      "entrenamiento3.jpeg"
+    ],
+    "notas": "también existe como producto #204 [SOLUCION-DE-AEROSIL-200] SOLUCION DE AEROSIL 200: revisar si debe ir como semielaborado · el insumo elegido es autogenerado (IMP-0F24C004)"
+  },
+  {
+    "ocr_nombre": "AGUA",
+    "nombre_canonico": "AGUA",
+    "tipo": "Insumo",
+    "insumo_id": "126",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 13,
+    "imagenes": [
+      "entrenamiento1.jpeg",
+      "entrenamiento11.jpeg",
+      "entrenamiento12.jpeg",
+      "entrenamiento13.jpeg",
+      "entrenamiento14.jpeg",
+      "entrenamiento15.jpeg",
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento2.jpeg",
+      "entrenamiento21.jpeg",
+      "entrenamiento22.jpeg",
+      "entrenamiento4.jpeg",
+      "entrenamiento5.jpeg"
+    ],
+    "notas": ""
+  },
+  {
+    "ocr_nombre": "AMARILLO",
+    "nombre_canonico": "AMARILLO",
+    "tipo": "sin_definir",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "color",
+    "confianza": 0.3,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento20-grupo.jpeg"
+    ],
+    "notas": "nombre de color: definir con el negocio a qué insumo/producto corresponde · candidatos: #82 AMARILLO  CANA. / #76 AMARILLO  CANARIO / #152 AMARILLO CAN. / #154 AMARILLO CANA. / #66 AMARILLO CANARIO"
+  },
+  {
+    "ocr_nombre": "AMONIACO",
+    "nombre_canonico": "AMONIACO",
+    "tipo": "Insumo",
+    "insumo_id": "115",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 5,
+    "imagenes": [
+      "entrenamiento11.jpeg",
+      "entrenamiento15.jpeg",
+      "entrenamiento2.jpeg",
+      "entrenamiento21.jpeg",
+      "entrenamiento22.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-7CB6FA77)"
+  },
+  {
+    "ocr_nombre": "ANTIESPUMANTE",
+    "nombre_canonico": "ANTIESPUMANTE",
+    "tipo": "Insumo",
+    "insumo_id": "141",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 3,
+    "imagenes": [
+      "entrenamiento2.jpeg",
+      "entrenamiento21.jpeg",
+      "entrenamiento22.jpeg"
+    ],
+    "notas": ""
+  },
+  {
+    "ocr_nombre": "ANTITERRA204",
+    "nombre_canonico": "ANTI TERRA  204",
+    "tipo": "Insumo",
+    "insumo_id": "109",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 8,
+    "imagenes": [
+      "entrenamiento10.jpeg",
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento19.jpeg",
+      "entrenamiento6.jpeg",
+      "entrenamiento7.jpeg",
+      "entrenamiento8.jpeg",
+      "entrenamiento9.jpeg"
+    ],
+    "notas": "duplicados en catálogo: #90 [IMP-F0F868E0], #98 [IMP-5FA7028A] · el insumo elegido es autogenerado (IMP-8FA903C0) · duplicado en catálogo: #90 [IMP-F0F868E0], #98 [IMP-5FA7028A]"
+  },
+  {
+    "ocr_nombre": "AZUL",
+    "nombre_canonico": "AZUL",
+    "tipo": "sin_definir",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "color",
+    "confianza": 0.3,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento20-grupo.jpeg"
+    ],
+    "notas": "nombre de color: definir con el negocio a qué insumo/producto corresponde · candidatos: #149 AZUL CLARO / #100 AZUL DE FTALOZANINA / #148 AZUL OBSCURO / #19 Pigmento Azul Ftalocianinico / #57 Pigmento Azul Intenso"
+  },
+  {
+    "ocr_nombre": "AZULDEFTALOZANINA",
+    "nombre_canonico": "AZUL DE FTALOZANINA",
+    "tipo": "Insumo",
+    "insumo_id": "100",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento6.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-E8CFCF54)"
+  },
+  {
+    "ocr_nombre": "BERMOCOL481FQ",
+    "nombre_canonico": "BERMOCOLL 481 FQ",
+    "tipo": "Insumo",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.0,
+    "accion": "crear",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento21.jpeg"
+    ],
+    "notas": "sinónimo aplicado: \"BERMOCOL481FQ\" → \"BERMOCOLL 481 FQ\" · candidato más cercano: #18 \"Negro de Humo (Carbon Black)\" (0.39)"
+  },
+  {
+    "ocr_nombre": "BERMOCOLL481FQ",
+    "nombre_canonico": "BERMOCOLL 481 FQ",
+    "tipo": "Insumo",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.0,
+    "accion": "crear",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento2.jpeg",
+      "entrenamiento22.jpeg"
+    ],
+    "notas": "candidato más cercano: #18 \"Negro de Humo (Carbon Black)\" (0.39)"
+  },
+  {
+    "ocr_nombre": "BIOXIDO DE TITANEO",
+    "nombre_canonico": "Dióxido de Titanio R-902 (TiO2)",
+    "tipo": "Insumo",
+    "insumo_id": "15",
+    "producto_id": null,
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "apariciones": 4,
+    "imagenes": [
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento2.jpeg",
+      "entrenamiento21.jpeg"
+    ],
+    "notas": "sinónimo aplicado: \"BIOXIDO DE TITANEO\" → \"DIOXIDO DE TITANIO R-902\" · coincidencia parcial (contención de nombre): revisar"
+  },
+  {
+    "ocr_nombre": "BIOXIDODETITANEO R-902",
+    "nombre_canonico": "Dióxido de Titanio R-902 (TiO2)",
+    "tipo": "Insumo",
+    "insumo_id": "15",
+    "producto_id": null,
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento22.jpeg"
+    ],
+    "notas": "sinónimo aplicado: \"BIOXIDODETITANEO R-902\" → \"DIOXIDO DE TITANIO R-902\" · coincidencia parcial (contención de nombre): revisar"
+  },
+  {
+    "ocr_nombre": "BLANCO",
+    "nombre_canonico": "BLANCO",
+    "tipo": "sin_definir",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "color",
+    "confianza": 0.3,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento20-grupo.jpeg"
+    ],
+    "notas": "nombre de color: definir con el negocio a qué insumo/producto corresponde · candidatos: #61 BLANCO / #120 CEMENTO BLANCO"
+  },
+  {
+    "ocr_nombre": "BLANCOFIJO MICRO",
+    "nombre_canonico": "BLANCO",
+    "tipo": "Insumo",
+    "insumo_id": "61",
+    "producto_id": null,
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento22.jpeg"
+    ],
+    "notas": "coincidencia parcial (contención de nombre): revisar · el insumo elegido es autogenerado (IMP-69A34712)"
+  },
+  {
+    "ocr_nombre": "CAOLIN",
+    "nombre_canonico": "CAOLIN M-325",
+    "tipo": "Insumo",
+    "insumo_id": "136",
+    "producto_id": null,
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento2.jpeg",
+      "entrenamiento21.jpeg"
+    ],
+    "notas": "coincidencia parcial (contención de nombre): revisar"
+  },
+  {
+    "ocr_nombre": "CARBONATODEOMYACAR1-T",
+    "nombre_canonico": "CARBONATO DE OMYA CAR 1-T",
+    "tipo": "Insumo",
+    "insumo_id": "102",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 6,
+    "imagenes": [
+      "entrenamiento12.jpeg",
+      "entrenamiento13.jpeg",
+      "entrenamiento14.jpeg",
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento4.jpeg"
+    ],
+    "notas": "duplicados en catálogo: #87 [IMP-BE2E19A5] · el insumo elegido es autogenerado (IMP-3F48891D) · duplicado en catálogo: #87 [IMP-BE2E19A5]"
+  },
+  {
+    "ocr_nombre": "DIPERSANTE",
+    "nombre_canonico": "DISPERSANTE",
+    "tipo": "Insumo",
+    "insumo_id": "140",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento22.jpeg"
+    ],
+    "notas": "sinónimo aplicado: \"DIPERSANTE\" → \"DISPERSANTE\""
+  },
+  {
+    "ocr_nombre": "DISPERSANTE",
+    "nombre_canonico": "DISPERSANTE",
+    "tipo": "Insumo",
+    "insumo_id": "140",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento2.jpeg",
+      "entrenamiento21.jpeg"
+    ],
+    "notas": ""
+  },
+  {
+    "ocr_nombre": "EDENOL DOA",
+    "nombre_canonico": "EDENOL DOA",
+    "tipo": "Insumo",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.0,
+    "accion": "crear",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento22.jpeg"
+    ],
+    "notas": "candidato más cercano: #120 \"CEMENTO BLANCO\" (0.55)"
+  },
+  {
+    "ocr_nombre": "EXXOLD-40",
+    "nombre_canonico": "EXXOL      D-40",
+    "tipo": "Insumo",
+    "insumo_id": "108",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 14,
+    "imagenes": [
+      "entrenamiento10.jpeg",
+      "entrenamiento12.jpeg",
+      "entrenamiento13.jpeg",
+      "entrenamiento14.jpeg",
+      "entrenamiento16.jpeg",
+      "entrenamiento17.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento19.jpeg",
+      "entrenamiento3.jpeg",
+      "entrenamiento4.jpeg",
+      "entrenamiento6.jpeg",
+      "entrenamiento7.jpeg",
+      "entrenamiento8.jpeg",
+      "entrenamiento9.jpeg"
+    ],
+    "notas": "duplicados en catálogo: #116 [IMP-F7B69636], #84 [IMP-E01CDF7A] · el insumo elegido es autogenerado (IMP-4EB648C1) · duplicado en catálogo: #116 [IMP-F7B69636], #84 [IMP-E01CDF7A]"
+  },
+  {
+    "ocr_nombre": "FASE ACUOSA",
+    "nombre_canonico": "SOLUCION FASE ACUOSA",
+    "tipo": "Producto",
+    "insumo_id": null,
+    "producto_id": "215",
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento20-grupo.jpeg"
+    ],
+    "notas": "semielaborado probable, coincidencia no exacta: revisar · coincidencia parcial (contención de nombre): revisar"
+  },
+  {
+    "ocr_nombre": "GOMA DEXHATAN",
+    "nombre_canonico": "GOMA DE XHATAN",
+    "tipo": "Insumo",
+    "insumo_id": "114",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento11.jpeg",
+      "entrenamiento15.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-24A5E57B)"
+  },
+  {
+    "ocr_nombre": "LECITINA DESOYA",
+    "nombre_canonico": "LECITINA DE SOYA",
+    "tipo": "Insumo",
+    "insumo_id": "89",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 6,
+    "imagenes": [
+      "entrenamiento12.jpeg",
+      "entrenamiento13.jpeg",
+      "entrenamiento14.jpeg",
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento4.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-E02FE12D)"
+  },
+  {
+    "ocr_nombre": "MONOETILENGLICOL",
+    "nombre_canonico": "MONOETILENGLICOL",
+    "tipo": "Insumo",
+    "insumo_id": "125",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento21.jpeg",
+      "entrenamiento22.jpeg"
+    ],
+    "notas": ""
+  },
+  {
+    "ocr_nombre": "MONOETILIENGLICOL",
+    "nombre_canonico": "MONOETILENGLICOL",
+    "tipo": "Insumo",
+    "insumo_id": "125",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento2.jpeg"
+    ],
+    "notas": "sinónimo aplicado: \"MONOETILIENGLICOL\" → \"MONOETILENGLICOL\""
+  },
+  {
+    "ocr_nombre": "NATROSOLTILOSE",
+    "nombre_canonico": "NATROSOL TILOSE",
+    "tipo": "Insumo",
+    "insumo_id": "110",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento11.jpeg",
+      "entrenamiento15.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-38DA826C)"
+  },
+  {
+    "ocr_nombre": "NEGRO",
+    "nombre_canonico": "NEGRO",
+    "tipo": "sin_definir",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "color",
+    "confianza": 0.3,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento20-grupo.jpeg"
+    ],
+    "notas": "nombre de color: definir con el negocio a qué insumo/producto corresponde · candidatos: #18 Negro de Humo (Carbon Black) / #94 NEGRO OXIDO"
+  },
+  {
+    "ocr_nombre": "NEGRO OXIDO",
+    "nombre_canonico": "NEGRO OXIDO",
+    "tipo": "sin_definir",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "color",
+    "confianza": 0.3,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento8.jpeg"
+    ],
+    "notas": "nombre de color: definir con el negocio a qué insumo/producto corresponde · candidatos: #94 NEGRO OXIDO"
+  },
+  {
+    "ocr_nombre": "PARAFINA CLORADA",
+    "nombre_canonico": "PARA FINA CLORADA",
+    "tipo": "Insumo",
+    "insumo_id": "95",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento6.jpeg",
+      "entrenamiento8.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-D946F413)"
+  },
+  {
+    "ocr_nombre": "PARAFINA CLORADA S-25",
+    "nombre_canonico": "PARA FINA CLORADA",
+    "tipo": "Insumo",
+    "insumo_id": "95",
+    "producto_id": null,
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento22.jpeg"
+    ],
+    "notas": "coincidencia parcial (contención de nombre): revisar · el insumo elegido es autogenerado (IMP-D946F413)"
+  },
+  {
+    "ocr_nombre": "PARAFINA CLORADA(S-52)",
+    "nombre_canonico": "PARAFINA CLORADA (S-52)",
+    "tipo": "Insumo",
+    "insumo_id": "88",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 8,
+    "imagenes": [
+      "entrenamiento10.jpeg",
+      "entrenamiento13.jpeg",
+      "entrenamiento14.jpeg",
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento4.jpeg",
+      "entrenamiento7.jpeg",
+      "entrenamiento9.jpeg"
+    ],
+    "notas": "duplicados en catálogo: #97 [IMP-49C5C28A] · el insumo elegido es autogenerado (IMP-3A2FEA00) · duplicado en catálogo: #97 [IMP-49C5C28A]"
+  },
+  {
+    "ocr_nombre": "PIGMENTO AMARILLLOOXIDO",
+    "nombre_canonico": "PIGMENTO AMARILLLO OXIDO",
+    "tipo": "Insumo",
+    "insumo_id": "103",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento4.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-CB0C976A)"
+  },
+  {
+    "ocr_nombre": "PIGMENTOROJO OXIDO",
+    "nombre_canonico": "PIGMENTO ROJO OXIDO",
+    "tipo": "Insumo",
+    "insumo_id": "104",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento14.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-8BE37F02)"
+  },
+  {
+    "ocr_nombre": "PLIOWAY EC-1",
+    "nombre_canonico": "PLIOWAY  EC-1",
+    "tipo": "Insumo",
+    "insumo_id": "107",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 3,
+    "imagenes": [
+      "entrenamiento19.jpeg",
+      "entrenamiento6.jpeg",
+      "entrenamiento9.jpeg"
+    ],
+    "notas": "duplicados en catálogo: #99 [IMP-1E100B7B] · el insumo elegido es autogenerado (IMP-35E3C484) · duplicado en catálogo: #99 [IMP-1E100B7B]"
+  },
+  {
+    "ocr_nombre": "PLIOWAYE-CH",
+    "nombre_canonico": "PLIOWAY  E-CH",
+    "tipo": "Insumo",
+    "insumo_id": "117",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 3,
+    "imagenes": [
+      "entrenamiento10.jpeg",
+      "entrenamiento7.jpeg",
+      "entrenamiento8.jpeg"
+    ],
+    "notas": "duplicados en catálogo: #92 [IMP-01B71002] · también existe como producto #203 [SOLUCION-RESINA-PLIOWAY-E-CH] SOLUCION RESINA PLIOWAY E-CH: revisar si debe ir como semielaborado · el insumo elegido es autogenerado (IMP-B5FF7F49) · duplicado en catálogo: #92 [IMP-01B71002]"
+  },
+  {
+    "ocr_nombre": "RESINA",
+    "nombre_canonico": "RESINA",
+    "tipo": "Insumo",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "ambiguo",
+    "confianza": 0.5,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento2.jpeg"
+    ],
+    "notas": "ambigüedad: coincide con #129 RESINA D-06 / #130 RESINA D-25 / #131 RESINA D-50"
+  },
+  {
+    "ocr_nombre": "RESINA QE-220S",
+    "nombre_canonico": "RESINA QE-220S",
+    "tipo": "Insumo",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.0,
+    "accion": "crear",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento21.jpeg",
+      "entrenamiento22.jpeg"
+    ],
+    "notas": "candidato más cercano: #129 \"RESINA D-06\" (0.67)"
+  },
+  {
+    "ocr_nombre": "RESINA QE 220 S(W-394)",
+    "nombre_canonico": "RESINA QE-220S",
+    "tipo": "Insumo",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.0,
+    "accion": "crear",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento1.jpeg"
+    ],
+    "notas": "sinónimo aplicado: \"RESINA QE 220 S(W-394)\" → \"RESINA QE-220S\" · candidato más cercano: #129 \"RESINA D-06\" (0.67)"
+  },
+  {
+    "ocr_nombre": "RESINA QE-2383",
+    "nombre_canonico": "RESINA QE-2383 W-595",
+    "tipo": "Insumo",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.0,
+    "accion": "crear",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento21.jpeg",
+      "entrenamiento22.jpeg"
+    ],
+    "notas": "sinónimo aplicado: \"RESINA QE-2383\" → \"RESINA QE-2383 W-595\" · candidato más cercano: #130 \"RESINA D-25\" (0.64)"
+  },
+  {
+    "ocr_nombre": "RESINA QE2383(W-595)",
+    "nombre_canonico": "RESINA QE-2383 W-595",
+    "tipo": "Insumo",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.0,
+    "accion": "crear",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento1.jpeg",
+      "entrenamiento5.jpeg"
+    ],
+    "notas": "candidato más cercano: #130 \"RESINA D-25\" (0.64)"
+  },
+  {
+    "ocr_nombre": "ROJO",
+    "nombre_canonico": "ROJO",
+    "tipo": "sin_definir",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "color",
+    "confianza": 0.3,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento20-grupo.jpeg"
+    ],
+    "notas": "nombre de color: definir con el negocio a qué insumo/producto corresponde · candidatos: #16 Óxido de Hierro Rojo (Fe2O3) / #104 PIGMENTO ROJO OXIDO / #64 ROJO CARMIN / #77 ROJO OXIDO"
+  },
+  {
+    "ocr_nombre": "ROJO OXIDO",
+    "nombre_canonico": "ROJO OXIDO",
+    "tipo": "sin_definir",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "color",
+    "confianza": 0.3,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento7.jpeg"
+    ],
+    "notas": "nombre de color: definir con el negocio a qué insumo/producto corresponde · candidatos: #104 PIGMENTO ROJO OXIDO / #77 ROJO OXIDO"
+  },
+  {
+    "ocr_nombre": "SKEN M-8",
+    "nombre_canonico": "SKEN   M-8",
+    "tipo": "Insumo",
+    "insumo_id": "113",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento11.jpeg",
+      "entrenamiento15.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-CF11AB25)"
+  },
+  {
+    "ocr_nombre": "SOLUCION DE AEROSIL",
+    "nombre_canonico": "SOLUCION DE AEROSIL 200",
+    "tipo": "Insumo",
+    "insumo_id": "91",
+    "producto_id": null,
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento12.jpeg"
+    ],
+    "notas": "coincidencia parcial (contención de nombre): revisar · también existe como producto #204 [SOLUCION-DE-AEROSIL-200] SOLUCION DE AEROSIL 200: revisar si debe ir como semielaborado · el insumo elegido es autogenerado (IMP-D0012F55)"
+  },
+  {
+    "ocr_nombre": "SOLUCION DEAEROSIL200",
+    "nombre_canonico": "SOLUCION DE AEROSIL 200",
+    "tipo": "Producto",
+    "insumo_id": null,
+    "producto_id": "204",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 5,
+    "imagenes": [
+      "entrenamiento13.jpeg",
+      "entrenamiento14.jpeg",
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento4.jpeg"
+    ],
+    "notas": "también existe como insumo #91 [IMP-D0012F55] (tipo comprado): el ERP modela este semielaborado como producto con formulación"
+  },
+  {
+    "ocr_nombre": "SOLUCIONDEPLIOWAY E-CH",
+    "nombre_canonico": "SOLUCION DE PLIOWAY E-CH",
+    "tipo": "Insumo",
+    "insumo_id": "93",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento17.jpeg",
+      "entrenamiento3.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-C6D4F262)"
+  },
+  {
+    "ocr_nombre": "SOLUCION DERESINA",
+    "nombre_canonico": "SOLUCION DE RESINA",
+    "tipo": "Insumo",
+    "insumo_id": "83",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 6,
+    "imagenes": [
+      "entrenamiento12.jpeg",
+      "entrenamiento13.jpeg",
+      "entrenamiento14.jpeg",
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento4.jpeg"
+    ],
+    "notas": "también existe como producto #214 [SOLUCION-DE-RESINA-EC-1] SOLUCION DE RESINA  EC-1: revisar si debe ir como semielaborado · el insumo elegido es autogenerado (IMP-7FB3924F)"
+  },
+  {
+    "ocr_nombre": "SULFATO DE SODIO",
+    "nombre_canonico": "SULFATO DE SODIO",
+    "tipo": "Insumo",
+    "insumo_id": "111",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 2,
+    "imagenes": [
+      "entrenamiento11.jpeg",
+      "entrenamiento15.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-48A4F8D9)"
+  },
+  {
+    "ocr_nombre": "TEXANOL",
+    "nombre_canonico": "TEXANOL",
+    "tipo": "Insumo",
+    "insumo_id": "139",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 3,
+    "imagenes": [
+      "entrenamiento2.jpeg",
+      "entrenamiento21.jpeg",
+      "entrenamiento22.jpeg"
+    ],
+    "notas": ""
+  },
+  {
+    "ocr_nombre": "TINTA AMARILLO OXIDO",
+    "nombre_canonico": "TINTA AMARILLO OXIDO",
+    "tipo": "Producto",
+    "insumo_id": null,
+    "producto_id": "206",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento10.jpeg"
+    ],
+    "notas": "también existe como insumo #96 [IMP-7A375D05] (tipo comprado): el ERP modela este semielaborado como producto con formulación"
+  },
+  {
+    "ocr_nombre": "TINTAAZUL",
+    "nombre_canonico": "TINTA AZUL",
+    "tipo": "Insumo",
+    "insumo_id": "106",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento12.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-9F8C29F2)"
+  },
+  {
+    "ocr_nombre": "TINTANEGRA",
+    "nombre_canonico": "TINTA NEGRA",
+    "tipo": "Producto",
+    "insumo_id": null,
+    "producto_id": "205",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento13.jpeg"
+    ],
+    "notas": "también existe como insumo #105 [IMP-AF1B06D8] (tipo comprado): el ERP modela este semielaborado como producto con formulación"
+  },
+  {
+    "ocr_nombre": "TIXOGELEZ-100",
+    "nombre_canonico": "TIXO GEL EZ-100",
+    "tipo": "Insumo",
+    "insumo_id": "85",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 6,
+    "imagenes": [
+      "entrenamiento12.jpeg",
+      "entrenamiento13.jpeg",
+      "entrenamiento14.jpeg",
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg",
+      "entrenamiento4.jpeg"
+    ],
+    "notas": "el insumo elegido es autogenerado (IMP-0FA55C50)"
+  },
+  {
+    "ocr_nombre": "TRIPOLIFOSFATO DEPOTASIC",
+    "nombre_canonico": "TRIPOLIFOSFATO DE POTASIO",
+    "tipo": "Insumo",
+    "insumo_id": "124",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento2.jpeg"
+    ],
+    "notas": "sinónimo aplicado: \"TRIPOLIFOSFATO DEPOTASIC\" → \"TRIPOLIFOSFATO DE POTASIO\""
+  },
+  {
+    "ocr_nombre": "TRIPOLIFOSFATO DEPOTASIO",
+    "nombre_canonico": "TRIPOLIFOSFATO DE POTASIO",
+    "tipo": "Insumo",
+    "insumo_id": "124",
+    "producto_id": null,
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "vincular",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento21.jpeg"
+    ],
+    "notas": ""
+  },
+  {
+    "ocr_nombre": "VERDE",
+    "nombre_canonico": "VERDE",
+    "tipo": "sin_definir",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "color",
+    "confianza": 0.3,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento20-grupo.jpeg"
+    ],
+    "notas": "nombre de color: definir con el negocio a qué insumo/producto corresponde · candidatos: #20 Pasta Colorante Verde (base agua) / #101 VERDE CROMO"
+  },
+  {
+    "ocr_nombre": "VERDECROMO",
+    "nombre_canonico": "VERDE CROMO",
+    "tipo": "sin_definir",
+    "insumo_id": null,
+    "producto_id": null,
+    "match_criterio": "color",
+    "confianza": 0.3,
+    "accion": "requiere_revision",
+    "apariciones": 1,
+    "imagenes": [
+      "entrenamiento9.jpeg"
+    ],
+    "notas": "nombre de color: definir con el negocio a qué insumo/producto corresponde · candidatos: #101 VERDE CROMO"
+  }
+]

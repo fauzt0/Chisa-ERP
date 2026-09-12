@@ -1,0 +1,2015 @@
+[
+  {
+    "imagen": "entrenamiento10.jpeg",
+    "producto_ocr": "TINTA AMARILLO OXIDO",
+    "producto_id": "206",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 63.0,
+    "componentes_ocr": 5,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.8,
+    "dudas_ocr": [
+      "YCANARIO: fragmento aislado (y=748, x=1069) sin contexto; posible texto 'Y CANARIO'; no asociado a componente",
+      "Subtotal OCR '$193.5' usado literal; 1.260 x $153.62 = 193.56",
+      "Costo total OCR '$2,772.9' usado literal; suma de subtotales = 2772.91",
+      "Celda de porcentaje de la primera fila muestra '2.00%ANTITERRA' (recortado); columna de nombre: ANTITERRA204",
+      "Precio 374.69 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "PARAFINACLORADAS-52: mejor lectura separada 'PARAFINA CLORADA S-52'",
+      "PLIOWAYE-CH: nombre pegado (posible 'PLIOWAY E-CH')",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "nombre_bd": "ANTITERRA 204",
+        "pct_ocr": 2.0,
+        "pct_bd": 2.0,
+        "kg_ocr": 1.26,
+        "kg_bd": 1.26,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINACLORADAS-52",
+        "nombre_bd": "PARAFINA CLORADA S-52",
+        "pct_ocr": 16.0,
+        "pct_bd": 16.0,
+        "kg_ocr": 10.08,
+        "kg_bd": 10.08,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TINTA AMARILLO OXIDO",
+        "nombre_bd": "TINTA AMARILLO OXIDO",
+        "pct_ocr": 32.0,
+        "pct_bd": 32.0,
+        "kg_ocr": 20.16,
+        "kg_bd": 20.16,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PLIOWAYE-CH",
+        "nombre_bd": "PLIOWAY E-CH",
+        "pct_ocr": 14.0,
+        "pct_bd": 14.0,
+        "kg_ocr": 8.82,
+        "kg_bd": 8.82,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 36.0,
+        "pct_bd": 36.0,
+        "kg_ocr": 22.68,
+        "kg_bd": 22.68,
+        "estado": "igual"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 63.0,
+    "estado": "coincide_exacto",
+    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+  },
+  {
+    "imagen": "entrenamiento17.jpeg",
+    "producto_ocr": "SOLUCION DEAEROSIL200",
+    "producto_id": "204",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 213.0,
+    "componentes_ocr": 3,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.88,
+    "dudas_ocr": [
+      "Título leído 'SOLUCION DEAEROSIL200' (probable 'SOLUCION DE AEROSIL 200'); el mismo texto 'AEROSIL200' aparece como componente.",
+      "'213.000' aparece dos veces: columna total izquierda y panel derecho junto a 'KILOS'; ambas coinciden con el lote.",
+      "Verificación: 38.20%×213=81.366; 49.66%×213=105.776; 12.14%×213=25.858.",
+      "Sin precios, subtotales, presentación ni códigos visibles."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "SOLUCION DE PLIOWAY E-CH",
+        "nombre_bd": "SOLUCION DE PLIOWAY E-CH",
+        "pct_ocr": 38.2,
+        "pct_bd": 38.2,
+        "kg_ocr": 81.366,
+        "kg_bd": 81.366,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 49.66,
+        "pct_bd": 49.66,
+        "kg_ocr": 105.776,
+        "kg_bd": 105.776,
+        "estado": "igual"
+      },
+      {
+        "nombre": "AEROSIL200",
+        "nombre_bd": "SOLUCION DE AEROSIL 200",
+        "pct_ocr": 12.14,
+        "pct_bd": 12.14,
+        "kg_ocr": 25.858,
+        "kg_bd": 25.858,
+        "estado": "igual"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 213.0,
+    "estado": "coincide_exacto",
+    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+  },
+  {
+    "imagen": "entrenamiento19.jpeg",
+    "producto_ocr": "SOLUCION DE RESINA EC-1",
+    "producto_id": "214",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 393.866,
+    "componentes_ocr": 3,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.85,
+    "dudas_ocr": [
+      "'EXXOL' y 'D-40' detectados en líneas separadas (y≈98-102 y y≈194; 'D-40' reaparece en y≈698): se unió como 'EXXOL D-40'.",
+      "'393.866' aparece como total izquierdo y en el panel derecho junto a 'KILOS'.",
+      "Verificación: 0.64%×393.866=2.521; 49.68%×393.866=195.673 (×2).",
+      "Sin precios, subtotales, presentación ni códigos visibles."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "ANTITERRA 204",
+        "nombre_bd": "ANTI TERRA  204",
+        "pct_ocr": 0.64,
+        "pct_bd": 0.64,
+        "kg_ocr": 2.521,
+        "kg_bd": 2.521,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOL D-40",
+        "nombre_bd": "EXXOL      D-40",
+        "pct_ocr": 49.68,
+        "pct_bd": 49.68,
+        "kg_ocr": 195.673,
+        "kg_bd": 195.69,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PLIOWAY EC-1",
+        "nombre_bd": "PLIOWAY  EC-1",
+        "pct_ocr": 49.68,
+        "pct_bd": 49.68,
+        "kg_ocr": 195.673,
+        "kg_bd": 195.69,
+        "estado": "igual"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 393.9,
+    "estado": "coincide_exacto",
+    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+  },
+  {
+    "imagen": "entrenamiento3.jpeg",
+    "producto_ocr": "SOLUCION DE AEROSIL 200",
+    "producto_id": "204",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 213.0,
+    "componentes_ocr": 3,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.8,
+    "dudas_ocr": [
+      "La columna izquierda (x≈0) muestra importes abreviados: '$12,04', '$3,23', '$7,35' y total '2263'; corresponden a importes en miles (148.00×81.366≈12042.17; 30.59×105.776≈3235.69; 284.40×25.858≈7354.02; total≈22631.87). Se tomó la columna x≈93 como precio unitario.",
+      "Nombres tal cual del OCR: 'SOLUCIONDEPLIOWAY E-CH' (columna derecha) / 'SOLUCIONDEPLIOWAY' (celda de porcentaje); probable 'SOLUCION DE PLIOWAY E-CH'. 'EXXOLD-40' probable 'EXXSOL D40'; 'AEROSIL200' probable 'AEROSIL 200'.",
+      "El bloque inferior '213.000 | KILOS | SOLUCION DE AEROSIL 200' se interpretó como cantidad del lote, unidad y nombre del producto; no se muestra presentación (¿CUBETA?), código ni cliente.",
+      "El valor 462.99 de la fila superior es la suma de la columna de precios unitarios (148.00+30.59+284.40)."
+    ],
+    "duplicado_de": "entrenamiento17.jpeg",
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "SOLUCIONDEPLIOWAY E-CH",
+        "nombre_bd": "SOLUCION DE PLIOWAY E-CH",
+        "pct_ocr": 38.2,
+        "pct_bd": 38.2,
+        "kg_ocr": 81.366,
+        "kg_bd": 81.366,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 49.66,
+        "pct_bd": 49.66,
+        "kg_ocr": 105.776,
+        "kg_bd": 105.776,
+        "estado": "igual"
+      },
+      {
+        "nombre": "AEROSIL200",
+        "nombre_bd": "SOLUCION DE AEROSIL 200",
+        "pct_ocr": 12.14,
+        "pct_bd": 12.14,
+        "kg_ocr": 25.858,
+        "kg_bd": 25.858,
+        "estado": "igual"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 213.0,
+    "estado": "coincide_exacto",
+    "recomendacion": "Ya cargada como V1 (activa): no crear nada.",
+    "nota_duplicado": "captura idéntica a la anterior: cargar una sola vez"
+  },
+  {
+    "imagen": "entrenamiento6.jpeg",
+    "producto_ocr": "TINTA ROJO CARMIN",
+    "producto_id": "208",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 200.0,
+    "componentes_ocr": 5,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.75,
+    "dudas_ocr": [
+      "YAZUL: fragmento aislado (y=644, x=1083) sin contexto; posible texto 'Y AZUL'; no asociado a componente ni producto",
+      "Costo total no detectado en el OCR: la fila de totales no tiene importe en la columna de subtotales; suma de los 5 subtotales = 9744.94",
+      "Subtotal OCR '$3.892.22' interpretado como 3892.22 (coincide con 28.340 x $137.34)",
+      "Precio 394.97 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "ANTITERRA204: mejor lectura separada 'ANTITERRA 204'",
+      "AZULDEFTALOZANINA: mejor lectura separada 'AZUL DE FTALOCIANINA' (OCR: FTALOZANINA)",
+      "PLIOWAYEC-1: nombre pegado (posible 'PLIOWAY EC-1')",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "nombre_bd": "ANTI TERRA 204",
+        "pct_ocr": 2.5,
+        "pct_bd": 2.5,
+        "kg_ocr": 5.0,
+        "kg_bd": 5.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINA CLORADA",
+        "nombre_bd": "PARAFINA CLORADA (S-52)",
+        "pct_ocr": 12.5,
+        "pct_bd": 12.5,
+        "kg_ocr": 25.0,
+        "kg_bd": 25.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "AZULDEFTALOZANINA",
+        "nombre_bd": "AZUL DE FTALOZANINA",
+        "pct_ocr": 25.0,
+        "pct_bd": 25.0,
+        "kg_ocr": 50.0,
+        "kg_bd": 50.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PLIOWAYEC-1",
+        "nombre_bd": "PLIOWAY EC-1",
+        "pct_ocr": 14.17,
+        "pct_bd": 14.17,
+        "kg_ocr": 28.34,
+        "kg_bd": 28.34,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 45.83,
+        "pct_bd": 45.83,
+        "kg_ocr": 91.66,
+        "kg_bd": 91.66,
+        "estado": "igual"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 200.0,
+    "estado": "coincide_exacto",
+    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+  },
+  {
+    "imagen": "entrenamiento7.jpeg",
+    "producto_ocr": "TINTA ROJA",
+    "producto_id": "207",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 60.0,
+    "componentes_ocr": 5,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.75,
+    "dudas_ocr": [
+      "Cantidad '0006' leída como 9.000 (coincide con subtotal $1,236.06 = 9.000 x $137.34)",
+      "Cantidad '009'6' (OCR) leída como 9.600 (coincide con subtotal $350.69 = 9.600 x $36.53)",
+      "Cantidad del pie '00009' leída como 60.000 (coincide con la fila de totales)",
+      "Precio 394.97 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "PARAFINA CLORADAS-52: mejor lectura separada 'PARAFINA CLORADA S-52'",
+      "PLIOWAYE-CH: nombre pegado (posible 'PLIOWAY E-CH')",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "nombre_bd": "ANTITERRA 204",
+        "pct_ocr": 2.0,
+        "pct_bd": 2.0,
+        "kg_ocr": 1.2,
+        "kg_bd": 1.2,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINA CLORADAS-52",
+        "nombre_bd": "PARAFINA CLORADA S-52",
+        "pct_ocr": 16.0,
+        "pct_bd": 16.0,
+        "kg_ocr": 9.6,
+        "kg_bd": 9.6,
+        "estado": "igual"
+      },
+      {
+        "nombre": "ROJO OXIDO",
+        "nombre_bd": "ROJO OXIDO",
+        "pct_ocr": 32.0,
+        "pct_bd": 32.0,
+        "kg_ocr": 19.2,
+        "kg_bd": 19.2,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PLIOWAYE-CH",
+        "nombre_bd": "PLIOWAY E-CH",
+        "pct_ocr": 15.0,
+        "pct_bd": 15.0,
+        "kg_ocr": 9.0,
+        "kg_bd": 9.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 35.0,
+        "pct_bd": 35.0,
+        "kg_ocr": 21.0,
+        "kg_bd": 21.0,
+        "estado": "igual"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 60.0,
+    "estado": "coincide_exacto",
+    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+  },
+  {
+    "imagen": "entrenamiento8.jpeg",
+    "producto_ocr": "TINTA NEGRA",
+    "producto_id": "205",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 50.0,
+    "componentes_ocr": 5,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.9,
+    "dudas_ocr": [
+      "No aparece clave de HOJA en el OCR (hoja_o_clave = null)",
+      "Precio 378.88 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "nombre_bd": "ANTI TERRA 204",
+        "pct_ocr": 2.0,
+        "pct_bd": 2.0,
+        "kg_ocr": 1.0,
+        "kg_bd": 1.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINA CLORADA",
+        "nombre_bd": "PARA FINA CLORADA",
+        "pct_ocr": 8.0,
+        "pct_bd": 8.0,
+        "kg_ocr": 4.0,
+        "kg_bd": 4.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "NEGRO OXIDO",
+        "nombre_bd": "NEGRO OXIDO",
+        "pct_ocr": 50.0,
+        "pct_bd": 50.0,
+        "kg_ocr": 25.0,
+        "kg_bd": 25.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PLIOWAYE-CH",
+        "nombre_bd": "PLIOWAY E-CH",
+        "pct_ocr": 13.0,
+        "pct_bd": 13.0,
+        "kg_ocr": 6.5,
+        "kg_bd": 6.5,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 27.0,
+        "pct_bd": 27.0,
+        "kg_ocr": 13.5,
+        "kg_bd": 13.5,
+        "estado": "igual"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 50.0,
+    "estado": "coincide_exacto",
+    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+  },
+  {
+    "imagen": "entrenamiento9.jpeg",
+    "producto_ocr": "TINTA VERDE CROMO",
+    "producto_id": "209",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 52.0,
+    "componentes_ocr": 5,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.9,
+    "dudas_ocr": [
+      "Precio 375.69 de la fila de totales sin unidad indicada (asignado a precio_venta)",
+      "PLIOWAYEC-1: nombre pegado (posible 'PLIOWAY EC-1')",
+      "VERDECROMO: mejor lectura separada 'VERDE CROMO'",
+      "EXXOLD-40: nombre pegado (mejor lectura separada 'EXXOL D-40')"
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "ANTITERRA204",
+        "nombre_bd": "ANTI TERRA 204",
+        "pct_ocr": 2.0,
+        "pct_bd": 2.0,
+        "kg_ocr": 1.04,
+        "kg_bd": 1.04,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINA CLORADA(S-52)",
+        "nombre_bd": "PARAFINA CLORADA (S-52)",
+        "pct_ocr": 8.0,
+        "pct_bd": 8.0,
+        "kg_ocr": 4.16,
+        "kg_bd": 4.16,
+        "estado": "igual"
+      },
+      {
+        "nombre": "VERDECROMO",
+        "nombre_bd": "VERDE CROMO",
+        "pct_ocr": 48.0,
+        "pct_bd": 48.0,
+        "kg_ocr": 24.96,
+        "kg_bd": 24.96,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PLIOWAYEC-1",
+        "nombre_bd": "PLIOWAY EC-1",
+        "pct_ocr": 14.0,
+        "pct_bd": 14.0,
+        "kg_ocr": 7.28,
+        "kg_bd": 7.28,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 28.0,
+        "pct_bd": 28.0,
+        "kg_ocr": 14.56,
+        "kg_bd": 14.56,
+        "estado": "igual"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 52.0,
+    "estado": "coincide_exacto",
+    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+  },
+  {
+    "imagen": "entrenamiento11.jpeg",
+    "producto_ocr": "SOLUCION FASE ACUOSA",
+    "producto_id": "215",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 600.0,
+    "componentes_ocr": 7,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.9,
+    "dudas_ocr": [
+      "'819' en la columna resumen (fila de precios, sin decimales por OCR): coincide con la suma de precios unitarios (40+200+200+99+50+230+0).",
+      "El total 600.000 se repite como columna resumen a la izquierda y bajo el rótulo 'KILOS' a la derecha.",
+      "Nombres pegados por OCR: 'NATROSOLTILOSE' (lectura separada: 'NATROSOL TILOSE'); en la fila de porcentajes aparecen 'GOMADEXHATAN' y 'SULFATODESODIO' (lecturas: 'GOMA DEXHATAN', 'SULFATO DE SODIO')."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "AMONIACO",
+        "nombre_bd": "AMONIACO",
+        "pct_ocr": 0.02,
+        "pct_bd": 0.02,
+        "kg_ocr": 0.12,
+        "kg_bd": 0.002,
+        "estado": "igual"
+      },
+      {
+        "nombre": "GOMA DEXHATAN",
+        "nombre_bd": "GOMA DE XHATAN",
+        "pct_ocr": 0.58,
+        "pct_bd": 0.58,
+        "kg_ocr": 3.48,
+        "kg_bd": 0.058,
+        "estado": "igual"
+      },
+      {
+        "nombre": "SKEN M-8",
+        "nombre_bd": "SKEN   M-8",
+        "pct_ocr": 0.35,
+        "pct_bd": 0.35,
+        "kg_ocr": 2.1,
+        "kg_bd": 0.035,
+        "estado": "igual"
+      },
+      {
+        "nombre": "ADECIDE",
+        "nombre_bd": "ADECIDE",
+        "pct_ocr": 0.4,
+        "pct_bd": 0.4,
+        "kg_ocr": 2.4,
+        "kg_bd": 0.04,
+        "estado": "igual"
+      },
+      {
+        "nombre": "SULFATO DE SODIO",
+        "nombre_bd": "SULFATO DE SODIO",
+        "pct_ocr": 0.12,
+        "pct_bd": 0.12,
+        "kg_ocr": 0.72,
+        "kg_bd": 0.012,
+        "estado": "igual"
+      },
+      {
+        "nombre": "NATROSOLTILOSE",
+        "nombre_bd": "NATROSOL TILOSE",
+        "pct_ocr": 0.19,
+        "pct_bd": 0.19,
+        "kg_ocr": 1.14,
+        "kg_bd": 0.019,
+        "estado": "igual"
+      },
+      {
+        "nombre": "AGUA",
+        "nombre_bd": null,
+        "pct_ocr": 98.34,
+        "pct_bd": null,
+        "kg_ocr": 590.04,
+        "kg_bd": null,
+        "estado": "nuevo",
+        "nota": "la ficha dice \"AGUA\" (98.34%) y la BD tiene \"Resina Base Agua SBR/Látex\" (98.34%): confirmar si es el mismo material"
+      },
+      {
+        "nombre": "Resina Base Agua SBR/Látex",
+        "nombre_bd": "Resina Base Agua SBR/Látex",
+        "pct_ocr": null,
+        "pct_bd": 98.34,
+        "kg_ocr": null,
+        "kg_bd": 9.834,
+        "estado": "falta_en_ocr",
+        "nota": "la ficha dice \"AGUA\" (98.34%) y la BD tiene \"Resina Base Agua SBR/Látex\" (98.34%): confirmar si es el mismo material"
+      }
+    ],
+    "incidencias": [
+      "la ficha dice \"AGUA\" (98.34%) y la BD tiene \"Resina Base Agua SBR/Látex\" (98.34%): confirmar si es el mismo material"
+    ],
+    "total_kg_bd": 10.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1."
+  },
+  {
+    "imagen": "entrenamiento12.jpeg",
+    "producto_ocr": "BASE ORGANICA NARANJA",
+    "producto_id": "213",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 1.0,
+    "componentes_ocr": 8,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.6,
+    "dudas_ocr": [
+      "Fila de cantidades con OCR inconsistente: '0.164' aparece 3 veces (x=520, 544, 569), ocupando las columnas de AGUA y TINTAAZUL (probable duplicado del valor de SOLUCION DE AEROSIL); por porcentaje×lote (1.000 kg) correspondería AGUA 0.001 (0.14%) y TINTAAZUL 0.172 (17.23%), por lo que esas cantidades quedan en null.",
+      "La suma de cantidades legibles (0.001+0.164+0.176+0.014+0.235+0.236 = 0.826) no completa el lote por las dos cantidades no legibles.",
+      "La columna resumen izquierda muestra cantidad 1.000, suma de precios unitarios $750.50 y costo total $92.80.",
+      "En cabecera, junto a 'BASE ORGANICA NARANJA', aparece 'AZULYROJO CARMIN' (¿color o segunda línea del nombre de producto?).",
+      "Nombres pegados por OCR: 'LECITINA DESOYA' ('LECITINA DE SOYA'), 'TINTAAZUL' ('TINTA AZUL'), 'CARBONATO DEOMYA CAR 1-T' ('CARBONATO DE OMYA CAR 1-T'), 'TIXOGELEZ-100' ('TIXOGEL EZ-100'), 'SOLUCION DERESINA' ('SOLUCION DE RESINA')."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "LECITINA DESOYA",
+        "nombre_bd": "LECITINA DE SOYA",
+        "pct_ocr": 0.07,
+        "pct_bd": 0.07,
+        "kg_ocr": 0.001,
+        "kg_bd": 0.001,
+        "estado": "igual"
+      },
+      {
+        "nombre": "AGUA",
+        "nombre_bd": null,
+        "pct_ocr": 0.14,
+        "pct_bd": null,
+        "kg_ocr": null,
+        "kg_bd": null,
+        "estado": "nuevo",
+        "nota": "la ficha dice \"AGUA\" (0.14%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.14%): confirmar si es el mismo material"
+      },
+      {
+        "nombre": "SOLUCION DE AEROSIL",
+        "nombre_bd": "SOLUCION DE AEROSIL 200",
+        "pct_ocr": 16.44,
+        "pct_bd": 16.44,
+        "kg_ocr": 0.164,
+        "kg_bd": 0.164,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TINTAAZUL",
+        "nombre_bd": "TINTA AZUL",
+        "pct_ocr": 17.23,
+        "pct_bd": 17.23,
+        "kg_ocr": null,
+        "kg_bd": 0.164,
+        "estado": "igual"
+      },
+      {
+        "nombre": "CARBONATO DEOMYA CAR 1-T",
+        "nombre_bd": "CARBONATO DE OMYA CAR 1-T",
+        "pct_ocr": 17.61,
+        "pct_bd": 17.61,
+        "kg_ocr": 0.176,
+        "kg_bd": 0.176,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TIXOGELEZ-100",
+        "nombre_bd": "TIXO GEL EZ-100",
+        "pct_ocr": 1.41,
+        "pct_bd": 1.41,
+        "kg_ocr": 0.014,
+        "kg_bd": 0.014,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 23.51,
+        "pct_bd": 23.51,
+        "kg_ocr": 0.235,
+        "kg_bd": 0.235,
+        "estado": "igual"
+      },
+      {
+        "nombre": "SOLUCION DERESINA",
+        "nombre_bd": "SOLUCION DE RESINA",
+        "pct_ocr": 23.59,
+        "pct_bd": 23.59,
+        "kg_ocr": 0.236,
+        "kg_bd": 0.236,
+        "estado": "igual"
+      },
+      {
+        "nombre": "Resina Base Agua SBR/Látex",
+        "nombre_bd": "Resina Base Agua SBR/Látex",
+        "pct_ocr": null,
+        "pct_bd": 0.14,
+        "kg_ocr": null,
+        "kg_bd": 0.164,
+        "estado": "falta_en_ocr",
+        "nota": "la ficha dice \"AGUA\" (0.14%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.14%): confirmar si es el mismo material"
+      }
+    ],
+    "incidencias": [
+      "la ficha dice \"AGUA\" (0.14%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.14%): confirmar si es el mismo material"
+    ],
+    "total_kg_bd": 1.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1."
+  },
+  {
+    "imagen": "entrenamiento13.jpeg",
+    "producto_ocr": "BASE ORGANICA NEGRA",
+    "producto_id": "212",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 200.0,
+    "componentes_ocr": 9,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.85,
+    "dudas_ocr": [
+      "En cabecera, junto a 'BASE ORGANICA NEGRA', aparece 'VERDE CROMO' (¿color o segundo componente/fase?).",
+      "Columna resumen izquierda: '739.818' (coincide con la suma de precios unitarios) y '$16,700.' con decimales truncados por OCR (la suma de subtotales da ≈$16,700.1).",
+      "Nombres pegados por OCR: 'SOLUCION DEAEROSIL200' ('SOLUCION DE AEROSIL 200'), 'TINTANEGRA' ('TINTA NEGRA'), 'CARBONATODEOMYA CAR1-T' ('CARBONATO DE OMYA CAR 1-T'), 'TIXO GELEZ-100' ('TIXOGEL EZ-100')."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "AGUA",
+        "nombre_bd": null,
+        "pct_ocr": 0.18,
+        "pct_bd": null,
+        "kg_ocr": 0.36,
+        "kg_bd": null,
+        "estado": "nuevo",
+        "nota": "la ficha dice \"AGUA\" (0.18%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.18%): confirmar si es el mismo material"
+      },
+      {
+        "nombre": "SOLUCION DEAEROSIL200",
+        "nombre_bd": "SOLUCION DE AEROSIL 200",
+        "pct_ocr": 21.89,
+        "pct_bd": 21.89,
+        "kg_ocr": 43.78,
+        "kg_bd": 43.78,
+        "estado": "igual"
+      },
+      {
+        "nombre": "LECITINA DESOYA",
+        "nombre_bd": "LECITINA DE SOYA",
+        "pct_ocr": 0.1,
+        "pct_bd": 0.1,
+        "kg_ocr": 0.2,
+        "kg_bd": 0.2,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINA CLORADA(S-52)",
+        "nombre_bd": "PARAFINA CLORADA (S-52)",
+        "pct_ocr": 1.58,
+        "pct_bd": 1.58,
+        "kg_ocr": 3.16,
+        "kg_bd": 3.16,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TINTANEGRA",
+        "nombre_bd": "TINTA NEGRA",
+        "pct_ocr": 3.76,
+        "pct_bd": 3.76,
+        "kg_ocr": 7.52,
+        "kg_bd": 7.52,
+        "estado": "igual"
+      },
+      {
+        "nombre": "CARBONATODEOMYA CAR1-T",
+        "nombre_bd": "CARBONATO DE OMYA CAR 1-T",
+        "pct_ocr": 23.43,
+        "pct_bd": 23.43,
+        "kg_ocr": 46.86,
+        "kg_bd": 46.86,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TIXO GELEZ-100",
+        "nombre_bd": "TIXO GEL EZ-100",
+        "pct_ocr": 1.87,
+        "pct_bd": 1.87,
+        "kg_ocr": 3.74,
+        "kg_bd": 3.74,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 16.7,
+        "pct_bd": 16.7,
+        "kg_ocr": 33.4,
+        "kg_bd": 33.4,
+        "estado": "igual"
+      },
+      {
+        "nombre": "SOLUCION DE RESINA",
+        "nombre_bd": "SOLUCION DE RESINA",
+        "pct_ocr": 30.49,
+        "pct_bd": 30.49,
+        "kg_ocr": 60.98,
+        "kg_bd": 60.98,
+        "estado": "igual"
+      },
+      {
+        "nombre": "Resina Base Agua SBR/Látex",
+        "nombre_bd": "Resina Base Agua SBR/Látex",
+        "pct_ocr": null,
+        "pct_bd": 0.18,
+        "kg_ocr": null,
+        "kg_bd": 0.36,
+        "estado": "falta_en_ocr",
+        "nota": "la ficha dice \"AGUA\" (0.18%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.18%): confirmar si es el mismo material"
+      }
+    ],
+    "incidencias": [
+      "la ficha dice \"AGUA\" (0.18%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.18%): confirmar si es el mismo material"
+    ],
+    "total_kg_bd": 200.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1."
+  },
+  {
+    "imagen": "entrenamiento14.jpeg",
+    "producto_ocr": "BASE ORGANICA ROJO OXIDO",
+    "producto_id": "211",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 200.0,
+    "componentes_ocr": 9,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.9,
+    "dudas_ocr": [
+      "Columna resumen izquierda: '720.68' (coincide con la suma de precios unitarios) y $16,940.85 (costo total; coincide con la suma de subtotales).",
+      "Nombres pegados por OCR: 'SOLUCION DEAEROSIL200' ('SOLUCION DE AEROSIL 200'), 'PIGMENTOROJO OXIDO' ('PIGMENTO ROJO OXIDO'), 'CARBONATO DEOMYA CAR1-T' ('CARBONATO DE OMYA CAR 1-T'), 'LECITINA DESOYA' ('LECITINA DE SOYA'), 'SOLUCION DERESINA' ('SOLUCION DE RESINA')."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "AGUA",
+        "nombre_bd": null,
+        "pct_ocr": 0.19,
+        "pct_bd": null,
+        "kg_ocr": 0.38,
+        "kg_bd": null,
+        "estado": "nuevo",
+        "nota": "la ficha dice \"AGUA\" (0.19%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.19%): confirmar si es el mismo material"
+      },
+      {
+        "nombre": "SOLUCION DEAEROSIL200",
+        "nombre_bd": "SOLUCION DE AEROSIL 200",
+        "pct_ocr": 22.16,
+        "pct_bd": 22.16,
+        "kg_ocr": 44.32,
+        "kg_bd": 44.32,
+        "estado": "igual"
+      },
+      {
+        "nombre": "LECITINA DESOYA",
+        "nombre_bd": "LECITINA DE SOYA",
+        "pct_ocr": 0.1,
+        "pct_bd": 0.1,
+        "kg_ocr": 0.2,
+        "kg_bd": 0.2,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINA CLORADA(S-52)",
+        "nombre_bd": "PARAFINA CLORADA (S-52)",
+        "pct_ocr": 0.95,
+        "pct_bd": 0.95,
+        "kg_ocr": 1.9,
+        "kg_bd": 1.9,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PIGMENTOROJO OXIDO",
+        "nombre_bd": "PIGMENTO ROJO OXIDO",
+        "pct_ocr": 5.93,
+        "pct_bd": 5.93,
+        "kg_ocr": 11.86,
+        "kg_bd": 11.86,
+        "estado": "igual"
+      },
+      {
+        "nombre": "CARBONATO DEOMYA CAR1-T",
+        "nombre_bd": "CARBONATO DE OMYA CAR 1-T",
+        "pct_ocr": 23.73,
+        "pct_bd": 23.73,
+        "kg_ocr": 47.46,
+        "kg_bd": 47.46,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TIXOGELEZ-100",
+        "nombre_bd": "TIXO GEL EZ-100",
+        "pct_ocr": 1.9,
+        "pct_bd": 1.9,
+        "kg_ocr": 3.8,
+        "kg_bd": 3.8,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 14.18,
+        "pct_bd": 14.18,
+        "kg_ocr": 28.36,
+        "kg_bd": 28.36,
+        "estado": "igual"
+      },
+      {
+        "nombre": "SOLUCION DERESINA",
+        "nombre_bd": "SOLUCION DE RESINA",
+        "pct_ocr": 30.86,
+        "pct_bd": 30.86,
+        "kg_ocr": 61.72,
+        "kg_bd": 61.72,
+        "estado": "igual"
+      },
+      {
+        "nombre": "Resina Base Agua SBR/Látex",
+        "nombre_bd": "Resina Base Agua SBR/Látex",
+        "pct_ocr": null,
+        "pct_bd": 0.19,
+        "kg_ocr": null,
+        "kg_bd": 0.38,
+        "estado": "falta_en_ocr",
+        "nota": "la ficha dice \"AGUA\" (0.19%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.19%): confirmar si es el mismo material"
+      }
+    ],
+    "incidencias": [
+      "la ficha dice \"AGUA\" (0.19%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.19%): confirmar si es el mismo material"
+    ],
+    "total_kg_bd": 200.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1."
+  },
+  {
+    "imagen": "entrenamiento15.jpeg",
+    "producto_ocr": "SOLUCION FASE ACUOSA",
+    "producto_id": "215",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 600.0,
+    "componentes_ocr": 7,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.85,
+    "dudas_ocr": [
+      "El OCR no incluye filas de precios ni subtotales (solo cantidades); precio_unitario y costo_total quedan en null.",
+      "Nombre 'GOMADEXHATAN' (lectura separada: 'GOMA DEXHATAN')."
+    ],
+    "duplicado_de": "entrenamiento11.jpeg",
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "AMONIACO",
+        "nombre_bd": "AMONIACO",
+        "pct_ocr": 0.02,
+        "pct_bd": 0.02,
+        "kg_ocr": 0.12,
+        "kg_bd": 0.002,
+        "estado": "igual"
+      },
+      {
+        "nombre": "GOMADEXHATAN",
+        "nombre_bd": "GOMA DE XHATAN",
+        "pct_ocr": 0.58,
+        "pct_bd": 0.58,
+        "kg_ocr": 3.48,
+        "kg_bd": 0.058,
+        "estado": "igual"
+      },
+      {
+        "nombre": "SKEN M-8",
+        "nombre_bd": "SKEN   M-8",
+        "pct_ocr": 0.42,
+        "pct_bd": 0.35,
+        "kg_ocr": 2.52,
+        "kg_bd": 0.035,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "ADECIDE",
+        "nombre_bd": "ADECIDE",
+        "pct_ocr": 0.42,
+        "pct_bd": 0.4,
+        "kg_ocr": 2.52,
+        "kg_bd": 0.04,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "SULFATO DE SODIO",
+        "nombre_bd": "SULFATO DE SODIO",
+        "pct_ocr": 0.12,
+        "pct_bd": 0.12,
+        "kg_ocr": 0.72,
+        "kg_bd": 0.012,
+        "estado": "igual"
+      },
+      {
+        "nombre": "NATROSOL TILOSE",
+        "nombre_bd": "NATROSOL TILOSE",
+        "pct_ocr": 0.19,
+        "pct_bd": 0.19,
+        "kg_ocr": 1.14,
+        "kg_bd": 0.019,
+        "estado": "igual"
+      },
+      {
+        "nombre": "AGUA",
+        "nombre_bd": null,
+        "pct_ocr": 98.25,
+        "pct_bd": null,
+        "kg_ocr": 589.5,
+        "kg_bd": null,
+        "estado": "nuevo",
+        "nota": "la ficha dice \"AGUA\" (98.25%) y la BD tiene \"Resina Base Agua SBR/Látex\" (98.34%): confirmar si es el mismo material"
+      },
+      {
+        "nombre": "Resina Base Agua SBR/Látex",
+        "nombre_bd": "Resina Base Agua SBR/Látex",
+        "pct_ocr": null,
+        "pct_bd": 98.34,
+        "kg_ocr": null,
+        "kg_bd": 9.834,
+        "estado": "falta_en_ocr",
+        "nota": "la ficha dice \"AGUA\" (98.25%) y la BD tiene \"Resina Base Agua SBR/Látex\" (98.34%): confirmar si es el mismo material"
+      }
+    ],
+    "incidencias": [
+      "la ficha dice \"AGUA\" (98.25%) y la BD tiene \"Resina Base Agua SBR/Látex\" (98.34%): confirmar si es el mismo material"
+    ],
+    "total_kg_bd": 10.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 4 línea(s) con diferencia frente a V1.",
+    "nota_duplicado": "mismo producto y lote pero porcentajes distintos: revisar cuál es la vigente"
+  },
+  {
+    "imagen": "entrenamiento16.jpeg",
+    "producto_ocr": "BASE ORGANICA BLANCA",
+    "producto_id": "202",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 1000.0,
+    "componentes_ocr": 10,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.9,
+    "dudas_ocr": [
+      "Rótulo del total leído '$95.178.909' (puntos en vez de comas): se interpreta $95,178.909 y coincide exactamente con la suma de subtotales (0 + 22,652.550 + 154.368 + 120.000 + 921.240 + 626.990 + 16,302.000 + 2,871.927 + 5,279.834 + 46,250.000).",
+      "'1102.6' sin símbolo $ = suma de precios unitarios; el precio de AGUA se imprime como $0.00 y su subtotal $0.000.",
+      "'0.18%AGUA' con cantidad 1.800 Kg: porcentaje de agua atípicamente bajo; verificar.",
+      "Nombres con OCR pegado (se conserva el literal): 'SOLUCION DEAEROSIL200' (¿SOLUCION DE AEROSIL 200?), 'LECITINADESOYA' (¿LECITINA DE SOYA?), 'CARBONATO DEOMYA CAR 1T' (¿CARBONATO DE OMYA CAR 1T?; en y=594 se lee 'CARBONATODEOMYACAR1T'), 'BIOXIDODETITANEO' (¿BIOXIDO DE TITANEO?), 'TIXOGELEZ-100' (¿TIXOGEL EZ-100?).",
+      "Sin código, hoja ni cliente visibles; único rótulo de unidad: KILOS."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "AGUA",
+        "nombre_bd": null,
+        "pct_ocr": 0.18,
+        "pct_bd": null,
+        "kg_ocr": 1.8,
+        "kg_bd": null,
+        "estado": "nuevo",
+        "nota": "la ficha dice \"AGUA\" (0.18%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.18%): confirmar si es el mismo material"
+      },
+      {
+        "nombre": "SOLUCION DEAEROSIL200",
+        "nombre_bd": "SOLUCION DE AEROSIL 200",
+        "pct_ocr": 21.3,
+        "pct_bd": 21.3,
+        "kg_ocr": 213.0,
+        "kg_bd": 213.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "ANTITERRA204",
+        "nombre_bd": "ANTI TERRA 204",
+        "pct_ocr": 0.04,
+        "pct_bd": 0.04,
+        "kg_ocr": 0.4,
+        "kg_bd": 0.4,
+        "estado": "igual"
+      },
+      {
+        "nombre": "LECITINADESOYA",
+        "nombre_bd": "LECITINA DE SOYA",
+        "pct_ocr": 0.1,
+        "pct_bd": 0.1,
+        "kg_ocr": 1.0,
+        "kg_bd": 1.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINA CLORADA(S-52)",
+        "nombre_bd": "PARAFINA CLORADA (S-52)",
+        "pct_ocr": 1.8,
+        "pct_bd": 1.8,
+        "kg_ocr": 18.0,
+        "kg_bd": 18.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "CARBONATO DEOMYA CAR 1T",
+        "nombre_bd": "CARBONATO DE OMYA CAR 1T",
+        "pct_ocr": 9.1,
+        "pct_bd": 9.1,
+        "kg_ocr": 91.0,
+        "kg_bd": 91.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "BIOXIDODETITANEO",
+        "nombre_bd": "BIOXIDO DE TITANEO",
+        "pct_ocr": 17.16,
+        "pct_bd": 17.16,
+        "kg_ocr": 171.6,
+        "kg_bd": 171.6,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TIXOGELEZ-100",
+        "nombre_bd": "TIXO GEL EZ-100",
+        "pct_ocr": 1.81,
+        "pct_bd": 1.81,
+        "kg_ocr": 18.1,
+        "kg_bd": 18.1,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 17.26,
+        "pct_bd": 17.26,
+        "kg_ocr": 172.6,
+        "kg_bd": 172.6,
+        "estado": "igual"
+      },
+      {
+        "nombre": "SOLUCION DE RESINA",
+        "nombre_bd": "SOLUCION DE RESINA",
+        "pct_ocr": 31.25,
+        "pct_bd": 31.25,
+        "kg_ocr": 312.5,
+        "kg_bd": 312.5,
+        "estado": "igual"
+      },
+      {
+        "nombre": "Resina Base Agua SBR/Látex",
+        "nombre_bd": "Resina Base Agua SBR/Látex",
+        "pct_ocr": null,
+        "pct_bd": 0.18,
+        "kg_ocr": null,
+        "kg_bd": 1.8,
+        "estado": "falta_en_ocr",
+        "nota": "la ficha dice \"AGUA\" (0.18%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.18%): confirmar si es el mismo material"
+      }
+    ],
+    "incidencias": [
+      "la ficha dice \"AGUA\" (0.18%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.18%): confirmar si es el mismo material"
+    ],
+    "total_kg_bd": 1000.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1."
+  },
+  {
+    "imagen": "entrenamiento18.jpeg",
+    "producto_ocr": "BASEORGANICA BLANCA",
+    "producto_id": "202",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 1000.0,
+    "componentes_ocr": 10,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.9,
+    "dudas_ocr": [
+      "Misma formulación que entrenamiento16 (BASE ORGANICA BLANCA, lote 1000.000) pero sin filas de precios/subtotales en el OCR.",
+      "'0.18%AGUA' con cantidad 1.800 Kg: porcentaje de agua atípicamente bajo; verificar.",
+      "Nombres con OCR pegado (se conserva el literal): 'SOLUCION DEAEROSIL200' (¿SOLUCION DE AEROSIL 200?), 'LECITINA DESOYA' (¿LECITINA DE SOYA?), 'CARBONATODEOMYA CAR1T' (en y=625 se lee también 'CARBONATO DEOMYA CAR1T'), 'BIOXIDO DETITANEO' (¿BIOXIDO DE TITANEO?).",
+      "Se conserva el paréntesis de ancho completo en 'PARAFINA CLORADA（S-52)' tal como lo capturó el OCR.",
+      "Sin código, hoja ni cliente visibles; único rótulo de unidad: KILOS (1000.000)."
+    ],
+    "duplicado_de": "entrenamiento16.jpeg",
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "AGUA",
+        "nombre_bd": null,
+        "pct_ocr": 0.18,
+        "pct_bd": null,
+        "kg_ocr": 1.8,
+        "kg_bd": null,
+        "estado": "nuevo",
+        "nota": "la ficha dice \"AGUA\" (0.18%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.18%): confirmar si es el mismo material"
+      },
+      {
+        "nombre": "SOLUCION DEAEROSIL200",
+        "nombre_bd": "SOLUCION DE AEROSIL 200",
+        "pct_ocr": 21.3,
+        "pct_bd": 21.3,
+        "kg_ocr": 213.0,
+        "kg_bd": 213.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "ANTITERRA204",
+        "nombre_bd": "ANTI TERRA 204",
+        "pct_ocr": 0.04,
+        "pct_bd": 0.04,
+        "kg_ocr": 0.4,
+        "kg_bd": 0.4,
+        "estado": "igual"
+      },
+      {
+        "nombre": "LECITINA DESOYA",
+        "nombre_bd": "LECITINA DE SOYA",
+        "pct_ocr": 0.1,
+        "pct_bd": 0.1,
+        "kg_ocr": 1.0,
+        "kg_bd": 1.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINA CLORADA（S-52)",
+        "nombre_bd": "PARAFINA CLORADA (S-52)",
+        "pct_ocr": 1.8,
+        "pct_bd": 1.8,
+        "kg_ocr": 18.0,
+        "kg_bd": 18.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "CARBONATODEOMYA CAR1T",
+        "nombre_bd": "CARBONATO DE OMYA CAR 1T",
+        "pct_ocr": 9.1,
+        "pct_bd": 9.1,
+        "kg_ocr": 91.0,
+        "kg_bd": 91.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "BIOXIDO DETITANEO",
+        "nombre_bd": "BIOXIDO DE TITANEO",
+        "pct_ocr": 17.16,
+        "pct_bd": 17.16,
+        "kg_ocr": 171.6,
+        "kg_bd": 171.6,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TIXOGELEZ-100",
+        "nombre_bd": "TIXO GEL EZ-100",
+        "pct_ocr": 1.81,
+        "pct_bd": 1.81,
+        "kg_ocr": 18.1,
+        "kg_bd": 18.1,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 17.26,
+        "pct_bd": 17.26,
+        "kg_ocr": 172.6,
+        "kg_bd": 172.6,
+        "estado": "igual"
+      },
+      {
+        "nombre": "SOLUCION DE RESINA",
+        "nombre_bd": "SOLUCION DE RESINA",
+        "pct_ocr": 31.25,
+        "pct_bd": 31.25,
+        "kg_ocr": 312.5,
+        "kg_bd": 312.5,
+        "estado": "igual"
+      },
+      {
+        "nombre": "Resina Base Agua SBR/Látex",
+        "nombre_bd": "Resina Base Agua SBR/Látex",
+        "pct_ocr": null,
+        "pct_bd": 0.18,
+        "kg_ocr": null,
+        "kg_bd": 1.8,
+        "estado": "falta_en_ocr",
+        "nota": "la ficha dice \"AGUA\" (0.18%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.18%): confirmar si es el mismo material"
+      }
+    ],
+    "incidencias": [
+      "la ficha dice \"AGUA\" (0.18%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.18%): confirmar si es el mismo material"
+    ],
+    "total_kg_bd": 1000.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1.",
+    "nota_duplicado": "captura idéntica a la anterior: cargar una sola vez"
+  },
+  {
+    "imagen": "entrenamiento2.jpeg",
+    "producto_ocr": "PRAIMER GLASS ~CHISA VINIL PINTURA VINILICA",
+    "producto_id": "224",
+    "confianza_match_producto": 0.9,
+    "total_kg_ocr": 27.0,
+    "componentes_ocr": 12,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.8,
+    "dudas_ocr": [
+      "'W-4535V' y 'M-325' (y≈225-226, x≈527/553, alineados bajo RESINA y CAOLIN; se repiten en y≈638) parecen códigos de esos dos componentes (p. ej. 'RESINA W-4535V', 'CAOLIN M-325'); el esquema no tiene campo de código por componente.",
+      "Nombre de producto tomado literal del bloque derecho: 'PRAIMER GLASS ~CHISA VINIL PINTURA VINILICA'; no se pudo separar con certeza producto/línea/tipo.",
+      "'TRIPOLIFOSFATO DEPOTASIC' (encabezado) / 'TRIPOLIFOSFATO DEPOTASIO' (celda de porcentaje): mi mejor lectura es 'TRIPOLIFOSFATO DE POTASIO'.",
+      "'MONOETILIENGLICOL' mi mejor lectura es 'MONOETILENGLICOL'; 'BIOXIDO DE TITANEO' probable 'BIOXIDO DE TITANIO'.",
+      "La pantalla no muestra precios ni costos."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "BERMOCOLL481FQ",
+        "nombre_bd": null,
+        "pct_ocr": 0.27,
+        "pct_bd": null,
+        "kg_ocr": 0.073,
+        "kg_bd": null,
+        "estado": "nuevo"
+      },
+      {
+        "nombre": "BIOXIDO DE TITANEO",
+        "nombre_bd": "BIOXIDO DE TITANEO",
+        "pct_ocr": 7.0,
+        "pct_bd": 7.0,
+        "kg_ocr": 1.89,
+        "kg_bd": 1.75,
+        "estado": "igual"
+      },
+      {
+        "nombre": "RESINA",
+        "nombre_bd": "RESINA D-06",
+        "pct_ocr": 23.22,
+        "pct_bd": 14.95,
+        "kg_ocr": 6.269,
+        "kg_bd": 3.738,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "CAOLIN",
+        "nombre_bd": "CAOLIN M-325",
+        "pct_ocr": 43.49,
+        "pct_bd": 43.49,
+        "kg_ocr": 11.742,
+        "kg_bd": 10.873,
+        "estado": "igual"
+      },
+      {
+        "nombre": "ADECIDE",
+        "nombre_bd": "ADECIDE",
+        "pct_ocr": 0.14,
+        "pct_bd": 0.14,
+        "kg_ocr": 0.038,
+        "kg_bd": 0.035,
+        "estado": "igual"
+      },
+      {
+        "nombre": "MONOETILIENGLICOL",
+        "nombre_bd": "MONOETILENGLICOL",
+        "pct_ocr": 0.5,
+        "pct_bd": 0.5,
+        "kg_ocr": 0.135,
+        "kg_bd": 0.125,
+        "estado": "igual"
+      },
+      {
+        "nombre": "ANTIESPUMANTE",
+        "nombre_bd": "ANTIESPUMANTE",
+        "pct_ocr": 0.3,
+        "pct_bd": 0.3,
+        "kg_ocr": 0.081,
+        "kg_bd": 0.075,
+        "estado": "igual"
+      },
+      {
+        "nombre": "DISPERSANTE",
+        "nombre_bd": "DISPERSANTE",
+        "pct_ocr": 0.29,
+        "pct_bd": 0.29,
+        "kg_ocr": 0.078,
+        "kg_bd": 0.073,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TRIPOLIFOSFATO DEPOTASIC",
+        "nombre_bd": "TRIPOLIFOSFATO DE POTASIO",
+        "pct_ocr": 0.07,
+        "pct_bd": 0.07,
+        "kg_ocr": 0.019,
+        "kg_bd": 0.018,
+        "estado": "igual"
+      },
+      {
+        "nombre": "AMONIACO",
+        "nombre_bd": "AMONIACO",
+        "pct_ocr": 0.12,
+        "pct_bd": 0.12,
+        "kg_ocr": 0.032,
+        "kg_bd": 0.03,
+        "estado": "igual"
+      },
+      {
+        "nombre": "AGUA",
+        "nombre_bd": "AGUA",
+        "pct_ocr": 23.95,
+        "pct_bd": 32.22,
+        "kg_ocr": 6.467,
+        "kg_bd": 8.055,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "TEXANOL",
+        "nombre_bd": "TEXANOL",
+        "pct_ocr": 0.65,
+        "pct_bd": 0.65,
+        "kg_ocr": 0.176,
+        "kg_bd": 0.163,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TILOSE",
+        "nombre_bd": "TILOSE",
+        "pct_ocr": null,
+        "pct_bd": 0.27,
+        "kg_ocr": null,
+        "kg_bd": 0.068,
+        "estado": "falta_en_ocr"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 25.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 4 línea(s) con diferencia frente a V1."
+  },
+  {
+    "imagen": "entrenamiento20-grupo.jpeg",
+    "producto_ocr": "CHISA GLASSREF T034",
+    "producto_id": "225",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 19.35,
+    "componentes_ocr": 7,
+    "suma_pct_ocr": 45.0,
+    "variantes_color": 4,
+    "confianza_ocr": 0.55,
+    "dudas_ocr": [
+      "Grupo de 4 sub-formulaciones que suman el lote: NEGRO 0.890 + BLANCO 16.448 + AZUL 1.006 + AMARILLO 1.006 = 19.350 Kg (4.60%+85.00%+5.20%+5.20%=100.00%).",
+      "Sus colorantes suman exactamente los del bloque base: NEGRO 0.015+0.039+0.054=0.108; VERDE 0.475; AMARILLO 0.181+0.029+0.149=0.359; BLANCO 8.865+0.306+0.213=9.384; ROJO 0.098+0.138=0.236; AZUL 0.082.",
+      "Sub-recetas (OCR literal): NEGRO '100.00% 3.00% 97.00%' con 0.490 Kg = NEGRO 0.015 + VERDE 0.475; BLANCO '100.00% 2.00% 98.00%' con 9.046 Kg = AMARILLO 0.181 + BLANCO 8.865; AZUL '100.00% 7.02% 5.23% 17.71% 14.81% 55.23%' con 0.553 Kg = NEGRO 0.039 + AMARILLO 0.029 + ROJO 0.098 + AZUL 0.082 + BLANCO 0.306; AMARILLO '100.00% 9.72% 25.00% 26.86% 38.42%' con 0.553 Kg = NEGRO 0.054 + ROJO 0.138 + AMARILLO 0.149 + BLANCO 0.213.",
+      "FASE ACUOSA 45.00% en cada variante (impreso); kg de FASE por variante (fila '0.401 / 7.401 / 0.453 / 0.453') = 45% del lote de cada variante.",
+      "Precios corregidos por aritmética: OCR '548.59'→48.59 y '544.14'→44.14 (0.475×48.59=23.08 y 0.082×44.14=3.62, subtotales impresos); OCR '$2786'→27.86 (8.706×3.20).",
+      "Totales impresos del bloque base: 593.84 (subtotal colorantes), 27.86 (FASE ACUOSA) y 621.70 (total); $3.20/Kg de FASE ACUOSA. Las variantes no muestran precios.",
+      "Aparecen rótulos 'COLORCREMA' (columna junto a BLANCO), 'COLORAZUL' (junto a AZUL) y 'COLORCAFE' (junto a AMARILLO) sin % ni Kg propios: podrían ser nombres de variante o etiquetas de color; no se incluyeron como componentes.",
+      "Nombres repetidos en y≈524-527 (VERDE, AMARILLO, NEGRO, ROJO, BLANCO): probable doble lectura de la fila de nombres o columna extra; no se usó.",
+      "El % de cada colorante del bloque base no está impreso (sólo Kg, precio y subtotal); se dejó null. El 45.00% sí está impreso en las 4 variantes; en el bloque base se infiere de 8.706/19.350."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "FASE ACUOSA",
+        "nombre_bd": null,
+        "pct_ocr": 45.0,
+        "pct_bd": null,
+        "kg_ocr": 8.706,
+        "kg_bd": null,
+        "estado": "nuevo"
+      },
+      {
+        "nombre": "VERDE",
+        "nombre_bd": "Pasta Colorante Verde (base agua)",
+        "pct_ocr": null,
+        "pct_bd": 97.0,
+        "kg_ocr": 0.475,
+        "kg_bd": 9.334,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "AZUL",
+        "nombre_bd": null,
+        "pct_ocr": null,
+        "pct_bd": null,
+        "kg_ocr": 0.082,
+        "kg_bd": null,
+        "estado": "nuevo"
+      },
+      {
+        "nombre": "NEGRO",
+        "nombre_bd": "Negro de Humo (Carbon Black)",
+        "pct_ocr": null,
+        "pct_bd": 9.72,
+        "kg_ocr": 0.108,
+        "kg_bd": 1.057,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "ROJO",
+        "nombre_bd": null,
+        "pct_ocr": null,
+        "pct_bd": null,
+        "kg_ocr": 0.236,
+        "kg_bd": null,
+        "estado": "nuevo"
+      },
+      {
+        "nombre": "AMARILLO",
+        "nombre_bd": "Óxido de Hierro Amarillo",
+        "pct_ocr": null,
+        "pct_bd": 26.86,
+        "kg_ocr": 0.359,
+        "kg_bd": 2.922,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "BLANCO",
+        "nombre_bd": "BLANCO",
+        "pct_ocr": null,
+        "pct_bd": 38.42,
+        "kg_ocr": 9.384,
+        "kg_bd": 4.179,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "Óxido de Hierro Rojo (Fe2O3)",
+        "nombre_bd": "Óxido de Hierro Rojo (Fe2O3)",
+        "pct_ocr": null,
+        "pct_bd": 25.0,
+        "kg_ocr": null,
+        "kg_bd": 2.72,
+        "estado": "falta_en_ocr"
+      },
+      {
+        "nombre": "BLANCO",
+        "nombre_bd": "BLANCO",
+        "pct_ocr": null,
+        "pct_bd": 45.24,
+        "kg_ocr": null,
+        "kg_bd": 4.921,
+        "estado": "falta_en_ocr"
+      },
+      {
+        "nombre": "Pigmento Azul Ftalocianinico",
+        "nombre_bd": "Pigmento Azul Ftalocianinico",
+        "pct_ocr": null,
+        "pct_bd": 7.94,
+        "kg_ocr": null,
+        "kg_bd": 0.864,
+        "estado": "falta_en_ocr"
+      },
+      {
+        "nombre": "Óxido de Hierro Rojo (Fe2O3)",
+        "nombre_bd": "Óxido de Hierro Rojo (Fe2O3)",
+        "pct_ocr": null,
+        "pct_bd": 26.18,
+        "kg_ocr": null,
+        "kg_bd": 2.848,
+        "estado": "falta_en_ocr"
+      },
+      {
+        "nombre": "Óxido de Hierro Amarillo",
+        "nombre_bd": "Óxido de Hierro Amarillo",
+        "pct_ocr": null,
+        "pct_bd": 10.32,
+        "kg_ocr": null,
+        "kg_bd": 1.123,
+        "estado": "falta_en_ocr"
+      },
+      {
+        "nombre": "Negro de Humo (Carbon Black)",
+        "nombre_bd": "Negro de Humo (Carbon Black)",
+        "pct_ocr": null,
+        "pct_bd": 10.32,
+        "kg_ocr": null,
+        "kg_bd": 1.123,
+        "estado": "falta_en_ocr"
+      },
+      {
+        "nombre": "Óxido de Hierro Amarillo",
+        "nombre_bd": "Óxido de Hierro Amarillo",
+        "pct_ocr": null,
+        "pct_bd": 2.0,
+        "kg_ocr": null,
+        "kg_bd": 3.556,
+        "estado": "falta_en_ocr"
+      },
+      {
+        "nombre": "BLANCO",
+        "nombre_bd": "BLANCO",
+        "pct_ocr": null,
+        "pct_bd": 98.0,
+        "kg_ocr": null,
+        "kg_bd": 174.257,
+        "estado": "falta_en_ocr"
+      },
+      {
+        "nombre": "Negro de Humo (Carbon Black)",
+        "nombre_bd": "Negro de Humo (Carbon Black)",
+        "pct_ocr": null,
+        "pct_bd": 3.0,
+        "kg_ocr": null,
+        "kg_bd": 0.289,
+        "estado": "falta_en_ocr"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 380.35,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 16 línea(s) con diferencia frente a V1."
+  },
+  {
+    "imagen": "entrenamiento21.jpeg",
+    "producto_ocr": "PINTU FLEX",
+    "producto_id": "223",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 27.0,
+    "componentes_ocr": 13,
+    "suma_pct_ocr": 96.5,
+    "variantes_color": 0,
+    "confianza_ocr": 0.85,
+    "dudas_ocr": [
+      "Porcentajes fragmentados por OCR: TEXANOL '50%' (x≈617) y MONOETILENGLICOL '00%' (x≈642), sin dígitos iniciales; quedaron en null. Las cantidades implican 2.50% (0.675/27.000) y 1.00% (0.270/27.000) respectivamente.",
+      "El texto 'M-325' aparece aislado dos veces (y≈188 y y≈656, centro de la hoja); se registró como posible código/referencia de producto, sin confirmar.",
+      "Bloque duplicado de nombres en y≈547 (BIOXIDO DE TITANEO, '6BERMOCOL481FQ' con un '6' pegado, TEXANOL, MONOETILENGLICOL) junto a rótulos CUBETA/KILOS; no se usó para cantidades.",
+      "Verificación aritmética correcta: suma de porcentajes = 100.00%; suma de cantidades = 27.000 Kg = lote; cada porcentaje × 27.000 ≈ cantidad.",
+      "No se detectaron columnas de precio ni subtotales.",
+      "Lecturas limpias: 'BIOXIDO DETITANEO' → 'BIÓXIDO DE TITANEO'; 'TRIPOLIFOSFATO DEPOTASIO' → 'TRIPOLIFOSFATO DE POTASIO'; 'RESINAQE-220S' (OCR pegado) → 'RESINA QE-220S'."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "ANTIESPUMANTE",
+        "nombre_bd": "ANTIESPUMANTE",
+        "pct_ocr": 0.1,
+        "pct_bd": 0.1,
+        "kg_ocr": 0.027,
+        "kg_bd": 0.135,
+        "estado": "igual"
+      },
+      {
+        "nombre": "RESINA QE-220S",
+        "nombre_bd": null,
+        "pct_ocr": 15.0,
+        "pct_bd": null,
+        "kg_ocr": 4.05,
+        "kg_bd": null,
+        "estado": "nuevo"
+      },
+      {
+        "nombre": "RESINA QE-2383",
+        "nombre_bd": null,
+        "pct_ocr": 15.0,
+        "pct_bd": null,
+        "kg_ocr": 4.05,
+        "kg_bd": null,
+        "estado": "nuevo"
+      },
+      {
+        "nombre": "CAOLIN",
+        "nombre_bd": "CAOLIN M-325",
+        "pct_ocr": 20.0,
+        "pct_bd": 20.0,
+        "kg_ocr": 5.4,
+        "kg_bd": 27.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "BIOXIDO DETITANEO",
+        "nombre_bd": "BIOXIDO DE TITANEO",
+        "pct_ocr": 20.0,
+        "pct_bd": 20.0,
+        "kg_ocr": 5.4,
+        "kg_bd": 27.0,
+        "estado": "igual"
+      },
+      {
+        "nombre": "BERMOCOL481FQ",
+        "nombre_bd": null,
+        "pct_ocr": 0.3,
+        "pct_bd": null,
+        "kg_ocr": 0.081,
+        "kg_bd": null,
+        "estado": "nuevo"
+      },
+      {
+        "nombre": "TEXANOL",
+        "nombre_bd": "TEXANOL",
+        "pct_ocr": null,
+        "pct_bd": 2.5,
+        "kg_ocr": 0.675,
+        "kg_bd": 3.375,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "MONOETILENGLICOL",
+        "nombre_bd": "MONOETILENGLICOL",
+        "pct_ocr": null,
+        "pct_bd": 1.0,
+        "kg_ocr": 0.27,
+        "kg_bd": 1.35,
+        "estado": "cambio"
+      },
+      {
+        "nombre": "AMONIACO",
+        "nombre_bd": "AMONIACO",
+        "pct_ocr": 0.12,
+        "pct_bd": 0.12,
+        "kg_ocr": 0.0324,
+        "kg_bd": 0.162,
+        "estado": "igual"
+      },
+      {
+        "nombre": "ADECIDE",
+        "nombre_bd": "ADECIDE",
+        "pct_ocr": 0.2,
+        "pct_bd": 0.2,
+        "kg_ocr": 0.054,
+        "kg_bd": 0.27,
+        "estado": "igual"
+      },
+      {
+        "nombre": "DISPERSANTE",
+        "nombre_bd": "DISPERSANTE",
+        "pct_ocr": 0.4,
+        "pct_bd": 0.4,
+        "kg_ocr": 0.108,
+        "kg_bd": 0.54,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TRIPOLIFOSFATO DEPOTASIO",
+        "nombre_bd": "TRIPOLIFOSFATO DE POTASIO",
+        "pct_ocr": 0.1,
+        "pct_bd": 0.1,
+        "kg_ocr": 0.027,
+        "kg_bd": 0.135,
+        "estado": "igual"
+      },
+      {
+        "nombre": "AGUA",
+        "nombre_bd": "AGUA",
+        "pct_ocr": 25.28,
+        "pct_bd": 25.28,
+        "kg_ocr": 6.8256,
+        "kg_bd": 34.128,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TILOSE",
+        "nombre_bd": "TILOSE",
+        "pct_ocr": null,
+        "pct_bd": 0.3,
+        "kg_ocr": null,
+        "kg_bd": 0.405,
+        "estado": "falta_en_ocr"
+      },
+      {
+        "nombre": "ACRONAL 295-D",
+        "nombre_bd": "ACRONAL 295-D",
+        "pct_ocr": null,
+        "pct_bd": 30.0,
+        "kg_ocr": null,
+        "kg_bd": 40.5,
+        "estado": "falta_en_ocr"
+      }
+    ],
+    "incidencias": [],
+    "total_kg_bd": 135.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 7 línea(s) con diferencia frente a V1."
+  },
+  {
+    "imagen": "entrenamiento4.jpeg",
+    "producto_ocr": "BASE ORGANICA AMARILLO OXIDO",
+    "producto_id": "210",
+    "confianza_match_producto": 1.0,
+    "total_kg_ocr": 200.0,
+    "componentes_ocr": 9,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.75,
+    "dudas_ocr": [
+      "Existe una línea 'Y AMARILLO CANARIO' (y≈744, x≈983) que no se pudo asociar con certeza: podría continuar el nombre ('BASE ORGANICA AMARILLO OXIDO Y AMARILLO CANARIO') o ser otro campo. Se conservó como nombre el del bloque inferior (y≈773, x≈842), junto a 'KILOS' (y≈780) y 200.000 (y≈782).",
+      "Valores degradados por OCR (resueltos por aritmética): fila AGUA '$0000'/'00.0$' = $0.00; fila PIGMENTO AMARILLLOOXIDO '0069' = $99.00 (99.00×11.860=1174.14, el importe mostrado). En todas las filas verifiqué importe = precio unitario × cantidad.",
+      "Nombres tal cual del OCR: 'PIGMENTO AMARILLLOOXIDO' (tres L), 'CARBONATODEOMYACAR1-T', 'TIXOGELEZ-100', 'EXXOLD-40', 'SOLUCION DEAEROSIL200', 'SOLUCION DERESINA', 'LECITINA DESOYA'. Mejores lecturas probables: PIGMENTO AMARILLO OXIDO, CARBONATO DE OMYA CAR 1-T (o CARBONATO DE OMYACAR 1-T), TIXOGEL EZ-100, EXXSOL D40, SOLUCION DE AEROSIL 200, SOLUCION DE RESINA, LECITINA DE SOYA.",
+      "No se muestra presentación (solo 'KILOS' como unidad), código de producto ni cliente.",
+      "El importe total $16,934.43 y la suma de precios unitarios 720.68 están en la fila superior (y≈445-454)."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": 1,
+    "version_activa": 1,
+    "diff_componentes": [
+      {
+        "nombre": "AGUA",
+        "nombre_bd": null,
+        "pct_ocr": 0.19,
+        "pct_bd": null,
+        "kg_ocr": 0.38,
+        "kg_bd": null,
+        "estado": "nuevo",
+        "nota": "la ficha dice \"AGUA\" (0.19%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.19%): confirmar si es el mismo material"
+      },
+      {
+        "nombre": "SOLUCION DEAEROSIL200",
+        "nombre_bd": "SOLUCION DE AEROSIL 200",
+        "pct_ocr": 22.15,
+        "pct_bd": 22.15,
+        "kg_ocr": 44.3,
+        "kg_bd": 44.3,
+        "estado": "igual"
+      },
+      {
+        "nombre": "LECITINA DESOYA",
+        "nombre_bd": "LECITINA DE SOYA",
+        "pct_ocr": 0.1,
+        "pct_bd": 0.1,
+        "kg_ocr": 0.2,
+        "kg_bd": 0.2,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PARAFINA CLORADA(S-52)",
+        "nombre_bd": "PARAFINA CLORADA (S-52)",
+        "pct_ocr": 0.95,
+        "pct_bd": 0.95,
+        "kg_ocr": 1.9,
+        "kg_bd": 1.9,
+        "estado": "igual"
+      },
+      {
+        "nombre": "PIGMENTO AMARILLLOOXIDO",
+        "nombre_bd": "PIGMENTO AMARILLLO OXIDO",
+        "pct_ocr": 5.93,
+        "pct_bd": 5.93,
+        "kg_ocr": 11.86,
+        "kg_bd": 11.86,
+        "estado": "igual"
+      },
+      {
+        "nombre": "CARBONATODEOMYACAR1-T",
+        "nombre_bd": "CARBONATO DE OMYA CAR 1-T",
+        "pct_ocr": 23.73,
+        "pct_bd": 23.73,
+        "kg_ocr": 47.46,
+        "kg_bd": 47.46,
+        "estado": "igual"
+      },
+      {
+        "nombre": "TIXOGELEZ-100",
+        "nombre_bd": "TIXO GEL EZ-100",
+        "pct_ocr": 1.89,
+        "pct_bd": 1.89,
+        "kg_ocr": 3.78,
+        "kg_bd": 3.78,
+        "estado": "igual"
+      },
+      {
+        "nombre": "EXXOLD-40",
+        "nombre_bd": "EXXOL D-40",
+        "pct_ocr": 14.21,
+        "pct_bd": 14.21,
+        "kg_ocr": 28.42,
+        "kg_bd": 28.42,
+        "estado": "igual"
+      },
+      {
+        "nombre": "SOLUCION DERESINA",
+        "nombre_bd": "SOLUCION DE RESINA",
+        "pct_ocr": 30.85,
+        "pct_bd": 30.85,
+        "kg_ocr": 61.7,
+        "kg_bd": 61.7,
+        "estado": "igual"
+      },
+      {
+        "nombre": "Resina Base Agua SBR/Látex",
+        "nombre_bd": "Resina Base Agua SBR/Látex",
+        "pct_ocr": null,
+        "pct_bd": 0.19,
+        "kg_ocr": null,
+        "kg_bd": 0.38,
+        "estado": "falta_en_ocr",
+        "nota": "la ficha dice \"AGUA\" (0.19%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.19%): confirmar si es el mismo material"
+      }
+    ],
+    "incidencias": [
+      "la ficha dice \"AGUA\" (0.19%) y la BD tiene \"Resina Base Agua SBR/Látex\" (0.19%): confirmar si es el mismo material"
+    ],
+    "total_kg_bd": 200.0,
+    "estado": "difiere",
+    "recomendacion": "Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1."
+  },
+  {
+    "imagen": "entrenamiento1.jpeg",
+    "producto_ocr": "VITROGLASS ECOLOGICO",
+    "producto_id": null,
+    "confianza_match_producto": 0.545,
+    "total_kg_ocr": 19.0,
+    "componentes_ocr": 4,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.95,
+    "dudas_ocr": [
+      "La pantalla no muestra precios ni costos (no hay valores con $ en el OCR).",
+      "No aparecen código ni hoja; 'VITROGLASS ECOLOGICO' (y≈127, x≈844) se interpretó como nombre del producto por estar a la derecha del encabezado de componentes, con 'CUBETA' (y≈859) como presentación, 'KILOS' (y≈987) como unidad y 19.000 (y≈1045, x≈849) como cantidad."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": null,
+    "version_activa": null,
+    "diff_componentes": [],
+    "incidencias": [],
+    "estado": "requiere_revision",
+    "recomendacion": "Crear el producto y su formulación (validar primero el nombre)."
+  },
+  {
+    "imagen": "entrenamiento22.jpeg",
+    "producto_ocr": "CHISA PLUS",
+    "producto_id": null,
+    "confianza_match_producto": 0.609,
+    "total_kg_ocr": 27.0,
+    "componentes_ocr": 14,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.88,
+    "dudas_ocr": [
+      "El bloque superior derecho dice literalmente 'C/QE220-S C/QE2383 CHISA PLUS' (y≈107-111, x≈801-849); se tomó 'CHISA PLUS' como nombre de producto y 'C/QE220-S C/QE2383' como posible referencia/variante, sin confirmar.",
+      "Ruido OCR pegado a porcentajes: '10.00%B', '0.50%F', '22.00%B' (letras sueltas ignoradas).",
+      "Nombres literales conservados con lectura limpia probable: 'DIPERSANTE' → 'DISPERSANTE'; 'BLANCOFIJO MICRO' → 'BLANCO FIJO MICRO'; 'BIOXIDODETITANEO R-902' → 'BIÓXIDO DE TITANEO R-902'; 'RESINA QE220-S'/'RESINA QE2383' → 'RESINA QE-220S'/'RESINA QE-2383'.",
+      "'BLANCOFIJO MICRO' y 'PARAFINA CLORADA S-25' se tomaron como dos componentes separados porque cada uno tiene porcentaje y cantidad propios (10.00%/2.700 y 0.50%/0.135); podrían formar un nombre compuesto.",
+      "Verificación aritmética correcta: suma de porcentajes = 100.00%; suma de cantidades = 27.000 Kg = lote. (0.36% × 27.000 = 0.0972, OCR 0.097; 24.44% × 27.000 = 6.5988, OCR 6.599; redondeos consistentes).",
+      "Bloque duplicado de nombres en y≈518-523 (BERMOCOLL481-FQ, BLANCO FIJO MICRO, PARAFINA CLORADA S-25, BIOXIDO DE TITANEO R-902, TEXANOL); no se usó para cantidades.",
+      "No se detectaron columnas de precio ni subtotales."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": null,
+    "version_activa": null,
+    "diff_componentes": [],
+    "incidencias": [],
+    "estado": "requiere_revision",
+    "recomendacion": "Crear el producto y su formulación (validar primero el nombre)."
+  },
+  {
+    "imagen": "entrenamiento5.jpeg",
+    "producto_ocr": "SELLADOR INICIAL",
+    "producto_id": null,
+    "confianza_match_producto": 0.545,
+    "total_kg_ocr": 19.0,
+    "componentes_ocr": 3,
+    "suma_pct_ocr": 100.0,
+    "variantes_color": 0,
+    "confianza_ocr": 0.7,
+    "dudas_ocr": [
+      "El precio de AGUA aparece en el OCR como '9005' (y≈638, x=77); por aritmética (144.29 − 89.23 − 55.00 = 0.06) corresponde a $0.06.",
+      "La única columna monetaria (x≈75-77) se interpretó como precio unitario ($/kg), consistente con $99.00/kg de ADECIDE visto en otra pantalla (entrenamiento11) y con el formato de punto decimal de las columnas de precio unitario. En consecuencia, el total visible $144.29 es la suma de precios unitarios y el costo del lote (Σ precio×cantidad) = 194.28. Si la columna fuera de importes, 'precio_unitario' iría en null y 'costo_total' sería 144.29.",
+      "Bloque inferior: '19' (y≈760) = cantidad, 'CUBETA' (y≈759) = presentación, 'KILOS' (y≈783) = unidad; coincide con el total 19.000 kg.",
+      "'SELLADOR INICIAL' (y≈813) se tomó como producto y 'SELLADORES' (y≈866) como familia/categoría; no se muestran código, hoja ni cliente."
+    ],
+    "duplicado_de": null,
+    "version_que_coincide": null,
+    "version_activa": null,
+    "diff_componentes": [],
+    "incidencias": [],
+    "estado": "requiere_revision",
+    "recomendacion": "Crear el producto y su formulación (validar primero el nombre)."
+  }
+]

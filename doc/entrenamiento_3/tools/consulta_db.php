@@ -10,7 +10,7 @@
 define('BASEPATH', true);
 define('ENVIRONMENT', 'production');
 $db = [];
-require dirname(__DIR__) . '/application/config/database.php';
+require dirname(__DIR__, 3) . '/application/config/database.php';
 $cfg = $db['default'];
 
 $m = new mysqli($cfg['hostname'], $cfg['username'], $cfg['password'], $cfg['database']);
@@ -41,14 +41,18 @@ switch ($cmd) {
 
     case 'insumos':
         $q = esc($argv[2] ?? '');
-        $r = $m->query("SELECT id, codigo, nombre, unidad_compra, costo_promedio FROM insumos
-                        WHERE nombre LIKE '%$q%' OR alias LIKE '%$q%' OR codigo LIKE '%$q%' ORDER BY nombre LIMIT 40");
+        $r = $m->query("SELECT id, codigo, nombre_tecnico, tipo, unidad_medida, precio_promedio, estatus
+                        FROM insumos
+                        WHERE nombre_tecnico LIKE '%$q%' OR alias LIKE '%$q%' OR codigo LIKE '%$q%'
+                        ORDER BY nombre_tecnico LIMIT 40");
         if (!$r) { echo "ERROR: " . $m->error . "\n"; break; }
         echo "-- insumos que coinciden con '$q' --\n";
         $n = 0;
         while ($row = $r->fetch_assoc()) {
             $n++;
-            printf("#%d [%s] %s | %s | costo=%s\n", $row['id'], $row['codigo'], $row['nombre'], (string)$row['unidad_compra'], (string)$row['costo_promedio']);
+            printf("#%d [%s] %s | tipo=%s | %s | costo_promedio=%s | %s\n",
+                $row['id'], $row['codigo'], $row['nombre_tecnico'], $row['tipo'],
+                (string)$row['unidad_medida'], (string)$row['precio_promedio'], $row['estatus']);
         }
         if (!$n) echo "(sin coincidencias)\n";
         break;
@@ -73,7 +77,7 @@ switch ($cmd) {
             if (!empty($row['nombre_version'])) echo "    nombre_version: {$row['nombre_version']}\n";
             $d = $m->query("SELECT df.id, df.tipo_componente, df.insumo_id, df.producto_id, df.cantidad, df.unidad, df.porcentaje,
                                    df.costo_unitario, df.grupo_color, df.orden,
-                                   COALESCE(i.nombre, p2.nombre) AS componente
+                                   COALESCE(i.nombre_tecnico, p2.nombre) AS componente
                             FROM detalle_formulacion df
                             LEFT JOIN insumos i ON i.id = df.insumo_id
                             LEFT JOIN productos p2 ON p2.id = df.producto_id

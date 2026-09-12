@@ -1,0 +1,1363 @@
+[
+  {
+    "ocr_nombre": "VITROGLASS ECOLOGICO",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.545,
+    "accion": "crear",
+    "fuente": "ficha",
+    "origen": "entrenamiento1.jpeg",
+    "origenes": [
+      "entrenamiento1.jpeg",
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "VITROGLASSECOLOGICO GALON",
+        "precio_sin_iva": 1244.19,
+        "rendimiento_teorico": "30-32m2",
+        "categoria": "SELLADORES"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "VITROGLASSECOLOGICOCUBETA",
+        "precio_sin_iva": 5023.57,
+        "rendimiento_teorico": "180-190m2",
+        "categoria": "SELLADORES"
+      }
+    ],
+    "notas": "candidato más cercano: #178 \"CHISA GLASS REF. BLANCO OSTION\" (0.55) · no existe en el catálogo: es un producto de ficha, se crea junto con su formulación (validar el nombre con el negocio)"
+  },
+  {
+    "ocr_nombre": "PRAIMER GLASS ~CHISA VINIL PINTURA VINILICA",
+    "producto_id": "224",
+    "producto_nombre_bd": "PINTURA VINILICA",
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "fuente": "ficha",
+    "origen": "entrenamiento2.jpeg",
+    "origenes": [
+      "entrenamiento2.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "el match no es exacto: confirmar antes de usarlo · #224 [PINTURA-VINILICA] PINTURA VINILICA · Activo · coincidencia parcial (contención de nombre): revisar"
+  },
+  {
+    "ocr_nombre": "SOLUCION DE AEROSIL 200",
+    "producto_id": "204",
+    "producto_nombre_bd": "SOLUCION DE AEROSIL 200",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento3.jpeg",
+    "origenes": [
+      "entrenamiento3.jpeg",
+      "entrenamiento17.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#204 [SOLUCION-DE-AEROSIL-200] SOLUCION DE AEROSIL 200 · Activo"
+  },
+  {
+    "ocr_nombre": "BASE ORGANICA AMARILLO OXIDO",
+    "producto_id": "210",
+    "producto_nombre_bd": "BASE ORGANICA AMARILLO OXIDO",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento4.jpeg",
+    "origenes": [
+      "entrenamiento4.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#210 [BASE-ORGANICA-AMARILLO-OXIDO] BASE ORGANICA AMARILLO OXIDO · Activo"
+  },
+  {
+    "ocr_nombre": "SELLADOR INICIAL",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.545,
+    "accion": "crear",
+    "fuente": "ficha",
+    "origen": "entrenamiento5.jpeg",
+    "origenes": [
+      "entrenamiento5.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #202 \"BASE ORGANICA BLANCA\" (0.55) · no existe en el catálogo: es un producto de ficha, se crea junto con su formulación (validar el nombre con el negocio)"
+  },
+  {
+    "ocr_nombre": "SOLUCION FASE ACUOSA",
+    "producto_id": "215",
+    "producto_nombre_bd": "SOLUCION FASE ACUOSA",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento11.jpeg",
+    "origenes": [
+      "entrenamiento11.jpeg",
+      "entrenamiento15.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#215 [SOLUCION-FASE-ACUOSA] SOLUCION FASE ACUOSA · Activo"
+  },
+  {
+    "ocr_nombre": "BASE ORGANICA NARANJA",
+    "producto_id": "213",
+    "producto_nombre_bd": "BASE ORGANICA  NARANJA",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento12.jpeg",
+    "origenes": [
+      "entrenamiento12.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#213 [BASE-ORGANICA-NARANJA] BASE ORGANICA  NARANJA · Activo"
+  },
+  {
+    "ocr_nombre": "BASE ORGANICA NEGRA",
+    "producto_id": "212",
+    "producto_nombre_bd": "BASE ORGANICA NEGRA",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento13.jpeg",
+    "origenes": [
+      "entrenamiento13.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#212 [BASE-ORGANICA-NEGRA] BASE ORGANICA NEGRA · Activo"
+  },
+  {
+    "ocr_nombre": "BASE ORGANICA ROJO OXIDO",
+    "producto_id": "211",
+    "producto_nombre_bd": "BASE ORGANICA ROJO OXIDO",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento14.jpeg",
+    "origenes": [
+      "entrenamiento14.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#211 [BASE-ORGANICA-ROJO-OXIDO] BASE ORGANICA ROJO OXIDO · Activo"
+  },
+  {
+    "ocr_nombre": "BASE ORGANICA BLANCA",
+    "producto_id": "202",
+    "producto_nombre_bd": "BASE ORGANICA BLANCA",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento16.jpeg",
+    "origenes": [
+      "entrenamiento16.jpeg",
+      "entrenamiento18.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#202 [BASE-ORGANICA-BLANCA] BASE ORGANICA BLANCA · Activo"
+  },
+  {
+    "ocr_nombre": "SOLUCION DE RESINA EC-1",
+    "producto_id": "214",
+    "producto_nombre_bd": "SOLUCION DE RESINA  EC-1",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento19.jpeg",
+    "origenes": [
+      "entrenamiento19.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#214 [SOLUCION-DE-RESINA-EC-1] SOLUCION DE RESINA  EC-1 · Activo"
+  },
+  {
+    "ocr_nombre": "CHISA GLASSREF T034",
+    "producto_id": "225",
+    "producto_nombre_bd": "CHISA GLASS REF T-034",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento20-grupo.jpeg",
+    "origenes": [
+      "entrenamiento20-grupo.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#225 [CHISA-GLASS-REF-T-034] CHISA GLASS REF T-034 · Activo · duplicados en catálogo: #147 [CHISA-GLASS-REF-T034], #399 [CHISA-GLASS-REF-T034-1]"
+  },
+  {
+    "ocr_nombre": "PINTU FLEX",
+    "producto_id": "223",
+    "producto_nombre_bd": "PINTU FLEX",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento21.jpeg",
+    "origenes": [
+      "entrenamiento21.jpeg",
+      "rendimientos.jpeg",
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "PINTUFLEXGALON",
+        "precio_sin_iva": 487.74,
+        "rendimiento_teorico": "18-19.6m2",
+        "categoria": "PINTURAS ARQUITECTONICAS"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "PINTUFLEXCUBETA",
+        "precio_sin_iva": 2410.87,
+        "rendimiento_teorico": "90-95m2",
+        "categoria": "PINTURAS ARQUITECTONICAS"
+      }
+    ],
+    "notas": "#223 [PINTU-FLEX] PINTU FLEX · Activo"
+  },
+  {
+    "ocr_nombre": "CHISA PLUS",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.609,
+    "accion": "crear",
+    "fuente": "ficha",
+    "origen": "entrenamiento22.jpeg",
+    "origenes": [
+      "entrenamiento22.jpeg",
+      "rendimientos.jpeg",
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "CHISAPLUS GALON",
+        "precio_sin_iva": 658.89,
+        "rendimiento_teorico": "18-19.6m2",
+        "categoria": "PINTURAS ARQUITECTONICAS"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "CHISAPLUS CUBETA",
+        "precio_sin_iva": 2840.13,
+        "rendimiento_teorico": "90-95m2",
+        "categoria": "PINTURAS ARQUITECTONICAS"
+      }
+    ],
+    "notas": "candidato más cercano: #63 \"CHISA GLASS LIMA\" (0.61) · no existe en el catálogo: es un producto de ficha, se crea junto con su formulación (validar el nombre con el negocio)"
+  },
+  {
+    "ocr_nombre": "TINTA ROJO CARMIN",
+    "producto_id": "208",
+    "producto_nombre_bd": "TINTA ROJO CARMIN",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento6.jpeg",
+    "origenes": [
+      "entrenamiento6.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#208 [TINTA-ROJO-CARMIN] TINTA ROJO CARMIN · Activo"
+  },
+  {
+    "ocr_nombre": "TINTA ROJA",
+    "producto_id": "207",
+    "producto_nombre_bd": "TINTA ROJA",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento7.jpeg",
+    "origenes": [
+      "entrenamiento7.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#207 [TINTA-ROJA] TINTA ROJA · Activo"
+  },
+  {
+    "ocr_nombre": "TINTA NEGRA",
+    "producto_id": "205",
+    "producto_nombre_bd": "TINTA NEGRA",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento8.jpeg",
+    "origenes": [
+      "entrenamiento8.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#205 [TINTA-NEGRA] TINTA NEGRA · Activo"
+  },
+  {
+    "ocr_nombre": "TINTA VERDE CROMO",
+    "producto_id": "209",
+    "producto_nombre_bd": "TINTA VERDE CROMO",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento9.jpeg",
+    "origenes": [
+      "entrenamiento9.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#209 [TINTA-VERDE-CROMO] TINTA VERDE CROMO · Activo"
+  },
+  {
+    "ocr_nombre": "TINTA AMARILLO OXIDO",
+    "producto_id": "206",
+    "producto_nombre_bd": "TINTA AMARILLO OXIDO",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "ficha",
+    "origen": "entrenamiento10.jpeg",
+    "origenes": [
+      "entrenamiento10.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#206 [TINTA-AMARILLO-OXIDO] TINTA AMARILLO OXIDO · Activo"
+  },
+  {
+    "ocr_nombre": "MORTERO PLASTICO",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.486,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #219 \"ACABADO POLIASPARTICO 2C\" (0.49) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "ARENA SILICA",
+    "producto_id": "222",
+    "producto_nombre_bd": "ARENA SILICA",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "#222 [ARENA-SILICA] ARENA SILICA · Activo"
+  },
+  {
+    "ocr_nombre": "SELLADORI.(PRAIMER)",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.444,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #131 \"CHISA GLASS REF. PLATERO\" (0.44) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "SELLADORF.(VITRO GLASSECO)",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.5,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #435 \"CHISA GLASS REF. CIDRO\" (0.50) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "PASTA PARA TEXTURIZARINT.",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.458,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #184 \"CHISA GLASS TEXTURADO  REF. T  500\" (0.46) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "PASTA PARA TEXTURIZAR EXT.",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.5,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #184 \"CHISA GLASS TEXTURADO  REF. T  500\" (0.50) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "MARMOPLAST",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.556,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg",
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "MARMOPLASTGALON",
+        "precio_sin_iva": 292.22,
+        "rendimiento_teorico": "1.4-2m2",
+        "categoria": "PASTAS ARQUITECTONICAS"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "MARMOPLASTCUBETA",
+        "precio_sin_iva": 1391.16,
+        "rendimiento_teorico": "7-10m2",
+        "categoria": "PASTAS ARQUITECTONICAS"
+      }
+    ],
+    "notas": "candidato más cercano: #221 \"MASA ROCA\" (0.56) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "CASCARA DENARANJA",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.514,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #213 \"BASE ORGANICA  NARANJA\" (0.51) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "PRIMERP/IMPERMEABILIZAR",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.432,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #224 \"PINTURA VINILICA\" (0.43) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "MARMOFLEX",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.471,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #221 \"MASA ROCA\" (0.47) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "CHISA GLASS",
+    "producto_id": "63",
+    "producto_nombre_bd": "CHISA GLASS LIMA",
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "el match no es exacto: confirmar antes de usarlo · #63 [CHISA-GLASS-LIMA] CHISA GLASS LIMA · Activo · coincidencia parcial (contención de nombre): revisar"
+  },
+  {
+    "ocr_nombre": "PINTURA ANTIBACTERIAL",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.488,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #10 \"Pintura Epóxica Azul 19L\" (0.49) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "RODILLO",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.421,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #367 \"ROJO CATALOGO\" (0.42) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "BROCHA",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.571,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #221 \"MASA ROCA\" (0.57) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "LIJAS MEDIANAS",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.452,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #215 \"SOLUCION FASE ACUOSA\" (0.45) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "IMASKING",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.5,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #87 \"LA MARINA\" (0.50) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "PAPEL",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.462,
+    "accion": "requiere_revision",
+    "fuente": "rendimientos",
+    "origen": "rendimientos.jpeg",
+    "origenes": [
+      "rendimientos.jpeg"
+    ],
+    "presentaciones": [],
+    "notas": "candidato más cercano: #370 \"ACAPULCO\" (0.46) · no existe en el catálogo y solo aparece en rendimientos: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "SELLADORACRILICO4648",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.489,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "SELLADORACRILICO4648GALON",
+        "precio_sin_iva": 277.07,
+        "rendimiento_teorico": "18-20m2",
+        "categoria": "SELLADORES"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "SELLADORACRILICO4648CUBETA",
+        "precio_sin_iva": 907.37,
+        "rendimiento_teorico": "90-100m2",
+        "categoria": "SELLADORES"
+      }
+    ],
+    "notas": "candidato más cercano: #210 \"BASE ORGANICA AMARILLO OXIDO\" (0.49) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "HEALERGLASSKIT1LT.C/ESPATULA",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.545,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "HEALERGLASSKIT1LT.C/ESPATULA",
+        "precio_sin_iva": 262.05,
+        "rendimiento_teorico": "1.7-2.1m2",
+        "categoria": "SELLADORES"
+      }
+    ],
+    "notas": "candidato más cercano: #124 \"CHISA GLASS REF.PAPUA\" (0.55) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "REDYPLASTF",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.4,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "REDYPLASTF",
+        "precio_sin_iva": 987.11,
+        "rendimiento_teorico": "25-30m2",
+        "categoria": "PREPARADORES DE SUPERFICIE"
+      }
+    ],
+    "notas": "candidato más cercano: #131 \"CHISA GLASS REF. PLATERO\" (0.40) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "REDYPLASTM",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.444,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "REDYPLASTM",
+        "precio_sin_iva": 1042.79,
+        "rendimiento_teorico": "18-22m2",
+        "categoria": "PREPARADORES DE SUPERFICIE"
+      }
+    ],
+    "notas": "candidato más cercano: #267 \"REF-PEM03\" (0.44) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "REDYPLASTG",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.476,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "REDYPLASTG",
+        "precio_sin_iva": 1103.44,
+        "rendimiento_teorico": "12-14m2",
+        "categoria": "PREPARADORES DE SUPERFICIE"
+      }
+    ],
+    "notas": "candidato más cercano: #220 \"PASTA SERGIO\" (0.48) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "MORTEROPLASTICOMALLA350-400",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.481,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "MORTEROPLASTICOMALLA350-400",
+        "precio_sin_iva": 1205.56,
+        "rendimiento_teorico": "16-18m2",
+        "categoria": "PREPARADORES DE SUPERFICIE"
+      }
+    ],
+    "notas": "candidato más cercano: #414 \"MUESTRA   TAMPICO  SR. CHIMAL   30/10/14\" (0.48) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "ARENASILICAMALLA250-300",
+    "producto_id": "222",
+    "producto_nombre_bd": "ARENA SILICA",
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "ARENASILICAMALLA250-300",
+        "precio_sin_iva": 1188.64,
+        "rendimiento_teorico": "22-25m2",
+        "categoria": "PREPARADORES DE SUPERFICIE"
+      }
+    ],
+    "notas": "el match no es exacto: confirmar antes de usarlo · #222 [ARENA-SILICA] ARENA SILICA · Activo · coincidencia parcial (contención de nombre): revisar"
+  },
+  {
+    "ocr_nombre": "DECOPASTA",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.5,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "DECOPASTA GALON",
+        "precio_sin_iva": 184.75,
+        "rendimiento_teorico": "3.2-3.6m2",
+        "categoria": "PASTAS ARQUITECTONICAS"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "DECOPASTA CUBETA",
+        "precio_sin_iva": 804.86,
+        "rendimiento_teorico": "16-18m2",
+        "categoria": "PASTAS ARQUITECTONICAS"
+      }
+    ],
+    "notas": "candidato más cercano: #220 \"PASTA SERGIO\" (0.50) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "CHISAPLAST",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.692,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "CHISAPLASTGALON",
+        "precio_sin_iva": 258.27,
+        "rendimiento_teorico": "3-4m2",
+        "categoria": "PASTAS ARQUITECTONICAS"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "CHISA PLAST CUBETA",
+        "precio_sin_iva": 1016.34,
+        "rendimiento_teorico": "16-20m2",
+        "categoria": "PASTAS ARQUITECTONICAS"
+      }
+    ],
+    "notas": "candidato más cercano: #249 \"CHISA GLASS REF LT 2\" (0.69) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "CHISAPLASTPLUS",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.647,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios-1.jpeg",
+    "origenes": [
+      "lista-precios-1.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "CHISAPLASTPLUS GALON",
+        "precio_sin_iva": 1106.56,
+        "rendimiento_teorico": "4-5m2",
+        "categoria": "PASTAS ARQUITECTONICAS"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios-1.jpeg",
+        "nombre_original": "CHISAPLASTPLUS CUBETA",
+        "precio_sin_iva": 3400.29,
+        "rendimiento_teorico": "24-26m2",
+        "categoria": "PASTAS ARQUITECTONICAS"
+      }
+    ],
+    "notas": "candidato más cercano: #119 \"CHISA GLASS REF. ILUSION\" (0.65) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "PRAIMERGLASS",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.485,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "PRAIMERGLASSCUBETA",
+        "precio_sin_iva": 1028.18,
+        "rendimiento_teorico": "85-90m2",
+        "categoria": "PINTURAS ARQUITECTONICAS"
+      }
+    ],
+    "notas": "candidato más cercano: #423 \"PROCESO CHISA GLASS LIMA\" (0.48) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "CHISAVINIL",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.56,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "CHISAVINIL GALON",
+        "precio_sin_iva": 418.55,
+        "rendimiento_teorico": "18-19.6m2",
+        "categoria": "PINTURAS ARQUITECTONICAS"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "CHISAVINIL CUBETA",
+        "precio_sin_iva": 1334.31,
+        "rendimiento_teorico": "90-95m2",
+        "categoria": "PINTURAS ARQUITECTONICAS"
+      }
+    ],
+    "notas": "candidato más cercano: #224 \"PINTURA VINILICA\" (0.56) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "PROTECTPLUS",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.462,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "PROTECTPLUS GALON",
+        "precio_sin_iva": 823.61,
+        "rendimiento_teorico": "18-19.6m2",
+        "categoria": "PINTURAS ARQUITECTONICAS"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "PROTECTPLUSCUBETA",
+        "precio_sin_iva": 4118.19,
+        "rendimiento_teorico": "90-95m2",
+        "categoria": "PINTURAS ARQUITECTONICAS"
+      }
+    ],
+    "notas": "candidato más cercano: #360 \"MICRO Y TEXTURADO\" (0.46) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "SHELL HARD(CASCARA DENARANJA)",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.545,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "SHELL HARD(CASCARA DENARANJA) GALON",
+        "precio_sin_iva": 423.02,
+        "rendimiento_teorico": "4-5m2",
+        "categoria": "SHELL HARD (CASCARA DE NARANJA)"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "SHELLHARD(CASCARA DE NARANJA) CUBETA",
+        "precio_sin_iva": 1704.15,
+        "rendimiento_teorico": "20-25m2",
+        "categoria": "SHELL HARD (CASCARA DE NARANJA)"
+      }
+    ],
+    "notas": "candidato más cercano: #213 \"BASE ORGANICA  NARANJA\" (0.55) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "SHELLHARD LISO(CASCARALISO)",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.429,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "SHELLHARD LISO(CASCARALISO) GALON",
+        "precio_sin_iva": 495.83,
+        "rendimiento_teorico": "5-6m2",
+        "categoria": "SHELL HARD (CASCARA DE NARANJA)"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "SHELLHARD LISO(CASCARA LISO) CUBETA",
+        "precio_sin_iva": 2183.04,
+        "rendimiento_teorico": "25-30m2",
+        "categoria": "SHELL HARD (CASCARA DE NARANJA)"
+      }
+    ],
+    "notas": "candidato más cercano: #108 \"CHISA GLASS REF. SALSA\" (0.43) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "CHISA GLASSMICRO",
+    "producto_id": "3",
+    "producto_nombre_bd": "CHISA GLASS MICRO",
+    "match_criterio": "nombre_exacto",
+    "confianza": 1.0,
+    "accion": "usar_existente",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "CHISA GLASSMICRO",
+        "precio_sin_iva": 4797.13,
+        "rendimiento_teorico": "65-70m2",
+        "categoria": "CHISA GLASS"
+      }
+    ],
+    "notas": "#3 [PROD-0001] CHISA GLASS MICRO · Activo"
+  },
+  {
+    "ocr_nombre": "CHISA GLASSTEXTURADO",
+    "producto_id": "404",
+    "producto_nombre_bd": "CHISA GLASS TEXTURADO Y MICRO",
+    "match_criterio": "contencion",
+    "confianza": 0.9,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "CHISA GLASSTEXTURADO",
+        "precio_sin_iva": 4797.13,
+        "rendimiento_teorico": "55-60m2",
+        "categoria": "CHISA GLASS"
+      }
+    ],
+    "notas": "el match no es exacto: confirmar antes de usarlo · #404 [CHISA-GLASS-TEXTURADO-Y-MICRO] CHISA GLASS TEXTURADO Y MICRO · Activo · coincidencia parcial (contención de nombre): revisar"
+  },
+  {
+    "ocr_nombre": "TRICOLORPLUS",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.4,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "TRICOLORPLUS",
+        "precio_sin_iva": 7805.79,
+        "rendimiento_teorico": "150-190m2",
+        "categoria": "CHISA GLASS"
+      }
+    ],
+    "notas": "candidato más cercano: #349 \"POLY COLOR REF PCH 11-3\" (0.40) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "CORTPLAST",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.414,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "CORTPLAST",
+        "precio_sin_iva": 4393.11,
+        "rendimiento_teorico": "20-25m2",
+        "categoria": "CHISA GLASS"
+      }
+    ],
+    "notas": "candidato más cercano: #131 \"CHISA GLASS REF. PLATERO\" (0.41) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "CHISA MAR",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.636,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": "GALON",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "CHISA MARGALON",
+        "precio_sin_iva": 875.93,
+        "rendimiento_teorico": "24-26m2",
+        "categoria": "CHISA GLASS"
+      },
+      {
+        "presentacion": "CUBETA",
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "CHISAMARCUBETA",
+        "precio_sin_iva": 3597.23,
+        "rendimiento_teorico": "120-130m2",
+        "categoria": "CHISA GLASS"
+      }
+    ],
+    "notas": "candidato más cercano: #63 \"CHISA GLASS LIMA\" (0.64) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "POLY-COLOR(ESCAMA)",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.688,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "POLY-COLOR(ESCAMA)",
+        "precio_sin_iva": 251.24,
+        "rendimiento_teorico": "250gr./1m2",
+        "categoria": "POLYCOLOR"
+      }
+    ],
+    "notas": "candidato más cercano: #352 \"POLY COLOR REF 310 C-1\" (0.69) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "POLY-PLAST",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.444,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "POLY-PLAST",
+        "precio_sin_iva": 2373.64,
+        "rendimiento_teorico": "22-25m2",
+        "categoria": "POLYCOLOR"
+      }
+    ],
+    "notas": "candidato más cercano: #351 \"POLY COLOR REF 2717 A-3\" (0.44) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "POLYTANO9000(RESINA EPOXICA)",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.5,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "POLYTANO9000(RESINA EPOXICA)",
+        "precio_sin_iva": 3827.67,
+        "rendimiento_teorico": "10-12m2",
+        "categoria": "POLYCOLOR"
+      }
+    ],
+    "notas": "candidato más cercano: #214 \"SOLUCION DE RESINA  EC-1\" (0.50) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "MARMOFLEXREF.BLANCO",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.512,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "MARMOFLEXREF.BLANCO",
+        "precio_sin_iva": 4433.2,
+        "rendimiento_teorico": "5m2",
+        "categoria": "GRANOS DE MARMOL"
+      }
+    ],
+    "notas": "candidato más cercano: #178 \"CHISA GLASS REF. BLANCO OSTION\" (0.51) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "MARMOFLEXREF.COLOR",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.438,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "MARMOFLEXREF.COLOR",
+        "precio_sin_iva": 4759.76,
+        "rendimiento_teorico": "5m2",
+        "categoria": "GRANOS DE MARMOL"
+      }
+    ],
+    "notas": "candidato más cercano: #360 \"MICRO Y TEXTURADO\" (0.44) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "IMPERGLASS3ANOS",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.545,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "IMPERGLASS3ANOS",
+        "precio_sin_iva": 2089.25,
+        "rendimiento_teorico": "45-50m2",
+        "categoria": "IMPERMEABILIZANTE"
+      }
+    ],
+    "notas": "candidato más cercano: #105 \"CHISA GLASS REF. TANGO\" (0.55) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "IMPERGLASS5ANOS",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.545,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "IMPERGLASS5ANOS",
+        "precio_sin_iva": 2994.38,
+        "rendimiento_teorico": "45-50m2",
+        "categoria": "IMPERMEABILIZANTE"
+      }
+    ],
+    "notas": "candidato más cercano: #105 \"CHISA GLASS REF. TANGO\" (0.55) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  },
+  {
+    "ocr_nombre": "IMPERGLASS7ANOS",
+    "producto_id": null,
+    "producto_nombre_bd": null,
+    "match_criterio": "sin_match",
+    "confianza": 0.545,
+    "accion": "requiere_revision",
+    "fuente": "lista_precios",
+    "origen": "lista-precios2.jpeg",
+    "origenes": [
+      "lista-precios2.jpeg"
+    ],
+    "presentaciones": [
+      {
+        "presentacion": null,
+        "origen": "lista-precios2.jpeg",
+        "nombre_original": "IMPERGLASS7ANOS",
+        "precio_sin_iva": 3693.85,
+        "rendimiento_teorico": "45-50m2",
+        "categoria": "IMPERMEABILIZANTE"
+      }
+    ],
+    "notas": "candidato más cercano: #105 \"CHISA GLASS REF. TANGO\" (0.55) · no existe en el catálogo y solo aparece en lista_precios: decidir si es producto, insumo o si no debe existir en el ERP"
+  }
+]
