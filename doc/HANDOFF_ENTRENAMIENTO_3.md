@@ -1,17 +1,22 @@
 # HANDOFF — Entrenamiento 3 (Producción): estado recuperado + prompt de arranque
 
 > **Para:** el agente/desarrollador (o chat nuevo) que continúa este task en otro equipo.
-> **Rama:** `iteracion-3` · **Último commit del baseline:** `148683d`
+> **Rama:** `iteracion-3` · **Último commit:** `8e93543` (11-sep-2026)
 > **Documento compañero:** `doc/PROMPT_ENTRENAMIENTO_3_PRODUCCION.md` (contiene el detalle técnico completo y las **Fases 2 y 3** de los prompts).
+>
+> **⚡ Actualización 11-sep-2026 — la Fase 1 YA está hecha.** El punto de entrada ahora es
+> `doc/entrenamiento_3/manifiestos/decisiones_pendientes.md`: ahí están las decisiones A1–A5 tomadas,
+> la nota de A6 (respuestas por re-capturar), el seguimiento (**§F**) y el **prompt listo para pegar en
+> el agente nuevo (§G)**. Las §8–§9 de este documento quedan como referencia histórica.
 
 ---
 
 ## 1. Cómo usar este documento
 
 1. Lee las secciones 2–6 para entender el estado y las reglas.
-2. Copia **tal cual** el bloque de la **§8 (PROMPT COMPOSER 2.5 — FASE 1)** en un chat nuevo (Composer 2.5).
-3. Cuando Composer entregue los manifiestos, valídalos con la checklist de la §9.
-4. Solo entonces pasa a la Fase 2 y luego a la Fase 3 (en el documento compañero, §4 y §5).
+2. **Empieza por `doc/entrenamiento_3/manifiestos/decisiones_pendientes.md`** (§F seguimiento y §G prompt de
+   retoma). La Fase 1 ya se ejecutó: **no vuelvas a lanzar el prompt de la §8**.
+3. Continúa con las decisiones A6–A11 y después con la Fase 2 y luego la Fase 3 (documento compañero, §4 y §5).
 
 **Nada del trabajo ya hecho (OCR + JSON) debe rehacerse.** Todo está versionado en el repo.
 
@@ -28,7 +33,7 @@ Alcance de lo que sí quedó hecho y ahora está consolidado:
 | OCR local (RapidOCR) de las 25 capturas | ✅ 25 pares `.txt` + `.tsv` |
 | Parseo a JSON estructurado (6 subagentes) | ✅ 22 formulaciones / **156 componentes** + 2 listas de precios (45 filas) + 32 rendimientos |
 | Consolidación de los JSON en disco | ⚠️ Se perdió en el abort → **recuperada desde los transcripts de los subagentes** |
-| Comparación contra la BD del ERP | ❌ No se hizo (es el trabajo de la Fase 1) |
+| Comparación contra la BD del ERP (Fase 1) | ✅ Hecha el 11-sep-2026 (solo lectura): manifiestos en `doc/entrenamiento_3/manifiestos/`; decisiones A1–A5 tomadas y anotadas, A6–A11 pendientes |
 | Carga de productos/formulaciones/precios | ❌ No se hizo (Fases 2 y 3, con gates) |
 
 **Riesgo que hay que mitigar en la ejecución:** el importador actual (`importar_archivo_cli` → `_guardar_formulacion_importada`) **auto-crea** productos e insumos cuando no encuentra match. Con nombres que vienen de OCR eso genera duplicados basura (`IMP-xxxxxxxx`, productos repetidos con variantes del nombre). Por eso la Fase 1 construye un **manifiesto curado** y la carga solo usa lo aprobado.
@@ -44,8 +49,8 @@ Carpeta raíz: `doc/entrenamiento_3/` — **84 archivos**.
 | `doc/entrenamiento_3/imagenes/` | **25** capturas originales: `entrenamiento1..22.jpeg`, `entrenamiento20-grupo.jpeg`, `lista-precios-1.jpeg`, `lista-precios2.jpeg`, `rendimientos.jpeg` |
 | `doc/entrenamiento_3/ocr/` | OCR crudo (**50** archivos): 25 `.txt` (líneas reconstruidas `y=<coord> :: [x]texto \| [x]texto`) + 25 `.tsv` (`y \t x \t texto`) |
 | `doc/entrenamiento_3/ocr/parsed/` | **6 JSON** con la estructura final: `batch_1-5.json`, `batch_6-10.json`, `batch_11-15.json`, `batch_16-20.json`, `batch_21-22-rendimientos.json`, `lista_precios.json` |
-| `doc/entrenamiento_3/tools/` | `consulta_db.php` (consulta rápida a BD), `ocr_rapid_v1.py`, `ocr_rapid_v2.py` (OCR, solo si hay que reprocesar una imagen) |
-| `doc/entrenamiento_3/manifiestos/` | **Vacía**: aquí escribe la Fase 1 sus 4 entregables |
+| `doc/entrenamiento_3/tools/` | `consulta_db.php` (consulta rápida a BD), `fase1_matching.py`, `volcar_datos_f1.php`, `ocr_rapid_v1.py`, `ocr_rapid_v2.py` (OCR, solo si hay que reprocesar una imagen) |
+| `doc/entrenamiento_3/manifiestos/` | **Fase 1 entregada**: `productos_match.json`, `insumos_match.json`, `comparativa.json`, `comparativa.md`, `incidencias_datos.json` y `decisiones_pendientes.md` (punto de entrada) |
 
 ### Esquema resumido del JSON de formulación
 
