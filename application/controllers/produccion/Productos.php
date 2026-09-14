@@ -2507,6 +2507,151 @@ class Productos extends MY_Controller {
         }
     }
 
+    /**
+     * CLI (temporal, Entrenamiento 3): corrige el hallazgo BOM-1 de #204 SOLUCION DE AEROSIL 200.
+     *
+     * La versión ACTIVA (form#314, V3) incluye el insumo #91 "SOLUCION DE AEROSIL 200" al 12.14 %
+     * (auto-referencia, porque A3 enlazó #91→#204). La V4 inactiva (form#316) ya usa #118
+     * "AEROSIL 200" en el mismo 12.14 %, lo que sustenta el reemplazo: la línea debe apuntar a la
+     * materia prima y no al semielaborado que la contiene. Mientras siga en #91, el explosor BOM
+     * descarta ese 12.14 % de la masa en los consolidados.
+     *
+     * Crea una VERSIÓN NUEVA de #204 (copia de la activa, cambiando sólo la línea #91 → #118) y,
+     * opcionalmente, la activa. NINGUNA versión existente se modifica.
+     *
+     * Uso (CLI):
+     *   php index.php produccion/Productos/corregir_bom1_cli                     → dry-run (no escribe)
+     *   php index.php produccion/Productos/corregir_bom1_cli --aplicar           → crea la versión nueva
+     *   php index.php produccion/Productos/corregir_bom1_cli --aplicar --activar → además la activa
+     */
+    public function corregir_bom1_cli()
+    {
+        if (!is_cli()) {
+            show_error('Este método solo puede ejecutarse desde la línea de comandos.');
+            return;
+        }
+
+        $producto_id  = 204;   // SOLUCION DE AEROSIL 200
+        $insumo_malo  = 91;    // insumo gemelo enlazado al propio producto (auto-referencia)
+        $insumo_bueno = 118;   // AEROSIL 200 (materia prima)
+        $marca        = 'BOM-1';
+
+        $argv    = $_SERVER['argv'] ?? [];
+        $aplicar = in_array('--aplicar', $argv, true);
+        $activar = in_array('--activar', $argv, true) && $aplicar;
+
+        echo $aplicar
+            ? '[MODO ESCRITURA] Versión nueva de #' . $producto_id . ($activar ? " y se activará.\n\n" : " (inactiva).\n\n")
+            : "[MODO DRY-RUN] No se escribirá en la BD.\n\n";
+
+        // ── 1. Versión activa y su detalle (solo lectura) ─────────────────
+        $activa = $this->ProductosModel->get_formulacion_activa($producto_id);
+        if (!$activa) {
+            echo "ERROR: el producto #{$producto_id} no tiene formulación activa.\n";
+            exit(1);
+        }
+        $comps = $activa->componentes;
+        if (!$comps) {
+            echo "ERROR: la formulación activa #{$activa->id} no tiene componentes.\n";
+            exit(1);
+        }
+
+        // ── 2. Guardas de idempotencia ────────────────────────────────────
+        $destino = $this->db->select('id, codigo, nombre_tecnico, estatus')
+                            ->where('id', $insumo_bueno)->get('insumos')->row();
+        if (!$destino) {
+            echo "ERROR: no existe el insumo #{$insumo_bueno}.\n";
+            exit(1);
+        }
+        $versiones = $this->ProductosModel->get_formulaciones_producto($producto_id);
+        $ultima    = $versiones ? $versiones[0] : null;   // orden version DESC
+        if ($ultima && strpos((string)$ultima->comentarios, $marca) !== false) {
+            echo "NADA POR HACER: ya existe la V{$ultima->version} (form#{$ultima->id}) con la corrección {$marca}.\n";
+            exit(0);
+        }
+
+        // ── 3. Armar la copia de la receta con la línea corregida ─────────
+        $tiene_malo   = false;
+        $componentes  = [];
+        foreach ($comps as $c) {
+            $tipo = ($c->tipo_componente === 'Producto') ? 'Producto' : 'Insumo';
+            $item = $tipo === 'Producto' ? (int)$c->producto_id : (int)$c->insumo_id;
+            $nota = null;
+            if ($tipo === 'Insumo' && $item === $insumo_malo) {
+                $item       = $insumo_bueno;
+                $tiene_malo = true;
+                $nota       = "BOM-1: era #{$insumo_malo} (auto-referencia)";
+            }
+            $componentes[] = [
+                'tipo'                   => $tipo,
+                'item_id'                => $item,
+                'cantidad'               => (float)$c->cantidad,
+                'unidad'                 => $c->unidad,
+                'porcentaje'             => $c->porcentaje,
+                'grupo_color'            => $c->grupo_color,
+                'porcentaje_fase_acuosa' => $c->porcentaje_fase_acuosa,
+                'observaciones'          => $nota ?: $c->observaciones,
+            ];
+        }
+        if (!$tiene_malo) {
+            echo "NADA POR HACER: la activa #{$activa->id} no usa el insumo #{$insumo_malo}.\n";
+            exit(0);
+        }
+
+        $nueva_version = (int)($ultima->version ?? 0) + 1;
+
+        // ── 4. Plan ───────────────────────────────────────────────────────
+        echo "Producto:         #{$producto_id} SOLUCION DE AEROSIL 200\n";
+        echo "Versión activa:   form#{$activa->id} ({$activa->nombre_version}, versión {$activa->version}, lote {$activa->cantidad_producida} {$activa->unidad_produccion})\n";
+        echo "Línea corregida:  #{$insumo_malo} (auto-referencia) → #{$insumo_bueno} {$destino->nombre_tecnico} [{$destino->codigo}]\n";
+        echo 'Versión nueva:    V' . $nueva_version . ($activar ? " (quedará ACTIVA)\n\n" : " (quedará inactiva)\n\n");
+        echo "Componentes de la versión nueva:\n";
+        foreach ($componentes as $i => $c) {
+            printf("  [%d] %-8s #%-5d %10.3f %-4s %8s%% %s\n",
+                $i, $c['tipo'], $c['item_id'], $c['cantidad'], $c['unidad'],
+                (string)$c['porcentaje'], (string)$c['observaciones']);
+        }
+
+        if (!$aplicar) {
+            echo "\n(dry-run) Para crear la versión: php index.php produccion/Productos/corregir_bom1_cli --aplicar\n";
+            return;
+        }
+
+        // ── 5. Crear la versión nueva (transaccional, vía modelo) ─────────
+        $cabecera = [
+            'producto_id'           => $producto_id,
+            'cliente_id'            => null,
+            'variante_descripcion'  => null,
+            'nombre_version'        => 'V' . $nueva_version,
+            'descripcion'           => "Corrección BOM-1: línea #{$insumo_malo} (auto-referencia) → #{$insumo_bueno} {$destino->nombre_tecnico}. Copia de la V{$activa->version} (form#{$activa->id}).",
+            'comentarios'           => 'BOM-1 ' . date('Y-m-d') . ": sustituye la auto-referencia #{$insumo_malo} SOLUCION DE AEROSIL 200 por #{$insumo_bueno} AEROSIL 200 (misma cantidad y %). Evidencia: V4 (form#316) ya usa #118 al 12.14 %. Ninguna versión existente fue modificada.",
+            'cantidad_producida'    => (float)$activa->cantidad_producida,
+            'rendimiento_m2_por_kg' => $activa->rendimiento_m2_por_kg,
+            'referencia_cliente'    => null,
+            'unidad_produccion'     => $activa->unidad_produccion,
+            'costo_mano_obra'       => (float)$activa->costo_mano_obra,
+            'costo_indirecto'       => (float)$activa->costo_indirecto,
+        ];
+        $res = $this->ProductosModel->guardar_formulacion_completa($cabecera, $componentes, 'nueva');
+        if (empty($res['success'])) {
+            echo 'ERROR: ' . $res['message'] . "\n";
+            exit(1);
+        }
+        $nuevo_id = (int)$res['formulacion_id'];
+        echo "OK: versión V{$nueva_version} creada (form#{$nuevo_id}).\n";
+
+        // ── 6. Activación (acto explícito, solo con --activar) ────────────
+        if ($activar) {
+            $act = $this->ProductosModel->activar_formulacion($nuevo_id);
+            echo ($act['success'] ? 'OK: ' : 'ERROR: ') . $act['message'] . "\n";
+            if (empty($act['success'])) {
+                exit(1);
+            }
+        }
+        echo "\nVerificación: volver a correr el comando sin --aplicar (debe responder NADA POR HACER),\n"
+           . "y explotar el BOM de form#{$nuevo_id} para confirmar que ya no hay corte por auto-referencia.\n";
+    }
+
     // ── Helpers privados del importador JSON (Fase 2) ─────────────────────
 
     /**

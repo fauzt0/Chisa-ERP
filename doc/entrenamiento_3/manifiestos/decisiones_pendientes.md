@@ -418,10 +418,18 @@ modificada y las 12 formulaciones nuevas quedaron inactivas. Único cuidado: los
 - **Pruebas de iteración ejecutadas (13-sep-2026, solo lectura):** `doc/CHECKLIST_PRUEBAS_ENTRENAMIENTO3_ITERACION3.md`
   → 0 fatales en 6 rutas; BOM sin ciclos (3 cortes por auto-referencia); cálculo de materiales de Obras OK
   (2.1/2.2/2.3); los 29 productos nuevos visibles en catálogo (28 con precio NULL).
-- **Hallazgo BOM-1:** la form#314 (#204 SOLUCION DE AEROSIL 200 V3 activa) se auto-referencia con el insumo
-  `#91` al **12.14 %** ⇒ el plano BOM descarta esa masa en los consolidados que usan
-  `explotar_bom_plano`. Propuesta: versión nueva de #204 sustituyendo `#91 → #118 AEROSIL 200`
-  (probable enlace erróneo del importador viejo); decisión de negocio, no bloquea las pruebas.
+- **Hallazgo BOM-1 — ✅ RESUELTO (13-sep-2026, aprobado por negocio):** la form#314 (#204 SOLUCION DE
+  AEROSIL 200 V3) se auto-referenciaba con el insumo `#91` al **12.14 %** (con el enlace A3 `#91→#204`
+  el plano BOM descartaba esa masa). Evidencia para el reemplazo: la V4 inactiva (form#316) ya usaba
+  **`#118 AEROSIL 200`** en el mismo 12.14 %. Se ejecutó
+  `php index.php produccion/Productos/corregir_bom1_cli --aplicar --activar` → **V5 (form#968) activa**,
+  copia exacta de la V3 con la línea `#91 → #118` (V1–V4 intactas; V3 queda inactiva). Verificación:
+  BOM de form#968 = 3 hojas, **0 cortes**, 1.0000 kg; BASE ORGANICA BLANCA V2 (form#300) pasó de
+  0.9741 kg con 1 corte a **1.0000 kg con 0 cortes** y NEGRA V2 (form#311) de 0.9711 a **0.9869 kg con
+  0 cortes**. Invariante "una sola activa por producto" OK en los 12 productos del entrenamiento.
+  Salida literal: `doc/entrenamiento_3/manifiestos/bom1_aplicacion.txt`.
+  (Pendiente aparte: las líneas `#116`/`#117` de la V5 son duplicados `IMP-` de `#108 EXXOL D-40` y
+  `#99/#107 PLIOWAY`, incidencia §B de duplicados, no BOM-1.)
 
 **Estado del repo:** todo quedó commiteado y pusheado en la rama `iteracion-3` el 11-sep-2026 (ver `git log`).
 Desde el otro equipo: `git pull origin iteracion-3`. **La Fase 3 (13-sep-2026) ya escribió en la BD de producción** (log #11); el commit de la carga sigue pendiente de validación.

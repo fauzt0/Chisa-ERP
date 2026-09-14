@@ -1,0 +1,20 @@
+# BOM-1 — corrección aplicada a #204 SOLUCION DE AEROSIL 200
+# Comando: php index.php produccion/Productos/corregir_bom1_cli --aplicar --activar
+# Fecha (servidor): 2026-09-13 22:30:40
+
+[MODO ESCRITURA] Versión nueva de #204 y se activará.
+
+Producto:         #204 SOLUCION DE AEROSIL 200
+Versión activa:   form#314 (V3, versión 3, lote 1.00 Kg)
+Línea corregida:  #91 (auto-referencia) → #118 AEROSIL   200 [IMP-0F24C004]
+Versión nueva:    V5 (quedará ACTIVA)
+
+Componentes de la versión nueva:
+  [0] Insumo   #118        0.121 Kg      12.14% BOM-1: era #91 (auto-referencia)
+  [1] Insumo   #116        0.688 Kg      68.76% 
+  [2] Insumo   #117        0.191 Kg      19.10% 
+OK: versión V5 creada (form#968).
+OK: Formulación activada correctamente
+
+Verificación: volver a correr el comando sin --aplicar (debe responder NADA POR HACER),
+y explotar el BOM de form#968 para confirmar que ya no hay corte por auto-referencia.

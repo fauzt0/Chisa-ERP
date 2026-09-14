@@ -57,7 +57,7 @@ auto-referencias conocidas (A3). La expansión de la TINTA NEGRA (#105→#205) s
 
 ## 5. Hallazgos
 
-1. **BOM-1 (dato preexistente, ahora visible por A3).** La receta activa de #204 (form#314) incluye el
+1. **BOM-1 (dato preexistente, ahora visible por A3) — ✅ CORREGIDO el 13-sep-2026 (ver §7).** La receta activa de #204 (form#314) incluye el
    insumo **#91 al 12.14 %** (auto-referencia). Con el enlace `#91→204`, el plano BOM descarta ese
    12.14 % de la masa (antes el insumo aparecía como hoja con su kg completo). Los consolidados que usan
    `explotar_bom_plano` (`ProductosModel` líneas 1389 y 1529 → cálculo de insumos de obra/proyecto)
@@ -80,4 +80,29 @@ php doc/entrenamiento_3/tools/pruebas_entrenamiento3.php sql "SELECT ..."   # so
 
 ---
 
-*ERP Chisa Recubrimientos — Entrenamiento 3, pruebas de iteración (solo lectura).*
+## 7. Corrección BOM-1 aplicada (13-sep-2026)
+
+**Aprobada por negocio.** Se creó y activó la **V5 de #204 SOLUCION DE AEROSIL 200 (form#968)**: copia
+exacta de la V3 activa cambiando únicamente la línea `#91 SOLUCION DE AEROSIL 200` (auto-referencia vía
+el enlace A3 `#91→#204`) por **`#118 AEROSIL 200`**, con la misma cantidad (0.121 kg) y porcentaje
+(12.14 %). Evidencia del reemplazo: la V4 inactiva (form#316) ya usaba `#118` en el mismo 12.14 %.
+
+| Comando / revisión | Antes | Después |
+|---|---|---|
+| `produccion/Productos/corregir_bom1_cli` (dry-run) | — | `NADA POR HACER: ya existe la V5 (form#968)…` (idempotente) |
+| `bom 314` / `bom 968` | form#314: 3 nodos, 1 corte, plano 0.8786 kg | form#968: 3 nodos, **0 cortes**, plano **1.0000 kg** |
+| BOM #300 BASE ORGANICA BLANCA V2 | 2 fabricados, 1 corte, 0.9741 kg | **1 fabricado, 0 cortes, 1.0000 kg** |
+| BOM #311 BASE ORGANICA NEGRA V2 | 3 fabricados, 1 corte, 0.9711 kg | **2 fabricados, 0 cortes, 0.9869 kg** |
+| Versiones de #204 | V1, V2, V3 (activa), V4 | V1–V4 intactas + **V5 activa** |
+| Invariante 1 activa/producto | — | OK en los 12 productos del entrenamiento |
+
+- Comando de aplicación: `php index.php produccion/Productos/corregir_bom1_cli --aplicar --activar`
+  (CLI-only, transaccional vía `ProductosModel::guardar_formulacion_completa()` + `activar_formulacion()`;
+  ninguna versión existente se modificó).
+- Salida literal: `doc/entrenamiento_3/manifiestos/bom1_aplicacion.txt`.
+- Pendiente aparte (no BOM-1): las líneas `#116`/`#117` de la V5 son duplicados `IMP-` de
+  `#108 EXXOL D-40` / `#99 PLIOWAY EC-1` (incidencia §B).
+
+---
+
+*ERP Chisa Recubrimientos — Entrenamiento 3, pruebas de iteración (solo lectura) + corrección BOM-1.*
