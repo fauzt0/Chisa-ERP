@@ -1,0 +1,37 @@
+BUG-UI-05 — Almacén > Inventario: la página completa devuelve HTTP 500 (Database Error 1064) — 2ª pasada QA UI
+URL página: https://erp.chisarecubrimientos.com.mx/almacen/Inventario
+Ruta: GET /almacen/Inventario  (controlador almacen/Inventario::index -> AlmacenModel::get_insumos() + get_productos())
+Usuario sesión: soporte2@especialistasweb.com.mx (EHWEB)
+Fecha: 2026-09-14 00:5x CDMX
+Commit en prueba: 1bdec68 (rama iteracion-3)
+
+Reproducción (UI):
+1. Menú Almacén > Inventario.
+2. La página no renderiza: muestra "A Database Error Occurred".
+
+Respuesta:
+  Error Number: 1064
+  You have an error in your SQL syntax; ... near '.`5 THEN "critico" WHEN i`.`stock_actual <= i`.`stock_minimo THEN "bajo" WHEN...'
+  SELECT `i`.*, `ci`.`nombre` as `categoria_nombre`,
+         `CASE WHEN i`.`stock_actual <= i`.`stock_minimo * 0`.`5 THEN "critico" WHEN ... END` as `nivel_stock`
+  FROM `insumos` `i`
+  LEFT JOIN `categorias_insumos` `ci` ON `ci`.`id` = `i`.`categoria_id`
+  WHERE `i`.`estatus` = 'Activo' ORDER BY `i`.`nombre_tecnico` ASC
+  Filename: models/Almacen/AlmacenModel.php
+  Line Number: 132
+
+Causa raíz (código): `AlmacenModel::get_insumos()` (línea 100-109) y `::get_productos()` (línea ~137-146)
+pasan una expresión CASE con el literal `0.5` a `$this->db->select()`. El query builder de CI3 escapa
+`0.5` como identificador partido: `` `0`.`5` ``, produciendo SQL inválido.
+Mismo patrón repetido en las dos funciones (`* 0.5` en líneas 104 y 143).
+
+Origen: commit 22f8b21 (2025-12-26, "Integración de sistema de notificaciones, control de permisos de
+costos, mejoras en productos y RH"). El commit está contenido en `main` y en `iteracion-3`:
+**NO es regresión de la iteración 3**, es preexistente en producción.
+
+Impacto: el módulo Inventario de Almacén es inutilizable (KPIs, listado de insumos y de productos con stock).
+Severidad: Media-Alta.
+Estado: NUEVO (❌). No cubierto en el checklist de 1ª pasada.
+
+Nota: al no poder abrir Inventario no se pudo usar esa pantalla para consultar stock de insumos; el stock
+por producto se verificó desde el modal "Entregar Obra" de Almacén > Entregas.

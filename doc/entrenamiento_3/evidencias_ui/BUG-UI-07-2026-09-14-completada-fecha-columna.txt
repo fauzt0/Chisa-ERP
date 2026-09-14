@@ -1,0 +1,11 @@
+BUG-UI-07 Completada producción HTTP 500
+Fecha: 2026-09-14 06:11 CDMX · commit 1bdec68 · EHWEB
+URL POST https://erp.chisarecubrimientos.com.mx/produccion/Dashboard/actualizar_estatus_ajax
+Params: orden_id=26 tipo=venta estatus=Completada forzar_sin_insumos=0
+Status: 500 · 81 ms · Content-Type: text/html
+Body: Database Error 1054 Unknown column 'fecha_completado_produccion' in 'SET'
+SQL: UPDATE ordenes_venta SET estatus='Completada', fecha_completado_produccion='2026-09-14 06:11:51' WHERE id=26
+File: controllers/produccion/Dashboard.php line 154
+Columna prevista en database/final_alignment.sql pero no aplicada en prod.
+Bloquea lote + entrada PT tras pesaje ya confirmado.
+Evidencia hermana: D4D6-2026-09-14-pesaje-OV-2026-0007.txt

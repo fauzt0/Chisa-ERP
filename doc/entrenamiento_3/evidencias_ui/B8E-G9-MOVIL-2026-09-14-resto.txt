@@ -1,0 +1,20 @@
+Resto 2ª pasada continuación 2026-09-14 ~06:12–06:25 CDMX · 1bdec68 · EHWEB
+Viewport desktop luego Emulation 390×844
+
+B6 cobro: SKIP — OV $0.00 y Completada 500; no se registró pago. lista_ajax OV-2026-0007 saldo $0.00 Pendiente.
+
+Limpieza OV: modal Cancelar Orden motivo «Limpieza QA TEST-QA-UI-OV-01 cancelacion» → lista_ajax estatus Cancelada. Insumos de pesaje NO se revierten (sin UI).
+
+B8 ObrasVentas: GET /ventas/ObrasVentas 200. DataTable 7 obras. Detalle GET /ventas/ObrasVentas/detalle/14 200 OB-00006 TEST-QA-UI-OBRA-01 Aprobada (no se tocó). Observación: sigue visible en CRM pese a limpieza previa en módulo Obras.
+
+E3: modal Nueva OC abre; proveedor COMEX (id 1) seleccionable; Agregar Insumo habilitado tras select. NO se pulsó Guardar Borrador (evitar residuo). PDF GET /compras/OrdenesCompra/generar_pdf/3 → 200 text/html «Orden de Compra - OC-2026-DEMO1» (solo lectura estructura, OC real DEMO).
+
+E5: SKIP — única preorden Pendiente de autorizar es PRE-2026-0001 (origen producción real). PRE-2026-0004/5/6 aparecen en historial Consultar. No recepción.
+
+E8: botón «Enviar solicitud (simulación)» visible. Envío SKIP requiere autorización humana. Preview interceptado por modal Nueva OC.
+
+G9: GET /Notifications/get_notifications 200 total_count 26. Incluye RH «Nómina Borrador/Calculada/Parcial … vencida». Badge header 9+.
+
+G2–G7: SKIP — no se creó nómina futura (evitar DELETE/residuos; no hay botón Restaurar de ajustes inline).
+
+Móvil 390×844: Clientes (KPI + botones), POS (ticket $0), Obras detalle/2 tab Entregas seleccionado, RH listado 18 empleados. Sin 500.

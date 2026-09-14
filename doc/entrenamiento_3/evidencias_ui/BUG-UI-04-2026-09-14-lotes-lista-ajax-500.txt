@@ -1,0 +1,38 @@
+BUG-UI-04 — Control de Lotes: listado global devuelve HTTP 500 (Database Error) — 2ª pasada QA UI
+URL página: https://erp.chisarecubrimientos.com.mx/produccion/Lotes
+Endpoint: POST /produccion/Lotes/lista_ajax  (ajax del DataTable #tabla_lotes, views/produccion/lotes/main.php:82-83)
+Usuario sesión: soporte2@especialistasweb.com.mx (EHWEB)
+Fecha: 2026-09-14 00:4x CDMX (servidor 06:4x UTC)
+Commit en prueba: 1bdec68 (rama iteracion-3)
+
+Reproducción (UI):
+1. Abrir /produccion/Lotes.
+2. DataTable "Listado Global de Lotes" no pinta filas (solo encabezado); sin mensaje de error visible.
+3. En Network: POST lista_ajax -> status 500, Content-Type text/html.
+
+Respuesta (fetch desde consola, credentials:include, X-Requested-With):
+  HTTP 500 — "A Database Error Occurred"
+  Error Number: 1054
+  Unknown column 'lp.orden_venta_id' in 'ON'
+  SELECT `lp`.*, `p`.`nombre` as `producto_nombre`, `p`.`codigo` as `producto_codigo`,
+         `f`.`nombre_version` as `formulacion_nombre`, `ov`.`folio` as `ov_folio`,
+         `o`.`folio` as `obra_folio`
+  FROM `lotes_produccion` `lp`
+  LEFT JOIN `productos` `p` ON `p`.`id` = `lp`.`producto_id`
+  LEFT JOIN `formulaciones` `f` ON `f`.`id` = `lp`.`formulacion_id`
+  LEFT JOIN `ordenes_venta` `ov` ON `ov`.`id` = `lp`.`orden_venta_id`   <-- columna inexistente
+  LEFT JOIN `obras` `o` ON `o`.`id` = `lp`.`obra_id`
+  ORDER BY `lp`.`fecha_produccion` DESC LIMIT 10
+  Filename: models/Produccion/ProduccionModel.php
+  Line Number: 682
+
+Código: application/models/Produccion/ProduccionModel.php:653-682 (get_lotes_global_datatables).
+Introducido en commit 1ef15fb (2026-08-20, "overhaul Obras y Producción ... etiquetas de lote").
+No hay migración en el repo que agregue `lotes_produccion.orden_venta_id` (sin carpeta application/migrations).
+
+Impacto: el histórico global de lotes (y su buscador DataTables) queda inservible; oculta cualquier lote existente.
+La pantalla "Consultar Lote" (/produccion/Lotes/consultar) carga bien, pero no hay lotes que consultar
+(count_all/listado vacío) y la etiqueta de lote depende de un lote existente: no evaluable sin datos.
+
+Severidad: Media-Alta (500 + funcionalidad muerta en módulo Producción; no rompe otras pantallas).
+Estado: NUEVO (❌). No estaba en 1ª/2ª pasada (D7 estaba SKIP: "no abierto").

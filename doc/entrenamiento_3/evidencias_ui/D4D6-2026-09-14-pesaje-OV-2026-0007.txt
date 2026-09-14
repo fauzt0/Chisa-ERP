@@ -1,0 +1,51 @@
+QA UI 2ª pasada continuación — D4–D6
+Fecha: 2026-09-14 ~06:03–06:12 CDMX
+Commit: 1bdec68 · Usuario: EHWEB (soporte2@especialistasweb.com.mx)
+Viewport: desktop navegador Cursor
+DevTools: Network via fetch credentials include
+
+B4 Guardar Cotización POS
+- URL POST /ventas/Pos/crear_orden_ajax
+- Status 200 · ~256 ms (Performance resource)
+- Folio: OV-2026-0007 (orden_id 26)
+- Cliente: Empresa de Prueba S.A. (id 9)
+- Producto: CHISA GLASS REF 308 (#22) ×1 · Total $0.00
+- Observaciones: TEST-QA-UI-OV-01
+- Swal: “¡Venta registrada! Folio: OV-2026-0007 / Insumos OK para producción (3 insumo(s) verificados).”
+- Preórdenes: NO se crearon (solo consulta en cotización). lista_preordenes_ajax sin origen venta:26.
+
+B5 Confirmar OV
+- POST /ventas/Ordenes/confirmar_ajax id=26
+- Status 200 · 120 ms · Content-Type text/html (JSON body)
+- Body: {"success":true,"message":"Orden confirmada correctamente","insumos":{"ok":true,"mensaje_resumen":"Insumos OK para producción (3 insumo(s) verificados).","solo_consulta":false,"faltantes":0,"preordenes":[]}}
+- Estatus UI posterior: En Preparación
+- Preórdenes nuevas: 0
+
+D4 Completada SIN pesaje
+- POST /produccion/Dashboard/actualizar_estatus_ajax orden_id=26 tipo=venta estatus=Completada forzar_sin_insumos=0
+- Status 200 · 230 ms
+- Body: {"success":false,"message":"Debe confirmar el pesaje y descontar los insumos antes de marcar como Completada.","bloqueada":true,"puede_forzar":true}
+- URL detalle real: /produccion/Dashboard/detalle/orden_venta/26  (detalle/venta/26 → 404 CI; tipo_registro=orden_venta)
+
+Revertir pesaje por UI: NO existe (ni botón ni texto revert/deshacer/anular).
+
+D5 Confirmar pesaje
+- POST /produccion/Dashboard/confirmar_pesaje_ajax
+- Status 200 · 121 ms
+- Body success: Pesaje confirmado. Se descontaron 3 insumo(s).
+  PIG-003 Óxido de Hierro Amarillo 0.0006 kg  200 → 199.9994
+  PIG-006 Pasta Colorante Verde 0.97 kg       80 → 79.03
+  PIG-004 Negro de Humo 0.03 kg               150 → 149.97
+- Registro esperado: PESAJE-venta-26 (ProduccionModel)
+
+D5b Segundo pesaje
+- Mismo POST · 200 · 81 ms
+- {"success":false,"message":"Los insumos de esta orden ya fueron descontados por pesaje anterior."}
+
+D6 Completada CON pesaje → LOTE
+- POST actualizar_estatus_ajax Completada
+- HTTP 500 · 81 ms · Database Error 1054
+- Unknown column 'fecha_completado_produccion' in 'SET'
+- UPDATE ordenes_venta SET estatus='Completada', fecha_completado_produccion='2026-09-14 06:11:51' WHERE id=26
+- Filename: controllers/produccion/Dashboard.php Line 154
+- BUG-UI-07 — bloquea lote + entrada PT. OV queda En Preparación. Insumos YA descontados (sin revertir por UI).

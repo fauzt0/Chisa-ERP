@@ -1,0 +1,73 @@
+C2–C5 — Ciclo obra TEST-QA-UI-OBRA-01 (2ª pasada) — evidencia
+URL: https://erp.chisarecubrimientos.com.mx/obras/Obras (+ detalle/14, /compras/OrdenesCompra, /almacen/Entregas)
+Usuario: soporte2@especialistasweb.com.mx (EHWEB)
+Fecha: 2026-09-14 02:0x–02:5x CDMX
+Commit: 1bdec68 (rama iteracion-3)
+
+ALTA (C1b)
+- Modal Nueva Obra: cliente "Empresa de Prueba S.A." (id 9, cliente TEST preexistente; no se tocó cliente real),
+  nombre TEST-QA-UI-OBRA-01, dirección Av. Pruebas QA 123, Monterrey NL, área 50 m², costo $1,000,
+  IVA 16%, anticipo 30%.
+- Respuesta: "Obra creada correctamente" → folio OB-00006 (obra_id=14). Listado: 3 obras.
+
+C2 — producto SIN rendimiento debe BLOQUEAR (no calcular con 1.0)
+- Detalle obra → Agregar Producto → producto #204 SOLUCION DE AEROSIL 200 (formulación activa V5, form#968).
+- POST obras/Obras/get_formulacion_ajax → 200 (263 ms):
+  {"success":true,"formulacion":{"id":"968","version":"5","nombre_version":"V5","rendimiento_m2_por_kg":null,
+   "descripcion":"Corrección BOM-1: línea #91 (auto-referencia) → #118 AEROSIL 200..."}}
+- UI: alerta "La formulación activa no tiene rendimiento m²/kg. Capture el valor o edite el formulación."
+  + input Rendimiento editable + panel de cálculo oculto + Cantidad Calculada vacía.
+- Área 50 + Factor 1.10 SIN rendimiento:
+  POST obras/Obras/calcular_materiales_ajax → 200 (216 ms):
+  {"success":false,"requiere_rendimiento":true,"message":"La formulación no tiene rendimiento m²/kg.
+   Captúrelo en la formulación o en el campo de esta línea.","formulacion_id":968,"formulacion_nombre":"V5",
+   "producto_id":204}
+- Intento de guardar:
+  POST obras/Obras/agregar_producto_ajax → 200 (90 ms): {"success":false,"requiere_rendimiento":true, ...}
+  Toast "Obras: Error ... — Capture el rendimiento m²/kg en la línea o en Producción > Formulaciones."
+  Modal permanece abierto; 0 filas agregadas. → ✅ NO hay fallback a rendimiento 1.0.
+
+C3 — producto CON rendimiento → kg/cubetas coherentes
+- Rendimiento capturado en la línea = 2.5 m²/kg, área 50, factor 1.10:
+  calcular_materiales_ajax → 200: success:true, rendimiento_origen:"linea", m2_bruto:50, m2_efectivo:55,
+  kg_necesarios:22, cubetas:22, cantidad_calculada:22, unidad:"Cubeta", cantidad_producida_lote:1 Kg,
+  insumos: EXXOL D-40 (#116) 15.136 Kg, PLIOWAY E-CH (#117) 4.202 Kg, AEROSIL 200 (#118) 2.662 Kg.
+  Verificación: 55 ÷ 2.5 = 22.00 kg ✅; ⌈22 ÷ 1⌉ = 22 cubetas ✅.
+- Guardado: agregar_producto_ajax → 200: {"success":true,"message":"Producto agregado correctamente",
+  "calculo":{...mismos valores...},"insumos":{"mensaje_resumen":"Faltan 3 insumo(s) para producir esta
+  orden. Las pre-órdenes se generarán al confirmar el documento."}}
+- Fila en obra: SOLUCION DE AEROSIL 200 (V5) 50.00 m² / 22.00 cubetas.
+
+C4 — Aprobar → preorden origen=obra; re-aprobar NO duplica
+- actualizar_ajax (estatus=Aprobada) → 200: {"success":true,"message":"Obra actualizada correctamente",
+  "insumos":{"mensaje_resumen":"Faltan 3 insumo(s) para producir esta orden. Se generaron 3 pre-orden(es)
+  Pendiente: PRE-2026-0004, PRE-2026-0005, PRE-2026-0006.","preordenes":["PRE-2026-0004","PRE-2026-0005",
+  "PRE-2026-0006"]}}
+- Compras > Órdenes de Compra (pestaña preórdenes): PRE-2026-0004 EXXOL D-40 15.1270 Kg,
+  PRE-2026-0005 PLIOWAY E-CH 4.2020 Kg, PRE-2026-0006 AEROSIL 200 2.6710 Kg — notas
+  "Verificación automática obra OB-00006". Exactamente 3 (sin duplicados).
+- Segundo actualizar_ajax (estatus ya Aprobada) → 200 {"success":true,"message":"Obra actualizada
+  correctamente"} — SIN campo insumos/preordenes → no se generaron preórdenes de nuevo. ✅
+
+C5a — PDF resumen (previsualización)
+- GET /obras/Obras/exportar_pdf/14 → 5 bloques .pdf-page:
+  1) RESUMEN EJECUTIVO DE OBRA (OB-00006 / TEST-QA-UI-OBRA-01 / Empresa de Prueba S.A.)
+  2) AVANCE DE OBRA  3) Hoja de resumen (ubicación/presupuesto)  4) ESTIMACIÓN DE OBRA
+  5) GENERADOR PARA CUANTIFICAR (estimación ÚNICA, fecha 14/09/2026). Sin errores.
+
+C5b — Entrega desde Almacén: BLOQUEADA por stock 0 (no ejecutable E2E con esta obra)
+- Almacén > Entregas → pestaña Obras → "Entregar" de OB-00006:
+  modal Entregar Obra: Pedido 22.00 | Entregado 0.00 | Pendiente 22.00 | **Stock 0.00 Kg** | input
+  cantidad min=0 max=0 value=0 (id cantidad_obra_0, data-obra-producto-id=7, producto 204).
+- Al confirmar sin cantidad: notifyShow "Debe ingresar al menos una cantidad a entregar" (warning),
+  sin POST a entregar_obra_ajax. El clamp max=stock impide capturar la entrega.
+- Motivo: el producto TEST #204 no tiene stock (nunca se produjo); el flujo de entrega E2E ya quedó
+  validado en 1ª pasada (ENT-2026-0001/0002 + trigger de porcentaje/estatus). No se fuerza stock.
+  Para repetir E2E haría falta producir 1 cubeta (D4–D6) o usar un producto con stock.
+
+LIMPIEZA (por UI, sin DELETE)
+- PRE-2026-0004, PRE-2026-0005, PRE-2026-0006 → "Rechazada" (motivo: "Limpieza QA TEST-QA-UI-OBRA-01
+  (2a pasada iteracion 3)"), verificadas en Historial de Pre-órdenes de Compras.
+- OB-00006 (id 14) → eliminarObra(14): {"success":true,"message":"Obra eliminada correctamente"}.
+  Listado final de obras: OB-00001, OB-00002 (2 activas). ✅
+- No se crearon OVs, entregas ni movimientos de inventario en esta obra.

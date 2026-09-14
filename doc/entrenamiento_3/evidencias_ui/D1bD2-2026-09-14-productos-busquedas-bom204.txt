@@ -1,0 +1,26 @@
+D1b / D2 — Búsqueda catálogo Productos y BOM #204 (2ª pasada)
+URL: https://erp.chisarecubrimientos.com.mx/produccion/Productos
+Usuario: soporte2@especialistasweb.com.mx (EHWEB)
+Fecha: 2026-09-14 00:4x CDMX
+Commit: 1bdec68
+
+D1b — búsquedas por nombre/código (input #buscarProductos, filtro DataTable #tablaProductos)
+| Query        | Resultado UI                                                     |
+|--------------|------------------------------------------------------------------|
+| VITROGLASS   | 1 fila: VITROGLASS-ECOLOGICO "VITROGLASS ECOLOGICO" (Selladores, Fabricado) |
+| CHISA MAR    | 1 fila: CHISA-MAR "CHISA MAR" (Recubrimientos, Fabricado, Cubeta, $0.00)   |
+| 475          | 0 filas: "No se encontraron coincidencias" (el ID interno no es buscable)  |
+Criterio confirmado: substring literal sobre código/nombre/alias/categoría (client-side), no por ID interno.
+Los botones de fila exponen los IDs internos (verProducto(204), etc.), que no participan en la búsqueda.
+
+D2 — formulación de #204 SOLUCION DE AEROSIL 200 (modal Gestión de Formulación, botón gestionarFormulacion(204))
+- `formulacion_id=968`, producto `204`.
+- Etiqueta UI: "Editando V5 (activa)".
+- Componentes agregados (tabla del modal):
+    Insumo  IMP-0F24C004 AEROSIL 200  [BOM-1: era #91 (auto-referencia)]   0.121 Kg   12.1%
+    Insumo  IMP-F7B69636 EXXOL D-40                                        0.688 Kg   68.8%
+    Insumo  IMP-B5FF7F49 PLIOWAY E-CH                                      0.191 Kg   19.1%
+    Totales: 100.0%  |  Total Insumos: $0.00
+- Select de insumos confirma value `118` => "IMP-0F24C004 - AEROSIL 200 ($0.00)" (id interno #118).
+- 0 errores JS en consola.
+Sin modificación alguna (solo lectura: modal abierto y cerrado con .modal('hide')).

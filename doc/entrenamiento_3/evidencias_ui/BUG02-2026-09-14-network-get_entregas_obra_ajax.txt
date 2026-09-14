@@ -1,0 +1,17 @@
+BUG-UI-02 — Network (2ª pasada QA UI)
+URL página: https://erp.chisarecubrimientos.com.mx/obras/Obras/detalle/2
+Endpoint: GET /obras/Obras/get_entregas_obra_ajax?obra_id=2
+Usuario sesión: soporte2@especialistasweb.com.mx (EHWEB)
+Fecha: 2026-09-14 (CDMX)
+
+Medición fetch() desde consola (credentials:include):
+- status: 200
+- Content-Type: text/html; charset=UTF-8
+- tiempo: ~90 ms
+- body (primeros 400 chars): {"success":true,"entregas":{"productos":[{"obra_producto_id":"3","producto_nombre":"CHISA GLASS MICRO","producto_codigo":"PROD-0001","seccion_obra":"Sala 1","unidad":"Cubeta","cantidad_calculada":"2.75","cantidad_ajustada":"2.00","cantidad_entregada":"0.00","cantidad_pendiente":"2.00","precio_unitario":"500.00"}],"historial":[]}}
+
+UI tras cargarEntregasObra():
+- Tabla "Estado por producto": CHISA GLASS MICRO, Solicitado 2.00, Entregado 0.00, Pendiente 2.00, Cubeta
+- Mensaje historial: sin entregas registradas (enlace Almacén > Entregas)
+
+Nota: al solo activar pestaña Entregas, el snapshot de accesibilidad puede seguir mostrando "Cargando..." en DOM oculto; el botón Actualizar / evento shown.bs.tab dispara cargarEntregasObra().

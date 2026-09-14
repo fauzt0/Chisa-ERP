@@ -1,0 +1,7 @@
+BUG-UI-08 Descuentos crear_ajax HTTP 500
+Fecha: 2026-09-14 · commit 1bdec68 · EHWEB
+URL POST /ventas/Descuentos/crear_ajax
+Status: 500 · 208 ms
+Body: Uncaught Exception — Call to protected method MY_Model::insert() from context 'Descuentos'
+File: application/controllers/ventas/Descuentos.php line 110
+Listado lista_ajax sí funciona (3 descuentos existentes). No se creó TEST-QA-DESC-01.

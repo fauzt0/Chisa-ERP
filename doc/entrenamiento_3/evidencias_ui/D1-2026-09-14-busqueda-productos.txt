@@ -1,0 +1,13 @@
+D1 / D1b — Búsqueda catálogo Productos (2ª pasada)
+URL: https://erp.chisarecubrimientos.com.mx/produccion/Productos
+Usuario: soporte2@especialistasweb.com.mx
+
+Criterio: substring literal sobre código/nombre/alias/categoría (no AND de tokens, no ID interno).
+
+| Query | Resultado UI |
+|-------|----------------|
+| hospital | 1 fila: HOSPITAL ADOLFO LOPEZ MATEOS… (código HOSPITAL-ADOLFO-…) |
+| hospital ROCA | 0 filas (esperado: no hay substring único con ambos) |
+| 475 | 0 filas (esperado: no es código/nombre) |
+| ROCA | (no re-ejecutado en esta captura; usar token suelto en UI) |
+| VITROGLASS / CHISA MAR | (pendiente captura en misma sesión; diseño = por nombre) |

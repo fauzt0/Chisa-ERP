@@ -1,0 +1,38 @@
+A3/A4 — Clientes: Excel, Imprimir y limpieza de cliente TEST (2ª pasada QA UI)
+URL: https://erp.chisarecubrimientos.com.mx/ventas/Clientes
+Usuario: soporte2@especialistasweb.com.mx (EHWEB)
+Fecha: 2026-09-14 05:54 UTC / 2026-09-13 23:54 CDMX
+Commit: 1bdec68 (ramas iteracion-3, servida por el sitio)
+
+A4 — cliente TEST-QA-CLIENTE-01 (CLI-00002, RFC TQA901201ABC)
+- El alta SÍ quedó guardada. La observación de la 1ª/2ª pasada ("Guardar no cerró el modal") es un
+  artefacto de captura: la respuesta async de guardado tarda ~100 ms y el snapshot se tomó antes.
+- Estado inicial: Activo; directorio con 3 clientes (2 previos + TEST).
+- Acción: Editar → Estatus = Inactivo → Guardar (limpieza por UI, sin DELETE).
+- Network (DevTools, PerformanceResourceTiming):
+    POST /ventas/Clientes/get_cliente_ajax  -> 200, 224 ms,  626 B
+    POST /ventas/Clientes/editar_ajax       -> 200, 103 ms,  378 B
+    POST /ventas/Clientes/lista_ajax        -> 200,  93 ms,  974 B (recarga de tabla)
+- Resultado verificado en DOM tras la recarga: fila CLI-00002 = "Inactivo".
+- 0 errores JS en consola.
+
+A3 — Excel / Imprimir
+- Excel (DataTables excelHtml5, 100% cliente-side):
+  - Blob: type=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, 3919 B.
+  - Descarga disparada: "Directorio_Clientes.xlsx" desde blob:https://erp.chisarecubrimientos.com.mx/...
+  - Contenido validado con JSZip: 6 entradas ZIP; xl/worksheets/sheet1.xml con 5 filas
+    (título + encabezado + 3 clientes: CLI-00002, CLI-00001, CL-TEST-001).
+  - 0 errores JS.
+- Imprimir (DataTables print):
+  - Vista construida: <title>ERP/CHISA - Clientes</title> + h1 + tabla completa (4 filas: encabezado + 3 clientes).
+  - autoPrint ejecutado: print() y close() invocados; 0 errores JS.
+- Método: instrumentación vía Runtime.evaluate (hooks de URL.createObjectURL, click de <a download> y
+  window.open) para evidenciar blob y documento de impresión sin abrir diálogos del sistema. La descarga
+  física del archivo y el diálogo nativo de impresión no son inspeccionables en sesión automatizada
+  (mismo alcance que §5.7 del checklist de Obras); lo verificado es el pipeline de exportación y su
+  contenido.
+
+Estado del directorio tras la limpieza:
+  CLI-00002 TEST-QA-CLIENTE-01 -> Inactivo
+  CLI-00001 Soluciones Tecnológicas del Bajío -> Activo
+  CL-TEST-001 Empresa de Prueba S.A. -> Activo (residuo preexistente; NO es TEST-QA de esta sesión)
