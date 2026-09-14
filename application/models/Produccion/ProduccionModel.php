@@ -650,21 +650,39 @@ class ProduccionModel extends CI_Model {
      * Obtiene lotes para DataTables global
      */
     public function get_lotes_global_datatables($filtros = []) {
-        $this->db->select('lp.*, p.nombre as producto_nombre, p.codigo as producto_codigo, f.nombre_version as formulacion_nombre, 
-                           ov.folio as ov_folio, o.folio as obra_folio');
+        $tiene_ov = $this->db->field_exists('orden_venta_id', 'lotes_produccion');
+        $tiene_obra = $this->db->field_exists('obra_id', 'lotes_produccion');
+
+        $select = 'lp.*, p.nombre as producto_nombre, p.codigo as producto_codigo, f.nombre_version as formulacion_nombre';
+        if ($tiene_ov) {
+            $select .= ', ov.folio as ov_folio';
+        }
+        if ($tiene_obra) {
+            $select .= ', o.folio as obra_folio';
+        }
+
+        $this->db->select($select, false);
         $this->db->from('lotes_produccion lp');
         $this->db->join('productos p', 'p.id = lp.producto_id', 'left');
         $this->db->join('formulaciones f', 'f.id = lp.formulacion_id', 'left');
-        $this->db->join('ordenes_venta ov', 'ov.id = lp.orden_venta_id', 'left');
-        $this->db->join('obras o', 'o.id = lp.obra_id', 'left');
+        if ($tiene_ov) {
+            $this->db->join('ordenes_venta ov', 'ov.id = lp.orden_venta_id', 'left');
+        }
+        if ($tiene_obra) {
+            $this->db->join('obras o', 'o.id = lp.obra_id', 'left');
+        }
 
         if (!empty($filtros['search'])) {
             $this->db->group_start();
             $this->db->like('lp.codigo_barras', $filtros['search']);
             $this->db->or_like('p.nombre', $filtros['search']);
             $this->db->or_like('p.codigo', $filtros['search']);
-            $this->db->or_like('ov.folio', $filtros['search']);
-            $this->db->or_like('o.folio', $filtros['search']);
+            if ($tiene_ov) {
+                $this->db->or_like('ov.folio', $filtros['search']);
+            }
+            if ($tiene_obra) {
+                $this->db->or_like('o.folio', $filtros['search']);
+            }
             $this->db->group_end();
         }
 
