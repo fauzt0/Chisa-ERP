@@ -21,7 +21,7 @@ $stats = $response['stats'] ?? [];
 <!-- Título -->
 <div class="row mb-3">
   <div class="col-md-12">
-    <h2><i class="fas fa-cash-register"></i> Punto de Venta (POS)</h2>
+    <h2><i class="fas fa-cash-register"></i> Punto de Venta (POS) <button type="button" class="erp-btn-ayuda" data-erp-ayuda="pos" title="Funciones del POS">?</button></h2>
   </div>
 </div>
 
@@ -854,13 +854,14 @@ function cargarTopProductos() {
       let html = '';
       result.productos.forEach(p => {
         const stock = parseFloat(p.stock_actual);
+        const stockTxt = isNaN(stock) ? '—' : (stock < 0 ? '0 (ajuste)' : String(stock));
         html += `
           <div class="col-md-4 col-sm-6">
             <div class="card h-100 producto-card border-warning" onclick="agregarAlTicket(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.precio_venta}, ${stock})" style="cursor: pointer;">
               <div class="card-body p-2 text-center">
                 <h6 class="card-title text-truncate mb-1" style="font-size: 0.9rem;">${p.nombre}</h6>
                 <p class="text-primary fw-bold mb-0">$${parseFloat(p.precio_venta).toFixed(2)}</p>
-                <small class="text-success"><i class="fas fa-check"></i> Stock: ${stock}</small>
+                <small class="${stock <= 0 ? 'text-danger' : 'text-success'}"><i class="fas fa-${stock <= 0 ? 'times' : 'check'}"></i> Stock: ${stockTxt}</small>
               </div>
             </div>
           </div>
@@ -1148,6 +1149,7 @@ function renderProductos(productos) {
   let html = '';
   productos.forEach(p => {
     const stock = parseFloat(p.stock_actual);
+    const stockMostrar = (isNaN(stock) || stock < 0) ? 0 : stock;
     let stockClass = 'success';
     let stockIcon = 'check-circle';
     
@@ -1195,7 +1197,7 @@ function renderProductos(productos) {
                            </button>` : ''
                         }
                         <span class="badge bg-${stockClass}">
-                          <i class="fas fa-${stockIcon}"></i> ${stock}
+                          <i class="fas fa-${stockIcon}"></i> ${stockMostrar}
                         </span>
                       </div>
                     </div>

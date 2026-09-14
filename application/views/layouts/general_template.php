@@ -76,6 +76,7 @@
   </div>  
   <script src="<?php echo base_url();?>assets/dist/js/app.js"></script>
   <script src="<?php echo base_url();?>assets/dist/js/theme-toggle.js?v=<?php echo time(); ?>"></script>
+  <script src="<?php echo base_url();?>assets/dist/js/ayuda-seccion.js?v=<?php echo time(); ?>"></script>
   <script src="<?php echo base_url();?>assets/dist/js/rh-tables-responsive.js?v=<?php echo time(); ?>"></script>
   <?php if(isset($pageScript) && $pageScript != ''){ $this->load->view($pageScript); } ?>
 
@@ -207,7 +208,7 @@
     var notifications = data.notifications || [];
     
     if (total > 0) {
-      $('#notifications-header').html(total + ' Notificación' + (total > 1 ? 'es' : ''));
+      $('#notifications-header').html(total === 1 ? '1 notificación' : (total + ' notificaciones'));
       $('#notifications-badge').text(total > 9 ? '9+' : total).show();
     } else {
       $('#notifications-header').html('Sin notificaciones');

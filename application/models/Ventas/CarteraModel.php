@@ -61,7 +61,7 @@ class CarteraModel extends MY_Model {
                     $ov->estatus_pago ?? 'Pendiente',
                     $ov->estatus,
                     $ov->fecha_orden,
-                    base_url('ventas/Ordenes'),
+                    base_url('ventas/Ordenes?abrir=' . (int) $ov->id),
                     (int) $ov->cliente_id,
                     $ov->rfc ?? ''
                 );

@@ -24,7 +24,7 @@ $stats = $response['stats'] ?? [];
 <!-- Título -->
 <div class="row mb-3">
   <div class="col-md-6">
-    <h2><i class="fas fa-file-invoice"></i> Gestión de Órdenes de Venta</h2>
+    <h2><i class="fas fa-file-invoice"></i> Gestión de Órdenes de Venta <button type="button" class="erp-btn-ayuda" data-erp-ayuda="ordenes" title="Funciones de órdenes">?</button></h2>
   </div>
   <div class="col-md-6 text-end">
     <a href="<?=base_url();?>ventas/Pos" class="btn btn-primary">
@@ -330,11 +330,6 @@ $stats = $response['stats'] ?? [];
   </div>
 </div>
 
-<script>
-let tabla;
-
-// DataTables Buttons JS
-</script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -398,7 +393,13 @@ function inicializarDataTable() {
     language: {
       url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
     },
-    order: [[0, 'desc']]
+    order: [[0, 'desc']],
+    initComplete: function() {
+      var m = String(window.location.search || '').match(/[?&]abrir=(\d+)/);
+      if (m && typeof window.verOrden === 'function') {
+        window.verOrden(m[1]);
+      }
+    }
   });
 }
 
@@ -748,7 +749,9 @@ function guardarPago() {
 
 // Inicializar
 if (typeof jQuery !== 'undefined') {
-  $(document).ready(initOrdenes);
+  $(document).ready(function() {
+    initOrdenes();
+  });
 } else {
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof jQuery !== 'undefined') {

@@ -70,7 +70,7 @@ $widget_sizes = [
   <div class="row mb-2 mb-xl-3">
     <div class="col-auto d-none d-sm-block">
       <h3 class="mb-0">Inicio ERP</h3>
-      <p class="text-muted mb-0 small">Tablero personalizable — solo se muestran los módulos autorizados para tu usuario.</p>
+      <p class="text-muted mb-0 small">Tablero personalizable — solo se muestran los módulos autorizados para tu usuario. La campana (arriba a la derecha) avisa cobros, stock y producción.</p>
     </div>
     <div class="col-auto ms-auto text-end mt-n1 dash-toolbar">
       <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#dashboardConfigModal">
@@ -149,8 +149,10 @@ $widget_sizes = [
             <div class="d-flex align-items-start">
               <div class="flex-grow-1">
                 <h3 class="mb-2"><?= (int)($produccion_stats['en_proceso'] ?? 0) ?></h3>
-                <p class="mb-2">Órdenes en Producción</p>
-                <span class="text-warning small"><i class="fas fa-cogs"></i> En proceso</span>
+                <p class="mb-2">Pedidos en fabricación</p>
+                <span class="text-warning small"><i class="fas fa-cogs"></i>
+                  <?= (int)($produccion_stats['solicitudes_pendientes'] ?? 0) ?> solicitud<?= ((int)($produccion_stats['solicitudes_pendientes'] ?? 0) !== 1) ? 'es' : '' ?> pendiente<?= ((int)($produccion_stats['solicitudes_pendientes'] ?? 0) !== 1) ? 's' : '' ?>
+                </span>
               </div>
               <div class="dash-stat-icon bg-warning-subtle text-warning ms-3"><i class="fas fa-industry"></i></div>
             </div>
@@ -350,7 +352,9 @@ $widget_sizes = [
         case 'cartera_cobros': ?>
         <div class="card flex-fill border-danger">
           <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-hand-holding-usd me-1"></i>Clientes con falta de pago</h5>
+            <h5 class="mb-0"><i class="fas fa-hand-holding-usd me-1"></i>Clientes con falta de pago
+              <button type="button" class="erp-btn-ayuda ms-1" data-erp-ayuda="cartera" title="Qué muestra esta tarjeta">?</button>
+            </h5>
             <span class="small">
               <?= (int)($cartera_resumen['documentos'] ?? 0) ?> docs
               · $<?= number_format((float)($cartera_resumen['saldo'] ?? 0), 2) ?>
@@ -382,7 +386,9 @@ $widget_sizes = [
         case 'obras_parcialidades': ?>
         <div class="card flex-fill border-warning">
           <div class="card-header bg-warning">
-            <h5 class="mb-0"><i class="fas fa-calendar-alt me-1"></i>Parcialidades de obra (7 días / vencidas)</h5>
+            <h5 class="mb-0"><i class="fas fa-calendar-alt me-1"></i>Parcialidades de obra (7 días / vencidas)
+              <button type="button" class="erp-btn-ayuda ms-1" data-erp-ayuda="parcialidades" title="Qué muestra esta tarjeta">?</button>
+            </h5>
           </div>
           <div class="table-responsive">
             <table class="table table-sm mb-0">

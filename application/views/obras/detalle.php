@@ -34,7 +34,7 @@ $badgeColor = $badgeColors[$obra->estatus] ?? 'secondary';
 <!-- Encabezado de la Obra -->
 <div class="row mb-4">
     <div class="col-md-6">
-        <h1><i class="fas fa-hard-hat"></i> <?=$obra->folio?></h1>
+        <h1><i class="fas fa-hard-hat"></i> <?=htmlspecialchars($obra->folio, ENT_QUOTES, 'UTF-8')?> <button type="button" class="erp-btn-ayuda" data-erp-ayuda="obras_detalle" title="Funciones de la obra">?</button></h1>
         <h3 class="text-muted"><?=$obra->nombre?></h3>
     </div>
     <div class="col-md-6 text-end">
@@ -134,8 +134,12 @@ $this->load->view('obras/partials/vinculo_venta', [
                 <p><strong>Costo Estimado:</strong> $<?=number_format($obra->costo_estimado ?? 0, 2)?></p>
                 <p><strong>Costo Real:</strong> $<?=number_format($obra->costo_real ?? 0, 2)?></p>
                 <hr>
+                <?php if ((float)($obra->costo_real ?? 0) > 0): ?>
                 <p><strong>Utilidad Neta:</strong> <span class="text-success">$<?=number_format($obra->utilidad_neta ?? 0, 2)?></span></p>
                 <p><strong>Margen de Utilidad:</strong> <span class="badge bg-<?=($obra->margen_utilidad ?? 0) > 20 ? 'success' : 'warning'?>" style="font-size: 1.2rem;"><?=number_format($obra->margen_utilidad ?? 0, 2)?>%</span></p>
+                <?php else: ?>
+                <p class="text-muted small mb-0">Sin costo real capturado: el margen no se calcula todavía (evita mostrar 100&nbsp;% ficticio).</p>
+                <?php endif; ?>
                 <hr>
                 <p><strong>Anticipo (<?=$obra->anticipo_porcentaje ?? 0?>%):</strong> $<?=number_format($obra->anticipo_monto ?? 0, 2)?></p>
                 <p><strong>Condiciones de Pago:</strong> <?=$obra->condiciones_pago ?: 'No especificadas'?></p>

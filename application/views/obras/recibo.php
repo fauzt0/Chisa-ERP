@@ -83,7 +83,9 @@ $folio_recibo = $pago->folio_recibo ?: $pago->id;
 
 <style>
 @media print {
-    .btn { display: none; }
-    .sidebar, .navbar { display: none; }
+    .btn, .sidebar, .navbar, footer, .wrapper > nav, #erpAyudaNavBtn,
+    .js-sidebar, .navbar-bg, .erp-font-scalable + footer { display: none !important; }
+    .wrapper, .main, .content, #erp-main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+    body { background: #fff !important; }
 }
 </style>

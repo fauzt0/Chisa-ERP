@@ -122,7 +122,13 @@ class Insumos extends MY_Controller {
         
         $insumo = $this->InsumosModel->get_insumo($id);
         if($insumo) {
-            echo json_encode(['success' => true, 'insumo' => $insumo]);
+            $this->load->model('Compras/ProveedoresModel');
+            $proveedores = $this->ProveedoresModel->get_proveedores_insumo($id);
+            echo json_encode([
+                'success' => true,
+                'insumo' => $insumo,
+                'proveedores' => $proveedores,
+            ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Insumo no encontrado']);
         }
@@ -211,7 +217,6 @@ class Insumos extends MY_Controller {
             'categoria_id' => $this->input->post('categoria_id'),
             'descripcion' => $this->input->post('descripcion'),
             'unidad_medida' => $this->input->post('unidad_medida'),
-            'stock_actual' => $this->input->post('stock_actual'),
             'stock_minimo' => $this->input->post('stock_minimo'),
             'stock_maximo' => $this->input->post('stock_maximo') ?: null,
             'estatus' => $this->input->post('estatus')

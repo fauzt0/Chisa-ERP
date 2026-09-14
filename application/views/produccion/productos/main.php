@@ -34,7 +34,7 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
 <!-- Encabezado -->
 <div class="page-hero d-flex flex-wrap justify-content-between align-items-center gap-3">
   <div>
-    <h2><i class="fas fa-industry me-2"></i>Productos y Formulaciones</h2>
+    <h2><i class="fas fa-industry me-2"></i>Productos y Formulaciones <button type="button" class="erp-btn-ayuda" data-erp-ayuda="productos" title="Funciones de productos">?</button></h2>
     <p class="lead mb-0">Catálogo, simulador de lotes y gestión de BOM (árbol de materiales)</p>
   </div>
   <div>

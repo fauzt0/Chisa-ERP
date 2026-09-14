@@ -16,7 +16,7 @@ $stats = $response['stats'] ?? [];
 <!-- Título -->
 <div class="row mb-3">
     <div class="col-md-6">
-        <h2><i class="fas fa-hard-hat"></i> Gestión de Obras</h2>
+        <h2><i class="fas fa-hard-hat"></i> Gestión de Obras <button type="button" class="erp-btn-ayuda" data-erp-ayuda="obras_lista" title="Funciones de obras">?</button></h2>
     </div>
 </div>
 <?php $this->load->view('ventas/cartera/_panel', ['response' => $response]); ?>

@@ -17,7 +17,7 @@
    
   <!-- Titulo de la pagina -->
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h1 class="h3 mb-0"><?php echo $headTitle;?></h1>
+    <h1 class="h3 mb-0"><?php echo $headTitle;?> <button type="button" class="erp-btn-ayuda" data-erp-ayuda="proveedores" title="Funciones de proveedores">?</button></h1>
     <button type="button" class="btn btn-outline-secondary btn-sm" id="btnToggleResumenProv"
             aria-expanded="true" aria-controls="proveedores-resumen">
       <i class="fas fa-chevron-up me-1" id="iconToggleResumenProv"></i>
@@ -578,7 +578,8 @@
               <tr>
                 <th>Código Interno</th>
                 <th>Insumo</th>
-                <th>Nombre del Proveedor</th>
+                <th>Alias en factura</th>
+                <th>Stock</th>
                 <th>Precio</th>
                 <th>UM</th>
                 <th>Tiempo Entrega</th>
@@ -741,7 +742,8 @@
               <thead class="table-light">
                 <tr>
                   <th>Insumo</th>
-                  <th>Nom. Proveedor</th>
+                  <th>Alias en factura</th>
+                  <th class="text-end">Stock</th>
                   <th class="text-end">Precio</th>
                   <th class="text-center">Entrega</th>
                 </tr>
@@ -1368,7 +1370,7 @@
         insumosProveedorCache = {};
         let html = '';
         if(result.insumos.length === 0) {
-          html = '<tr><td colspan="7" class="text-center text-muted">No hay insumos relacionados</td></tr>';
+          html = '<tr><td colspan="8" class="text-center text-muted">No hay insumos relacionados</td></tr>';
         } else {
           result.insumos.forEach(function(ins) {
             insumosProveedorCache[ins.insumo_id] = ins;
@@ -1379,6 +1381,7 @@
                 <td><small>${ins.codigo || ''}</small></td>
                 <td><strong>${ins.nombre_tecnico || ''}</strong>${principal}</td>
                 <td>${nombreProv}</td>
+                <td class="text-end">${ins.stock_actual != null ? parseFloat(ins.stock_actual).toFixed(3) : '—'}</td>
                 <td>$${parseFloat(ins.precio_compra || 0).toFixed(2)}</td>
                 <td><span class="badge bg-light text-dark">${ins.unidad_medida || ''}</span></td>
                 <td>${ins.tiempo_entrega_dias || 0} días</td>
@@ -1958,9 +1961,11 @@
           var nomProv = ins.nombre_proveedor
             ? '<span class="badge bg-info text-white">' + ins.nombre_proveedor + '</span>'
             : '<span class="text-muted">-</span>';
+          var stockTxt = (ins.stock_actual != null) ? parseFloat(ins.stock_actual).toFixed(3) : '—';
           tbody += '<tr>';
           tbody += '<td><strong class="small">' + ins.nombre_tecnico + '</strong><br><span class="text-muted" style="font-size:0.75rem;">' + (ins.codigo || '') + '</span></td>';
           tbody += '<td>' + nomProv + '</td>';
+          tbody += '<td class="text-end">' + stockTxt + '</td>';
           tbody += '<td class="text-end">' + (ins.precio_compra ? '$' + parseFloat(ins.precio_compra).toLocaleString('es-MX', {minimumFractionDigits:2}) : '-') + '</td>';
           tbody += '<td class="text-center">' + (ins.tiempo_entrega_dias ? ins.tiempo_entrega_dias + ' días' : '-') + '</td>';
           tbody += '</tr>';
@@ -1968,7 +1973,7 @@
         $('#oc-insumos-tbody').html(tbody);
         $('#oc-insumos-container').show();
       } else {
-        $('#oc-insumos-tbody').html('<tr><td colspan="4" class="text-center text-muted py-3">Sin insumos asignados</td></tr>');
+        $('#oc-insumos-tbody').html('<tr><td colspan="5" class="text-center text-muted py-3">Sin insumos asignados</td></tr>');
         $('#oc-insumos-container').show();
       }
     });

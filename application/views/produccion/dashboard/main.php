@@ -194,7 +194,7 @@ $filtros      = $response['filtros_activos']  ?? [];
       <i class="fas fa-industry fa-lg"></i>
     </div>
     <div>
-      <h3 class="mb-0" style="font-size:1.5rem;font-weight:900;color:var(--prod-gray);">PRODUCCIÓN</h3>
+      <h3 class="mb-0" style="font-size:1.5rem;font-weight:900;color:var(--prod-gray);">PRODUCCIÓN <button type="button" class="erp-btn-ayuda" data-erp-ayuda="fabricacion" title="Funciones de fabricación">?</button></h3>
       <small class="text-muted" style="font-size:.8rem;">Panel de Operadores</small>
     </div>
   </div>

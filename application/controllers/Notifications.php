@@ -93,7 +93,7 @@ class Notifications extends MY_Controller {
             'module' => 'Ventas',
             'title' => 'Orden retrasada',
             'message' => 'Orden ' . $orden->folio . ' (' . ($orden->cliente ?: 'Sin cliente') . ') con ' . $dias_retraso . ' días de retraso',
-            'link' => base_url('ventas/Ordenes'),
+            'link' => base_url('ventas/Ordenes?abrir=' . (int) $orden->id),
             'time' => $dias_retraso . 'd'
           ];
           $total_count++;
@@ -211,7 +211,7 @@ class Notifications extends MY_Controller {
       $this->db->from('nominas');
       $this->db->where_in('estatus', ['Borrador', 'Calculada', 'Parcial']);
       $this->db->order_by('fecha_pago', 'ASC');
-      $this->db->limit(5);
+      $this->db->limit(2);
       $nominas_pendientes = $this->db->get()->result();
 
       foreach ($nominas_pendientes as $nom) {
@@ -268,7 +268,7 @@ class Notifications extends MY_Controller {
       }
     }
 
-    // Priorizar vencidas/críticas y alertas de RH para que no las tape el stock de almacén.
+    // Críticas primero; cobros/obras/producción antes que RH/stock para que la campana sirva en operación.
     usort($notifications, function ($a, $b) {
         $prioType = ['danger' => 0, 'warning' => 1, 'info' => 2];
         $ta = $prioType[$a['type'] ?? ''] ?? 3;
@@ -276,11 +276,12 @@ class Notifications extends MY_Controller {
         if ($ta !== $tb) {
             return $ta - $tb;
         }
-        $ma = (($a['module'] ?? '') === 'RH') ? 0 : 1;
-        $mb = (($b['module'] ?? '') === 'RH') ? 0 : 1;
+        $prioMod = ['Obras' => 0, 'Ventas' => 1, 'Producción' => 2, 'Compras' => 3, 'Almacén' => 4, 'RH' => 5];
+        $ma = $prioMod[$a['module'] ?? ''] ?? 6;
+        $mb = $prioMod[$b['module'] ?? ''] ?? 6;
         return $ma - $mb;
     });
-    $notifications = array_slice($notifications, 0, 12);
+    $notifications = array_slice($notifications, 0, 18);
 
     echo json_encode([
       'success' => true,

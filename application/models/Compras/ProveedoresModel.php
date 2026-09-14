@@ -174,7 +174,7 @@ class ProveedoresModel extends MY_Model {
      * Obtiene insumos de un proveedor
      */
     public function get_insumos_proveedor($proveedor_id) {
-        $this->db->select('proveedor_insumo.*, insumos.codigo, insumos.nombre_tecnico, insumos.unidad_medida');
+        $this->db->select('proveedor_insumo.*, insumos.codigo, insumos.nombre_tecnico, insumos.unidad_medida, insumos.stock_actual');
         $this->db->from('proveedor_insumo');
         $this->db->join('insumos', 'insumos.id = proveedor_insumo.insumo_id');
         $this->db->where('proveedor_insumo.proveedor_id', $proveedor_id);
@@ -191,6 +191,7 @@ class ProveedoresModel extends MY_Model {
         $this->db->from('proveedor_insumo');
         $this->db->join('proveedores', 'proveedores.id = proveedor_insumo.proveedor_id');
         $this->db->where('proveedor_insumo.insumo_id', $insumo_id);
+        $this->db->where('proveedor_insumo.estatus', 'Activo');
         $this->db->where('proveedores.estatus', 'Activo');
         $this->db->order_by('proveedor_insumo.precio_compra', 'ASC');
         return $this->db->get()->result();

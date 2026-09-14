@@ -25,7 +25,7 @@ $stats = $response['stats'] ?? [];
 <!-- Título y botones -->
 <div class="row mb-3">
   <div class="col-md-6">
-    <h2><i class="fas fa-users"></i> Gestión de Clientes</h2>
+    <h2><i class="fas fa-users"></i> Gestión de Clientes <button type="button" class="erp-btn-ayuda" data-erp-ayuda="clientes" title="Funciones de Clientes">?</button></h2>
   </div>
   <div class="col-md-6 text-end">
     <div class="d-flex gap-2 justify-content-end">
@@ -1203,8 +1203,8 @@ function cargarSeguimientosCliente(clienteId) {
     res.seguimientos.forEach(function(s) {
       html += '<div class="list-group-item px-0">';
       html += '<div class="d-flex justify-content-between align-items-start">';
-      html += '<div><span class="badge bg-secondary me-1">' + s.tipo + '</span>';
-      html += '<strong>' + (s.asunto || 'Sin asunto') + '</strong>';
+      html += '<div><span class="badge bg-secondary me-1">' + escapeHtml(s.tipo) + '</span> ';
+      html += '<strong>' + escapeHtml(s.asunto || 'Sin asunto') + '</strong>';
       html += '<div class="small text-muted">' + formatearFechaMX(s.fecha) + (s.usuario_nombre ? ' · ' + s.usuario_nombre : '') + '</div>';
       if (s.notas) html += '<div class="small mt-1">' + s.notas + '</div>';
       html += '</div>';

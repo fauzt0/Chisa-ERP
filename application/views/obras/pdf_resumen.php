@@ -1,21 +1,32 @@
 <?php
-$logoUrl = base_url($empresa->logo ?? 'assets/dist/img/brands/chisa_recubrimientos_logo.jpg');
-$direccionEmpresa = trim(implode(', ', array_filter([
-    trim(($empresa->calle ?? '') . ' ' . ($empresa->numero_exterior ?? '')),
-    $empresa->colonia ?? '',
-    $empresa->ciudad ?? '',
-    $empresa->estado ?? '',
-    $empresa->codigo_postal ?? ''
-])));
-$telefonoEmpresa = $empresa->telefono ?? '';
-$webEmpresa = $empresa->sitio_web ?? '';
+$empresa = is_object($empresa ?? null) ? $empresa : (object) [];
+$fixUtf8 = static function ($s) {
+    $s = (string) $s;
+    if ($s !== '' && preg_match('/Ã|Â|â€/', $s)) {
+        $fixed = @utf8_decode($s);
+        if (is_string($fixed) && $fixed !== '') {
+            return $fixed;
+        }
+    }
+    return $s;
+};
+$logoUrl = base_url(!empty($empresa->logo) ? $empresa->logo : 'assets/dist/img/brands/chisa_recubrimientos_logo.jpg');
+$direccionEmpresa = $fixUtf8(trim(implode(', ', array_filter([
+    trim($fixUtf8($empresa->calle ?? '') . ' ' . $fixUtf8($empresa->numero_exterior ?? '')),
+    $fixUtf8($empresa->colonia ?? ''),
+    $fixUtf8($empresa->ciudad ?? ''),
+    $fixUtf8($empresa->estado ?? ''),
+    $fixUtf8($empresa->codigo_postal ?? '')
+]))));
+$telefonoEmpresa = $fixUtf8($empresa->telefono ?? '');
+$webEmpresa = $fixUtf8($empresa->sitio_web ?? '');
 
-$ubicacionObra = trim(implode(', ', array_filter([
-    $obra->direccion ?? '',
-    $obra->ciudad ?? '',
-    $obra->estado ?? '',
-    $obra->codigo_postal ?? ''
-])));
+$ubicacionObra = $fixUtf8(trim(implode(', ', array_filter([
+    $fixUtf8($obra->direccion ?? ''),
+    $fixUtf8($obra->ciudad ?? ''),
+    $fixUtf8($obra->estado ?? ''),
+    $fixUtf8($obra->codigo_postal ?? '')
+]))));
 
 $fechaDoc = date('d/m/Y');
 $meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
@@ -245,8 +256,8 @@ $total_pages = 5;
     <div class="pg-header">
         <div class="logo"><img src="<?=$logoUrl?>" alt="Logo" crossorigin="anonymous" onerror="this.style.display='none'"></div>
         <div class="pg-meta">
-            <div><span class="lbl">RAZÓN SOCIAL:</span> <?=htmlspecialchars($empresa->razon_social ?? 'Chisa Recubrimientos')?></div>
-            <?php if(!empty($empresa->rfc)): ?><div><span class="lbl">RFC:</span> <?=htmlspecialchars($empresa->rfc)?></div><?php endif; ?>
+            <div><span class="lbl">RAZÓN SOCIAL:</span> <?=htmlspecialchars($fixUtf8($empresa->razon_social ?? 'Chisa Recubrimientos'))?></div>
+            <?php if(!empty($empresa->rfc)): ?><div><span class="lbl">RFC:</span> <?=htmlspecialchars($fixUtf8($empresa->rfc))?></div><?php endif; ?>
             <?php if($direccionEmpresa): ?><div><?=htmlspecialchars($direccionEmpresa)?></div><?php endif; ?>
             <?php if($telefonoEmpresa): ?><div><span class="lbl">TEL.</span> <?=htmlspecialchars($telefonoEmpresa)?></div><?php endif; ?>
         </div>
@@ -329,7 +340,7 @@ $total_pages = 5;
         <div class="pg-meta">
             <div><span class="lbl">PROYECTO:</span> <?=htmlspecialchars($obra->nombre)?></div>
             <div><span class="lbl">CLIENTE:</span> <?=htmlspecialchars($obra->cliente ?: '—')?></div>
-            <div><span class="lbl">CONTRATISTA:</span> <?=htmlspecialchars($empresa->razon_social ?? 'Chisa Recubrimientos')?></div>
+            <div><span class="lbl">CONTRATISTA:</span> <?=htmlspecialchars($fixUtf8($empresa->razon_social ?? 'Chisa Recubrimientos'))?></div>
             <div><span class="lbl">ESTIMACIÓN:</span> ÚNICA</div>
             <div><span class="lbl">FECHA:</span> <?=$fechaDoc?></div>
         </div>
@@ -468,7 +479,7 @@ $total_pages = 5;
 
     <div class="firmas">
         <div class="firma-block">
-            <div class="titulo"><?=htmlspecialchars(strtoupper($empresa->nombre_comercial ?? $empresa->razon_social ?? 'CHISA'))?></div>
+            <div class="titulo"><?=htmlspecialchars(strtoupper($fixUtf8($empresa->nombre_comercial ?? $empresa->razon_social ?? 'CHISA')))?></div>
             <div class="firma-line">FIRMA / NOMBRE</div>
         </div>
         <div class="firma-block">
@@ -498,7 +509,7 @@ $total_pages = 5;
             <div><span class="lbl">OBRA:</span> <?=htmlspecialchars($obra->nombre)?></div>
             <div><span class="lbl">PROYECTO:</span> <?=htmlspecialchars($obra->nombre)?></div>
             <div><span class="lbl">CLIENTE:</span> <?=htmlspecialchars($obra->cliente ?: '—')?></div>
-            <div><span class="lbl">CONTRATISTA:</span> <?=htmlspecialchars($empresa->razon_social ?? 'Chisa')?></div>
+            <div><span class="lbl">CONTRATISTA:</span> <?=htmlspecialchars($fixUtf8($empresa->razon_social ?? 'Chisa'))?></div>
             <div><span class="lbl">No. ESTIMACIÓN:</span> ÚNICA</div>
             <div><span class="lbl">PARTIDA:</span> <?=htmlspecialchars($concepto_principal)?></div>
             <div><span class="lbl">FECHA:</span> <?=$fechaDoc?> &nbsp; <span class="lbl">PERIODO:</span> <?=$periodoEjecucion?></div>
@@ -612,7 +623,7 @@ $total_pages = 5;
 
     <div class="firmas" style="margin-top:14px;">
         <div class="firma-block">
-            <div class="titulo">AUTORIZA — <?=htmlspecialchars(strtoupper($empresa->nombre_comercial ?? 'CHISA'))?></div>
+            <div class="titulo">AUTORIZA — <?=htmlspecialchars(strtoupper($fixUtf8($empresa->nombre_comercial ?? 'CHISA')))?></div>
             <div class="firma-line">FIRMA / NOMBRE</div>
         </div>
         <div class="firma-block">
@@ -710,7 +721,7 @@ $total_pages = 5;
             <div class="firma-line">FIRMA / NOMBRE</div>
         </div>
         <div class="firma-block">
-            <div class="titulo"><?=htmlspecialchars(strtoupper($empresa->razon_social ?? 'CHISA'))?></div>
+            <div class="titulo"><?=htmlspecialchars(strtoupper($fixUtf8($empresa->razon_social ?? 'CHISA')))?></div>
             <div class="firma-line">FIRMA / NOMBRE</div>
         </div>
     </div>

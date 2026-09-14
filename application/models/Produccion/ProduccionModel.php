@@ -532,9 +532,25 @@ class ProduccionModel extends CI_Model {
         $this->db->where('estatus', 'Confirmada');
         $stats['confirmadas'] = $this->db->count_all_results('ordenes_venta');
         
-        // Órdenes en proceso
-        $this->db->where('estatus', 'En Proceso');
-        $stats['en_proceso'] = $this->db->count_all_results('ordenes_venta');
+        // Pedidos visibles en Fabricación (OV + obras), no solo OV "En Proceso"
+        $this->db->from('ordenes_venta');
+        $this->db->where_in('estatus', ['Confirmada', 'En Preparación', 'En Proceso']);
+        $stats['en_proceso'] = (int) $this->db->count_all_results();
+
+        if ($this->db->table_exists('obras')) {
+            $this->db->from('obras');
+            $this->db->where('activo', 1);
+            $this->db->where_in('estatus', ['Aprobada', 'En Ejecución']);
+            $stats['en_proceso'] += (int) $this->db->count_all_results();
+        }
+
+        if ($this->db->table_exists('solicitudes_produccion')) {
+            $this->db->from('solicitudes_produccion');
+            $this->db->where_in('estatus', ['Pendiente', 'En Proceso']);
+            $stats['solicitudes_pendientes'] = (int) $this->db->count_all_results();
+        } else {
+            $stats['solicitudes_pendientes'] = 0;
+        }
         
         // Órdenes completadas hoy
         $this->db->where('estatus', 'Completada');
@@ -852,7 +868,37 @@ class ProduccionModel extends CI_Model {
                 'stock_restante'    => $consumido ? $stock_actual : max(0, $stock_actual - $teorico),
                 'merma_max_pct'     => 20,
                 'merma_max_cantidad'=> round($teorico * 1.20, 6),
+                'proveedor_nombre'  => null,
             ]);
+        }
+
+        $ids_ui = array_values(array_filter(array_map(static function ($r) {
+            return (int) ($r['insumo_id'] ?? 0);
+        }, $insumos_ui)));
+        if (!empty($ids_ui) && $this->db->table_exists('proveedor_insumo')) {
+            $this->db->select('pi.insumo_id, p.razon_social, p.nombre_comercial, pi.es_proveedor_principal');
+            $this->db->from('proveedor_insumo pi');
+            $this->db->join('proveedores p', 'p.id = pi.proveedor_id');
+            $this->db->where_in('pi.insumo_id', $ids_ui);
+            $this->db->where('pi.estatus', 'Activo');
+            $this->db->where('p.estatus', 'Activo');
+            $this->db->order_by('pi.es_proveedor_principal', 'DESC');
+            $this->db->order_by('pi.precio_compra', 'ASC');
+            $mapa_prov = [];
+            foreach ($this->db->get()->result() as $pr) {
+                $iid = (int) $pr->insumo_id;
+                if (isset($mapa_prov[$iid])) {
+                    continue;
+                }
+                $mapa_prov[$iid] = $pr->nombre_comercial ?: $pr->razon_social;
+            }
+            foreach ($insumos_ui as &$row_ui) {
+                $iid = (int) ($row_ui['insumo_id'] ?? 0);
+                if (isset($mapa_prov[$iid])) {
+                    $row_ui['proveedor_nombre'] = $mapa_prov[$iid];
+                }
+            }
+            unset($row_ui);
         }
 
         return [
@@ -1024,6 +1070,14 @@ class ProduccionModel extends CI_Model {
         if ($this->db->trans_status() === false) {
             return ['success' => false, 'message' => 'Error de base de datos al registrar el pesaje.'];
         }
+
+        foreach ($detalles as &$d_sync) {
+            $row_stock = $this->db->select('stock_actual')->where('id', (int) $d_sync['insumo_id'])->get('insumos')->row();
+            if ($row_stock) {
+                $d_sync['stock_restante'] = (float) $row_stock->stock_actual;
+            }
+        }
+        unset($d_sync);
 
         $preordenes = null;
         if (!empty($bajo_minimo) && function_exists('tiene_permiso') && tiene_permiso('produccion_preordenes')) {

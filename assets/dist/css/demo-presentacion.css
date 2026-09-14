@@ -214,3 +214,50 @@
 .demo-presentacion .reloj-panel-alertas .list-group-item {
   font-size: 0.9rem !important;
 }
+
+/* Botón de ayuda contextual (?) */
+.erp-btn-ayuda {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(63, 128, 234, 0.55);
+  background: #fff;
+  color: #3f80ea;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(63, 128, 234, 0.12);
+}
+.erp-btn-ayuda:hover,
+.erp-btn-ayuda:focus {
+  background: #3f80ea;
+  color: #fff;
+  border-color: #3f80ea;
+}
+h1 .erp-btn-ayuda,
+h2 .erp-btn-ayuda,
+h3 .erp-btn-ayuda,
+h5 .erp-btn-ayuda {
+  position: relative;
+  top: -2px;
+}
+.navbar .erp-ayuda-nav {
+  color: inherit;
+}
+.card-header.bg-danger .erp-btn-ayuda,
+.card-header.bg-warning .erp-btn-ayuda {
+  border-color: rgba(255,255,255,.7);
+  background: rgba(255,255,255,.95);
+}
+[data-bs-theme="dark"] .erp-btn-ayuda {
+  background: #2b3344;
+  color: #84aef2;
+  border-color: #84aef2;
+}

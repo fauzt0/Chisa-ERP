@@ -229,6 +229,7 @@
               <div class="mb-3">
                 <label class="form-label">Stock Actual <span class="text-danger">*</span></label>
                 <input type="number" class="form-control" name="stock_actual" id="insumo_stock_actual" value="0" min="0" step="0.01" required>
+                <small class="text-muted" id="ayuda_stock_insumo">Alta inicial. Después el stock lo mueven pesaje de producción y recepciones de compra.</small>
               </div>
 
               <div class="mb-3">
@@ -251,6 +252,28 @@
                 </select>
               </div>
             </div>
+          </div>
+
+          <div id="wrap_insumo_proveedores" class="mt-3 d-none">
+            <h6 class="mb-2"><i class="fas fa-truck"></i> Proveedores de este insumo</h6>
+            <p class="small text-muted mb-2">El vínculo y el precio de compra se capturan en Compras → Proveedores → Insumos. Aquí solo se consulta.</p>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered mb-2">
+                <thead class="table-light">
+                  <tr>
+                    <th>Proveedor</th>
+                    <th>Alias / nombre en factura</th>
+                    <th class="text-end">Precio compra</th>
+                    <th class="text-center">Entrega</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tbody_insumo_proveedores"></tbody>
+              </table>
+            </div>
+            <a class="btn btn-sm btn-outline-info" href="<?= base_url('compras/Proveedores') ?>">
+              <i class="fas fa-external-link-alt"></i> Abrir catálogo de proveedores
+            </a>
           </div>
         </form>
       </div>
@@ -373,6 +396,10 @@
     $('#formInsumo')[0].reset();
     $('#insumo_id').val('');
     $('#insumo_estatus').val('Activo');
+    $('#insumo_stock_actual').prop('readonly', false);
+    $('#ayuda_stock_insumo').text('Alta inicial. Después el stock lo mueven pesaje de producción y recepciones de compra.');
+    $('#wrap_insumo_proveedores').addClass('d-none');
+    $('#tbody_insumo_proveedores').empty();
     abrirModal('modalInsumo');
   };
 
@@ -400,7 +427,30 @@
         $('#insumo_stock_minimo').val(ins.stock_minimo);
         $('#insumo_stock_maximo').val(ins.stock_maximo);
         $('#insumo_estatus').val(ins.estatus);
-        
+        $('#insumo_stock_actual').prop('readonly', true);
+        $('#ayuda_stock_insumo').text('Stock en vivo (no se edita aquí). Baja al confirmar pesaje en Fabricación y sube con entradas de almacén/OC.');
+
+        const provs = result.proveedores || [];
+        let htmlProv = '';
+        if (provs.length === 0) {
+          htmlProv = '<tr><td colspan="5" class="text-muted text-center">Sin proveedor vinculado. Relaciónelo desde el módulo de Proveedores.</td></tr>';
+        } else {
+          provs.forEach(function(pr) {
+            const nombre = pr.razon_social || pr.nombre_comercial || '';
+            const alias = pr.nombre_proveedor || '—';
+            const principal = (pr.es_proveedor_principal == 1 || pr.es_proveedor_principal === '1')
+              ? ' <span class="badge bg-warning text-dark">Principal</span>' : '';
+            const dias = pr.tiempo_entrega_dias || 0;
+            htmlProv += '<tr><td>' + $('<div>').text(nombre).html() + principal + '</td>'
+              + '<td>' + $('<div>').text(alias).html() + '</td>'
+              + '<td class="text-end">$' + parseFloat(pr.precio_compra || 0).toFixed(2) + '</td>'
+              + '<td class="text-center">' + dias + ' d</td>'
+              + '<td><span class="badge bg-light text-dark">' + (pr.codigo || '') + '</span></td></tr>';
+          });
+        }
+        $('#tbody_insumo_proveedores').html(htmlProv);
+        $('#wrap_insumo_proveedores').removeClass('d-none');
+
         abrirModal('modalInsumo');
       }
     });

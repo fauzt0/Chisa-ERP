@@ -23,21 +23,31 @@
 <?php
 // Logotipo y datos fiscales desde usuarios/GestionUsuarios/empresa (configuracion_empresa)
 $emp = $empresa ?? null;
+$fixUtf8 = static function ($s) {
+    $s = (string) $s;
+    if ($s !== '' && preg_match('/Ã|Â|â€/', $s)) {
+        $fixed = @utf8_decode($s);
+        if (is_string($fixed) && $fixed !== '') {
+            return $fixed;
+        }
+    }
+    return $s;
+};
 $logoUrl = !empty($emp->logo) ? base_url($emp->logo) : base_url('assets/dist/img/brands/chisa_recubrimientos_logo.jpg');
-$nombreEmpresa = $emp->razon_social ?? 'CHISA Recubrimientos S.A. de C.V.';
-$rfcEmpresa = !empty($emp->rfc) ? $emp->rfc : 'CRE940302AB1';
-$emailEmpresa = !empty($emp->email) ? $emp->email : 'info@chisarecubrimientos.com.mx';
-$telefonoEmpresa = !empty($emp->telefono) ? $emp->telefono : '(55) 1234-5678';
+$nombreEmpresa = $fixUtf8($emp->razon_social ?? 'CHISA Recubrimientos S.A. de C.V.');
+$rfcEmpresa = !empty($emp->rfc) ? $fixUtf8($emp->rfc) : 'CRE940302AB1';
+$emailEmpresa = !empty($emp->email) ? $fixUtf8($emp->email) : 'info@chisarecubrimientos.com.mx';
+$telefonoEmpresa = !empty($emp->telefono) ? $fixUtf8($emp->telefono) : '(55) 1234-5678';
 $direccionEmpresa = trim(implode(', ', array_filter([
-    $emp->calle ?? '',
-    $emp->numero_exterior ?? '',
-    $emp->colonia ?? '',
-    $emp->ciudad ?? '',
-    $emp->estado ?? '',
-    $emp->codigo_postal ?? '',
+    $fixUtf8($emp->calle ?? ''),
+    $fixUtf8($emp->numero_exterior ?? ''),
+    $fixUtf8($emp->colonia ?? ''),
+    $fixUtf8($emp->ciudad ?? ''),
+    $fixUtf8($emp->estado ?? ''),
+    $fixUtf8($emp->codigo_postal ?? ''),
 ])));
-if (!$direccionEmpresa) {
-    $direccionEmpresa = 'Dirección de la empresa';
+if (!$direccionEmpresa || preg_match('/^M[eé]xico$/ui', $direccionEmpresa)) {
+    $direccionEmpresa = '';
 }
 ?>
 
