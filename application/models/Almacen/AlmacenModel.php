@@ -106,7 +106,7 @@ class AlmacenModel extends CI_Model {
                 WHEN i.stock_maximo IS NOT NULL AND i.stock_actual >= i.stock_maximo THEN "exceso"
                 ELSE "normal"
             END as nivel_stock
-        ');
+        ', FALSE);
         $this->db->from('insumos i');
         $this->db->join('categorias_insumos ci', 'ci.id = i.categoria_id', 'left');
         $this->db->where('i.estatus', 'Activo');
@@ -145,7 +145,7 @@ class AlmacenModel extends CI_Model {
                 WHEN p.stock_maximo IS NOT NULL AND p.stock_actual >= p.stock_maximo THEN "exceso"
                 ELSE "normal"
             END as nivel_stock
-        ');
+        ', FALSE);
         $this->db->from('productos p');
         $this->db->join('categorias_productos cp', 'cp.id = p.categoria_id', 'left');
         $this->db->where('p.estatus', 'Activo');
