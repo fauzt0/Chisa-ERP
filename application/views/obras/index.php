@@ -26,6 +26,8 @@ $stats = $response['stats'] ?? [];
     </div>
 </div>
 
+<?php $this->load->view('ventas/cartera/_panel', ['response' => $response]); ?>
+
 <!-- Estadísticas -->
 <div class="row mb-4">
     <div class="col-md-2">
@@ -124,6 +126,8 @@ $stats = $response['stats'] ?? [];
                             <th>Estado</th>
                             <th>Estatus</th>
                             <th>Avance</th>
+                            <th>Saldo</th>
+                            <th>Pago</th>
                             <th>Fecha Creación</th>
                             <th>Acciones</th>
                         </tr>
@@ -365,6 +369,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
                 }
             },
+            {
+                data: 'saldo_pendiente',
+                render: function(data) {
+                    const n = parseFloat(data || 0);
+                    const cls = n > 0 ? 'text-danger fw-bold' : 'text-success';
+                    return `<span class="${cls}">$${n.toLocaleString('es-MX', {minimumFractionDigits: 2})}</span>`;
+                }
+            },
+            {
+                data: 'estatus_pago',
+                render: function(data) {
+                    const badges = { 'Pendiente': 'danger', 'Parcialmente Pagado': 'warning', 'Parcial': 'warning', 'Anticipo Recibido': 'info', 'Pagado': 'success' };
+                    return `<span class="badge bg-${badges[data] || 'secondary'}">${data || 'Pendiente'}</span>`;
+                }
+            },
             { 
                 data: 'fecha_creacion',
                 render: function(data) {
@@ -389,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
         },
-        order: [[7, 'desc']]
+        order: [[9, 'desc']]
     });
     
     // Recargar tabla al cambiar filtro

@@ -12,6 +12,7 @@ class Ordenes extends MY_Controller {
         parent::__construct();
         $this->load->model('Ventas/VentasModel');
         $this->load->model('Ventas/ClientesModel');
+        $this->load->model('Ventas/CarteraModel');
     }
     
     /**
@@ -23,7 +24,11 @@ class Ordenes extends MY_Controller {
         $this->viewData['breadcrumb'] = 'Inicio > CRM Ventas > Órdenes';
         
         $stats = $this->VentasModel->get_estadisticas();
-        $this->viewData['response'] = ['stats' => $stats];
+        $this->viewData['response'] = [
+            'stats' => $stats,
+            'cartera' => $this->CarteraModel->get_pendientes(12),
+            'cartera_resumen' => $this->CarteraModel->get_resumen(),
+        ];
         
         $this->viewData['validate'] = '';
         $this->viewData['pageView'] = 'ventas/ordenes/main';
@@ -44,6 +49,7 @@ class Ordenes extends MY_Controller {
         // Filtros
         $filtro_estatus = $this->input->post('filtro_estatus');
         $filtro_tipo = $this->input->post('filtro_tipo');
+        $filtro_pago = $this->input->post('filtro_pago');
         $filtro_fecha_desde = $this->input->post('filtro_fecha_desde');
         $filtro_fecha_hasta = $this->input->post('filtro_fecha_hasta');
         
@@ -59,6 +65,13 @@ class Ordenes extends MY_Controller {
         
         if($filtro_tipo) {
             $this->db->where('ordenes_venta.tipo_venta', $filtro_tipo);
+        }
+
+        if ($filtro_pago === 'por_cobrar') {
+            $this->db->where('ordenes_venta.saldo_pendiente >', 0);
+            $this->db->where_not_in('ordenes_venta.estatus', ['Cotización', 'Cancelada']);
+        } elseif ($filtro_pago) {
+            $this->db->where('ordenes_venta.estatus_pago', $filtro_pago);
         }
         
         if($filtro_fecha_desde) {

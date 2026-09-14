@@ -292,13 +292,22 @@ class VentasModel extends MY_Model {
         $this->db->join('categorias_productos', 'categorias_productos.id = productos.categoria_id', 'left');
         $this->db->where('productos.estatus', 'Activo');
         
-        if($busqueda) {
-            $this->db->group_start();
-            $this->db->like('productos.nombre', $busqueda);
-            $this->db->or_like('productos.codigo', $busqueda);
-            $this->db->or_like('productos.codigo_barras', $busqueda);
-            $this->db->or_like('productos.alias', $busqueda);
-            $this->db->group_end();
+        $busqueda = trim((string) $busqueda);
+        if ($busqueda !== '') {
+            $tokens = preg_split('/\s+/', $busqueda);
+            foreach ($tokens as $token) {
+                $token = trim($token);
+                if ($token === '') {
+                    continue;
+                }
+                $this->db->group_start();
+                $this->db->like('productos.nombre', $token);
+                $this->db->or_like('productos.codigo', $token);
+                $this->db->or_like('productos.codigo_barras', $token);
+                $this->db->or_like('productos.alias', $token);
+                $this->db->or_like('categorias_productos.nombre', $token);
+                $this->db->group_end();
+            }
         }
         
         if($categoria_id) {

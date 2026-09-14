@@ -23,9 +23,12 @@ class Obras extends MY_Controller {
         
         // Obtener estadísticas
         $stats = $this->ObrasModel->get_estadisticas();
+        $this->load->model('Ventas/CarteraModel');
         
         $this->viewData['response'] = [
-            'stats' => $stats
+            'stats' => $stats,
+            'cartera' => $this->CarteraModel->get_pendientes(12),
+            'cartera_resumen' => $this->CarteraModel->get_resumen(),
         ];
         $this->viewData['validate'] = '';
         $this->viewData['pageView'] = 'obras/index';
@@ -73,6 +76,8 @@ class Obras extends MY_Controller {
                 'estado' => $obra->estado ?: '-',
                 'estatus' => $obra->estatus,
                 'porcentaje_avance' => $obra->porcentaje_avance,
+                'saldo_pendiente' => $obra->saldo_pendiente ?? 0,
+                'estatus_pago' => $obra->estatus_pago ?? 'Pendiente',
                 'fecha_creacion' => $obra->fecha_creacion,
                 'acciones' => ''
             ];
@@ -498,17 +503,31 @@ class Obras extends MY_Controller {
      * Obtiene lista de productos para el selector (AJAX)
      */
     public function get_productos_ajax() {
-        $this->db->select('id, nombre, codigo, unidad_venta, precio_venta');
-        $this->db->from('productos');
-        $this->db->where('estatus', 'Activo');
-        $this->db->order_by('nombre', 'ASC');
-        
-        $productos = $this->db->get()->result();
-        
-        echo json_encode([
-            'success' => true,
-            'productos' => $productos
-        ]);
+        $busqueda = trim((string) ($this->input->get('q') ?: $this->input->post('q')));
+        $this->load->model('Ventas/VentasModel');
+        if ($busqueda !== '') {
+            $productos = $this->VentasModel->get_productos_pos($busqueda, null);
+        } else {
+            $this->db->select('productos.id, productos.nombre, productos.codigo, productos.alias, productos.unidad_venta, productos.precio_venta, categorias_productos.nombre as categoria_nombre');
+            $this->db->from('productos');
+            $this->db->join('categorias_productos', 'categorias_productos.id = productos.categoria_id', 'left');
+            $this->db->where('productos.estatus', 'Activo');
+            $this->db->order_by('productos.nombre', 'ASC');
+            $productos = $this->db->get()->result();
+        }
+        $out = [];
+        foreach ($productos as $p) {
+            $out[] = [
+                'id' => $p->id,
+                'nombre' => $p->nombre,
+                'codigo' => $p->codigo,
+                'alias' => $p->alias ?? '',
+                'unidad_venta' => $p->unidad_venta,
+                'precio_venta' => $p->precio_venta,
+                'categoria_nombre' => $p->categoria_nombre ?? '',
+            ];
+        }
+        echo json_encode(['success' => true, 'productos' => $out]);
     }
     
     /**

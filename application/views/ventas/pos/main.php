@@ -151,7 +151,7 @@ $stats = $response['stats'] ?? [];
           <div class="col-md-12">
             <div class="input-group">
               <span class="input-group-text"><i class="fas fa-search"></i></span>
-              <input type="text" class="form-control" id="buscar_producto" placeholder="Buscar por nombre, código o código de barras...">
+              <input type="text" class="form-control" id="buscar_producto" placeholder="Nombre, código, alias o categoría (varias palabras)">
               <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
                 <i class="fas fa-times"></i>
               </button>
@@ -869,13 +869,13 @@ function buscarProductos() {
     $('#grid_productos').html(`
       <div class="col-12 text-center text-muted py-5">
         <i class="fas fa-search fa-3x mb-3"></i>
-        <p>Busca un producto para comenzar</p>
+        <p>Busca por nombre, código, alias o categoría (puedes usar varias palabras)</p>
       </div>
     `);
     return;
   }
   
-  $('#contenedor_top_productos').hide(); // Ocultar top productos al buscar
+  $('#contenedor_top_productos').hide();
   
   $.post('<?=base_url();?>ventas/Pos/get_productos_ajax', {
     'busqueda': busqueda,
@@ -1110,31 +1110,6 @@ function inicializarBusqueda() {
   });
 }
 
-function buscarProductos() {
-  const busqueda = $('#buscar_producto').val();
-  
-  if(!busqueda || busqueda.length < 2) {
-    $('#grid_productos').html(`
-      <div class="col-12 text-center text-muted py-5">
-        <i class="fas fa-search fa-3x mb-3"></i>
-        <p>Busca un producto para comenzar</p>
-      </div>
-    `);
-    return;
-  }
-  
-  $.post('<?=base_url();?>ventas/Pos/get_productos_ajax', {
-    'busqueda': busqueda,
-    'peticion': 'ajax',
-    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
-  }, function(result) {
-    result = JSON.parse(result);
-    if(result.success) {
-      renderProductos(result.productos);
-    }
-  });
-}
-
 function renderProductos(productos) {
   if(productos.length === 0) {
     $('#grid_productos').html(`
@@ -1180,8 +1155,10 @@ function renderProductos(productos) {
                 <div class="card-body p-2">
                     <h6 class="card-title text-truncate mb-1" style="font-size: 0.95rem;" title="${p.nombre}">${p.nombre}</h6>
                     <p class="card-text mb-1 text-truncate">
-                      <small class="text-muted fw-bold">${p.codigo}</small>
+                      <small class="text-muted fw-bold">${p.codigo || ''}</small>
+                      ${p.categoria_nombre ? `<small class="badge bg-light text-dark ms-1">${p.categoria_nombre}</small>` : ''}
                     </p>
+                    ${p.alias ? `<p class="card-text mb-1 text-truncate"><small class="text-muted">Alias: ${p.alias}</small></p>` : ''}
                     <p class="card-text mb-1 text-muted" style="font-size: 0.75rem; line-height: 1.2; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                       ${p.descripcion || 'Sin descripción'}
                     </p>

@@ -40,6 +40,8 @@ class ObrasModel extends CI_Model {
             o.estado,
             o.estatus,
             o.porcentaje_avance,
+            o.saldo_pendiente,
+            o.estatus_pago,
             o.fecha_inicio_estimada,
             o.fecha_fin_estimada,
             o.fecha_creacion,

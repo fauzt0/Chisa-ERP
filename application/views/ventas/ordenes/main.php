@@ -33,6 +33,8 @@ $stats = $response['stats'] ?? [];
   </div>
 </div>
 
+<?php $this->load->view('ventas/cartera/_panel', ['response' => $response]); ?>
+
 <!-- Estadísticas -->
 <!-- Estadísticas -->
 <div class="row mb-4">
@@ -162,6 +164,16 @@ $stats = $response['stats'] ?? [];
           <option value="En Preparación">En Preparación</option>
           <option value="Entregada">Entregada</option>
           <option value="Cancelada">Cancelada</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Cobro</label>
+        <select class="form-select" id="filtro_pago">
+          <option value="">Todos</option>
+          <option value="por_cobrar">Por cobrar</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="Parcial">Parcial</option>
+          <option value="Pagado">Pagado</option>
         </select>
       </div>
       <div class="col-md-2">
@@ -366,6 +378,7 @@ function inicializarDataTable() {
         d.peticion = 'ajax';
         d.filtro_estatus = $('#filtro_estatus').val();
         d.filtro_tipo = $('#filtro_tipo').val();
+        d.filtro_pago = $('#filtro_pago').val();
         d.filtro_fecha_desde = $('#filtro_fecha_desde').val();
         d.filtro_fecha_hasta = $('#filtro_fecha_hasta').val();
         d['<?php echo $this->security->get_csrf_token_name();?>'] = '<?php echo $this->security->get_csrf_hash();?>';
@@ -390,7 +403,7 @@ function inicializarDataTable() {
 }
 
 function inicializarFiltros() {
-  $('#filtro_estatus, #filtro_tipo, #filtro_fecha_desde, #filtro_fecha_hasta').on('change', function() {
+  $('#filtro_estatus, #filtro_tipo, #filtro_pago, #filtro_fecha_desde, #filtro_fecha_hasta').on('change', function() {
     tabla.ajax.reload();
   });
 }
@@ -398,6 +411,7 @@ function inicializarFiltros() {
 function limpiarFiltros() {
   $('#filtro_estatus').val('');
   $('#filtro_tipo').val('');
+  $('#filtro_pago').val('');
   $('#filtro_fecha_desde').val('');
   $('#filtro_fecha_hasta').val('');
   tabla.ajax.reload();

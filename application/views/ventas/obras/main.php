@@ -19,6 +19,7 @@ $stats = $response['stats'] ?? [];
         <h2><i class="fas fa-hard-hat"></i> Gestión de Obras</h2>
     </div>
 </div>
+<?php $this->load->view('ventas/cartera/_panel', ['response' => $response]); ?>
 <!-- Estadísticas -->
 <!-- Estadísticas -->
 <div class="row mb-4">
@@ -139,6 +140,8 @@ $stats = $response['stats'] ?? [];
                             <th>Estatus</th>
                             <th>Fecha</th>
                             <th>Total</th>
+                            <th>Saldo</th>
+                            <th>Pago</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -167,7 +170,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 { data: 3 },
                 { data: 4 },
                 { data: 5 },
-                { data: 6, orderable: false }
+                { data: 6 },
+                { data: 7 },
+                { data: 8, orderable: false }
             ],
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'

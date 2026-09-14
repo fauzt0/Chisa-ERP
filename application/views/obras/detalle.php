@@ -572,6 +572,8 @@ $this->load->view('obras/partials/vinculo_venta', [
                     <input type="hidden" name="obra_id" value="<?=$obra->id?>">
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <label class="form-label">Buscar producto</label>
+                            <input type="text" class="form-control mb-2" id="filtroProductoObra" placeholder="Nombre, código, alias o categoría">
                             <label class="form-label">Producto <span class="text-danger">*</span></label>
                             <select class="form-select" name="producto_id" required>
                                 <option value="">-- Seleccionar Producto --</option>
@@ -964,11 +966,23 @@ $this->load->view('obras/partials/vinculo_venta', [
 <script>
     // Cargar productos cuando se abre el modal
     document.getElementById('modalAgregarProducto').addEventListener('show.bs.modal', function() {
+        const filtro = document.getElementById('filtroProductoObra');
+        if (filtro) { filtro.value = ''; }
         cargarProductos();
     });
+    let _tProdObra = null;
+    const filtroProd = document.getElementById('filtroProductoObra');
+    if (filtroProd) {
+        filtroProd.addEventListener('keyup', function() {
+            clearTimeout(_tProdObra);
+            const v = this.value;
+            _tProdObra = setTimeout(function() { cargarProductos(v); }, 280);
+        });
+    }
 
-    function cargarProductos() {
-        fetch('<?=base_url()?>obras/Obras/get_productos_ajax')
+    function cargarProductos(q) {
+        const qs = q ? ('?q=' + encodeURIComponent(q)) : '';
+        fetch('<?=base_url()?>obras/Obras/get_productos_ajax' + qs)
         .then(response => response.json())
         .then(data => {
             if(data.success) {
@@ -978,7 +992,7 @@ $this->load->view('obras/partials/vinculo_venta', [
                 data.productos.forEach(producto => {
                     const option = document.createElement('option');
                     option.value = producto.id;
-                    option.textContent = `${producto.nombre} (${producto.codigo})`;
+                    option.textContent = `${producto.nombre} (${producto.codigo})${producto.alias ? ' · ' + producto.alias : ''}`;
                     option.dataset.unidad = producto.unidad_venta;
                     option.dataset.precio = producto.precio_venta;
                     selectProducto.appendChild(option);

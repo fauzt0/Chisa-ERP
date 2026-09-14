@@ -12,6 +12,7 @@ class ObrasVentas extends MY_Controller {
         parent::__construct();
         $this->load->model('Obras/ObrasModel');
         $this->load->model('Ventas/VentasModel');
+        $this->load->model('Ventas/CarteraModel');
     }
     
     /**
@@ -24,7 +25,11 @@ class ObrasVentas extends MY_Controller {
         
         // Obtener estadísticas de obras
         $stats = $this->get_estadisticas_obras();
-        $data['response'] = ['stats' => $stats];
+        $data['response'] = [
+            'stats' => $stats,
+            'cartera' => $this->CarteraModel->get_pendientes(12),
+            'cartera_resumen' => $this->CarteraModel->get_resumen(),
+        ];
         
         $data['validate'] = '';
         $data['pageView'] = 'ventas/obras/main';
@@ -57,7 +62,9 @@ class ObrasVentas extends MY_Controller {
             o.fecha_creacion,
             o.total,
             o.subtotal,
-            o.iva_monto
+            o.iva_monto,
+            o.saldo_pendiente,
+            o.estatus_pago
         ');
         $this->db->from('obras o');
         $this->db->join('clientes c', 'c.id = o.cliente_id', 'left');
@@ -96,13 +103,24 @@ class ObrasVentas extends MY_Controller {
                 </a>
             ';
             
+            $saldo = (float) ($obra->saldo_pendiente ?? 0);
+            $pago = $obra->estatus_pago ?? 'Pendiente';
+            $pago_badge = 'secondary';
+            if ($saldo > 0.009) {
+                $pago_badge = $pago === 'Parcialmente Pagado' || $pago === 'Parcial' ? 'warning' : 'danger';
+            } elseif ($pago === 'Pagado') {
+                $pago_badge = 'success';
+            }
+
             $data[] = [
                 $obra->folio,
                 $obra->nombre,
-                $obra->cliente,
+                $obra->cliente ?: 'Sin cliente',
                 $estatus_badge,
                 date('d/m/Y', strtotime($obra->fecha_creacion)),
                 '$' . number_format($obra->total, 2),
+                '<span class="' . ($saldo > 0 ? 'text-danger fw-bold' : 'text-success') . '">$' . number_format($saldo, 2) . '</span>',
+                '<span class="badge bg-' . $pago_badge . '">' . htmlspecialchars($pago, ENT_QUOTES, 'UTF-8') . '</span>',
                 $acciones
             ];
         }

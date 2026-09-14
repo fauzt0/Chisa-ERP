@@ -47,6 +47,24 @@ class Notifications extends MY_Controller {
       }
     }
 
+    // 2b. COBRANZA — documentos con saldo (cliente SIEMPRE en el mensaje)
+    $this->load->model('Ventas/CarteraModel');
+    $cartera_alerta = $this->CarteraModel->get_pendientes(8);
+    if (!empty($cartera_alerta)) {
+      foreach ($cartera_alerta as $cx) {
+        $notifications[] = [
+          'type' => $cx->severidad === 'info' ? 'warning' : $cx->severidad,
+          'icon' => 'hand-holding-usd',
+          'module' => $cx->tipo === 'obra' ? 'Obras' : 'Ventas',
+          'title' => 'Cobro pendiente',
+          'message' => $cx->folio . ' · ' . $cx->cliente . ' · saldo $' . number_format((float) $cx->saldo, 2),
+          'link' => $cx->link,
+          'time' => ((int) $cx->dias) . 'd'
+        ];
+        $total_count++;
+      }
+    }
+
     // 2. VENTAS - Órdenes pendientes de entrega
     $ordenes_pendientes = $this->_get_ordenes_pendientes();
     if(!empty($ordenes_pendientes)) {
@@ -58,7 +76,7 @@ class Notifications extends MY_Controller {
             'icon' => 'exclamation-circle',
             'module' => 'Ventas',
             'title' => 'Orden retrasada',
-            'message' => 'Orden ' . $orden->folio . ' con ' . $dias_retraso . ' días de retraso',
+            'message' => 'Orden ' . $orden->folio . ' (' . ($orden->cliente ?: 'Sin cliente') . ') con ' . $dias_retraso . ' días de retraso',
             'link' => base_url('ventas/Ordenes'),
             'time' => $dias_retraso . 'd'
           ];
@@ -76,7 +94,7 @@ class Notifications extends MY_Controller {
           'icon' => 'clock',
           'module' => 'Obras',
           'title' => 'Obra retrasada',
-          'message' => $obra->nombre . ' está retrasada',
+          'message' => $obra->folio . ' · ' . ($obra->cliente ?: 'Sin cliente') . ' — ' . $obra->nombre . ' está retrasada',
           'link' => base_url('obras/Obras/detalle/' . $obra->id),
           'time' => 'Hoy'
         ];
@@ -287,10 +305,11 @@ class Notifications extends MY_Controller {
    * Obtiene órdenes de venta pendientes de entrega
    */
   private function _get_ordenes_pendientes() {
-    $this->db->select('id, folio, fecha_entrega_estimada');
-    $this->db->from('ordenes_venta');
-    $this->db->where_in('estatus', ['Confirmada', 'En Proceso']);
-    $this->db->where('fecha_entrega_real IS NULL');
+    $this->db->select('ov.id, ov.folio, ov.fecha_entrega_estimada, c.razon_social as cliente');
+    $this->db->from('ordenes_venta ov');
+    $this->db->join('clientes c', 'c.id = ov.cliente_id', 'left');
+    $this->db->where_in('ov.estatus', ['Confirmada', 'En Proceso', 'En Preparación']);
+    $this->db->where('ov.fecha_entrega_real IS NULL');
     $this->db->limit(5);
     return $this->db->get()->result();
   }
@@ -299,11 +318,12 @@ class Notifications extends MY_Controller {
    * Obtiene obras con retraso en entrega
    */
   private function _get_obras_retrasadas() {
-    $this->db->select('id, folio, nombre, fecha_inicio_estimada, fecha_fin_estimada');
-    $this->db->from('obras');
-    $this->db->where_in('estatus', ['En Ejecución', 'Aprobada']);
-    $this->db->where('fecha_fin_estimada <', date('Y-m-d'));
-    $this->db->where('activo', 1);
+    $this->db->select('o.id, o.folio, o.nombre, o.fecha_inicio_estimada, o.fecha_fin_estimada, c.razon_social as cliente');
+    $this->db->from('obras o');
+    $this->db->join('clientes c', 'c.id = o.cliente_id', 'left');
+    $this->db->where_in('o.estatus', ['En Ejecución', 'Aprobada']);
+    $this->db->where('o.fecha_fin_estimada <', date('Y-m-d'));
+    $this->db->where('o.activo', 1);
     $this->db->limit(5);
     return $this->db->get()->result();
   }
