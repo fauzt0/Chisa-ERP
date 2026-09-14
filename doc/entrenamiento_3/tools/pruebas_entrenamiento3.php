@@ -13,9 +13,9 @@ $root = dirname(__DIR__, 3);
 chdir($root);
 $modo = $argv[1] ?? '';
 
-function h_route(array $post, $uri) {
+function h_route(array $post, $uri, array $get = []) {
     $_POST  = $post;
-    $_GET   = [];
+    $_GET   = $get;
     $_SERVER['argv']  = ['index.php', $uri];
     $_SERVER['argc']  = 2;
     ob_start();
@@ -47,11 +47,17 @@ if ($modo === 'sql') {
 
 if ($modo === 'route') {
     $post = [];
+    $get  = [];
     foreach (array_slice($argv, 3) as $kv) {
         $p = explode('=', $kv, 2);
-        $post[$p[0]] = $p[1] ?? '';
+        $v = $p[1] ?? '';
+        if (strpos($p[0], 'get:') === 0) {
+            $get[substr($p[0], 4)] = $v;
+        } else {
+            $post[$p[0]] = $v;
+        }
     }
-    $out = h_route($post, $argv[2] ?? '');
+    $out = h_route($post, $argv[2] ?? '', $get);
     echo $out;
     exit(0);
 }

@@ -1,0 +1,23 @@
+# BUG-UI-02 — sondeo server-side del endpoint de Entregas (OB-00002)
+# Fecha: 2026-09-13 22:5x (servidor) · Commit: 1bdec68 (iteracion-3)
+# Origen: informe doc/CHECKLIST_PRUEBAS_UI_ITERACION3.md (tab Entregas quedó en "Cargando...")
+# Modo: solo lectura (GET simulado con doc/entrenamiento_3/tools/pruebas_entrenamiento3.php)
+
+Comando:
+  php doc/entrenamiento_3/tools/pruebas_entrenamiento3.php \
+      route obras/Obras/get_entregas_obra_ajax get:obra_id=2
+
+Salida (JSON, sin el ruido de deprecations PHP 8.3):
+{"success":true,"entregas":{"productos":[{"obra_producto_id":"3","producto_nombre":"CHISA GLASS MICRO",
+"producto_codigo":"PROD-0001","seccion_obra":"Sala 1","unidad":"Cubeta","cantidad_calculada":"2.75",
+"cantidad_ajustada":"2.00","cantidad_entregada":"0.00","cantidad_pendiente":"2.00",
+"precio_unitario":"500.00"}],"historial":[]}}
+
+Lectura:
+- El endpoint responde success:true con datos de OB-00002 (1 producto, 2.00 pendiente) e historial vacío.
+- ObrasModel::get_entregas_obra() ejecuta 2 consultas simples (obras_productos + entregas_almacen);
+  no hay señales de lentitud ni error server-side en esta corrida.
+- El JS de la pestaña (detalle.php ~1676) tiene .catch() que oculta el spinner y muestra
+  "Error al cargar entregas."; por tanto, un fallo de red/JSON no explica el "Cargando..." observado.
+- Hipótesis viva: observación transitoria del QA (petición en vuelo al capturar) o problema de
+  render/tiempo en navegador. Se confirma con Network (status/tiempo/body) en la segunda pasada.
