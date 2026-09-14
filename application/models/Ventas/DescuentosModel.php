@@ -17,6 +17,19 @@ class DescuentosModel extends MY_Model {
     public function __construct() {
         parent::__construct();
     }
+
+    public function crear($data) {
+        return $this->insert($data);
+    }
+
+    public function actualizar($id, $data) {
+        return $this->update($id, $data);
+    }
+
+    public function eliminar($id) {
+        $this->db->where($this->primaryKey, (int) $id);
+        return $this->db->delete($this->tableName);
+    }
     
     /**
      * Obtiene descuentos activos para select

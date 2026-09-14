@@ -107,7 +107,7 @@ class Descuentos extends MY_Controller {
             'estatus' => $this->input->post('estatus')
         ];
         
-        $result = $this->DescuentosModel->insert($data);
+        $result = $this->DescuentosModel->crear($data);
         
         if($result) {
             echo json_encode(['success' => true, 'message' => 'Descuento creado correctamente']);
@@ -131,7 +131,7 @@ class Descuentos extends MY_Controller {
             'estatus' => $this->input->post('estatus')
         ];
         
-        $result = $this->DescuentosModel->update($id, $data);
+        $result = $this->DescuentosModel->actualizar($id, $data);
         
         if($result) {
             echo json_encode(['success' => true, 'message' => 'Descuento actualizado correctamente']);
@@ -151,7 +151,7 @@ class Descuentos extends MY_Controller {
             return;
         }
         
-        $result = $this->DescuentosModel->delete($id);
+        $result = $this->DescuentosModel->eliminar($id);
         
         if($result) {
             echo json_encode(['success' => true, 'message' => 'Descuento eliminado correctamente']);
