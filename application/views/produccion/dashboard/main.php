@@ -66,6 +66,16 @@ $filtros      = $response['filtros_activos']  ?? [];
   width:100%; box-sizing:border-box;
 }
 .search-bar-touch:focus { border-color:var(--prod-blue); outline:none; }
+/* Dentro de un .input-group, el input debe comportarse como flex item y NO
+   ocupar el 100% (con flex-wrap eso empujaba el ícono de lupa a una línea
+   superior). Se cuadran también las esquinas izquierdas para unirse al ícono. */
+.input-group > .search-bar-touch {
+  flex: 1 1 auto;
+  width: 1%;
+  min-width: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
 
 /* ── Botones de filtro de categoría ── */
 .cat-btn {
