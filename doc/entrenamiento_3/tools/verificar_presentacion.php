@@ -63,3 +63,29 @@ q($m, "SELECT i.id, i.codigo, i.nombre_tecnico, i.stock_actual FROM insumos i WH
 q($m, "SELECT COUNT(*) lotes FROM lotes_produccion", 'H) Lotes existentes');
 q($m, "SELECT COUNT(*) movs_prod_tipo FROM movimientos_productos WHERE tipo_movimiento='Produccion'",
   'I) Movimientos de producto tipo Produccion');
+
+q($m, "SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA='$DB' AND (
+         (TABLE_NAME='lotes_produccion' AND COLUMN_NAME IN ('orden_venta_id','obra_id','orden_produccion_id'))
+         OR (TABLE_NAME IN ('ordenes_venta','obras') AND COLUMN_NAME='fecha_completado_produccion')
+       ) ORDER BY TABLE_NAME, COLUMN_NAME", 'J) Columnas de alineación producción');
+
+q($m, "SELECT TABLE_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA='$DB' AND COLUMN_NAME='tipo_movimiento'
+         AND TABLE_NAME IN ('movimientos_productos','movimientos_inventario')", 'K) ENUMs tipo_movimiento');
+
+q($m, "SELECT SUM(precio_venta IS NULL) nnull, SUM(precio_venta=0 OR precio_venta IS NULL) sin_precio,
+              SUM(precio_venta>0) con_precio, COUNT(*) tot FROM productos", 'L) Conteos precio_venta');
+q($m, "SELECT id, codigo, nombre, precio_venta FROM productos WHERE precio_venta>0 ORDER BY id LIMIT 20",
+  'L2) Muestra productos con precio');
+
+q($m, "SELECT
+         SUM(descripcion LIKE 'Producto importado desde Excel%') placeholder,
+         SUM(foto_producto IS NULL OR foto_producto='') sin_foto,
+         SUM(rendimiento IS NULL OR rendimiento='') sin_rendimiento
+       FROM productos", 'M) Placeholder / foto / rendimiento');
+
+q($m, "SELECT COUNT(*) fabricados_sin_bom FROM productos p
+       WHERE p.tipo_producto='Fabricado' AND p.estatus='Activo'
+         AND NOT EXISTS (SELECT 1 FROM formulaciones f WHERE f.producto_id=p.id AND f.es_activa=1)",
+  'M2) Fabricados activos sin formulación activa');

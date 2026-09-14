@@ -25,7 +25,7 @@
 | **D1** | `hospital` / `hospital ROCA` | Tokens sueltos vs literal | ✅ | `D1-2026-09-14-busqueda-productos.txt` | `hospital` → 1 fila; `hospital ROCA` → 0 (diseño literal) |
 | **D1b** | `VITROGLASS`, `CHISA MAR`, `475` | Por nombre/código/alias, no por ID | ✅ | `D1bD2-2026-09-14-productos-busquedas-bom204.txt` | VITROGLASS → 1 fila; CHISA MAR → 1 fila; `475` → 0 (ID interno no buscable) |
 | **D2** | Formulación #204 → V5 activa (form#968) | Línea AEROSIL 200 (#118) 12.14% | ✅ | idem | Modal "Editando V5 (activa)"; 3 componentes al 100%; etiqueta `[BOM-1: era #91 (auto-referencia)]` |
-| **D7** | `/produccion/Lotes` listado global | Carga | ❌ | `BUG-UI-04-2026-09-14-lotes-lista-ajax-500.txt` | `POST produccion/Lotes/lista_ajax` → **500** (`Unknown column 'lp.orden_venta_id'`) |
+| **D7** | `/produccion/Lotes` listado global | Carga | ✅ | `FIX-T2-T5-T1-ui-2026-09-14.txt` | Tras T1: `lista_ajax` **200** `recordsTotal:0`. BUG-UI-04 **cerrado** |
 | **C1b** | Alta obra `TEST-QA-UI-OBRA-01` | Folio | ✅ | `C-2026-09-14-ciclo-obra-TEST-QA-UI-OBRA-01.txt` | OB-00006 (obra_id 14), cliente TEST `Empresa de Prueba S.A.` |
 | **C2** | Producto SIN rendimiento → bloquear | No calcular con 1.0 | ✅ | idem | `calcular_materiales_ajax` y `agregar_producto_ajax` → `success:false` + `requiere_rendimiento:true`; 0 filas agregadas |
 | **C3** | Producto CON rendimiento 2.5 m²/kg | kg/cubetas coherentes | ✅ | idem | 50 m² × 1.10 = 55 m²; 55 ÷ 2.5 = 22 kg → 22 cubetas; 3 insumos escalados |
@@ -38,7 +38,7 @@
 | **E3,E5,E8** | Compras TEST | OC/preorden/preview | SKIP | `B8E-G9-MOVIL-…` | E3: modal OK; no se guardó TEST. PDF GET `/generar_pdf/3` 200 (OC DEMO). E5: no autorizar PRE-2026-0001 real. E8: envío prohibido |
 | **G2–G9** | Nómina TEST futura | Calcular/cancelar/campana | ⚠️ | `B8E-G9-MOVIL-…` | G2–G7 SKIP (no crear periodo futuro; sin Restaurar en UI). G9 ✅ campana 9+ / `get_notifications` 26 |
 | **Móvil** | 390×844 smoke | Pantallas clave | ✅ | `B8E-G9-MOVIL-…` | Clientes, POS, Obras/2 Entregas, RH 18 empleados; sin 500 |
-| **INV** | `/almacen/Inventario` | Carga | ❌ | `BUG-UI-05-2026-09-14-inventario-500.txt` | Página completa **500** (`Database Error 1064`) |
+| **INV** | `/almacen/Inventario` | Carga | ✅ | `FIX-T2-T5-T1-ui-2026-09-14.txt` | GET **200**, sin Database Error. BUG-UI-05 **cerrado** |
 
 ### Veredicto bugs 1ª pasada (2ª pasada)
 
@@ -93,7 +93,7 @@ Evidencia obtenida con los propios endpoints de la app (DevTools), sobre los dat
 | **B4** | Cotización TEST fabricado | 0 preorden | ✅ | OV-2026-0007 (id 26) | CHISA GLASS REF 308 ×1; insumos OK; 0 preórdenes |
 | **B5** | Confirmar compromiso TEST | Preorden si faltantes | ✅ | `confirmar_ajax` 200 | `preordenes:[]`; En Preparación; detalle `/produccion/Dashboard/detalle/orden_venta/26` |
 | **B6** | Cobrar/entregar TEST | Stock PT | SKIP | — | Total $0; Completada bloqueada (BUG-UI-07) |
-| **B7** | `/ventas/Descuentos` | CRUD mínimo | ❌ | `BUG-UI-08-…` | `crear_ajax` 500 `MY_Model::insert()` protected. Listado sí carga |
+| **B7** | `/ventas/Descuentos` | CRUD mínimo | ⚠️ | `FIX-T3-descuentos-2026-09-14.txt` | Código wrappers públicos. Listado 200. Alta UI TEST no persistió (XHR). Pendiente Guardar humano |
 | **B8** | `/ventas/ObrasVentas` | Carga | ✅ | detalle/14 200 | 7 obras. OB-00006 sigue Aprobada en CRM Ventas |
 | **C1** | Listado obras | Carga | ✅ | 2 obras `OB-00001`, `OB-00002` | Folios OB-XXXXX visibles |
 | **C2** | Borrador sin rendimiento | Bloquea 1.0 | ✅ | 2ª pasada | Bloqueo correcto |
@@ -107,7 +107,7 @@ Evidencia obtenida con los propios endpoints de la app (DevTools), sobre los dat
 | **D2** | Ver formulación #204 V5 | BOM OK | ✅ | 2ª pasada | V5 activa, AEROSIL #118 |
 | **D3** | Dashboard + mute | Carga | ✅ | `/produccion/Dashboard`; toggle sonido | 6 pedidos en tablero |
 | **D4–D6** | Pesaje / completada E2E | Reglas pesaje | ❌ | 2ª pasada continuación | D4/D5 OK; D6 BUG-UI-07 |
-| **D7** | Lotes / etiqueta | Consulta | ❌ | 2ª pasada | BUG-UI-04 |
+| **D7** | Lotes / etiqueta | Consulta | ✅ | fix 2026-09-14 | BUG-UI-04 cerrado (tabla vacía OK) |
 | **E1** | Proveedores listado | Carga | ✅ | 9 activos, catálogo DataTable | — |
 | **E2** | Insumos vinculados proveedor | Visible | SKIP | — | Sin abrir detalle proveedor |
 | **E3** | OC TEST 1 línea | Borrador+PDF | SKIP | 2ª pasada continuación | Modal OK; no se creó TEST. PDF DEMO 200 |
@@ -139,12 +139,12 @@ Evidencia obtenida con los propios endpoints de la app (DevTools), sobre los dat
 | BUG-UI-01 | Cerrado — diseño búsqueda |
 | BUG-UI-02 | Cerrado — no reproducible con Network |
 | BUG-UI-03 | Cerrado — diseño búsqueda |
-| BUG-UI-04 | **Abierto** — 500 en listado global de Lotes |
-| BUG-UI-05 | **Abierto (preexistente en `main`)** — 500 en Almacén > Inventario |
+| BUG-UI-04 | **Cerrado** — columnas + `field_exists`; `lista_ajax` 200 |
+| BUG-UI-05 | **Cerrado** — `select(..., FALSE)` en Inventario; GET 200 |
 | BUG-UI-06 | **Abierto (cosmético)** — POS, definición duplicada de `buscarProductos()` |
-| BUG-UI-07 | **Abierto (alta)** — Completada producción 500: columna `fecha_completado_produccion` ausente en prod |
-| BUG-UI-08 | **Abierto (media)** — `/ventas/Descuentos/crear_ajax` 500: `MY_Model::insert()` protected |
-| BUG-UI-09 | **Abierto (media)** — Ventas > Obras (CRM): el listado y los KPIs **no filtran `activo=1`**, así que las obras con soft delete (`ObrasModel::eliminar_obra`) siguen visibles y contadas (OB-00006 id 14) |
+| BUG-UI-07 | **Cerrado en esquema** — `fecha_completado_produccion` aplicada. Re-QA Completada E2E (T9/D6) pendiente |
+| BUG-UI-08 | **Cerrado en código** — wrappers `crear`/`actualizar`/`eliminar`. Alta UI TEST no confirmada |
+| BUG-UI-09 | **Cerrado** — `lista_ajax` y KPIs filtran `activo=1`; detalle 404 si eliminada |
 | BUG-DATA-01 | **Abierto (alta, presentación)** — catálogo sin datos comerciales: 491/494 productos sin `precio_venta`, 462 con descripción placeholder "Producto importado desde Excel…", 492 sin foto, 492 sin rendimiento, 180 fabricados activos sin formulación activa |
 
 *No se reportan:* deprecations PHP 8.3, productos sin precio #475–#503 (reportados en conjunto como **BUG-DATA-01**), formulaciones inactivas, residuos OV-TEST-001 / OV-2026-0004 / cliente prueba.

@@ -1,0 +1,105 @@
+
+=== A) Columnas de importes en ordenes_venta ===
+COLUMN_NAME=subtotal
+COLUMN_NAME=iva
+COLUMN_NAME=total
+COLUMN_NAME=descuento_id
+COLUMN_NAME=descuento_nombre
+COLUMN_NAME=descuento_tipo
+COLUMN_NAME=descuento_valor
+COLUMN_NAME=descuento_aplicado
+COLUMN_NAME=direccion_envio
+COLUMN_NAME=costo_envio
+
+=== B) Órdenes de venta recientes (IVA) ===
+id=26 | folio=OV-2026-0007 | cliente_id=9 | subtotal=0.00 | iva=0.00 | total=0.00 | estatus=Cancelada | estatus_pago=Pendiente
+id=25 | folio=OV-2026-0006 | cliente_id=2 | subtotal=1000.00 | iva=160.00 | total=1160.00 | estatus=Cancelada | estatus_pago=Pendiente
+id=24 | folio=OV-2026-0005 | cliente_id=1 | subtotal=500.00 | iva=80.00 | total=580.00 | estatus=Entregada | estatus_pago=Pagado
+id=23 | folio=OV-2026-0004 | cliente_id=9 | subtotal=6000.00 | iva=960.00 | total=6960.00 | estatus=Confirmada | estatus_pago=Pendiente
+id=22 | folio=OV-2026-0003 | cliente_id=1 | subtotal=5000.00 | iva=800.00 | total=5800.00 | estatus=Entregada | estatus_pago=Pagado
+id=21 | folio=OV-TEST-001 | cliente_id=9 | subtotal=2500.00 | iva=400.00 | total=2900.00 | estatus=Confirmada | estatus_pago=Pendiente
+
+=== C) OVs con IVA/total distinto de 0 ===
+total_ov=23 | con_iva=22 | con_total=22 | con_subtotal=22
+
+=== D) Órdenes de compra recientes (IVA) ===
+id=4 | folio=OC-2026-DEMO2 | subtotal=1500.00 | iva=240.00 | total=1740.00 | estatus=Enviada
+id=3 | folio=OC-2026-DEMO1 | subtotal=1000.00 | iva=160.00 | total=1160.00 | estatus=Recibida
+id=2 | folio=OC-2025-0002 | subtotal=2000.00 | iva=320.00 | total=2320.00 | estatus=Recibida Parcial
+id=1 | folio=OC-2025-0001 | subtotal=500.00 | iva=80.00 | total=580.00 | estatus=Recibida
+
+=== E) OV-2026-0007 (id 26) tras limpieza ===
+id=26 | folio=OV-2026-0007 | cliente_id=9 | total=0.00 | estatus=Cancelada | fecha_creacion=2026-09-14 06:03:41
+
+=== F) OB-00006 (id 14): ¿sigue en tabla obras? ===
+id=14 | folio=OB-00006 | cliente_id=9 | estatus=Aprobada
+
+=== F2) Últimas obras ===
+id=14 | folio=OB-00006 | estatus=Aprobada | total=1160.00
+id=13 | folio=OB-00005 | estatus=Planificación | total=0.00
+id=12 | folio=OB-00004 | estatus=Planificación | total=0.00
+id=11 | folio=OB-00003 | estatus=Completada | total=53244.00
+id=3 | folio=OB-TEST-002 | estatus=Aprobada | total=15000.00
+
+=== G) Últimos movimientos de insumos ===
+id=21 | insumo_id=18 | tipo_movimiento=Salida | cantidad=0.03 | stock_anterior=150.00 | stock_nuevo=149.97 | referencia=PESAJE-venta-26 | fecha_movimiento=2026-09-14 06:11:39
+id=20 | insumo_id=20 | tipo_movimiento=Salida | cantidad=0.97 | stock_anterior=80.00 | stock_nuevo=79.03 | referencia=PESAJE-venta-26 | fecha_movimiento=2026-09-14 06:11:39
+id=19 | insumo_id=17 | tipo_movimiento=Salida | cantidad=0.00 | stock_anterior=200.00 | stock_nuevo=200.00 | referencia=PESAJE-venta-26 | fecha_movimiento=2026-09-14 06:11:39
+id=18 | insumo_id=1 | tipo_movimiento=Entrada | cantidad=10.00 | stock_anterior=4.00 | stock_nuevo=14.00 | referencia=NULL | fecha_movimiento=2026-07-10 05:04:26
+id=17 | insumo_id=NULL | tipo_movimiento=Salida | cantidad=1.00 | stock_anterior=NULL | stock_nuevo=NULL | referencia=NULL | fecha_movimiento=2026-07-06 13:19:02
+id=16 | insumo_id=NULL | tipo_movimiento=Salida | cantidad=10.00 | stock_anterior=NULL | stock_nuevo=NULL | referencia=NULL | fecha_movimiento=2026-05-19 13:40:34
+id=13 | insumo_id=NULL | tipo_movimiento=Salida | cantidad=1.00 | stock_anterior=NULL | stock_nuevo=NULL | referencia=NULL | fecha_movimiento=2026-02-11 14:10:11
+id=12 | insumo_id=NULL | tipo_movimiento=Salida | cantidad=1.00 | stock_anterior=NULL | stock_nuevo=NULL | referencia=NULL | fecha_movimiento=2026-02-11 14:08:26
+
+=== G2) Stock actual de los insumos del pesaje ===
+id=17 | codigo=PIG-003 | nombre_tecnico=Óxido de Hierro Amarillo | stock_actual=200.00
+id=18 | codigo=PIG-004 | nombre_tecnico=Negro de Humo (Carbon Black) | stock_actual=149.97
+id=20 | codigo=PIG-006 | nombre_tecnico=Pasta Colorante Verde (base agua) | stock_actual=79.03
+
+=== H) Lotes existentes ===
+lotes=0
+
+=== I) Movimientos de producto tipo Produccion ===
+movs_prod_tipo=0
+
+=== J) Columnas de alineación producción ===
+TABLE_NAME=lotes_produccion | COLUMN_NAME=obra_id
+TABLE_NAME=lotes_produccion | COLUMN_NAME=orden_produccion_id
+TABLE_NAME=lotes_produccion | COLUMN_NAME=orden_venta_id
+TABLE_NAME=obras | COLUMN_NAME=fecha_completado_produccion
+TABLE_NAME=ordenes_venta | COLUMN_NAME=fecha_completado_produccion
+
+=== K) ENUMs tipo_movimiento ===
+TABLE_NAME=movimientos_productos | COLUMN_TYPE=enum('Entrada','Salida','Ajuste','Produccion','Venta','Devolucion','Merma')
+TABLE_NAME=movimientos_inventario | COLUMN_TYPE=enum('Entrada','Salida','Ajuste','Produccion','Merma','Devolucion')
+
+=== L) Conteos precio_venta ===
+nnull=1 | sin_precio=461 | con_precio=33 | tot=494
+
+=== L2) Muestra productos con precio ===
+id=3 | codigo=PROD-0001 | nombre=CHISA GLASS MICRO | precio_venta=500.00
+id=4 | codigo=PROD-0002 | nombre=CHISA GLASS MICRO COLOR 2 | precio_venta=520.00
+id=222 | codigo=ARENA-SILICA | nombre=ARENA SILICA | precio_venta=1188.64
+id=223 | codigo=PINTU-FLEX | nombre=PINTU FLEX | precio_venta=2410.87
+id=404 | codigo=CHISA-GLASS-TEXTURADO-Y-MICRO | nombre=CHISA GLASS TEXTURADO Y MICRO | precio_venta=4797.13
+id=475 | codigo=VITROGLASS-ECOLOGICO | nombre=VITROGLASS ECOLOGICO | precio_venta=5023.57
+id=477 | codigo=CHISA-PLUS | nombre=CHISA PLUS | precio_venta=2840.13
+id=478 | codigo=MARMOPLAST | nombre=MARMOPLAST | precio_venta=1391.16
+id=479 | codigo=SELLADORACRILICO4648 | nombre=SELLADORACRILICO4648 | precio_venta=907.37
+id=480 | codigo=HEALERGLASSKIT1LT-C-ESPATULA | nombre=HEALERGLASSKIT1LT.C/ESPATULA | precio_venta=262.05
+id=481 | codigo=REDYPLASTF | nombre=REDYPLASTF | precio_venta=987.11
+id=482 | codigo=REDYPLASTM | nombre=REDYPLASTM | precio_venta=1042.79
+id=483 | codigo=REDYPLASTG | nombre=REDYPLASTG | precio_venta=1103.44
+id=484 | codigo=MORTEROPLASTICOMALLA350-400 | nombre=MORTEROPLASTICOMALLA350-400 | precio_venta=1205.56
+id=485 | codigo=DECOPASTA | nombre=DECOPASTA | precio_venta=804.86
+id=486 | codigo=CHISAPLAST | nombre=CHISAPLAST | precio_venta=1016.34
+id=487 | codigo=CHISAPLASTPLUS | nombre=CHISAPLASTPLUS | precio_venta=3400.29
+id=488 | codigo=PRAIMERGLASS | nombre=PRAIMERGLASS | precio_venta=1028.18
+id=489 | codigo=CHISAVINIL | nombre=CHISAVINIL | precio_venta=1334.31
+id=490 | codigo=PROTECTPLUS | nombre=PROTECTPLUS | precio_venta=4118.19
+
+=== M) Placeholder / foto / rendimiento ===
+placeholder=462 | sin_foto=492 | sin_rendimiento=492
+
+=== M2) Fabricados activos sin formulación activa ===
+fabricados_sin_bom=180

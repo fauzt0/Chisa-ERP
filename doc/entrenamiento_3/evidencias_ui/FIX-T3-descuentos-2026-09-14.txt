@@ -1,0 +1,5 @@
+T3 Descuentos 2026-09-14 ~06:21 CDMX
+GET /ventas/Descuentos → 200 title ERP/CHISA - Descuentos (~81 ms, sin Database Error)
+Código: DescuentosModel::crear/actualizar/eliminar públicos; controller ya no llama insert/update/delete de MY_Model (protected).
+UI: modal Nuevo Descuento abre; Guardar vía jQuery POST no persistió fila (no aparece en descuentos; XHR de consola a veces aborta en automatización).
+Pendiente humano: pulsar Guardar en TEST-QA-DESC-01 y desactivar/eliminar por UI.

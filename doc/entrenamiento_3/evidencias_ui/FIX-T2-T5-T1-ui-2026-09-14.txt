@@ -1,0 +1,7 @@
+T2 Inventario + T5 ObrasVentas + T1 Lotes UI 2026-09-14
+GET /almacen/Inventario → 200 title ERP/CHISA - Inventario, has500=false, ~158 ms, body ~525583 B
+GET /ventas/ObrasVentas → 200
+POST /ventas/ObrasVentas/lista_ajax → 200 recordsTotal=2 (OB-00001, OB-00002). OB-00006 NO listada.
+POST /produccion/Lotes/lista_ajax (search[value]=) → 200 {"draw":"1","recordsTotal":0,"recordsFiltered":0,"data":[]}
+GET /ventas/Pos → 200
+GET /produccion/Lotes → 200 Control de Lotes

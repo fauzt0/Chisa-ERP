@@ -1,0 +1,11 @@
+=== APPLY SQL ===
+=== COLUMNS ===
+TABLE_NAME	COLUMN_NAME
+lotes_produccion	obra_id
+lotes_produccion	orden_produccion_id
+lotes_produccion	orden_venta_id
+obras	fecha_completado_produccion
+ordenes_venta	fecha_completado_produccion
+TABLE_NAME	COLUMN_TYPE
+movimientos_productos	enum('Entrada','Salida','Ajuste','Produccion','Venta','Devolucion','Merma')
+movimientos_inventario	enum('Entrada','Salida','Ajuste','Produccion','Merma','Devolucion')
