@@ -415,6 +415,14 @@ modificada y las 12 formulaciones nuevas quedaron inactivas. Único cuidado: los
 `Activo` en el catálogo con `precio_venta = NULL` y sin `contenido_neto` ⇒ **no usarlos en cotizaciones**
 (saldrían en $0); se puede probar con ellos listados en catálogo/Producción, no cotizados.
 
+- **Pruebas de iteración ejecutadas (13-sep-2026, solo lectura):** `doc/CHECKLIST_PRUEBAS_ENTRENAMIENTO3_ITERACION3.md`
+  → 0 fatales en 6 rutas; BOM sin ciclos (3 cortes por auto-referencia); cálculo de materiales de Obras OK
+  (2.1/2.2/2.3); los 29 productos nuevos visibles en catálogo (28 con precio NULL).
+- **Hallazgo BOM-1:** la form#314 (#204 SOLUCION DE AEROSIL 200 V3 activa) se auto-referencia con el insumo
+  `#91` al **12.14 %** ⇒ el plano BOM descarta esa masa en los consolidados que usan
+  `explotar_bom_plano`. Propuesta: versión nueva de #204 sustituyendo `#91 → #118 AEROSIL 200`
+  (probable enlace erróneo del importador viejo); decisión de negocio, no bloquea las pruebas.
+
 **Estado del repo:** todo quedó commiteado y pusheado en la rama `iteracion-3` el 11-sep-2026 (ver `git log`).
 Desde el otro equipo: `git pull origin iteracion-3`. **La Fase 3 (13-sep-2026) ya escribió en la BD de producción** (log #11); el commit de la carga sigue pendiente de validación.
 
