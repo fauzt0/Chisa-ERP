@@ -208,8 +208,8 @@ class Ordenes extends MY_Controller {
             
             $acciones .= '
             <div class="btn-group btn-group-sm">
-              <a href="'.base_url().'ventas/Pos/imprimir_recibo_template/'.$orden->id.'/1" target="_blank" class="btn btn-outline-info btn-sm" title="Imprimir Recibo">
-                <i class="fas fa-print"></i>
+              <a href="'.base_url().'ventas/Pos/imprimir_recibo_template/'.$orden->id.'/1" target="_blank" class="btn btn-outline-info btn-sm" title="'.($orden->estatus == 'Cotización' ? 'PDF Cotización' : 'Imprimir Recibo').'">
+                <i class="fas fa-file-pdf"></i>
               </a>
               <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
               </button>

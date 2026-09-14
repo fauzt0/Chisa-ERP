@@ -329,7 +329,7 @@ class VentasModel extends MY_Model {
         // Ventas del día
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('DATE(fecha_orden)', date('Y-m-d'));
-        $this->db->where('estatus !=', 'Cancelada');
+        $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
         $hoy = $this->db->get('ordenes_venta')->row();
         $stats['ventas_hoy'] = $hoy->total ?? 0;
         $stats['monto_hoy'] = $hoy->monto ?? 0;
@@ -337,7 +337,7 @@ class VentasModel extends MY_Model {
         // Ventas dia anterior (para progreso)
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('DATE(fecha_orden)', date('Y-m-d', strtotime('-1 day')));
-        $this->db->where('estatus !=', 'Cancelada');
+        $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
         $ayer = $this->db->get('ordenes_venta')->row();
         $stats['ventas_ayer'] = $ayer->total ?? 0;
         $stats['monto_ayer'] = $ayer->monto ?? 0;
@@ -351,7 +351,7 @@ class VentasModel extends MY_Model {
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('MONTH(fecha_orden)', date('m'));
         $this->db->where('YEAR(fecha_orden)', date('Y'));
-        $this->db->where('estatus !=', 'Cancelada');
+        $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
         $mes = $this->db->get('ordenes_venta')->row();
         $stats['ventas_mes'] = $mes->total ?? 0;
         $stats['monto_mes'] = $mes->monto ?? 0;
@@ -360,7 +360,7 @@ class VentasModel extends MY_Model {
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('MONTH(fecha_orden)', date('m', strtotime('first day of last month')));
         $this->db->where('YEAR(fecha_orden)', date('Y', strtotime('first day of last month')));
-        $this->db->where('estatus !=', 'Cancelada');
+        $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
         $mes_ant = $this->db->get('ordenes_venta')->row();
         $stats['monto_mes_anterior'] = $mes_ant->monto ?? 0;
 

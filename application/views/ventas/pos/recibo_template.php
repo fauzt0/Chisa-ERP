@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recibo <?=$orden->folio?></title>
+<?php
+$esCotizacion = isset($orden->estatus) && $orden->estatus === 'Cotización';
+$tituloDoc = $esCotizacion ? 'Cotización' : 'Recibo';
+$folioSafe = preg_replace('/[^A-Za-z0-9\-]/', '_', (string) $orden->folio);
+$filenamePdf = ($esCotizacion ? 'Cotizacion_' : 'Recibo_') . $folioSafe . '.pdf';
+?>
+    <title><?=$tituloDoc?> <?=$orden->folio?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
@@ -70,6 +76,9 @@ if (!$direccionEmpresa || preg_match('/^M[eé]xico$/ui', $direccionEmpresa)) {
             </a>
         </div>
         <div class="d-flex gap-2">
+            <button type="button" id="btnDescargarPdf" class="btn btn-success btn-sm">
+                <i class="fas fa-file-pdf me-1"></i>Descargar PDF
+            </button>
             <button onclick="window.print()" class="btn btn-primary btn-sm">
                 <i class="fas fa-print me-1"></i>Imprimir
             </button>
@@ -84,7 +93,10 @@ if (!$direccionEmpresa || preg_match('/^M[eé]xico$/ui', $direccionEmpresa)) {
 <!-- ====================================================
      TEMPLATE 1 — FORMATO FACTURA CLÁSICO
      ==================================================== -->
-<div class="container my-4">
+<div class="container my-4" id="pdfDocument">
+<?php if($esCotizacion): ?>
+    <h4 class="text-center fw-bold mb-3" style="letter-spacing:.08em;">COTIZACIÓN</h4>
+<?php endif; ?>
 
     <!-- Encabezado empresa / folio -->
     <div class="row mb-3 align-items-start">
@@ -180,7 +192,10 @@ if (!$direccionEmpresa || preg_match('/^M[eé]xico$/ui', $direccionEmpresa)) {
 <!-- ====================================================
      TEMPLATE 2 — NOTA DE REMISIÓN CON DESGLOSE
      ==================================================== -->
-<div class="container-fluid">
+<div class="container-fluid" id="pdfDocument">
+<?php if($esCotizacion): ?>
+    <h4 class="text-center fw-bold my-3" style="letter-spacing:.08em;">COTIZACIÓN</h4>
+<?php endif; ?>
 
     <!-- Encabezado azul oscuro -->
     <div class="row py-4" style="background-color:#1a237e; color:#fff;">
@@ -208,7 +223,7 @@ if (!$direccionEmpresa || preg_match('/^M[eé]xico$/ui', $direccionEmpresa)) {
             </div>
             <div class="col-md-6 mb-2">
                 <div class="border p-3 h-100" style="border-color:#1a237e !important;">
-                    <h6 class="fw-bold mb-2" style="color:#1a237e;">Datos de la Venta</h6>
+                    <h6 class="fw-bold mb-2" style="color:#1a237e;"><?=$esCotizacion ? 'Datos de la Cotización' : 'Datos de la Venta'?></h6>
                     <p class="mb-0 small"><strong>Folio:</strong> <?=$orden->folio?></p>
                     <p class="mb-0 small"><strong>Fecha:</strong> <?=date('d/m/Y H:i', strtotime($orden->fecha_creacion))?></p>
                     <p class="mb-0 small"><strong>Forma de Pago:</strong> <?=$orden->forma_pago?></p>
@@ -302,7 +317,10 @@ if (!$direccionEmpresa || preg_match('/^M[eé]xico$/ui', $direccionEmpresa)) {
 <!-- ====================================================
      TEMPLATE 3 — FORMATO MODERNO (VERDE)
      ==================================================== -->
-<div class="container my-4">
+<div class="container my-4" id="pdfDocument">
+<?php if($esCotizacion): ?>
+    <h4 class="text-center fw-bold mb-3" style="letter-spacing:.08em;">COTIZACIÓN</h4>
+<?php endif; ?>
 
     <!-- Logo centrado -->
     <div class="text-center mb-4">
@@ -328,7 +346,7 @@ if (!$direccionEmpresa || preg_match('/^M[eé]xico$/ui', $direccionEmpresa)) {
         <div class="col-md-6 mb-2">
             <div class="card h-100" style="border-radius:12px; border-color:#1b5e20;">
                 <div class="card-body">
-                    <h6 class="fw-bold mb-2" style="color:#1b5e20;">Venta</h6>
+                    <h6 class="fw-bold mb-2" style="color:#1b5e20;"><?=$esCotizacion ? 'Cotización' : 'Venta'?></h6>
                     <p class="mb-0 small"><strong>Folio:</strong> <?=$orden->folio?></p>
                     <p class="mb-0 small"><strong>Fecha:</strong> <?=date('d/m/Y H:i', strtotime($orden->fecha_creacion))?></p>
                     <p class="mb-0 small"><strong>Pago:</strong> <?=$orden->forma_pago?></p>
@@ -416,5 +434,34 @@ if (!$direccionEmpresa || preg_match('/^M[eé]xico$/ui', $direccionEmpresa)) {
 </div>
 <?php endif; ?>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous"></script>
+<script>
+(function() {
+    var btn = document.getElementById('btnDescargarPdf');
+    var doc = document.getElementById('pdfDocument');
+    if (!btn || !doc) return;
+    var filename = <?=json_encode($filenamePdf)?>;
+    function descargarPdf() {
+        if (typeof html2pdf === 'undefined') { window.print(); return; }
+        btn.disabled = true;
+        var prev = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generando PDF...';
+        html2pdf().set({
+            margin: [10, 10, 10, 10],
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.95 },
+            html2canvas: { scale: 2, useCORS: true, scrollY: 0, logging: false },
+            jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] }
+        }).from(doc).save()
+          .catch(function() { window.print(); })
+          .finally(function() {
+              btn.disabled = false;
+              btn.innerHTML = prev;
+          });
+    }
+    btn.addEventListener('click', descargarPdf);
+})();
+</script>
 </body>
 </html>

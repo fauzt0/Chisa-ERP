@@ -914,7 +914,7 @@ function botonCargarMas(containerId, offset, total, limit, callback) {
 function renderAccionesOrdenVenta(ov, esCotizacion) {
   var html = '<div class="btn-group btn-group-sm">';
   html += '<button type="button" class="btn btn-info" onclick="verDetalleOrdenVenta(' + ov.id + ')" title="Ver detalle"><i class="fas fa-eye"></i></button>';
-  html += '<a href="<?=base_url();?>ventas/Pos/imprimir_recibo_template/' + ov.id + '/1" target="_blank" class="btn btn-primary" title="Imprimir recibo"><i class="fas fa-print"></i></a>';
+  html += '<a href="<?=base_url();?>ventas/Pos/imprimir_recibo_template/' + ov.id + '/1" target="_blank" class="btn btn-primary" title="' + (esCotizacion ? 'PDF cotización' : 'Imprimir recibo') + '"><i class="fas fa-file-pdf"></i></a>';
   if(esCotizacion) {
     html += '<button type="button" class="btn btn-success" onclick="convertirCotizacion(' + ov.id + ')" title="Convertir a venta"><i class="fas fa-check"></i></button>';
   }

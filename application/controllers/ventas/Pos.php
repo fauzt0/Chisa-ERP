@@ -190,12 +190,9 @@ class Pos extends MY_Controller {
         }
         
         // --- Generar Factura Simulada (Snapshot) ---
-        // Obtener datos fiscales del cliente
+        // Cotización no es compromiso: no emitir factura.
         $cliente = $this->ClientesModel->get_cliente($cliente_id);
-        
-        // Solo facturar si tiene RFC válido (no genérico XAXX...) o si es Mostrador pero se piden datos
-        // Simplificación: Generamos factura para todos los clientes registrados que tengan RFC/Razón Social
-        if($cliente && $cliente->rfc && $cliente->razon_social) {
+        if($estatus_final !== 'Cotización' && $cliente && $cliente->rfc && $cliente->razon_social) {
             $orden_creada = $this->VentasModel->get_orden_completa($orden_id);
             
             // Generar UUID simulado

@@ -1510,16 +1510,16 @@ function procesarVenta(estatus) {
         insumosHtml = `<p class="mb-2 small"><i class="fas fa-${insIcon} me-1"></i>${escHtml(result.insumos.mensaje_resumen)}</p>`;
       }
       
-      // Mostrar selector de template de recibo
+      const esCotiz = estatus === 'Cotización';
       Swal.fire({
-        title: '¡Venta registrada!',
+        title: esCotiz ? '¡Cotización guardada!' : '¡Venta registrada!',
         html: `<p class="mb-2">Folio: <strong>${escHtml(result.folio)}</strong></p>
                ${insumosHtml}
-               <p class="mb-3 text-muted">Selecciona el diseño del recibo:</p>
+               <p class="mb-3 text-muted">${esCotiz ? 'Abre el PDF o elige el diseño:' : 'Selecciona el diseño del recibo:'}</p>
                <div class="d-flex justify-content-center gap-2">
                  <a href="<?=base_url()?>ventas/Pos/imprimir_recibo_template/${result.orden_id}/1" target="_blank"
                     class="btn btn-outline-dark btn-sm swal2-styled" style="background:none; color:#333; border:1px solid #333; padding:6px 12px;">
-                   <i class="fas fa-file-invoice me-1"></i>Factura
+                   <i class="fas fa-file-invoice me-1"></i>${esCotiz ? 'PDF Cotización' : 'Factura'}
                  </a>
                  <a href="<?=base_url()?>ventas/Pos/imprimir_recibo_template/${result.orden_id}/2" target="_blank"
                     class="btn btn-outline-primary btn-sm swal2-styled" style="background:none; color:#1a237e; border:1px solid #1a237e; padding:6px 12px;">
