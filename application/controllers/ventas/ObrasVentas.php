@@ -61,6 +61,7 @@ class ObrasVentas extends MY_Controller {
         ');
         $this->db->from('obras o');
         $this->db->join('clientes c', 'c.id = o.cliente_id', 'left');
+        $this->db->where('o.activo', 1);
         
         // Búsqueda
         if(!empty($search)) {
@@ -125,6 +126,11 @@ class ObrasVentas extends MY_Controller {
             return;
         }
 
+        if (isset($obra->activo) && (int) $obra->activo === 0) {
+            show_error('Esta obra fue eliminada y ya no está disponible en CRM Ventas.', 404, 'Obra eliminada');
+            return;
+        }
+
         $obra->pagos = $this->ObrasModel->get_pagos_obra($obra_id);
         
         $data['pageTitle'] = 'Detalle de Obra - ' . $obra->folio;
@@ -144,22 +150,22 @@ class ObrasVentas extends MY_Controller {
     private function get_estadisticas_obras() {
         $stats = [];
         
-        // Total de obras
-        $stats['total'] = $this->db->count_all('obras');
+        $this->db->where('activo', 1);
+        $stats['total'] = $this->db->count_all_results('obras');
         
-        // Obras en cotización
+        $this->db->where('activo', 1);
         $this->db->where('estatus', 'En Cotización');
         $stats['en_cotizacion'] = $this->db->count_all_results('obras');
         
-        // Obras aprobadas
+        $this->db->where('activo', 1);
         $this->db->where('estatus', 'Aprobada');
         $stats['aprobadas'] = $this->db->count_all_results('obras');
         
-        // Obras en ejecución
+        $this->db->where('activo', 1);
         $this->db->where('estatus', 'En Ejecución');
         $stats['en_ejecucion'] = $this->db->count_all_results('obras');
         
-        // Obras completadas
+        $this->db->where('activo', 1);
         $this->db->where('estatus', 'Completada');
         $stats['completadas'] = $this->db->count_all_results('obras');
         
@@ -211,6 +217,11 @@ class ObrasVentas extends MY_Controller {
         
         if(!$obra) {
             echo json_encode(['success' => false, 'message' => 'Obra no encontrada']);
+            return;
+        }
+
+        if (isset($obra->activo) && (int) $obra->activo === 0) {
+            echo json_encode(['success' => false, 'message' => 'Obra eliminada']);
             return;
         }
         
