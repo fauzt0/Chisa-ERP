@@ -15,6 +15,9 @@ class ProduccionModel extends CI_Model {
             'estatus' => ['Confirmada', 'En Preparación', 'En Ejecución', 'Aprobada'] // Incluye estatus de obras
         ];
         
+        if (!is_array($filtros)) {
+            $filtros = [];
+        }
         $filtros = array_merge($defaults, $filtros);
         
         // 1. OBTENER ÓRDENES DE VENTA

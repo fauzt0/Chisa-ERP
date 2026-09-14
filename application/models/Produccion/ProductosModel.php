@@ -64,23 +64,9 @@ class ProductosModel extends MY_Model {
             }
         }
         
-        // Búsqueda
-        $i = 0;
-        if(isset($_POST['search']['value']) && $_POST['search']['value'] != '') {
-            foreach ($this->datatableConfig['column_search'] as $column) {
-                if($i === 0) {
-                    $this->db->group_start();
-                    $this->db->like($column, $_POST['search']['value']);
-                } else {
-                    $this->db->or_like($column, $_POST['search']['value']);
-                }
-                
-                if(count($this->datatableConfig['column_search']) - 1 == $i) {
-                    $this->db->group_end();
-                }
-                $i++;
-            }
-        }
+        // Búsqueda: tokens AND sobre catálogo + recetas (comentarios, cliente, año)
+        $search_val = isset($_POST['search']['value']) ? $_POST['search']['value'] : '';
+        $this->_aplicar_busqueda_catalogo_y_recetas($search_val);
         
         // Ordenamiento
         if(isset($_POST['order']) && isset($_POST['order'][0])) {
@@ -90,6 +76,40 @@ class ProductosModel extends MY_Model {
         } elseif (isset($this->datatableConfig['order'])) {
             $order = $this->datatableConfig['order'];
             $this->db->order_by(key($order), $order[key($order)]);
+        }
+    }
+
+    /**
+     * Tokens AND: cada palabra en código/nombre/alias/categoría O en recetas (comentario, cliente, año).
+     */
+    private function _aplicar_busqueda_catalogo_y_recetas($termino) {
+        $termino = trim((string) $termino);
+        if ($termino === '') {
+            return;
+        }
+        $tokens = preg_split('/\s+/', $termino);
+        foreach ($tokens as $tok) {
+            $tok = trim($tok);
+            if ($tok === '') {
+                continue;
+            }
+            $like = $this->db->escape_like_str($tok);
+            $esc = $this->db->escape('%' . $like . '%');
+            $year = preg_match('/^\d{4}$/', $tok) ? (' OR YEAR(f.fecha_creacion) = ' . (int) $tok) : '';
+            $exists = "EXISTS (SELECT 1 FROM formulaciones f LEFT JOIN clientes cl ON cl.id = f.cliente_id
+                WHERE f.producto_id = productos.id AND (
+                    f.comentarios LIKE $esc OR f.referencia_cliente LIKE $esc
+                    OR f.nombre_version LIKE $esc OR f.descripcion LIKE $esc
+                    OR cl.razon_social LIKE $esc OR cl.nombre_comercial LIKE $esc
+                    $year
+                ))";
+            $this->db->group_start();
+            $this->db->like('productos.nombre', $tok);
+            $this->db->or_like('productos.codigo', $tok);
+            $this->db->or_like('productos.alias', $tok);
+            $this->db->or_like('categorias_productos.nombre', $tok);
+            $this->db->or_where($exists, null, false);
+            $this->db->group_end();
         }
     }
     
@@ -660,10 +680,22 @@ class ProductosModel extends MY_Model {
             'formulaciones.referencia_cliente',
             'clientes.razon_social',
             'clientes.nombre_comercial',
-        ]);
+        ], 'formulaciones.fecha_creacion');
         
         $this->db->order_by('formulaciones.version', 'DESC');
         return $this->db->get()->result();
+    }
+
+    /**
+     * Actualiza solo notas de una versión (no toca BOM ni activa).
+     */
+    public function actualizar_nota_formulacion($formulacion_id, $comentarios, $referencia_cliente = null) {
+        $data = ['comentarios' => $comentarios];
+        if ($referencia_cliente !== null) {
+            $data['referencia_cliente'] = $referencia_cliente;
+        }
+        $this->db->where('id', (int) $formulacion_id);
+        return $this->db->update('formulaciones', $data);
     }
     
     /**
@@ -825,9 +857,8 @@ class ProductosModel extends MY_Model {
     public function buscar_formulaciones($termino, $limite = 30) {
         $this->db->select('
             f.id, f.version, f.nombre_version, f.cantidad_producida, f.unidad_produccion,
-            f.referencia_cliente, f.es_activa, f.fecha_creacion,
+            f.referencia_cliente, f.es_activa, f.fecha_creacion, f.comentarios, f.descripcion,
             p.id AS producto_id, p.nombre AS producto_nombre, p.codigo AS producto_codigo,
-            p.imagen AS producto_imagen,
             c.razon_social AS cliente_nombre
         ');
         $this->db->from('formulaciones f');
@@ -843,7 +874,7 @@ class ProductosModel extends MY_Model {
             'f.nombre_version', 'f.referencia_cliente', 'f.comentarios', 'f.descripcion',
             'c.razon_social', 'c.nombre_comercial',
         ];
-        $this->_aplicar_busqueda_tokens($termino, $campos);
+        $this->_aplicar_busqueda_tokens($termino, $campos, 'f.fecha_creacion');
 
         $this->db->order_by('f.es_activa DESC, f.fecha_creacion DESC');
         $this->db->limit($limite);
@@ -854,7 +885,7 @@ class ProductosModel extends MY_Model {
      * Aplica una búsqueda por tokens sobre el query builder actual: divide el término
      * en palabras y exige que CADA palabra aparezca (LIKE) en al menos uno de los campos.
      */
-    private function _aplicar_busqueda_tokens($termino, array $campos) {
+    private function _aplicar_busqueda_tokens($termino, array $campos, $col_fecha = null) {
         $termino = trim((string)$termino);
         if ($termino === '') {
             return;
@@ -874,6 +905,9 @@ class ProductosModel extends MY_Model {
                 } else {
                     $this->db->or_like($campo, $tok);
                 }
+            }
+            if ($col_fecha && preg_match('/^\d{4}$/', $tok)) {
+                $this->db->or_where('YEAR(' . $col_fecha . ') = ' . (int) $tok, null, false);
             }
             $this->db->group_end();
         }

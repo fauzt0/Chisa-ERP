@@ -44,9 +44,9 @@ class ObrasVentas extends MY_Controller {
         $draw = $this->input->post('draw');
         $start = $this->input->post('start');
         $length = $this->input->post('length');
-        $search = $this->input->post('search')['value'];
-        $order_column = $this->input->post('order')[0]['column'];
-        $order_dir = $this->input->post('order')[0]['dir'];
+        $search = $this->input->post('search')['value'] ?? '';
+        $order_column = $this->input->post('order')[0]['column'] ?? 4;
+        $order_dir = $this->input->post('order')[0]['dir'] ?? 'desc';
         
         // Columnas para ordenar
         $columns = ['folio', 'nombre', 'cliente', 'estatus', 'fecha_creacion', 'total'];

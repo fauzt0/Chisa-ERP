@@ -108,6 +108,8 @@ class ObrasModel extends CI_Model {
             
             // Obtener comentarios
             $obra->comentarios = $this->get_comentarios_obra($obra_id);
+            $obra->pagos = $this->get_pagos_obra($obra_id);
+            $obra->parcialidades = $this->get_parcialidades($obra_id);
         }
         
         return $obra;
@@ -417,8 +419,9 @@ class ObrasModel extends CI_Model {
         $pago_id = $this->db->insert_id();
         
         if($pago_id) {
-            // Actualizar totales de la obra
             $this->actualizar_totales_pago($data['obra_id']);
+            $this->aplicar_pago_a_parcialidad((int) $data['obra_id'], (int) $pago_id, (float) $data['monto']);
+            $this->_sync_saldo_cliente_obra((int) $data['obra_id']);
         }
         
         return $pago_id;
@@ -1101,5 +1104,102 @@ class ObrasModel extends CI_Model {
         }
         usort($lista, fn($a, $b) => $b['cantidad'] <=> $a['cantidad']);
         return array_slice($lista, 0, (int) $limite);
+    }
+
+    public function asegurar_tabla_parcialidades() {
+        if ($this->db->table_exists('obras_parcialidades')) {
+            return;
+        }
+        $this->db->query("CREATE TABLE IF NOT EXISTS `obras_parcialidades` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `obra_id` INT NOT NULL,
+            `numero` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+            `fecha_programada` DATE NOT NULL,
+            `monto` DECIMAL(12,2) NOT NULL DEFAULT 0,
+            `estatus` VARCHAR(20) NOT NULL DEFAULT 'Pendiente',
+            `pago_id` INT NULL,
+            `notas` VARCHAR(255) NULL,
+            `activo` TINYINT(1) NOT NULL DEFAULT 1,
+            `fecha_creacion` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_obra` (`obra_id`,`activo`),
+            KEY `idx_fecha` (`fecha_programada`,`estatus`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+    }
+
+    public function marcar_parcialidades_vencidas() {
+        $this->asegurar_tabla_parcialidades();
+        $this->db->where('activo', 1);
+        $this->db->where('estatus', 'Pendiente');
+        $this->db->where('fecha_programada <', date('Y-m-d'));
+        $this->db->update('obras_parcialidades', ['estatus' => 'Vencida']);
+    }
+
+    public function get_parcialidades($obra_id) {
+        $this->asegurar_tabla_parcialidades();
+        $this->marcar_parcialidades_vencidas();
+        $this->db->from('obras_parcialidades');
+        $this->db->where('obra_id', (int) $obra_id);
+        $this->db->where('activo', 1);
+        $this->db->order_by('fecha_programada', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function guardar_parcialidad($data) {
+        $this->asegurar_tabla_parcialidades();
+        $obra_id = (int) ($data['obra_id'] ?? 0);
+        if ($obra_id <= 0) {
+            return false;
+        }
+        $n = $this->db->where('obra_id', $obra_id)->where('activo', 1)->count_all_results('obras_parcialidades');
+        $row = [
+            'obra_id' => $obra_id,
+            'numero' => $n + 1,
+            'fecha_programada' => $data['fecha_programada'],
+            'monto' => (float) $data['monto'],
+            'estatus' => 'Pendiente',
+            'notas' => $data['notas'] ?? null,
+            'activo' => 1,
+        ];
+        if (strtotime($row['fecha_programada']) < strtotime(date('Y-m-d'))) {
+            $row['estatus'] = 'Vencida';
+        }
+        $this->db->insert('obras_parcialidades', $row);
+        return $this->db->insert_id();
+    }
+
+    public function eliminar_parcialidad($id) {
+        $this->db->where('id', (int) $id);
+        return $this->db->update('obras_parcialidades', ['activo' => 0]);
+    }
+
+    public function aplicar_pago_a_parcialidad($obra_id, $pago_id, $monto) {
+        $this->asegurar_tabla_parcialidades();
+        $this->db->from('obras_parcialidades');
+        $this->db->where('obra_id', (int) $obra_id);
+        $this->db->where('activo', 1);
+        $this->db->where_in('estatus', ['Pendiente', 'Vencida']);
+        $this->db->order_by('fecha_programada', 'ASC');
+        $this->db->limit(1);
+        $p = $this->db->get()->row();
+        if (!$p) {
+            return;
+        }
+        $this->db->where('id', $p->id);
+        $this->db->update('obras_parcialidades', [
+            'estatus' => 'Pagada',
+            'pago_id' => (int) $pago_id,
+        ]);
+    }
+
+    private function _sync_saldo_cliente_obra($obra_id) {
+        $this->db->select('cliente_id');
+        $this->db->where('id', (int) $obra_id);
+        $obra = $this->db->get('obras')->row();
+        if (!$obra || empty($obra->cliente_id)) {
+            return;
+        }
+        $this->load->model('Ventas/CarteraModel');
+        $this->CarteraModel->recalcular_saldo_cliente((int) $obra->cliente_id);
     }
 }

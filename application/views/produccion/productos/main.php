@@ -147,9 +147,9 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
           <div class="col-lg-4 col-md-6">
             <label for="buscarProductos"><i class="fas fa-search me-1"></i> Buscar producto</label>
             <input type="text" class="form-control" id="buscarProductos"
-                   placeholder="Ej: BASE ORGANICA BLANCA, TINTA NEGRA, CHISA GLASS..." autocomplete="off">
+                   placeholder="Ej: chisa glass micro hospital 2023 — busca producto, cliente, comentario o año" autocomplete="off">
             <div class="d-flex flex-wrap gap-1 mt-2">
-              <?php foreach (['BASE ORGANICA BLANCA','TINTA NEGRA','SOLUCION FASE ACUOSA','CHISA GLASS'] as $chip): ?>
+              <?php foreach (['CHISA GLASS MICRO','CHISA GLASS 2023','Hospital','BASE ORGANICA'] as $chip): ?>
               <button type="button" class="btn btn-sm btn-outline-primary btn-chip-buscar" data-term="<?= htmlspecialchars($chip) ?>"><?= htmlspecialchars($chip) ?></button>
               <?php endforeach; ?>
             </div>
@@ -184,6 +184,38 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
               <i class="fas fa-eraser"></i> Limpiar
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-3" id="panelBuscarRecetas">
+  <div class="col-12">
+    <div class="card border-primary">
+      <div class="card-header bg-primary text-white">
+        <i class="fas fa-flask me-1"></i> Buscar receta por producto, cliente, año o comentario
+      </div>
+      <div class="card-body">
+        <div class="input-group mb-2">
+          <input type="text" class="form-control" id="buscarRecetasGlobales" placeholder="Ej: CHISA GLASS MICRO Hospital 2024">
+          <button type="button" class="btn btn-primary" id="btnBuscarRecetasGlobales"><i class="fas fa-search"></i> Buscar recetas</button>
+        </div>
+        <small class="text-muted">Los comentarios se guardan en cada versión (campo «Comentarios / Notas»). Aquí se buscan sin abrir el producto.</small>
+        <div class="table-responsive mt-2" id="wrapResultadosRecetas" style="display:none;">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Versión</th>
+                <th>Cliente / ref.</th>
+                <th>Año</th>
+                <th>Comentario</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyResultadosRecetas"></tbody>
+          </table>
         </div>
       </div>
     </div>

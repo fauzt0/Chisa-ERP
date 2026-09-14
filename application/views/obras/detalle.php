@@ -488,6 +488,56 @@ $this->load->view('obras/partials/vinculo_venta', [
                                 </div>
                             </div>
                         </div>
+
+                        <?php $parcialidades = $obra->parcialidades ?? []; ?>
+                        <h5 class="mb-3 mt-2"><i class="fas fa-calendar-alt"></i> Calendario de cobros (parcialidades)</h5>
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <form id="formParcialidadObra" class="row g-2 align-items-end mb-3">
+                                    <input type="hidden" name="obra_id" value="<?= (int) $obra->id ?>">
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Fecha de cobro</label>
+                                        <input type="date" class="form-control form-control-sm" name="fecha_programada" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Monto</label>
+                                        <input type="number" step="0.01" min="0.01" class="form-control form-control-sm" name="monto" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Nota</label>
+                                        <input type="text" class="form-control form-control-sm" name="notas" placeholder="Ej. 2ª exhibición">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-sm btn-primary w-100">Programar</button>
+                                    </div>
+                                </form>
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead><tr><th>#</th><th>Fecha</th><th class="text-end">Monto</th><th>Estatus</th><th>Nota</th><th></th></tr></thead>
+                                        <tbody>
+                                        <?php if (empty($parcialidades)): ?>
+                                            <tr><td colspan="6" class="text-muted">Sin fechas programadas. Agrega parcialidades para alertas de cobro.</td></tr>
+                                        <?php else: foreach ($parcialidades as $par):
+                                            $badge = $par->estatus === 'Pagada' ? 'success' : ($par->estatus === 'Vencida' ? 'danger' : 'warning');
+                                        ?>
+                                            <tr>
+                                                <td><?= (int) $par->numero ?></td>
+                                                <td><?= htmlspecialchars(date('d/m/Y', strtotime($par->fecha_programada)), ENT_QUOTES, 'UTF-8') ?></td>
+                                                <td class="text-end">$<?= number_format((float) $par->monto, 2) ?></td>
+                                                <td><span class="badge bg-<?= $badge ?>"><?= htmlspecialchars($par->estatus, ENT_QUOTES, 'UTF-8') ?></span></td>
+                                                <td><?= htmlspecialchars($par->notas ?: '—', ENT_QUOTES, 'UTF-8') ?></td>
+                                                <td>
+                                                    <?php if ($par->estatus !== 'Pagada'): ?>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarParcialidadObra(<?= (int) $par->id ?>)">Quitar</button>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                         
                         <!-- Historial de Pagos -->
                         <h5 class="mb-3"><i class="fas fa-history"></i> Historial de Pagos</h5>
@@ -1438,6 +1488,26 @@ $this->load->view('obras/partials/vinculo_venta', [
             console.error('Error:', error);
             if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al registrar el pago' });
         });
+    }
+
+    document.getElementById('formParcialidadObra')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        fd.append('peticion', 'ajax');
+        fetch('<?=base_url()?>obras/Obras/guardar_parcialidad_ajax', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) location.reload();
+                else if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: d.message });
+            });
+    });
+    function eliminarParcialidadObra(id) {
+        const fd = new FormData();
+        fd.append('id', id);
+        fd.append('peticion', 'ajax');
+        fetch('<?=base_url()?>obras/Obras/eliminar_parcialidad_ajax', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => { if (d.success) location.reload(); });
     }
     function verRecibo(pagoId) {
         // Cargar datos del recibo

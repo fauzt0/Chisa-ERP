@@ -51,6 +51,11 @@ function initProductos() {
     $('#buscarProductos').val(term).trigger('input');
   });
 
+  $('#btnBuscarRecetasGlobales').on('click', buscarRecetasGlobales);
+  $('#buscarRecetasGlobales').on('keyup', function(e) {
+    if (e.key === 'Enter') buscarRecetasGlobales();
+  });
+
   // Event listeners para actualizar costo total de formulación
   $('#formulacion_costo_mano_obra, #formulacion_costo_indirecto').on('input', actualizarCostoTotal);
 }
@@ -1086,132 +1091,112 @@ function cargarHistorialFormulaciones(productoId) {
         return;
       }
       
-      let html = '<div class="accordion" id="accordionHistorial">';
+      let html = `<div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Estado</th>
+              <th>V</th>
+              <th>Nombre</th>
+              <th>Cliente / ref.</th>
+              <th>Año</th>
+              <th>Comentario</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>`;
       
-      result.formulaciones.forEach((f, index) => {
-        const badgeActiva = f.es_activa == '1' ? '<span class="badge bg-success ms-2"><i class="fas fa-star"></i> Activa</span>' : '<span class="badge bg-secondary ms-2">Histórica</span>';
-        const fecha = new Date(f.fecha_creacion).toLocaleDateString('es-MX', {year: 'numeric', month: 'long', day: 'numeric'});
-        
-        // Estadísticas de ventas
-        const statsVentas = f.num_ventas > 0 
-          ? `<span class="badge bg-info ms-2"><i class="fas fa-shopping-cart"></i> ${f.num_ventas} ${f.num_ventas === 1 ? 'venta' : 'ventas'}</span>`
-          : '<span class="badge bg-warning ms-2"><i class="fas fa-exclamation-triangle"></i> Sin ventas</span>';
-        
+      result.formulaciones.forEach((f) => {
+        const anio = f.fecha_creacion ? new Date(f.fecha_creacion).getFullYear() : '';
+        const cliente = f.cliente_nombre || f.nombre_comercial || '—';
+        const ref = f.referencia_cliente ? ' · ' + escHtml(f.referencia_cliente) : '';
+        const nota = f.comentarios ? escHtml(f.comentarios) : '<span class="text-muted">Sin nota</span>';
+        if (!window._notasForm) { window._notasForm = {}; }
+        window._notasForm[f.id] = { comentarios: f.comentarios || '', referencia: f.referencia_cliente || '' };
         html += `
-          <div class="accordion-item border-start border-4 ${f.es_activa == '1' ? 'border-success' : 'border-secondary'} mb-2">
-            <h2 class="accordion-header">
-              <button class="accordion-button ${index > 0 ? 'collapsed' : ''} bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${f.id}">
-                <div class="w-100">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div>
-                      <strong class="fs-5"><i class="fas fa-flask text-primary"></i> Versión ${f.version}: ${f.nombre_version || 'Sin nombre'}</strong>
-                      ${badgeActiva}
-                    </div>
-                    <small class="text-muted me-3">Creada: ${fecha}</small>
-                  </div>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-muted" style="font-size: 0.9rem;">
-                      ${f.cliente_nombre ? `<span class="me-3"><i class="fas fa-user"></i> <strong>Cliente:</strong> ${f.cliente_nombre}</span>` : ''}
-                      ${f.comentarios ? `<span><i class="fas fa-comment"></i> <strong>Nota:</strong> ${f.comentarios}</span>` : ''}
-                    </div>
-                    <div class="me-3">
-                      ${statsVentas}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            </h2>
-            <div id="collapse${f.id}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#accordionHistorial">
-              <div class="accordion-body">
-                <div class="row">
-                  <!-- Información de la Formulación -->
-                  <div class="col-md-6">
-                    <div class="card h-100">
-                      <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0"><i class="fas fa-info-circle"></i> Información de la Formulación</h6>
-                      </div>
-                      <div class="card-body">
-                        ${f.cliente_nombre ? `<p class="mb-2"><strong><i class="fas fa-user"></i> Cliente:</strong> ${f.cliente_nombre}</p>` : ''}
-                        ${f.comentarios ? `<p class="mb-2"><strong><i class="fas fa-comment"></i> Comentarios:</strong> ${f.comentarios}</p>` : ''}
-                        ${f.descripcion ? `<p class="mb-2"><strong>Descripción:</strong><br>${f.descripcion}</p>` : '<p class="text-muted mb-2">Sin descripción</p>'}
-                        <p class="mb-2"><strong><i class="fas fa-box"></i> Cantidad producida:</strong> ${f.cantidad_producida} ${f.unidad_produccion}</p>
-                        <p class="mb-2"><strong><i class="fas fa-calendar"></i> Fecha de creación:</strong> ${fecha}</p>
-                        ${f.ultima_venta ? `<p class="mb-2"><strong><i class="fas fa-clock"></i> Última venta:</strong> ${new Date(f.ultima_venta).toLocaleDateString('es-MX')}</p>` : ''}
-                        ${f.total_vendido > 0 ? `<p class="mb-0"><strong><i class="fas fa-chart-line"></i> Total vendido:</strong> <span class="badge bg-success">${f.total_vendido.toFixed(2)} unidades</span></p>` : ''}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Historial de Ventas -->
-                  <div class="col-md-6">
-                    <div class="card h-100">
-                      <div class="card-header bg-info text-white">
-                        <h6 class="mb-0"><i class="fas fa-history"></i> Historial de Ventas (Últimas 10)</h6>
-                      </div>
-                      <div class="card-body" style="max-height: 300px; overflow-y: auto;">
-                        ${f.ventas && f.ventas.length > 0 ? `
-                          <div class="list-group list-group-flush">
-                            ${f.ventas.map(v => `
-                              <div class="list-group-item px-0 py-2">
-                                <div class="d-flex justify-content-between align-items-start">
-                                  <div class="flex-grow-1">
-                                    <div class="d-flex align-items-center mb-1">
-                                      ${v.tipo === 'venta' 
-                                        ? '<span class="badge bg-primary me-2"><i class="fas fa-shopping-cart"></i> Venta</span>' 
-                                        : '<span class="badge bg-warning me-2"><i class="fas fa-hard-hat"></i> Obra</span>'}
-                                      <strong>${v.folio}</strong>
-                                    </div>
-                                    <div class="text-muted small">
-                                      <i class="fas fa-user"></i> ${v.cliente || 'Cliente no especificado'}
-                                    </div>
-                                    <div class="text-muted small">
-                                      <i class="fas fa-calendar"></i> ${new Date(v.fecha_creacion).toLocaleDateString('es-MX')}
-                                    </div>
-                                  </div>
-                                  <div class="text-end">
-                                    <span class="badge bg-success">${parseFloat(v.cantidad).toFixed(2)}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            `).join('')}
-                          </div>
-                        ` : `
-                          <div class="alert alert-warning mb-0">
-                            <i class="fas fa-info-circle"></i> Esta formulación aún no ha sido vendida
-                          </div>
-                        `}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Botón para ver detalle completo -->
-                <div class="row mt-3 border-top pt-3">
-                  <div class="col-12 d-flex justify-content-end align-items-center">
-                    ${f.es_activa == '1' ? '' : `
-                    <button class="btn btn-outline-success me-2" onclick="activarFormulacion(${f.id})">
-                      <i class="fas fa-star"></i> Establecer como Default
-                    </button>
-                    `}
-                    <button class="btn btn-outline-primary me-2" onclick="editarFormulacion(${productoId}, ${f.id})">
-                      <i class="fas fa-edit"></i> Editar Variación
-                    </button>
-                    <button class="btn btn-primary" onclick="verDetalleFormulacion(${f.id})">
-                      <i class="fas fa-eye"></i> Ver Composición Completa
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
+          <tr class="${f.es_activa == '1' ? 'table-success' : ''}">
+            <td>${f.es_activa == '1' ? '<span class="badge bg-success">Activa</span>' : '<span class="badge bg-secondary">Histórica</span>'}</td>
+            <td><strong>${escHtml(f.version)}</strong></td>
+            <td>${escHtml(f.nombre_version || 'Sin nombre')}</td>
+            <td>${escHtml(cliente)}${ref}</td>
+            <td>${anio}</td>
+            <td style="max-width:280px;white-space:pre-wrap;font-size:0.85rem;">${nota}</td>
+            <td class="text-nowrap">
+              <button class="btn btn-sm btn-outline-secondary" title="Editar nota" onclick="abrirNotaFormulacion(${f.id})"><i class="fas fa-comment"></i></button>
+              ${f.es_activa == '1' ? '' : `<button class="btn btn-sm btn-outline-success" title="Usar esta receta" onclick="activarFormulacion(${f.id})"><i class="fas fa-star"></i></button>`}
+              <button class="btn btn-sm btn-outline-primary" title="Editar receta" onclick="editarFormulacion(${productoId}, ${f.id})"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-sm btn-primary" title="Ver insumos" onclick="verDetalleFormulacion(${f.id})"><i class="fas fa-eye"></i></button>
+            </td>
+          </tr>`;
       });
-      
-      html += '</div>';
+      html += '</tbody></table></div>';
       $('#listaHistorialFormulaciones').html(html);
     }
   });
 }
+
+function buscarRecetasGlobales() {
+  const termino = ($('#buscarRecetasGlobales').val() || '').trim();
+  if (termino.length < 2) {
+    notifyShow('Escribe al menos 2 caracteres (producto, cliente, año o comentario)', 'warning');
+    return;
+  }
+  $.post(BASE_URL + 'produccion/Productos/buscar_formulaciones_ajax', {
+    termino: termino,
+    peticion: 'ajax',
+    [CSRF_TOKEN_NAME]: CSRF_HASH
+  }, function(result) {
+    try { result = typeof result === 'string' ? JSON.parse(result) : result; } catch (e) { result = { success: false }; }
+    const $tb = $('#tbodyResultadosRecetas');
+    $tb.empty();
+    if (!result.success || !result.formulaciones || !result.formulaciones.length) {
+      $('#wrapResultadosRecetas').show();
+      $tb.html('<tr><td colspan="6" class="text-center text-muted">Sin recetas. Prueba «CHISA GLASS MICRO» y el cliente o el año.</td></tr>');
+      return;
+    }
+    result.formulaciones.forEach(function(f) {
+      const anio = f.fecha_creacion ? new Date(f.fecha_creacion).getFullYear() : '';
+      const cliente = escHtml(f.cliente_nombre || f.referencia_cliente || '—');
+      $tb.append(`<tr>
+        <td>${escHtml(f.producto_codigo)} · ${escHtml(f.producto_nombre)}</td>
+        <td>${f.es_activa == '1' ? '<span class="badge bg-success">Activa</span> ' : ''}V${escHtml(f.version)} ${escHtml(f.nombre_version || '')}</td>
+        <td>${cliente}</td>
+        <td>${anio}</td>
+        <td style="max-width:240px;font-size:0.85rem;">${f.comentarios ? escHtml(f.comentarios) : '—'}</td>
+        <td><button type="button" class="btn btn-sm btn-primary" onclick="verHistorialFormulaciones(${f.producto_id})">Abrir</button></td>
+      </tr>`);
+    });
+    $('#wrapResultadosRecetas').show();
+  });
+}
+
+window.abrirNotaFormulacion = function(formulacionId) {
+  const n = (window._notasForm && window._notasForm[formulacionId]) ? window._notasForm[formulacionId] : { comentarios: '', referencia: '' };
+  $('#nota_formulacion_id').val(formulacionId);
+  $('#nota_formulacion_comentarios').val(n.comentarios);
+  $('#nota_formulacion_referencia').val(n.referencia);
+  $('#modalNotaFormulacion').modal('show');
+};
+
+window.guardarNotaFormulacion = function() {
+  const id = $('#nota_formulacion_id').val();
+  $.post(BASE_URL + 'produccion/Productos/actualizar_nota_formulacion_ajax', {
+    formulacion_id: id,
+    comentarios: $('#nota_formulacion_comentarios').val(),
+    referencia_cliente: $('#nota_formulacion_referencia').val(),
+    peticion: 'ajax',
+    [CSRF_TOKEN_NAME]: CSRF_HASH
+  }, function(result) {
+    try { result = typeof result === 'string' ? JSON.parse(result) : result; } catch (e) { result = { success: false }; }
+    if (result.success) {
+      $('#modalNotaFormulacion').modal('hide');
+      notifyShow(result.message || 'Nota guardada', 'success');
+      if (historialProductoId) cargarHistorialFormulaciones(historialProductoId);
+    } else {
+      notifyShow(result.message || 'No se guardó la nota', 'danger');
+    }
+  });
+};
 
 // =====================================================
 // FUNCIONES PARA SISTEMA DE VARIANTES DE PRODUCTOS

@@ -65,6 +65,22 @@ class Notifications extends MY_Controller {
       }
     }
 
+    $parcial_alerta = $this->CarteraModel->get_parcialidades_alerta(6);
+    if (!empty($parcial_alerta)) {
+      foreach ($parcial_alerta as $par) {
+        $notifications[] = [
+          'type' => $par->estatus === 'Vencida' ? 'danger' : 'warning',
+          'icon' => 'calendar-alt',
+          'module' => 'Obras',
+          'title' => $par->estatus === 'Vencida' ? 'Parcialidad vencida' : 'Cobro de obra próximo',
+          'message' => $par->folio . ' · ' . ($par->cliente ?: 'Cliente') . ' · $' . number_format((float) $par->monto, 2) . ' el ' . date('d/m/Y', strtotime($par->fecha_programada)),
+          'link' => $par->link,
+          'time' => $par->estatus === 'Vencida' ? 'Vencida' : '7d'
+        ];
+        $total_count++;
+      }
+    }
+
     // 2. VENTAS - Órdenes pendientes de entrega
     $ordenes_pendientes = $this->_get_ordenes_pendientes();
     if(!empty($ordenes_pendientes)) {

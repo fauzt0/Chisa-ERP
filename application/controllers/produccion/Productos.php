@@ -718,6 +718,37 @@ class Productos extends MY_Controller {
     }
     
     /**
+     * Búsqueda global de recetas (producto + cliente + comentarios + año)
+     */
+    public function buscar_formulaciones_ajax() {
+        $termino = trim((string) $this->input->post('termino'));
+        if ($termino === '') {
+            echo json_encode(['success' => true, 'formulaciones' => []]);
+            return;
+        }
+        $rows = $this->ProductosModel->buscar_formulaciones($termino, 40);
+        echo json_encode(['success' => true, 'formulaciones' => $rows]);
+    }
+
+    /**
+     * Solo notas/referencia de una versión (no cambia BOM).
+     */
+    public function actualizar_nota_formulacion_ajax() {
+        $id = (int) $this->input->post('formulacion_id');
+        $comentarios = $this->input->post('comentarios');
+        $referencia = $this->input->post('referencia_cliente');
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Formulación requerida']);
+            return;
+        }
+        $ok = $this->ProductosModel->actualizar_nota_formulacion($id, $comentarios, $referencia);
+        echo json_encode([
+            'success' => (bool) $ok,
+            'message' => $ok ? 'Nota guardada' : 'No se pudo guardar la nota'
+        ]);
+    }
+
+    /**
      * Obtiene detalle completo de una formulación (AJAX)
      */
     public function get_detalle_formulacion_ajax() {

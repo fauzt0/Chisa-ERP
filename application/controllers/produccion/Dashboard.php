@@ -57,8 +57,12 @@ class Dashboard extends MY_Controller {
      */
     public function get_ordenes_ajax() {
         $filtro = $this->input->get('filtro') ?: 'todas';
-        
-        $ordenes = $this->ProduccionModel->get_ordenes_dashboard($filtro);
+        $filtros = [];
+        if ($filtro !== 'todas' && $filtro !== '') {
+            $filtros['estatus'] = is_array($filtro) ? $filtro : [$filtro];
+        }
+
+        $ordenes = $this->ProduccionModel->get_ordenes_dashboard($filtros);
         
         echo json_encode([
             'success' => true,

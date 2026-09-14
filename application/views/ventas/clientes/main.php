@@ -148,11 +148,13 @@ $stats = $response['stats'] ?? [];
           <div class="progress-bar bg-warning" role="progressbar" style="width: <?=$stats['porcentaje_con_saldo'] ?? 0?>%"></div>
         </div>
         
-        <small class="text-muted">Clientes con deuda</small>
+        <small class="text-muted">Clientes con deuda<?= isset($stats['monto_cartera']) ? ' · $'.number_format((float)$stats['monto_cartera'], 2) : '' ?></small>
       </div>
     </div>
   </div>
 </div>
+
+<?php $this->load->view('ventas/cartera/_panel', ['response' => $response]); ?>
 
 <!-- Tabla de Clientes -->
 <div class="card">
@@ -394,6 +396,7 @@ $stats = $response['stats'] ?? [];
       <li class="nav-item"><button class="nav-link" id="cli-contactos-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-contactos" type="button">Contactos</button></li>
       <li class="nav-item"><button class="nav-link" id="cli-ventas-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-ventas" type="button">Ventas</button></li>
       <li class="nav-item"><button class="nav-link" id="cli-cotizaciones-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-cotizaciones" type="button">Cotizaciones</button></li>
+      <li class="nav-item"><button class="nav-link" id="cli-cobros-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-cobros" type="button">Cobros</button></li>
       <li class="nav-item"><button class="nav-link" id="cli-seguimiento-tab" data-bs-toggle="tab" data-bs-target="#cli-tab-seguimiento" type="button">Seguimiento</button></li>
     </ul>
     <div class="tab-content px-3 py-3">
@@ -459,6 +462,15 @@ $stats = $response['stats'] ?? [];
             </table>
           </div>
           <div id="cli-cotizaciones-paginacion" class="d-grid gap-2 mt-2"></div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="cli-tab-cobros">
+        <div id="cli-cobros-empty" class="text-muted text-center py-3">Sin documentos por cobrar</div>
+        <div class="table-responsive" id="cli-cobros-wrap" style="display:none;">
+          <table class="table table-sm">
+            <thead><tr><th>Tipo</th><th>Folio</th><th class="text-end">Saldo</th><th>Pago</th><th></th></tr></thead>
+            <tbody id="cli-cobros-tbody"></tbody>
+          </table>
         </div>
       </div>
       <div class="tab-pane fade" id="cli-tab-seguimiento">
@@ -838,6 +850,9 @@ window.verCliente = function(id) {
     html += fila('Nombre Comercial', c.nombre_comercial);
     html += fila('RFC', c.rfc);
     html += fila('Régimen Fiscal', c.regimen_fiscal);
+    html += fila('Uso de CFDI', c.uso_cfdi);
+    html += fila('Email facturación', c.email_facturacion || c.email);
+    html += fila('Código postal', c.codigo_postal);
     html += fila('Tipo', '<span class="badge bg-primary">' + c.tipo_cliente + '</span>' +
       (c.tipo_contacto === 'Prospecto' ? ' <span class="badge bg-warning text-dark">Prospecto</span>' : ''));
     html += fila('Contacto', c.contacto_nombre);
@@ -849,6 +864,24 @@ window.verCliente = function(id) {
     html += fila('Saldo Pendiente', '<span class="' + (parseFloat(c.saldo_pendiente) > 0 ? 'text-danger fw-semibold' : '') + '">$' + parseFloat(c.saldo_pendiente || 0).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</span>');
 
     $('#cli-detalles').html(html);
+
+    const cartera = result.cartera || [];
+    if (cartera.length) {
+      $('#cli-cobros-empty').hide();
+      $('#cli-cobros-wrap').show();
+      let ch = '';
+      cartera.forEach(function(d) {
+        ch += '<tr><td>' + (d.tipo === 'obra' ? 'Obra' : 'Venta') + '</td><td>' + escapeHtml(d.folio) + '</td>';
+        ch += '<td class="text-end text-danger">$' + parseFloat(d.saldo).toLocaleString('es-MX', {minimumFractionDigits:2}) + '</td>';
+        ch += '<td>' + escapeHtml(d.estatus_pago || '') + '</td>';
+        ch += '<td><a class="btn btn-sm btn-outline-primary" href="' + (d.link || '#') + '">Cobrar</a></td></tr>';
+      });
+      $('#cli-cobros-tbody').html(ch);
+    } else {
+      $('#cli-cobros-empty').show();
+      $('#cli-cobros-wrap').hide();
+      $('#cli-cobros-tbody').html('');
+    }
   });
 };
 

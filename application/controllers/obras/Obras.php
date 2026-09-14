@@ -560,6 +560,23 @@ class Obras extends MY_Controller {
             ]);
         }
     }
+
+    public function guardar_parcialidad_ajax() {
+        $id = $this->ObrasModel->guardar_parcialidad([
+            'obra_id' => $this->input->post('obra_id'),
+            'fecha_programada' => $this->input->post('fecha_programada'),
+            'monto' => $this->input->post('monto'),
+            'notas' => $this->input->post('notas'),
+        ]);
+        echo json_encode($id
+            ? ['success' => true, 'message' => 'Parcialidad programada', 'id' => $id]
+            : ['success' => false, 'message' => 'No se pudo guardar la parcialidad']);
+    }
+
+    public function eliminar_parcialidad_ajax() {
+        $ok = $this->ObrasModel->eliminar_parcialidad((int) $this->input->post('id'));
+        echo json_encode(['success' => (bool) $ok, 'message' => $ok ? 'Parcialidad eliminada' : 'No se pudo eliminar']);
+    }
     
     /**
      * Obtiene los pagos de una obra (AJAX)

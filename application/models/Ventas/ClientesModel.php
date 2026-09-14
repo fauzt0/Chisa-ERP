@@ -260,7 +260,7 @@ class ClientesModel extends MY_Model {
      * Obtiene clientes para select (activos)
      */
     public function get_clientes_select() {
-        $this->db->select('id, codigo, razon_social, nombre_comercial, rfc, email, email_facturacion, limite_credito, dias_credito');
+        $this->db->select('id, codigo, razon_social, nombre_comercial, rfc, email, email_facturacion, limite_credito, dias_credito, regimen_fiscal, uso_cfdi, codigo_postal, telefono, saldo_pendiente');
         $this->db->where('estatus', 'Activo');
         $this->db->order_by('razon_social', 'ASC');
         return $this->db->get($this->tableName)->result();

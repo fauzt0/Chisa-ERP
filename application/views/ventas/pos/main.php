@@ -225,15 +225,25 @@ $stats = $response['stats'] ?? [];
             <div class="row">
                 <div class="col-md-12">
                     <strong><i class="fas fa-user"></i> <span id="lbl_cli_razon"></span></strong>
+                    <a href="#" id="lnk_cli_crm" class="small ms-2" style="display:none;">Abrir en CRM</a>
                 </div>
                 <div class="col-md-6 mt-1">
-                    <i class="fas fa-id-card"></i> <span id="lbl_cli_rfc"></span>
+                    <i class="fas fa-id-card"></i> RFC <span id="lbl_cli_rfc"></span>
                 </div>
                 <div class="col-md-6 mt-1">
                     <i class="fas fa-envelope"></i> <span id="lbl_cli_email"></span>
                 </div>
+                <div class="col-md-6 mt-1">
+                    <i class="fas fa-file-alt"></i> Régimen <span id="lbl_cli_regimen"></span> · CFDI <span id="lbl_cli_cfdi"></span>
+                </div>
+                <div class="col-md-6 mt-1">
+                    <i class="fas fa-map-marker-alt"></i> CP <span id="lbl_cli_cp"></span>
+                </div>
                 <div class="col-md-12 mt-1">
                      <i class="fas fa-dollar-sign"></i> Crédito: <span id="lbl_cli_credito"></span> | Días: <span id="lbl_cli_dias"></span>
+                </div>
+                <div class="col-md-12 mt-1" id="wrap_cli_saldo" style="display:none;">
+                    <span class="badge bg-danger" id="lbl_cli_saldo"></span>
                 </div>
             </div>
           </div>
@@ -909,12 +919,26 @@ function verificarCliente() {
       $('#lbl_cli_razon').text(cliente.razon_social);
       $('#lbl_cli_rfc').text(cliente.rfc || 'Sin RFC');
       $('#lbl_cli_email').text(cliente.email_facturacion || cliente.email || 'Sin Email');
-      
+      $('#lbl_cli_regimen').text(cliente.regimen_fiscal || '—');
+      $('#lbl_cli_cfdi').text(cliente.uso_cfdi || '—');
+      $('#lbl_cli_cp').text(cliente.codigo_postal || '—');
+      $('#lnk_cli_crm').attr('href', '<?=base_url();?>ventas/Clientes').show();
+
       const credito = parseFloat(cliente.limite_credito || 0).toLocaleString('es-MX', {style: 'currency', currency: 'MXN'});
       const dias = cliente.dias_credito || 0;
       
       $('#lbl_cli_credito').text(credito);
       $('#lbl_cli_dias').text(dias);
+
+      const saldoCli = parseFloat(cliente.saldo_pendiente || 0);
+      if (saldoCli > 0) {
+        $('#lbl_cli_saldo').text('Saldo por cobrar: $' + saldoCli.toLocaleString('es-MX', {minimumFractionDigits: 2}));
+        $('#wrap_cli_saldo').show();
+        $('#info_cliente_seleccionado').removeClass('alert-info').addClass('alert-warning');
+      } else {
+        $('#wrap_cli_saldo').hide();
+        $('#info_cliente_seleccionado').removeClass('alert-warning').addClass('alert-info');
+      }
       
       // Mostrar contenedor
       $('#info_cliente_seleccionado').slideDown();

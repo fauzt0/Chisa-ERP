@@ -28,8 +28,16 @@ class Clientes extends MY_Controller {
         $this->viewData['breadcrumb'] = 'Inicio > CRM Ventas > Clientes';
         
         // Obtener estadísticas
+        $this->load->model('Ventas/CarteraModel');
         $stats = $this->ClientesModel->get_estadisticas();
-        $this->viewData['response'] = ['stats' => $stats];
+        $cartera_resumen = $this->CarteraModel->get_resumen();
+        $stats['monto_cartera'] = $cartera_resumen['saldo'] ?? 0;
+        $stats['docs_cartera'] = $cartera_resumen['documentos'] ?? 0;
+        $this->viewData['response'] = [
+            'stats' => $stats,
+            'cartera' => $this->CarteraModel->get_pendientes(12),
+            'cartera_resumen' => $cartera_resumen,
+        ];
         
         $this->viewData['validate'] = '';
         $this->viewData['pageView'] = 'ventas/clientes/main';
@@ -153,7 +161,13 @@ class Clientes extends MY_Controller {
         $cliente = $this->ClientesModel->get_cliente($id);
         
         if($cliente) {
-            echo json_encode(['success' => true, 'cliente' => $cliente]);
+            $this->load->model('Ventas/CarteraModel');
+            echo json_encode([
+                'success' => true,
+                'cliente' => $cliente,
+                'cartera' => $this->CarteraModel->get_por_cliente((int) $id, 12),
+                'seguimientos' => $this->ClientesModel->get_seguimientos((int) $id, 8),
+            ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Cliente no encontrado']);
         }
