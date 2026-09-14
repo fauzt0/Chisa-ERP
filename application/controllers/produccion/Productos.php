@@ -1857,7 +1857,7 @@ class Productos extends MY_Controller {
                     'porcentaje'             => $item['porcentaje'],
                     'grupo_color'            => $grupo_label,
                     'porcentaje_fase_acuosa' => $item['pct_fase'],
-                    'kg_fase_acuosa'         => null,
+                    'kg_fase_acuosa'         => $item['kg_fase'] ?? null,
                     'observaciones'          => null,
                     'orden'                  => $orden++,
                     'costo_unitario'         => isset($insumo->precio_promedio) ? $insumo->precio_promedio : 0,
@@ -2165,5 +2165,1235 @@ class Productos extends MY_Controller {
         ]);
 
         return $ok ? $this->db->insert_id() : null;
+    }
+
+    // =========================================================================
+    // IMPORTADOR JSON DESDE CLI — Fase 2 (Entrenamiento 3)
+    // Rama: iteracion-3  |  Decisiones: A1–A11 de decisiones_pendientes.md
+    // =========================================================================
+
+    /**
+     * Importa formulaciones desde los manifiestos JSON del Entrenamiento 3.
+     * Fase 2: solo --dry-run habilitado. NO escribe nada en la BD.
+     *
+     * Uso:  php index.php produccion/Productos importar_formulaciones_json_cli --dry-run
+     * Flags: --dry-run (default/único) | --solo=<imagen.jpeg> | --excluir=<a,b,...>
+     *        --out=<ruta.txt> | --json | --activar-nuevas (declarado, APAGADO en Fase 2)
+     * Env:   IMPORT_MANIFEST_DIR  (ruta base, default: public_html/doc/entrenamiento_3)
+     */
+    public function importar_formulaciones_json_cli()
+    {
+        if (!is_cli()) {
+            show_error('Este método solo puede ejecutarse desde la línea de comandos.');
+            return;
+        }
+
+        // ── 1. Argumentos ─────────────────────────────────────────────────
+        $argv     = $_SERVER['argv'] ?? [];
+        $dry_run  = in_array('--dry-run', $argv, true);
+        $solo     = null;
+        $excluir  = [];
+        $out_file = null;
+        $json_out = in_array('--json', $argv, true);
+        // Fase 3: --aplicar escribe en BD; --activar-nuevas implica escribir y activa la V1 de
+        // los productos que no tenían ninguna formulación previa (política de activación).
+        $activar_nuevas = in_array('--activar-nuevas', $argv, true);
+        $aplicar        = in_array('--aplicar', $argv, true) || $activar_nuevas;
+        foreach ($argv as $arg) {
+            if (strpos($arg, '--solo=')    === 0) { $solo     = substr($arg, 7); }
+            if (strpos($arg, '--excluir=') === 0) { $excluir  = array_map('trim', explode(',', substr($arg, 10))); }
+            if (strpos($arg, '--out=')     === 0) { $out_file = substr($arg, 6); }
+        }
+        // Env vars como alternativa para rutas con puntos/slashes que CI bloquea en URI
+        if (getenv('IMPORT_SOLO'))    { $solo     = getenv('IMPORT_SOLO'); }
+        if (getenv('IMPORT_EXCLUIR')) { $excluir  = array_map('trim', explode(',', getenv('IMPORT_EXCLUIR'))); }
+        if (getenv('IMPORT_OUT'))     { $out_file = getenv('IMPORT_OUT'); }
+        if (!$aplicar) {
+            $dry_run = true;   // Fase 2: sin --aplicar / --activar-nuevas no se escribe nada
+        }
+        echo $dry_run
+            ? "[MODO DRY-RUN] No se escribirá en la BD.\n\n"
+            : "[MODO ESCRITURA] Formulaciones + catálogos + links (BD PRODUCCIÓN).\n\n";
+
+        // ── 2. Directorios ────────────────────────────────────────────────
+        $base_dir = rtrim(
+            getenv('IMPORT_MANIFEST_DIR') ?: realpath(FCPATH . 'doc/entrenamiento_3'),
+            '/'
+        );
+        $man_dir  = $base_dir . '/manifiestos';
+        $ocr_dir  = $base_dir . '/ocr/parsed';
+
+        // ── 3. Cargar manifiestos ─────────────────────────────────────────
+        $pm_raw   = json_decode(file_get_contents($man_dir . '/productos_match.json'),   true) ?: [];
+        $im_raw   = json_decode(file_get_contents($man_dir . '/insumos_match.json'),     true) ?: [];
+        $comp_raw = json_decode(file_get_contents($man_dir . '/comparativa.json'),       true) ?: [];
+
+        // Índices por OCR nombre (uppercase)
+        $comp_idx = [];
+        foreach ($comp_raw as $c) { $comp_idx[$c['imagen']] = $c; }
+
+        $pm_idx = [];
+        foreach ($pm_raw as $p) { $pm_idx[strtoupper(trim($p['ocr_nombre']))] = $p; }
+
+        $im_idx = [];
+        foreach ($im_raw as $ins) { $im_idx[strtoupper(trim($ins['ocr_nombre']))] = $ins; }
+
+        // ── 4. Cargar OCR parsed JSONs ────────────────────────────────────
+        $ocr_idx = [];
+        foreach (glob($ocr_dir . '/batch_*.json') as $f) {
+            foreach ((json_decode(file_get_contents($f), true) ?: []) as $item) {
+                if (!empty($item['imagen'])) { $ocr_idx[$item['imagen']] = $item; }
+            }
+        }
+        $lp_raw = file_exists($ocr_dir . '/lista_precios.json')
+            ? (json_decode(file_get_contents($ocr_dir . '/lista_precios.json'), true) ?: [])
+            : [];
+
+        // ── 5. GUARD-RAIL: contador de escrituras (DEBE quedar en 0) ──────
+        $write_counter = 0;
+
+        // ── 6. Tablas de decisiones A3-A6 ────────────────────────────────
+        $ins_overrides = $this->_insumo_overrides_json();
+
+        // ── 7. Colecciones de resultado ───────────────────────────────────
+        $prods_usar   = [];   // id   => nombre
+        $prods_crear  = [];   // nom  => params
+        $ins_vincular = [];   // id   => nombre_tecnico
+        $ins_crear    = [];   // nom_canonico => unidad
+        $links_f3     = $this->_links_f3_json();
+        $fms_crear    = [];
+        $fms_omit     = [];
+        $plan         = [];   // detalle completo por formulación (solo se usa en modo escritura)
+
+        // ── 8. Lista de imágenes a procesar ───────────────────────────────
+        // Orden: comparativa primero (garantiza 11→V2 y 15→V3 de #215)
+        $imagenes = array_column($comp_raw, 'imagen');
+        foreach (['entrenamiento1.jpeg', 'entrenamiento5.jpeg'] as $x) {
+            if (!in_array($x, $imagenes, true)) { $imagenes[] = $x; }
+        }
+
+        // Exclusiones hardcoded (decisiones A6.3 y A11)
+        $excluir_hard = [
+            'entrenamiento22.jpeg' => 'A6.3: PARAFINA CLORADA S-25 vs S-52 sin confirmar — CHISA PLUS diferido hasta resolución con planta',
+            'entrenamiento18.jpeg' => 'A11: duplicado exacto de entrenamiento16.jpeg (BASE ORGANICA BLANCA, 1000 kg) — se carga una sola vez como entrenamiento16',
+        ];
+
+        // ── 9. Procesar formulaciones ─────────────────────────────────────
+        foreach ($imagenes as $imagen) {
+            // Filtros CLI
+            if ($solo !== null && $imagen !== $solo)  { continue; }
+            if (in_array($imagen, $excluir, true))    { continue; }
+
+            $ocr  = $ocr_idx[$imagen]  ?? null;
+            $comp = $comp_idx[$imagen] ?? null;
+
+            // Saltar si no es formulacion
+            if (!$ocr) { continue; }
+            $tipo_doc = $ocr['tipo_documento'] ?? '';
+            if (in_array($tipo_doc, ['rendimientos', 'lista_precios'], true)) { continue; }
+
+            // Exclusiones hardcoded
+            if (isset($excluir_hard[$imagen])) {
+                $fms_omit[] = ['imagen' => $imagen, 'razon' => $excluir_hard[$imagen]];
+                continue;
+            }
+
+            // coincide_exacto → omitir (D de decisiones_pendientes.md)
+            if ($comp && $comp['estado'] === 'coincide_exacto') {
+                $dup = !empty($comp['duplicado_de'])
+                    ? " + A11 duplicado de {$comp['duplicado_de']}"
+                    : '';
+                $fms_omit[] = [
+                    'imagen'  => $imagen,
+                    'prod_id' => $comp['producto_id'],
+                    'razon'   => "coincide_exacto: receta idéntica a V{$comp['version_que_coincide']}"
+                               . " (activa=V{$comp['version_activa']}){$dup}",
+                ];
+                continue;
+            }
+
+            // ── Resolver producto ─────────────────────────────────────────
+            $ocr_prod = $ocr['producto']['nombre'] ?? '?';
+            $prod_info = $this->_resolver_producto_json($ocr_prod, $pm_idx, $comp, $imagen);
+
+            if ($prod_info['accion'] === 'excluir') {
+                $fms_omit[] = ['imagen' => $imagen, 'razon' => $prod_info['razon']];
+                continue;
+            }
+
+            if ($prod_info['accion'] === 'usar_existente') {
+                $prods_usar[(int)$prod_info['producto_id']] = $prod_info['producto_nombre'];
+            } else {
+                $prods_crear[$prod_info['nombre_propuesto']] = $prod_info;
+            }
+
+            // ── Versión siguiente ─────────────────────────────────────────
+            $version = $this->_proxima_version_json($prod_info, $imagen);
+
+            // ── Componentes / grupos ──────────────────────────────────────
+            $grupos_pdata = ['__default__' => []];
+
+            if ($tipo_doc === 'formulacion_grupo') {
+                // entrenamiento20-grupo.jpeg → A1/A2
+                $grupos_t034 = $this->_grupos_t034_json();
+                $grupos_pdata = [];
+                foreach ($grupos_t034 as $gnom => $gitems) {
+                    $grupos_pdata[$gnom] = [];
+                    foreach ($gitems as $gi) {
+                        if ($gi['crear']) {
+                            $ins_crear[$gi['nombre_canonico']] = 'Kg';
+                        } else {
+                            $ins_vincular[$gi['insumo_id']] = $gi['nombre_canonico'];
+                        }
+                        $grupos_pdata[$gnom][] = [
+                            'nombre'     => $gi['nombre_canonico'],
+                            'porcentaje' => round($gi['kg'] / 19.35 * 100, 4),
+                            'kg'         => $gi['kg'],
+                            'pct_fase'   => $gi['pct_fase'],
+                            'kg_fase'    => $gi['pct_fase'] ? $gi['kg'] : null, // A2: kg de la fase acuosa del color
+                            'insumo_id'  => $gi['crear'] ? null : (int)$gi['insumo_id'],
+                            'insumo_crear' => (bool)$gi['crear'],
+                        ];
+                    }
+                }
+            } else {
+                foreach ($ocr['componentes'] as $cmp) {
+                    $res = $this->_resolver_insumo_json($cmp['nombre'], $ins_overrides, $im_idx);
+                    if ($res['accion'] === 'vincular' && $res['insumo_id']) {
+                        $ins_vincular[(int)$res['insumo_id']] = $res['nombre_canonico'];
+                    } elseif ($res['accion'] === 'crear') {
+                        $ins_crear[$res['nombre_canonico']] = 'Kg';
+                    }
+                    $grupos_pdata['__default__'][] = [
+                        'nombre'     => $res['nombre_canonico'],
+                        'porcentaje' => (float)($cmp['porcentaje'] ?? 0),
+                        'kg'         => (float)($cmp['cantidad']  ?? 0),
+                        'pct_fase'   => null,
+                        'kg_fase'    => null,
+                        'insumo_id'  => $res['insumo_id'] ? (int)$res['insumo_id'] : null,
+                        'insumo_crear' => ($res['accion'] === 'crear'),
+                    ];
+                }
+            }
+
+            // ── _formulacion_ya_existe (read-only, guard incluido) ────────
+            $ref_chk = ($prod_info['accion'] === 'usar_existente')
+                ? $prod_info['producto_nombre']
+                : ($prod_info['nombre_propuesto'] ?? '');
+            $pdata_chk = [
+                'ref'      => $ref_chk,
+                'total_kg' => (float)($ocr['lote']['cantidad'] ?? 0),
+                'grupos'   => $grupos_pdata,
+            ];
+            $ya_existe = $this->_formulacion_ya_existe($pdata_chk);
+
+            // ── rendimiento_m2_por_kg (A9) ────────────────────────────────
+            $rend_m2 = $this->_rendimiento_m2_json($prod_info, $pm_idx);
+
+            // ── Contar filas de detalle ───────────────────────────────────
+            $n_filas = 0;
+            foreach ($grupos_pdata as $gc) { $n_filas += count($gc); }
+            $n_grupos = count(array_filter(array_keys($grupos_pdata), fn ($k) => $k !== '__default__'));
+
+            // A2: kg de fase acuosa por grupo (solo grupos de color)
+            $fase_grupos = [];
+            foreach ($grupos_pdata as $gnom => $gitems) {
+                if ($gnom === '__default__') { continue; }
+                foreach ($gitems as $gi) {
+                    if (!empty($gi['pct_fase'])) {
+                        $fase_grupos[$gnom] = ['kg' => $gi['kg'], 'pct' => $gi['pct_fase']];
+                    }
+                }
+            }
+
+            $fms_crear[] = [
+                'imagen'        => $imagen,
+                'producto'      => $prod_info['accion'] === 'usar_existente'
+                    ? "#{$prod_info['producto_id']} {$prod_info['producto_nombre']}"
+                    : "(NUEVO) {$prod_info['nombre_propuesto']}",
+                'version'       => $version,
+                'lote_kg'       => (float)($ocr['lote']['cantidad'] ?? 0),
+                'n_ocr_comp'    => count($ocr['componentes'] ?? []),
+                'n_filas_detalle'=> $n_filas,
+                'grupos_color'  => $n_grupos ?: count($ocr['variantes'] ?? []),
+                'fase_acuosa'   => $fase_grupos,
+                'rend_m2_kg'    => $rend_m2,
+                'ya_existe'     => $ya_existe ? '⚠ SÍ (revisar fingerprint)' : 'NO',
+                'confianza_ocr' => $ocr['confianza'] ?? null,
+            ];
+
+            // Detalle completo (solo lo consume el modo escritura)
+            $plan[] = [
+                'imagen'    => $imagen,
+                'prod_info' => $prod_info,
+                'version'   => $version,
+                'total_kg'  => (float)($ocr['lote']['cantidad'] ?? 0),
+                'grupos'    => $grupos_pdata,
+                'notas'     => $comp['recomendacion'] ?? '',
+                'confianza' => $ocr['confianza'] ?? null,
+            ];
+        } // foreach imagenes
+
+        // ── 10. GUARD-RAIL: en dry-run asegurar cero escrituras ───────────
+        if ($dry_run && $write_counter !== 0) {
+            $msg = "ERROR FATAL: {$write_counter} escritura(s) detectadas en modo dry-run. ABORTANDO.\n";
+            echo $msg;
+            exit(1);
+        }
+
+        // ── 11. Lista de precios 2025 (A8/A9) ────────────────────────────
+        $lista_2025 = $this->_lista_2025_json($pm_idx);
+
+        // ── 12. Generar reporte ───────────────────────────────────────────
+        $reporte = $this->_reporte_dryrun_json([
+            'dry_run'      => $dry_run,
+            'prods_usar'   => $prods_usar,
+            'prods_crear'  => $prods_crear,
+            'ins_vincular' => $ins_vincular,
+            'ins_crear'    => $ins_crear,
+            'links_f3'     => $links_f3,
+            'fms_crear'    => $fms_crear,
+            'fms_omit'     => $fms_omit,
+            'lista_2025'   => $lista_2025,
+            'write_counter'=> $write_counter,
+        ]);
+
+        echo $reporte;
+
+        // Guardar reporte (D1): la corrida completa escribe el artefacto por defecto; --solo
+        // genera su propio archivo para no pisar la corrida general (antes la sobreescribía).
+        // En Fase 3 el reporte va a un archivo propio para conservar el dry-run aprobado.
+        $default_out = $man_dir . ($dry_run ? '/dry_run_fase2.txt' : '/fase3_aplicacion.txt');
+        $targets     = [];
+        if ($solo === null) {
+            $targets[] = $default_out;
+        } else {
+            $targets[] = $man_dir . '/dry_run_fase2_solo_'
+                       . preg_replace('/[^A-Za-z0-9._-]+/', '_', $solo) . '.txt';
+        }
+        if ($out_file) { $targets[] = $out_file; }
+        foreach (array_unique($targets) as $t) {
+            @file_put_contents($t, $reporte);
+            echo "\n[Reporte guardado en: $t]\n";
+        }
+        if ($json_out) {
+            $json_path = $out_file
+                ? preg_replace('/\.txt$/i', '.json', $out_file)
+                : $man_dir . '/dry_run_fase2.json';
+            @file_put_contents($json_path, json_encode([
+                'prods_usar'   => $prods_usar,
+                'prods_crear'  => $prods_crear,
+                'ins_vincular' => $ins_vincular,
+                'ins_crear'    => $ins_crear,
+                'links_f3'     => $links_f3,
+                'fms_crear'    => $fms_crear,
+                'fms_omit'     => $fms_omit,
+                'lista_2025'   => $lista_2025,
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            echo "[JSON guardado en: $json_path]\n";
+        }
+
+        // ── 13. FASE 3: aplicar el plan (solo con --aplicar / --activar-nuevas) ──
+        if (!$dry_run) {
+            $preflight = in_array('--preflight', $argv, true);   // valida sin escribir
+            $res = $this->_aplicar_plan_json($plan, $prods_crear, $ins_crear, $lista_2025, $activar_nuevas, $links_f3, $preflight);
+            echo $res['reporte'];
+            foreach (array_unique($targets) as $t) {
+                @file_put_contents($t, $res['reporte'], FILE_APPEND);
+            }
+            if (empty($res['ok'])) {
+                exit(1);
+            }
+        }
+    }
+
+    // ── Helpers privados del importador JSON (Fase 2) ─────────────────────
+
+    /**
+     * Tabla de decisiones A3-A6: mapeo nombre OCR (UPPER) → [accion, insumo_id, nombre_canonico].
+     * Tiene prioridad sobre insumos_match.json.
+     */
+    private function _insumo_overrides_json(): array
+    {
+        return [
+            // A4: AGUA → #126 INS-AGUA-001
+            'AGUA'                       => ['vincular', 126, 'AGUA'],
+            // A5: RESINA ambigua → #128 RESINA W4535
+            'RESINA'                     => ['vincular', 128, 'RESINA W4535'],
+            // A5: insumos nuevos
+            'BERMOCOL481FQ'              => ['crear', null, 'BERMOCOLL 481 FQ'],
+            'BERMOCOLL481FQ'             => ['crear', null, 'BERMOCOLL 481 FQ'],
+            'BERMOCOLL481-FQ'            => ['crear', null, 'BERMOCOLL 481 FQ'],
+            'RESINA QE2383(W-595)'       => ['crear', null, 'RESINA QE-2383 W-595'],
+            'RESINA QE 2383(W-595)'      => ['crear', null, 'RESINA QE-2383 W-595'],
+            'RESINA QE 220 S(W-394)'     => ['crear', null, 'RESINA QE-220S'],
+            'RESINA QE-220S'             => ['crear', null, 'RESINA QE-220S'],
+            'RESINA QE220-S'             => ['crear', null, 'RESINA QE-220S'],
+            'RESINA QE-2383'             => ['crear', null, 'RESINA QE-2383 W-595'],
+            'RESINA QE2383'              => ['crear', null, 'RESINA QE-2383 W-595'],
+            // A6.1: BIOXIDO DE TITANEO → #15 PIG-001
+            'BIOXIDO DE TITANEO'         => ['vincular', 15, 'Dióxido de Titanio R-902 (TiO2)'],
+            'BIOXIDODETITANEO'           => ['vincular', 15, 'Dióxido de Titanio R-902 (TiO2)'],
+            'BIOXIDODETITANEO R-902'     => ['vincular', 15, 'Dióxido de Titanio R-902 (TiO2)'],
+            'BIOXIDO DETITANEO'          => ['vincular', 15, 'Dióxido de Titanio R-902 (TiO2)'],
+            // A6.4: CAOLIN → #136; AEROSIL → #91
+            'CAOLIN'                     => ['vincular', 136, 'CAOLIN M-325'],
+            'SOLUCION DE AEROSIL'        => ['vincular', 91,  'SOLUCION DE AEROSIL 200'],
+            'SOLUCION DEAEROSIL200'      => ['vincular', 91,  'SOLUCION DE AEROSIL 200'],
+            // A3: semielaborados usados como insumo (tipo_componente=Insumo, igual que V1)
+            'SOLUCION DERESINA'          => ['vincular', 83,  'SOLUCION DE RESINA'],
+            'SOLUCION DE RESINA'         => ['vincular', 83,  'SOLUCION DE RESINA'],
+            'TINTANEGRA'                 => ['vincular', 105, 'TINTA NEGRA'],
+            'TINTA AMARILLO OXIDO'       => ['vincular', 96,  'TINTA AMARILLO OXIDO'],
+            // A6.4/A3: FASE ACUOSA → crear insumo nuevo y enlazarlo a #215 en Fase 3
+            'FASE ACUOSA'                => ['crear', null, 'FASE ACUOSA'],
+            // A6.5: colores T-034
+            'BLANCO'                     => ['vincular', 61,  'BLANCO'],
+            'NEGRO'                      => ['vincular', 18,  'Negro de Humo (Carbon Black)'],
+            'ROJO'                       => ['vincular', 16,  'Óxido de Hierro Rojo (Fe2O3)'],
+            'AMARILLO'                   => ['vincular', 17,  'Óxido de Hierro Amarillo'],
+            'AZUL'                       => ['vincular', 19,  'Pigmento Azul Ftalocianinico'],
+            'VERDE'                      => ['vincular', 20,  'Pasta Colorante Verde (base agua)'],
+            // A6.5: tintas
+            'ROJO OXIDO'                 => ['vincular', 77,  'ROJO OXIDO'],
+            'NEGRO OXIDO'                => ['vincular', 94,  'NEGRO OXIDO'],
+            'VERDE CROMO'                => ['vincular', 101, 'VERDE CROMO'],
+            'VERDECROMO'                 => ['vincular', 101, 'VERDE CROMO'],
+            'AZUL DE FTALOZANINA'        => ['vincular', 100, 'AZUL DE FTALOZANINA'],
+            'AZULDEFTALOZANINA'          => ['vincular', 100, 'AZUL DE FTALOZANINA'],
+            // Variantes de espaciado OCR no cubiertas por insumos_match.json
+            'CARBONATO DEOMYA CAR 1-T'   => ['vincular', 102, 'CARBONATO DE OMYA CAR 1-T'],
+            'CARBONATODEOMYA CAR1-T'     => ['vincular', 102, 'CARBONATO DE OMYA CAR 1-T'],
+            'CARBONATO DEOMYA CAR1-T'    => ['vincular', 102, 'CARBONATO DE OMYA CAR 1-T'],
+            'CARBONATO DEOMYA CAR 1T'    => ['vincular', 102, 'CARBONATO DE OMYA CAR 1-T'],
+            'TIXO GELEZ-100'             => ['vincular', 85,  'TIXO GEL EZ-100'],
+            'GOMADEXHATAN'               => ['vincular', 114, 'GOMA DE XHATAN'],
+            'LECITINADESOYA'             => ['vincular', 89,  'LECITINA DE SOYA'],
+        ];
+    }
+
+    /**
+     * Resuelve un nombre OCR de insumo: prioritiza decisiones A3-A6, luego manifiesto, luego BD.
+     */
+    private function _resolver_insumo_json(string $ocr_nombre, array $overrides, array $im_idx): array
+    {
+        $upper = strtoupper(trim(preg_replace('/\s{2,}/', ' ', $ocr_nombre)));
+
+        // 1. Overlay de decisiones (A3-A6, máxima prioridad)
+        if (isset($overrides[$upper])) {
+            [$accion, $id, $nom] = $overrides[$upper];
+            return ['accion' => $accion, 'insumo_id' => $id, 'nombre_canonico' => $nom, 'fuente' => 'decision'];
+        }
+
+        // 2. Manifiesto insumos_match.json
+        if (isset($im_idx[$upper])) {
+            $e = $im_idx[$upper];
+            if (in_array($e['accion'], ['vincular', 'crear'], true)) {
+                return [
+                    'accion'          => $e['accion'],
+                    'insumo_id'       => $e['accion'] === 'vincular' ? (int)$e['insumo_id'] : null,
+                    'nombre_canonico' => $e['nombre_canonico'],
+                    'fuente'          => 'manifiesto',
+                ];
+            }
+        }
+
+        // 3. Fallback BD (read-only)
+        $ins = $this->_buscar_insumo($ocr_nombre);
+        if ($ins) {
+            return ['accion' => 'vincular', 'insumo_id' => (int)$ins->id, 'nombre_canonico' => $ins->nombre_tecnico, 'fuente' => 'bd'];
+        }
+
+        // 4. No encontrado → crear
+        return ['accion' => 'crear', 'insumo_id' => null, 'nombre_canonico' => $this->_normalizar_nombre_insumo($ocr_nombre), 'fuente' => 'no_encontrado'];
+    }
+
+    /**
+     * Resuelve el producto OCR a su acción (usar_existente | crear | excluir).
+     * Aplica decisiones A7 (VITROGLASS ECOLOGICO, SELLADOR INICIAL, entrenamiento2=#224).
+     */
+    private function _resolver_producto_json(string $ocr_nombre, array $pm_idx, ?array $comp, string $imagen): array
+    {
+        $upper = strtoupper(trim($ocr_nombre));
+
+        // A7.1: VITROGLASS ECOLOGICO (ficha entrenamiento1)
+        if ($imagen === 'entrenamiento1.jpeg') {
+            return ['accion' => 'crear', 'nombre_propuesto' => 'VITROGLASS ECOLOGICO',
+                    'tipo_producto' => 'Fabricado', 'presentacion' => 'Cubeta',
+                    'contenido_neto' => 19.0, 'unidad' => 'Kg', 'categoria_ocr' => 'SELLADORES',
+                    'precio_venta' => 5023.57];
+        }
+
+        // A7.2: SELLADOR INICIAL (ficha entrenamiento5)
+        if ($imagen === 'entrenamiento5.jpeg') {
+            return ['accion' => 'crear', 'nombre_propuesto' => 'SELLADOR INICIAL',
+                    'tipo_producto' => 'Fabricado', 'presentacion' => 'Cubeta',
+                    'contenido_neto' => 19.0, 'unidad' => 'Kg', 'categoria_ocr' => 'SELLADORES',
+                    'precio_venta' => null];
+        }
+
+        // A7.3 / A10: entrenamiento2 → PRAIMER GLASS = versión nueva de #224 PINTURA VINILICA
+        if ($imagen === 'entrenamiento2.jpeg') {
+            return ['accion' => 'usar_existente', 'producto_id' => 224, 'producto_nombre' => 'PINTURA VINILICA'];
+        }
+
+        // Usar comparativa (difiere → versión nueva inactiva, A10)
+        if ($comp && in_array($comp['estado'], ['difiere', 'coincide_exacto'], true) && !empty($comp['producto_id'])) {
+            $nom = '';
+            foreach ($pm_idx as $e) {
+                if ((int)($e['producto_id'] ?? 0) === (int)$comp['producto_id']) { $nom = $e['producto_nombre_bd'] ?? $ocr_nombre; break; }
+            }
+            return ['accion' => 'usar_existente', 'producto_id' => (int)$comp['producto_id'], 'producto_nombre' => $nom ?: $ocr_nombre];
+        }
+
+        // Buscar en pm_idx
+        if (isset($pm_idx[$upper]) && $pm_idx[$upper]['accion'] === 'usar_existente') {
+            $p = $pm_idx[$upper];
+            return ['accion' => 'usar_existente', 'producto_id' => (int)$p['producto_id'], 'producto_nombre' => $p['producto_nombre_bd']];
+        }
+
+        return ['accion' => 'excluir', 'razon' => "Sin mapeo para \"$ocr_nombre\" en $imagen — no cubierto por A1-A11"];
+    }
+
+    /**
+     * Calcula la versión siguiente consultando BD (read-only).
+     * A11: entrenamiento11 → V(max+1), entrenamiento15 → V(max+2) del producto #215.
+     */
+    private function _proxima_version_json(array $prod_info, string $imagen): string
+    {
+        if ($prod_info['accion'] === 'crear') {
+            return 'V1';
+        }
+        $pid = (int)$prod_info['producto_id'];
+        $row = $this->db->select_max('version')->where('producto_id', $pid)->get('formulaciones')->row();
+        $max = (int)($row->version ?? 0);
+
+        // Cache estático para simular secuencia sin escribir (A11: 11→V(max+1), 15→V(max+2))
+        static $vcache = [];
+        $k = "p{$pid}";
+        if (!isset($vcache[$k])) {
+            $vcache[$k] = $max + 1;
+        } else {
+            $vcache[$k]++;
+        }
+        return 'V' . $vcache[$k];
+    }
+
+    /**
+     * Estructura de grupos para entrenamiento20-grupo.jpeg (decisiones A1/A2/A6.5).
+     * Sub-recetas verificadas contra el OCR (dudas del JSON). pct_fase=45.00 por grupo.
+     */
+    private function _grupos_t034_json(): array
+    {
+        // Colores A6.5: BLANCO=#61, NEGRO=#18, ROJO=#16, AMARILLO=#17, AZUL=#19, VERDE=#20
+        return [
+            'NEGRO'    => [
+                ['insumo_id' => null, 'nombre_canonico' => 'FASE ACUOSA',                     'crear' => true,  'kg' => 0.401, 'pct_fase' => 45.00],
+                ['insumo_id' => 18,   'nombre_canonico' => 'Negro de Humo (Carbon Black)',    'crear' => false, 'kg' => 0.015, 'pct_fase' => null],
+                ['insumo_id' => 20,   'nombre_canonico' => 'Pasta Colorante Verde (base agua)','crear'=> false, 'kg' => 0.475, 'pct_fase' => null],
+            ],
+            'BLANCO'   => [
+                ['insumo_id' => null, 'nombre_canonico' => 'FASE ACUOSA',                     'crear' => true,  'kg' => 7.401, 'pct_fase' => 45.00],
+                ['insumo_id' => 17,   'nombre_canonico' => 'Óxido de Hierro Amarillo',        'crear' => false, 'kg' => 0.181, 'pct_fase' => null],
+                ['insumo_id' => 61,   'nombre_canonico' => 'BLANCO',                          'crear' => false, 'kg' => 8.865, 'pct_fase' => null],
+            ],
+            'AZUL'     => [
+                ['insumo_id' => null, 'nombre_canonico' => 'FASE ACUOSA',                     'crear' => true,  'kg' => 0.453, 'pct_fase' => 45.00],
+                ['insumo_id' => 18,   'nombre_canonico' => 'Negro de Humo (Carbon Black)',    'crear' => false, 'kg' => 0.039, 'pct_fase' => null],
+                ['insumo_id' => 17,   'nombre_canonico' => 'Óxido de Hierro Amarillo',        'crear' => false, 'kg' => 0.029, 'pct_fase' => null],
+                ['insumo_id' => 16,   'nombre_canonico' => 'Óxido de Hierro Rojo (Fe2O3)',    'crear' => false, 'kg' => 0.098, 'pct_fase' => null],
+                ['insumo_id' => 19,   'nombre_canonico' => 'Pigmento Azul Ftalocianinico',    'crear' => false, 'kg' => 0.082, 'pct_fase' => null],
+                ['insumo_id' => 61,   'nombre_canonico' => 'BLANCO',                          'crear' => false, 'kg' => 0.306, 'pct_fase' => null],
+            ],
+            'AMARILLO' => [
+                ['insumo_id' => null, 'nombre_canonico' => 'FASE ACUOSA',                     'crear' => true,  'kg' => 0.453, 'pct_fase' => 45.00],
+                ['insumo_id' => 18,   'nombre_canonico' => 'Negro de Humo (Carbon Black)',    'crear' => false, 'kg' => 0.054, 'pct_fase' => null],
+                ['insumo_id' => 16,   'nombre_canonico' => 'Óxido de Hierro Rojo (Fe2O3)',    'crear' => false, 'kg' => 0.138, 'pct_fase' => null],
+                ['insumo_id' => 17,   'nombre_canonico' => 'Óxido de Hierro Amarillo',        'crear' => false, 'kg' => 0.149, 'pct_fase' => null],
+                ['insumo_id' => 61,   'nombre_canonico' => 'BLANCO',                          'crear' => false, 'kg' => 0.213, 'pct_fase' => null],
+            ],
+        ];
+    }
+
+    /**
+     * Links insumo→semielaborado a ejecutar en Fase 3 (A3, UPDATE puntual, solo reporte aquí).
+     */
+    private function _links_f3_json(): array
+    {
+        return [
+            ['insumo_id' => 91,   'codigo' => 'IMP-D0012F55', 'nombre_insumo' => 'SOLUCION DE AEROSIL 200', 'producto_id' => 204, 'nombre_producto' => 'SOLUCION DE AEROSIL 200'],
+            ['insumo_id' => 96,   'codigo' => 'IMP-7A375D05', 'nombre_insumo' => 'TINTA AMARILLO OXIDO',    'producto_id' => 206, 'nombre_producto' => 'TINTA AMARILLO OXIDO'],
+            ['insumo_id' => 105,  'codigo' => 'IMP-AF1B06D8', 'nombre_insumo' => 'TINTA NEGRA',             'producto_id' => 205, 'nombre_producto' => 'TINTA NEGRA'],
+            ['insumo_id' => 83,   'codigo' => 'IMP-7FB3924F', 'nombre_insumo' => 'SOLUCION DE RESINA',      'producto_id' => 214, 'nombre_producto' => 'SOLUCION DE RESINA EC-1',  'nota' => 'Validar equivalencia EC-1'],
+            ['insumo_id' => null, 'codigo' => '(NUEVO)',      'nombre_insumo' => 'FASE ACUOSA',             'producto_id' => 215, 'nombre_producto' => 'SOLUCION FASE ACUOSA',    'nota' => 'Crear insumo FASE ACUOSA primero, luego enlazar a #215'],
+        ];
+    }
+
+    /**
+     * Calcula rendimiento_m2_por_kg del producto desde la lista de precios (A9).
+     * Fórmula: punto_medio_m2_cubeta / contenido_neto (19 kg).
+     */
+    private function _rendimiento_m2_json(array $prod_info, array $pm_idx): ?string
+    {
+        $bus = strtoupper(trim(
+            $prod_info['accion'] === 'crear'
+                ? ($prod_info['nombre_propuesto'] ?? '')
+                : ($prod_info['producto_nombre'] ?? '')
+        ));
+
+        foreach ($pm_idx as $e) {
+            if (strtoupper(trim($e['ocr_nombre'] ?? '')) !== $bus
+                && strtoupper(trim($e['producto_nombre_bd'] ?? '')) !== $bus) {
+                continue;
+            }
+            foreach ($e['presentaciones'] ?? [] as $pres) {
+                if (strtoupper(trim($pres['presentacion'] ?? '')) === 'CUBETA'
+                    && !empty($pres['rendimiento_teorico'])) {
+                    $cn = $this->_contenido_neto_producto_json($prod_info);
+                    return $this->_calc_m2_por_kg_json($pres['rendimiento_teorico'], (float)$cn);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Calcula m2/kg desde el texto de rendimiento de la lista de precios (A9).
+     * - Tasa de CONSUMO ("250gr./1m2" → 0,25 kg/m² → 4 m²/kg): no depende del envase.
+     * - Cobertura del envase ("180-190m2", "30m2"): requiere el contenido neto real (kg).
+     */
+    private function _calc_m2_por_kg_json(string $texto, float $kg = 0): ?string
+    {
+        // R8: tasa de consumo "250gr./1m2" → m² por kg de producto (invertida)
+        if (preg_match('/(\d+(?:\.\d+)?)\s*(gr|g|kg)\s*\.?\s*\/\s*(\d+(?:\.\d+)?)?\s*m2/i', $texto, $m)) {
+            $kg_prod = strtolower($m[2]) === 'kg' ? (float)$m[1] : (float)$m[1] / 1000;
+            $m2      = (isset($m[3]) && (float)$m[3] > 0) ? (float)$m[3] : 1.0;
+            if ($kg_prod <= 0) { return null; }
+            return round($m2 / $kg_prod, 2) . ' m²/kg';
+        }
+
+        if ($kg <= 0) { return null; } // el resto de formatos necesita contenido neto conocido
+
+        // "180-190m2" → (180+190)/2 / kg
+        if (preg_match('/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*m2/i', $texto, $m)) {
+            return round(((float)$m[1] + (float)$m[2]) / 2 / $kg, 2) . ' m²/kg';
+        }
+        // "30m2"
+        if (preg_match('/(\d+(?:\.\d+)?)\s*m2/i', $texto, $m)) {
+            return round((float)$m[1] / $kg, 2) . ' m²/kg';
+        }
+        return null;
+    }
+
+    /**
+     * Contenido neto (kg) real del producto para derivar m²/kg (A9/D2).
+     * Solo devuelve número si es dato fiable:
+     *  - ficha nueva con contenido declarado en A7, o
+     *  - producto existente con `unidad_venta = 'Cubeta'` (ahí `contenido_neto` sí es el envase).
+     * NO se usa `contenido_neto` de productos con `unidad_venta = 'Kg'`: en producción guardan
+     * el lote (#223=135, #222=945, #225=380.35), no el peso del envase. Esos casos quedan
+     * FALTANTE y su derivación va a la propuesta de Fase 3 (aprobación de negocio).
+     */
+    private function _contenido_neto_producto_json(array $prod_info): ?float
+    {
+        static $cache = [];
+
+        if (($prod_info['accion'] ?? '') === 'crear') {
+            // Fichas nuevas con contenido declarado en A7 (mismo dato que _resolver_producto_json)
+            $fichas_cn = ['VITROGLASS ECOLOGICO' => 19.0, 'SELLADOR INICIAL' => 19.0];
+            $nom = strtoupper(trim($prod_info['nombre_propuesto'] ?? ''));
+            if (isset($fichas_cn[$nom])) { return $fichas_cn[$nom]; }
+            if (!empty($prod_info['contenido_neto'])) { return (float)$prod_info['contenido_neto']; }
+            return null;
+        }
+
+        $pid = (int)($prod_info['producto_id'] ?? 0);
+        if ($pid > 0) {
+            if (!array_key_exists($pid, $cache)) {
+                $row = $this->db->select('contenido_neto, unidad_venta')->where('id', $pid)->get('productos')->row();
+                $es_envase = $row && strtolower(trim((string)$row->unidad_venta)) === 'cubeta';
+                $cache[$pid] = ($es_envase && (float)$row->contenido_neto > 0) ? (float)$row->contenido_neto : null;
+            }
+            return $cache[$pid];
+        }
+        return null;
+    }
+
+    /**
+     * Lista de productos de la lista 2025 (A8/A9): 28 a crear + 3 mapeados.
+     * Fuente: pm_idx (entradas con presentaciones no vacías).
+     */
+    private function _lista_2025_json(array $pm_idx): array
+    {
+        // Mapeados por decisión A8
+        $mapeados_ids = [222 => 'ARENA SILICA', 404 => 'CHISA GLASS TEXTURADO Y MICRO', 3 => 'CHISA GLASS MICRO'];
+        $result = [];
+
+        foreach ($pm_idx as $e) {
+            if (empty($e['presentaciones'])) { continue; }
+
+            $pid = (int)($e['producto_id'] ?? 0);
+            $mapeado_a = null;
+            if (isset($mapeados_ids[$pid])) {
+                $mapeado_a = ['id' => $pid, 'nombre' => $mapeados_ids[$pid]];
+            } elseif ($e['accion'] === 'usar_existente' && $pid) {
+                $mapeado_a = ['id' => $pid, 'nombre' => $e['producto_nombre_bd'] ?? ''];
+            }
+
+            $cn_base = $this->_contenido_neto_producto_json([
+                'accion'           => $mapeado_a ? 'usar_existente' : 'crear',
+                'producto_id'      => $pid ?: null,
+                'nombre_propuesto' => $e['ocr_nombre'],
+                'producto_nombre'  => $e['producto_nombre_bd'] ?? '',
+            ]);
+
+            $presentaciones = [];
+            foreach ($e['presentaciones'] as $pres) {
+                $rend      = $pres['rendimiento_teorico'] ?? null;
+                $es_cubeta = strtoupper(trim($pres['presentacion'] ?? '')) === 'CUBETA';
+                // D2: el contenido_neto del producto corresponde a su presentación base; solo se
+                // usa para CUBETA. Galón y "(sin pres.)" quedan FALTANTE (no se inventan kg).
+                $cn = ($es_cubeta && $cn_base) ? $cn_base : null;
+                $presentaciones[] = [
+                    'presentacion'       => $pres['presentacion'] ?? null,
+                    'precio_sin_iva'     => $pres['precio_sin_iva'] ?? null,
+                    'rendimiento_teorico'=> $rend,
+                    'contenido_neto_kg'  => $cn,
+                    'rendimiento_m2_kg'  => $rend ? $this->_calc_m2_por_kg_json($rend, (float)$cn) : null,
+                    'categoria'          => $pres['categoria'] ?? null,
+                ];
+            }
+
+            $result[] = [
+                'ocr_nombre'    => $e['ocr_nombre'],
+                'categoria'     => $presentaciones[0]['categoria'] ?? null,
+                'mapeado_a'     => $mapeado_a,
+                'accion'        => $mapeado_a ? 'usar_existente' : 'crear',
+                'presentaciones'=> $presentaciones,
+            ];
+        }
+        return $result;
+    }
+
+    /**
+     * Genera el texto del reporte dry-run (ENTREGABLE 2 de Fase 2).
+     */
+    private function _reporte_dryrun_json(array $d): string
+    {
+        $ln  = [];
+        $s1  = str_repeat('─', 80);
+        $s2  = str_repeat('═', 80);
+
+        $ln[] = $s2;
+        $ln[] = (!empty($d['dry_run']) ? 'DRY-RUN FASE 2' : 'APLICACIÓN FASE 3')
+              . ' — ENTRENAMIENTO 3 — CHISA RECUBRIMIENTOS';
+        $ln[] = 'Generado: ' . date('Y-m-d H:i:s') . '  |  BD: PRODUCCIÓN'
+              . (!empty($d['dry_run']) ? ' (solo lectura)' : ' (ESCRITURA)');
+        $ln[] = $s2;
+
+        // §1 — Productos a USAR
+        $ln[] = '';
+        $ln[] = '§1  PRODUCTOS A USAR (id + nombre en BD)';
+        $ln[] = $s1;
+        if (empty($d['prods_usar'])) {
+            $ln[] = '  (ninguno)';
+        } else {
+            foreach ($d['prods_usar'] as $id => $nom) {
+                $ln[] = sprintf('  #%-5d %s', $id, $nom);
+            }
+        }
+
+        // §2 — Productos a CREAR
+        $ln[] = '';
+        $ln[] = '§2  PRODUCTOS A CREAR (fichas con producto nuevo)';
+        $ln[] = $s1;
+        if (empty($d['prods_crear'])) {
+            $ln[] = '  (ninguno)';
+        } else {
+            foreach ($d['prods_crear'] as $nom => $info) {
+                $ln[] = "  NOMBRE:         $nom";
+                $ln[] = "    tipo_producto: " . ($info['tipo_producto']  ?? 'Fabricado');
+                $ln[] = "    presentacion:  " . ($info['presentacion']   ?? 'FALTANTE');
+                $cn = isset($info['contenido_neto']) ? $info['contenido_neto'] . ' Kg' : 'FALTANTE';
+                $ln[] = "    contenido_neto: $cn";
+                $pv = isset($info['precio_venta']) ? '$' . number_format($info['precio_venta'], 2) : 'FALTANTE';
+                $ln[] = "    precio_venta:  $pv";
+                $ln[] = "    categoria:     " . ($info['categoria_ocr'] ?? 'FALTANTE');
+                $ln[] = '';
+            }
+        }
+
+        // §3 — Insumos a VINCULAR
+        $ln[] = '§3  INSUMOS A VINCULAR (id + nombre_tecnico en BD)';
+        $ln[] = $s1;
+        if (empty($d['ins_vincular'])) {
+            $ln[] = '  (ninguno)';
+        } else {
+            ksort($d['ins_vincular']);
+            foreach ($d['ins_vincular'] as $id => $nom) {
+                $alerta = strpos($nom, 'IMP-') !== false ? '  ⚠ CÓDIGO IMP- (preferir canónico)' : '';
+                $ln[] = sprintf('  #%-5d %s%s', $id, $nom, $alerta);
+            }
+        }
+
+        // §4 — Insumos a CREAR
+        $ln[] = '';
+        $ln[] = '§4  INSUMOS A CREAR (nombre canónico + unidad)';
+        $ln[] = $s1;
+        if (empty($d['ins_crear'])) {
+            $ln[] = '  (ninguno)';
+        } else {
+            foreach ($d['ins_crear'] as $nom => $unidad) {
+                $ln[] = "  NUEVO: $nom  [unidad=$unidad]";
+            }
+        }
+
+        // §5 — Links insumo→semielaborado (Fase 3)
+        $ln[] = '';
+        $ln[] = '§5  ENLACES INSUMO→SEMIELABORADO A EJECUTAR EN FASE 3 (UPDATE puntual)';
+        $ln[] = $s1;
+        foreach ($d['links_f3'] as $l) {
+            $nota  = isset($l['nota'])    ? "  [NOTA: {$l['nota']}]" : '';
+            $ins_s = $l['insumo_id']      ? "insumo #{$l['insumo_id']} ({$l['codigo']})" : "insumo NUEVO ({$l['nombre_insumo']})";
+            $ln[] = "  $ins_s → tipo='fabricado', producto_id={$l['producto_id']} ({$l['nombre_producto']}){$nota}";
+        }
+
+        // §6 — Formulaciones a CREAR
+        $ln[] = '';
+        $ln[] = '§6  FORMULACIONES A CREAR';
+        $ln[] = $s1;
+        if (empty($d['fms_crear'])) {
+            $ln[] = '  (ninguna)';
+        } else {
+            foreach ($d['fms_crear'] as $f) {
+                $gc  = $f['grupos_color']   > 0 ? "  grupos_color={$f['grupos_color']}" : '';
+                $rm  = $f['rend_m2_kg']    ? "  rendimiento_m2_kg={$f['rend_m2_kg']}" : '';
+                $con = $f['confianza_ocr'] !== null ? "  conf_ocr={$f['confianza_ocr']}" : '';
+                $ln[] = sprintf('  %-38s → %s', $f['imagen'], $f['producto']);
+                $ln[] = sprintf('    versión=%s  lote=%.2f kg  comp_ocr=%d  filas_detalle=%d%s%s%s',
+                    $f['version'], $f['lote_kg'], $f['n_ocr_comp'], $f['n_filas_detalle'], $gc, $rm, $con);
+                if (!empty($f['fase_acuosa'])) {
+                    $partes = [];
+                    foreach ($f['fase_acuosa'] as $g => $fa) {
+                        $partes[] = sprintf('%s=%.3f Kg (%.2f%%)', $g, $fa['kg'], $fa['pct']);
+                    }
+                    $ln[] = '    fase_acuosa (A2): ' . implode(' | ', $partes);
+                }
+                $ln[] = "    ya_existe: {$f['ya_existe']}";
+            }
+        }
+
+        // §7 — Formulaciones OMITIDAS
+        $ln[] = '';
+        $ln[] = '§7  FORMULACIONES OMITIDAS';
+        $ln[] = $s1;
+        if (empty($d['fms_omit'])) {
+            $ln[] = '  (ninguna)';
+        } else {
+            foreach ($d['fms_omit'] as $o) {
+                $pid = isset($o['prod_id']) ? " (prod #{$o['prod_id']})" : '';
+                $ln[] = "  {$o['imagen']}{$pid}: {$o['razon']}";
+            }
+        }
+
+        // §8 — Precios 2025 (A8/A9)
+        $ln[] = '';
+        $ln[] = '§8  PRECIOS LISTA 2025 + RENDIMIENTOS CALCULADOS (A8/A9)';
+        $ln[] = $s1;
+        $n_crear_l  = 0;
+        $n_mapea_l  = 0;
+        foreach ($d['lista_2025'] as $p) {
+            $tag = $p['mapeado_a']
+                ? sprintf('MAPEA→#%d %-30s', $p['mapeado_a']['id'], $p['mapeado_a']['nombre'])
+                : 'CREAR';
+            if ($p['mapeado_a']) { $n_mapea_l++; } else { $n_crear_l++; }
+            $cat = $p['categoria'] ? " [{$p['categoria']}]" : '';
+            $ln[] = "  $tag  {$p['ocr_nombre']}$cat";
+            foreach ($p['presentaciones'] as $pr) {
+                $pnm = $pr['presentacion'] ?? '(sin pres.)';
+                $prc = isset($pr['precio_sin_iva']) ? '$' . number_format($pr['precio_sin_iva'], 2) : '?';
+                $rnd = $pr['rendimiento_teorico'] ?? '?';
+                $rm2 = $pr['rendimiento_m2_kg']
+                    ? " → {$pr['rendimiento_m2_kg']}"
+                    : (!empty($pr['rendimiento_teorico']) ? ' → FALTANTE (sin contenido_neto de esa presentación)' : '');
+                $ln[] = "    $pnm: $prc  ($rnd)$rm2";
+            }
+        }
+
+        // §9 — Totales
+        $ln[] = '';
+        $ln[] = $s2;
+        $ln[] = 'RESUMEN';
+        $ln[] = $s1;
+        $ln[] = '  Productos a USAR:             ' . count($d['prods_usar']);
+        $ln[] = '  Productos a CREAR (fichas):   ' . count($d['prods_crear']);
+        $ln[] = '  Productos a CREAR (lista2025):'  . $n_crear_l;
+        $ln[] = '  Productos MAPEADOS (lista2025):' . $n_mapea_l;
+        $ln[] = '  Insumos a VINCULAR:           ' . count($d['ins_vincular']);
+        $ln[] = '  Insumos a CREAR:              ' . count($d['ins_crear']);
+        $ln[] = '  Links Fase 3 (UPDATE):        ' . count($d['links_f3']);
+        $ln[] = '  Formulaciones a CREAR:        ' . count($d['fms_crear']);
+        $ln[] = '  Formulaciones OMITIDAS:       ' . count($d['fms_omit']);
+        if (!empty($d['dry_run'])) {
+            $ln[] = '  Escrituras detectadas:        ' . $d['write_counter'];
+            $ln[] = '';
+            $ln[] = 'NADA ESCRITO (DRY-RUN)';
+        } else {
+            $ln[] = '  MODO:                         ESCRITURA REAL (Fase 3)';
+        }
+        $ln[] = $s2;
+
+        return implode("\n", $ln) . "\n";
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FASE 3 — Aplicación real del plan aprobado en el dry-run
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Aplica el plan: insumos y productos nuevos, formulaciones (versiones nuevas) y
+     * enlaces insumo→semielaborado, todo en una transacción. No escribe precios ni
+     * rendimiento_m2_por_kg (A9: van a propuesta de negocio).
+     */
+    private function _aplicar_plan_json(array $plan, array $prods_crear, array $ins_crear, array $lista_2025, bool $activar_nuevas, array $links_f3, bool $solo_preflight = false): array
+    {
+        $log = [];
+        $log[] = str_repeat('═', 80);
+        $log[] = 'FASE 3 — APLICACIÓN REAL — ENTRENAMIENTO 3';
+        $log[] = str_repeat('═', 80);
+
+        // ── 1. Pre-flight: nada fuera del dry-run aprobado ────────────────
+        $errores = [];
+        foreach ($plan as $p) {
+            $pi = $p['prod_info'];
+            if ($pi['accion'] === 'usar_existente') {
+                $row = $this->db->select('id, nombre')->where('id', (int)$pi['producto_id'])->get('productos')->row();
+                if (!$row) { $errores[] = "Producto #{$pi['producto_id']} ({$pi['producto_nombre']}) no existe en productos."; }
+            } elseif (!isset($prods_crear[$pi['nombre_propuesto']])) {
+                $errores[] = "Producto a crear no aprobado en el dry-run: {$pi['nombre_propuesto']}";
+            }
+            foreach ($p['grupos'] as $items) {
+                foreach ($items as $it) {
+                    if ($it['insumo_crear']) {
+                        if (!isset($ins_crear[$it['nombre']])) { $errores[] = "Insumo a crear no aprobado en el dry-run: {$it['nombre']}"; }
+                    } elseif (empty($it['insumo_id'])) {
+                        $errores[] = "Componente sin resolución aprobada: {$it['nombre']}";
+                    } else {
+                        $row = $this->db->select('id')->where('id', (int)$it['insumo_id'])->get('insumos')->row();
+                        if (!$row) { $errores[] = "Insumo #{$it['insumo_id']} ({$it['nombre']}) no existe en insumos."; }
+                    }
+                }
+            }
+        }
+        if ($errores) {
+            $log[] = '';
+            $log[] = 'PRE-FLIGHT FALLÓ — ABORTADO SIN ESCRIBIR:';
+            foreach ($errores as $e) { $log[] = '  ✗ ' . $e; }
+            return ['ok' => false, 'reporte' => implode("\n", $log) . "\n"];
+        }
+        $log[] = '';
+        $log[] = sprintf('PRE-FLIGHT OK: %d formulaciones, %d productos y %d insumos por crear (todo dentro del dry-run aprobado).',
+            count($plan), count($prods_crear), count($ins_crear));
+
+        if ($solo_preflight) {
+            $log[] = 'PRE-FLIGHT ONLY: no se escribió nada (--preflight).';
+            return ['ok' => true, 'reporte' => implode("\n", $log) . "\n"];
+        }
+
+        // ── 2. Escrituras en una sola transacción ─────────────────────────
+        $this->db->trans_start();
+
+        $ins_ids  = [];
+        $prod_ids = [];
+        $n_forms  = 0;
+
+        $log[] = '';
+        $log[] = 'INSUMOS NUEVOS:';
+        foreach ($ins_crear as $nom => $unidad) {
+            $id = $this->_crear_insumo_json($nom, $unidad);
+            if (!$id) { $errores[] = "No se pudo crear el insumo \"$nom\""; break; }
+            $ins_ids[$nom] = $id;
+            $log[] = sprintf('  + insumo #%d  %s  [%s]', $id, $nom, $unidad);
+        }
+
+        if (!$errores) {
+            $log[] = '';
+            $log[] = 'PRODUCTOS NUEVOS (fichas):';
+            foreach ($prods_crear as $nom => $info) {
+                $id = $this->_crear_producto_json(
+                    $nom,
+                    $info['categoria_ocr'] ?? '',
+                    isset($info['precio_venta']) ? (float)$info['precio_venta'] : null,
+                    'Cubeta',
+                    $info['presentacion'] ?? null,
+                    isset($info['contenido_neto']) ? (float)$info['contenido_neto'] : null,
+                    $log
+                );
+                if (!$id) { $errores[] = "No se pudo crear el producto \"$nom\""; break; }
+                $prod_ids[$nom] = $id;
+            }
+        }
+
+        if (!$errores) {
+            $log[] = '';
+            $log[] = 'PRODUCTOS NUEVOS (lista 2025, sin precio — PASO 3 asigna precios):';
+            foreach ($lista_2025 as $p) {
+                if ($p['accion'] !== 'crear' || isset($prod_ids[$p['ocr_nombre']])) { continue; }
+                $id = $this->_crear_producto_json(
+                    $p['ocr_nombre'],
+                    $p['categoria'] ?? '',
+                    null,
+                    $this->_unidad_venta_lista_json($p['presentaciones'] ?? []),
+                    null,
+                    null,
+                    $log
+                );
+                if ($id) { $prod_ids[$p['ocr_nombre']] = $id; }
+            }
+        }
+
+        if (!$errores) {
+            $log[] = '';
+            $log[] = 'FORMULACIONES (versiones nuevas, comentarios con la imagen de origen):';
+            foreach ($plan as $f) {
+                $pi  = $f['prod_info'];
+                $pid = $pi['accion'] === 'usar_existente'
+                     ? (int)$pi['producto_id']
+                     : (int)($prod_ids[$pi['nombre_propuesto']] ?? 0);
+                if (!$pid) { $errores[] = "Sin producto para {$f['imagen']}"; break; }
+
+                $tiene_previas = $this->db->where('producto_id', $pid)->count_all_results('formulaciones') > 0;
+                $activar       = $activar_nuevas && !$tiene_previas;
+
+                $fid = $this->_insertar_formulacion_json($f, $pid, $ins_ids, $activar, $log);
+                if (!$fid) { $errores[] = "No se pudo insertar la formulación de {$f['imagen']}"; break; }
+                $n_forms++;
+            }
+        }
+
+        if (!$errores) {
+            $log[] = '';
+            $log[] = 'ENLACES INSUMO→SEMIELABORADO (UPDATE puntual):';
+            foreach ($links_f3 as $l) {
+                if ((int)($l['insumo_id'] ?? 0) === 83) {
+                    $log[] = '  ⏭ #83 → #214 OMITIDO (equivalencia SOLUCION DE RESINA ≡ EC-1 pendiente de validar)';
+                    continue;
+                }
+                $iid = $l['insumo_id'] ? (int)$l['insumo_id'] : (int)($ins_ids['FASE ACUOSA'] ?? 0);
+                if (!$iid) { $errores[] = "Sin insumo para el enlace al producto #{$l['producto_id']}"; break; }
+                $this->db->where('id', $iid)->update('insumos', [
+                    'tipo'        => 'fabricado',
+                    'producto_id' => (int)$l['producto_id'],
+                ]);
+                $log[] = sprintf('  ✓ insumo #%d → tipo=fabricado, producto_id=%d (%s)', $iid, $l['producto_id'], $l['nombre_producto']);
+            }
+        }
+
+        // ── 3. Bitácora + cierre de transacción ───────────────────────────
+        if (!$errores) {
+            $this->db->insert('log_importaciones', [
+                'archivo'               => 'ENTRENAMIENTO_3 — ' . count($plan) . ' imágenes (JSON)',
+                'usuario_id'            => 0,
+                'productos_importados'  => count($prod_ids),
+                'formulaciones_creadas' => $n_forms,
+                'insumos_creados'       => count($ins_ids),
+                'insumos_no_encontrados'=> 0,
+                'errores'               => null,
+                'estatus'               => 'Exitoso',
+            ]);
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false || $errores) {
+            $log[] = '';
+            $log[] = 'ERROR — TRANSACCIÓN REVERTIDA (no quedó nada escrito):';
+            foreach ($errores as $e) { $log[] = '  ✗ ' . $e; }
+            return ['ok' => false, 'reporte' => implode("\n", $log) . "\n"];
+        }
+
+        $log[] = '';
+        $log[] = 'RESUMEN FASE 3:';
+        $log[] = sprintf('  Insumos creados:        %d', count($ins_ids));
+        $log[] = sprintf('  Productos creados:      %d', count($prod_ids));
+        $log[] = sprintf('  Formulaciones nuevas:   %d (activas solo V1 de productos sin formulación previa)', $n_forms);
+        $log[] = '  Enlaces aplicados:      4 (el #83 queda pendiente)';
+        $log[] = '  rendimiento_m2_por_kg:  diferido a propuesta (A9)';
+        $log[] = '  Precios lista 2025:     PASO 3';
+        $log[] = str_repeat('═', 80);
+
+        return ['ok' => true, 'reporte' => implode("\n", $log) . "\n"];
+    }
+
+    /**
+     * Crea un insumo con código canónico INS-<slug> (nunca IMP-).
+     */
+    private function _crear_insumo_json(string $nombre, string $unidad): ?int
+    {
+        $base = 'INS-' . trim(substr(strtoupper(preg_replace('/[^A-Z0-9]+/i', '-', $nombre)), 0, 30), '-');
+        $codigo = $base;
+        $sufijo = 1;
+        while ($this->db->where('codigo', $codigo)->count_all_results('insumos') > 0) {
+            $sufijo++;
+            $codigo = $base . '-' . $sufijo;
+        }
+
+        $ok = $this->db->insert('insumos', [
+            'codigo'          => $codigo,
+            'nombre_tecnico'  => $nombre,
+            'alias'           => $nombre,
+            'descripcion'     => 'Insumo creado por la carga Entrenamiento 3 (Fase 3).',
+            'unidad_medida'   => in_array($unidad, ['Kg', 'L', 'Pza'], true) ? $unidad : 'Kg',
+            'tipo'            => 'comprado',
+            'precio_promedio' => 0,
+            'estatus'         => 'Activo',
+            'fecha_registro'  => date('Y-m-d H:i:s'),
+        ]);
+
+        return $ok ? (int)$this->db->insert_id() : null;
+    }
+
+    /**
+     * Crea un producto Fabricado con código único, categoría resuelta por nombre y
+     * precio solo si viene aprobado (null = pendiente).
+     */
+    private function _crear_producto_json(string $nombre, string $categoria_ocr, ?float $precio, string $unidad_venta, ?string $presentacion, ?float $contenido_neto, array &$log): ?int
+    {
+        $base = trim(substr(strtoupper(preg_replace('/[^A-Z0-9]+/i', '-', $nombre)), 0, 40), '-');
+        $codigo = $base;
+        $sufijo = 1;
+        while ($this->db->where('codigo', $codigo)->count_all_results('productos') > 0) {
+            $sufijo++;
+            $codigo = $base . '-' . $sufijo;
+        }
+
+        $ok = $this->db->insert('productos', [
+            'codigo'                 => $codigo,
+            'nombre'                 => $nombre,
+            'alias'                  => $nombre,
+            'descripcion'            => 'Producto creado por la carga Entrenamiento 3. Completar ficha técnica.',
+            'categoria_id'           => $this->_categoria_id_json($categoria_ocr),
+            'tipo_producto'          => 'Fabricado',
+            'unidad_venta'           => in_array($unidad_venta, ['Cubeta', 'Galon', 'Litro', 'Kg', 'Pieza'], true) ? $unidad_venta : 'Cubeta',
+            'presentacion_principal' => $presentacion,
+            'contenido_neto'         => $contenido_neto,
+            'unidad_contenido'       => $contenido_neto !== null ? 'Kg' : null,
+            'precio_venta'           => $precio,
+            'estatus'                => 'Activo',
+            'usuario_creacion'       => null,
+            'fecha_creacion'         => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$ok) { return null; }
+
+        $id = (int)$this->db->insert_id();
+        $log[] = sprintf('  + producto #%d  %-34s [%s] codigo=%s precio=%s',
+            $id, $nombre, $categoria_ocr,
+            $codigo,
+            $precio === null ? 'PENDIENTE' : '$' . number_format($precio, 2));
+        return $id;
+    }
+
+    /**
+     * Resuelve categoria_id por nombre (mapa de A8; fallback Pinturas) sin hardcodear IDs.
+     */
+    private function _categoria_id_json(string $categoria_ocr): int
+    {
+        $map = [
+            'SELLADORES'                      => 'Selladores',
+            'PINTURAS ARQUITECTONICAS'        => 'Pinturas',
+            'PASTAS ARQUITECTONICAS'          => 'Pastas',
+            'PREPARADORES DE SUPERFICIE'      => 'Preparadores de Superficies',
+            'IMPERMEABILIZANTE'               => 'Impermeabilizantes',
+            'CHISA GLASS'                     => 'Recubrimientos',
+            'POLYCOLOR'                       => 'Recubrimientos',
+            'GRANOS DE MARMOL'                => 'Pastas',
+            'SHELL HARD (CASCARA DE NARANJA)' => 'Recubrimientos',
+        ];
+        $nombre = $map[strtoupper(trim($categoria_ocr))] ?? 'Pinturas';
+        $row = $this->db->where('LOWER(nombre)', strtolower($nombre))->get('categorias_productos')->row();
+        return $row ? (int)$row->id : 1;
+    }
+
+    /**
+     * unidad_venta del producto de la lista 2025 según sus presentaciones.
+     */
+    private function _unidad_venta_lista_json(array $presentaciones): string
+    {
+        foreach ($presentaciones as $p) {
+            $nom = strtoupper(trim($p['presentacion'] ?? ''));
+            if ($nom === 'CUBETA') { return 'Cubeta'; }
+        }
+        foreach ($presentaciones as $p) {
+            $nom = strtoupper(trim($p['presentacion'] ?? ''));
+            if ($nom === 'GALON') { return 'Galon'; }
+            if ($nom === 'LITRO') { return 'Litro'; }
+        }
+        return 'Cubeta';
+    }
+
+    /**
+     * Inserta la versión nueva y su detalle con los insumo_id aprobados (sin auto-crear nada).
+     */
+    private function _insertar_formulacion_json(array $f, int $producto_id, array $ins_ids, bool $activar, array &$log): ?int
+    {
+        $comentarios = 'Importado del entrenamiento 3 — imagen ' . $f['imagen'];
+        if (!empty($f['notas']))     { $comentarios .= ' | ' . $f['notas']; }
+        if (!empty($f['confianza'])) { $comentarios .= ' | OCR confianza ' . $f['confianza']; }
+
+        $ok = $this->db->insert('formulaciones', [
+            'producto_id'           => $producto_id,
+            'cliente_id'            => null,
+            'variante_descripcion'  => null,
+            'referencia_cliente'    => null,
+            'version'               => (int)ltrim($f['version'], 'Vv'),
+            'nombre_version'        => $f['version'],
+            'descripcion'           => 'Versión nueva cargada desde la ficha ' . $f['imagen'],
+            'comentarios'           => $comentarios,
+            'cantidad_producida'    => $f['total_kg'],
+            'unidad_produccion'     => 'Kg',
+            'rendimiento_m2_por_kg' => null, // A9: diferido a propuesta de negocio
+            'es_activa'             => $activar ? 1 : 0,
+            'fecha_creacion'        => date('Y-m-d H:i:s'),
+            'usuario_creacion'      => null,
+        ]);
+        if (!$ok) { return null; }
+
+        $fid   = (int)$this->db->insert_id();
+        $orden = 0;
+        $n     = 0;
+
+        foreach ($f['grupos'] as $grupo => $items) {
+            $grupo_label = ($grupo === '__default__') ? null : $grupo;
+
+            foreach ($items as $it) {
+                $insumo_id = $it['insumo_crear'] ? (int)($ins_ids[$it['nombre']] ?? 0) : (int)$it['insumo_id'];
+                if (!$insumo_id) { return null; }
+
+                $ins = $this->db->select('precio_promedio')->where('id', $insumo_id)->get('insumos')->row();
+
+                $ok = $this->db->insert('detalle_formulacion', [
+                    'formulacion_id'         => $fid,
+                    'tipo_componente'        => 'Insumo',   // A3 opción (A): insumo enlazado a su fabricado
+                    'insumo_id'              => $insumo_id,
+                    'producto_id'            => null,
+                    'cantidad'               => $it['kg'],
+                    'unidad'                 => 'Kg',
+                    'porcentaje'             => round((float)$it['porcentaje'], 2),
+                    'costo_unitario'         => $ins ? (float)$ins->precio_promedio : 0,
+                    'observaciones'          => null,
+                    'grupo_color'            => $grupo_label,
+                    'porcentaje_fase_acuosa' => $it['pct_fase'],
+                    'kg_fase_acuosa'         => $it['kg_fase'],
+                    'orden'                  => $orden++,
+                ]);
+                if (!$ok) { return null; }
+                $n++;
+            }
+        }
+
+        $log[] = sprintf('  → formulación #%d  producto #%d  %s  %d componentes%s',
+            $fid, $producto_id, $f['version'], $n, $activar ? '  [ACTIVA — V1 de producto nuevo]' : '  [inactiva]');
+        return $fid;
     }
 }

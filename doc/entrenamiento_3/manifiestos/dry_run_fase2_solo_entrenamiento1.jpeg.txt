@@ -1,0 +1,142 @@
+════════════════════════════════════════════════════════════════════════════════
+DRY-RUN FASE 2 — ENTRENAMIENTO 3 — CHISA RECUBRIMIENTOS
+Generado: 2026-09-13 22:27:47  |  BD: PRODUCCIÓN (solo lectura)
+════════════════════════════════════════════════════════════════════════════════
+
+§1  PRODUCTOS A USAR (id + nombre en BD)
+────────────────────────────────────────────────────────────────────────────────
+  (ninguno)
+
+§2  PRODUCTOS A CREAR (fichas con producto nuevo)
+────────────────────────────────────────────────────────────────────────────────
+  NOMBRE:         VITROGLASS ECOLOGICO
+    tipo_producto: Fabricado
+    presentacion:  Cubeta
+    contenido_neto: 19 Kg
+    precio_venta:  $5,023.57
+    categoria:     SELLADORES
+
+§3  INSUMOS A VINCULAR (id + nombre_tecnico en BD)
+────────────────────────────────────────────────────────────────────────────────
+  #112   ADECIDE
+  #126   AGUA
+
+§4  INSUMOS A CREAR (nombre canónico + unidad)
+────────────────────────────────────────────────────────────────────────────────
+  NUEVO: RESINA QE-2383 W-595  [unidad=Kg]
+  NUEVO: RESINA QE-220S  [unidad=Kg]
+
+§5  ENLACES INSUMO→SEMIELABORADO A EJECUTAR EN FASE 3 (UPDATE puntual)
+────────────────────────────────────────────────────────────────────────────────
+  insumo #91 (IMP-D0012F55) → tipo='fabricado', producto_id=204 (SOLUCION DE AEROSIL 200)
+  insumo #96 (IMP-7A375D05) → tipo='fabricado', producto_id=206 (TINTA AMARILLO OXIDO)
+  insumo #105 (IMP-AF1B06D8) → tipo='fabricado', producto_id=205 (TINTA NEGRA)
+  insumo #83 (IMP-7FB3924F) → tipo='fabricado', producto_id=214 (SOLUCION DE RESINA EC-1)  [NOTA: Validar equivalencia EC-1]
+  insumo NUEVO (FASE ACUOSA) → tipo='fabricado', producto_id=215 (SOLUCION FASE ACUOSA)  [NOTA: Crear insumo FASE ACUOSA primero, luego enlazar a #215]
+
+§6  FORMULACIONES A CREAR
+────────────────────────────────────────────────────────────────────────────────
+  entrenamiento1.jpeg                    → (NUEVO) VITROGLASS ECOLOGICO
+    versión=V1  lote=19.00 kg  comp_ocr=4  filas_detalle=4  rendimiento_m2_kg=9.74 m²/kg  conf_ocr=0.95
+    ya_existe: NO
+
+§7  FORMULACIONES OMITIDAS
+────────────────────────────────────────────────────────────────────────────────
+  (ninguna)
+
+§8  PRECIOS LISTA 2025 + RENDIMIENTOS CALCULADOS (A8/A9)
+────────────────────────────────────────────────────────────────────────────────
+  CREAR  VITROGLASS ECOLOGICO [SELLADORES]
+    GALON: $1,244.19  (30-32m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $5,023.57  (180-190m2) → 9.74 m²/kg
+  MAPEA→#223 PINTU FLEX                      PINTU FLEX [PINTURAS ARQUITECTONICAS]
+    GALON: $487.74  (18-19.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $2,410.87  (90-95m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISA PLUS [PINTURAS ARQUITECTONICAS]
+    GALON: $658.89  (18-19.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $2,840.13  (90-95m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  MARMOPLAST [PASTAS ARQUITECTONICAS]
+    GALON: $292.22  (1.4-2m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $1,391.16  (7-10m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  SELLADORACRILICO4648 [SELLADORES]
+    GALON: $277.07  (18-20m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $907.37  (90-100m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  HEALERGLASSKIT1LT.C/ESPATULA [SELLADORES]
+    (sin pres.): $262.05  (1.7-2.1m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  REDYPLASTF [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $987.11  (25-30m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  REDYPLASTM [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $1,042.79  (18-22m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  REDYPLASTG [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $1,103.44  (12-14m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  MORTEROPLASTICOMALLA350-400 [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $1,205.56  (16-18m2) → FALTANTE (sin contenido_neto de esa presentación)
+  MAPEA→#222 ARENA SILICA                    ARENASILICAMALLA250-300 [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $1,188.64  (22-25m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  DECOPASTA [PASTAS ARQUITECTONICAS]
+    GALON: $184.75  (3.2-3.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $804.86  (16-18m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISAPLAST [PASTAS ARQUITECTONICAS]
+    GALON: $258.27  (3-4m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $1,016.34  (16-20m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISAPLASTPLUS [PASTAS ARQUITECTONICAS]
+    GALON: $1,106.56  (4-5m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $3,400.29  (24-26m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  PRAIMERGLASS [PINTURAS ARQUITECTONICAS]
+    CUBETA: $1,028.18  (85-90m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISAVINIL [PINTURAS ARQUITECTONICAS]
+    GALON: $418.55  (18-19.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $1,334.31  (90-95m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  PROTECTPLUS [PINTURAS ARQUITECTONICAS]
+    GALON: $823.61  (18-19.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $4,118.19  (90-95m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  SHELL HARD(CASCARA DENARANJA) [SHELL HARD (CASCARA DE NARANJA)]
+    GALON: $423.02  (4-5m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $1,704.15  (20-25m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  SHELLHARD LISO(CASCARALISO) [SHELL HARD (CASCARA DE NARANJA)]
+    GALON: $495.83  (5-6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $2,183.04  (25-30m2) → FALTANTE (sin contenido_neto de esa presentación)
+  MAPEA→#3 CHISA GLASS MICRO               CHISA GLASSMICRO [CHISA GLASS]
+    (sin pres.): $4,797.13  (65-70m2) → FALTANTE (sin contenido_neto de esa presentación)
+  MAPEA→#404 CHISA GLASS TEXTURADO Y MICRO   CHISA GLASSTEXTURADO [CHISA GLASS]
+    (sin pres.): $4,797.13  (55-60m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  TRICOLORPLUS [CHISA GLASS]
+    (sin pres.): $7,805.79  (150-190m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CORTPLAST [CHISA GLASS]
+    (sin pres.): $4,393.11  (20-25m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISA MAR [CHISA GLASS]
+    GALON: $875.93  (24-26m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $3,597.23  (120-130m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  POLY-COLOR(ESCAMA) [POLYCOLOR]
+    (sin pres.): $251.24  (250gr./1m2) → 4 m²/kg
+  CREAR  POLY-PLAST [POLYCOLOR]
+    (sin pres.): $2,373.64  (22-25m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  POLYTANO9000(RESINA EPOXICA) [POLYCOLOR]
+    (sin pres.): $3,827.67  (10-12m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  MARMOFLEXREF.BLANCO [GRANOS DE MARMOL]
+    (sin pres.): $4,433.20  (5m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  MARMOFLEXREF.COLOR [GRANOS DE MARMOL]
+    (sin pres.): $4,759.76  (5m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  IMPERGLASS3ANOS [IMPERMEABILIZANTE]
+    (sin pres.): $2,089.25  (45-50m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  IMPERGLASS5ANOS [IMPERMEABILIZANTE]
+    (sin pres.): $2,994.38  (45-50m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  IMPERGLASS7ANOS [IMPERMEABILIZANTE]
+    (sin pres.): $3,693.85  (45-50m2) → FALTANTE (sin contenido_neto de esa presentación)
+
+════════════════════════════════════════════════════════════════════════════════
+RESUMEN
+────────────────────────────────────────────────────────────────────────────────
+  Productos a USAR:             0
+  Productos a CREAR (fichas):   1
+  Productos a CREAR (lista2025):28
+  Productos MAPEADOS (lista2025):4
+  Insumos a VINCULAR:           2
+  Insumos a CREAR:              2
+  Links Fase 3 (UPDATE):        5
+  Formulaciones a CREAR:        1
+  Formulaciones OMITIDAS:       0
+  Escrituras detectadas:        0
+
+NADA ESCRITO (DRY-RUN)
+════════════════════════════════════════════════════════════════════════════════

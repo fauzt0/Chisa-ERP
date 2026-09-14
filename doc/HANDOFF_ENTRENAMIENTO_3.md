@@ -4,10 +4,17 @@
 > **Rama:** `iteracion-3` · **Último commit:** `8e93543` (11-sep-2026)
 > **Documento compañero:** `doc/PROMPT_ENTRENAMIENTO_3_PRODUCCION.md` (contiene el detalle técnico completo y las **Fases 2 y 3** de los prompts).
 >
-> **⚡ Actualización 11-sep-2026 — la Fase 1 YA está hecha.** El punto de entrada ahora es
-> `doc/entrenamiento_3/manifiestos/decisiones_pendientes.md`: ahí están las decisiones A1–A5 tomadas,
-> la nota de A6 (respuestas por re-capturar), el seguimiento (**§F**) y el **prompt listo para pegar en
-> el agente nuevo (§G)**. Las §8–§9 de este documento quedan como referencia histórica.
+> **⚡ Actualización 13-sep-2026 — decisiones A1–A11 RESUELTAS.** El punto de entrada sigue siendo
+> `doc/entrenamiento_3/manifiestos/decisiones_pendientes.md`: ahí están las decisiones A1–A11 cerradas
+> (A6 re-capturada el 13-sep), la excepción de CHISA PLUS (parafina S-25 vs S-52, pendiente con planta),
+> el seguimiento (**§F**), el siguiente paso (**§E**) y el **prompt listo para pegar en el agente nuevo (§G)**.
+> **Estado 13-sep-2026:** Fases 1, 2 y 3 ejecutadas. Fase 3 **aplicada en producción** (`log_importaciones` #11:
+> 29 productos, 4 insumos, 12 formulaciones nuevas —inactivas— y 4 enlaces insumo→semielaborado; evidencias en
+> `fase3_aplicacion.txt` y `tools/verificar_fase3.php`). **Pendiente solo el PASO 3** (precios 2025 +
+> `rendimiento_m2_por_kg`; propuesta en `propuesta_rendimientos_fase3.md`) por falta de datos de envase de
+> negocio, y la equivalencia `#83 ↔ #214 EC-1`. Ninguno de los dos bloquea las pruebas de la iteración:
+> **no se tocó ninguna versión activa** y los 29 productos nuevos están en catálogo sin precio, así que
+> basta con no cotizarlos hasta cerrar el PASO 3.
 
 ---
 
@@ -34,7 +41,8 @@ Alcance de lo que sí quedó hecho y ahora está consolidado:
 | Parseo a JSON estructurado (6 subagentes) | ✅ 22 formulaciones / **156 componentes** + 2 listas de precios (45 filas) + 32 rendimientos |
 | Consolidación de los JSON en disco | ⚠️ Se perdió en el abort → **recuperada desde los transcripts de los subagentes** |
 | Comparación contra la BD del ERP (Fase 1) | ✅ Hecha el 11-sep-2026 (solo lectura): manifiestos en `doc/entrenamiento_3/manifiestos/`; decisiones A1–A5 tomadas y anotadas, A6–A11 pendientes |
-| Carga de productos/formulaciones/precios | ❌ No se hizo (Fases 2 y 3, con gates) |
+| Carga de productos/formulaciones | ✅ Hecha el 13-sep-2026 (Fase 3, `log_importaciones` #11): 29 productos (#475–#503), 4 insumos (#156–#159), 12 formulaciones nuevas (#956–#967, inactivas) y 4 enlaces insumo→semielaborado |
+| Precios 2025 + `rendimiento_m2_por_kg` | ⏳ PASO 3 pendiente: propuesta en `propuesta_rendimientos_fase3.md`; faltan datos de envase de negocio (ver §10 de la propuesta) |
 
 **Riesgo que hay que mitigar en la ejecución:** el importador actual (`importar_archivo_cli` → `_guardar_formulacion_importada`) **auto-crea** productos e insumos cuando no encuentra match. Con nombres que vienen de OCR eso genera duplicados basura (`IMP-xxxxxxxx`, productos repetidos con variantes del nombre). Por eso la Fase 1 construye un **manifiesto curado** y la carga solo usa lo aprobado.
 

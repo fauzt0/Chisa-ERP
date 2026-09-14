@@ -4,7 +4,7 @@
 > `incidencias_datos.json` por `doc/entrenamiento_3/tools/fase1_matching.py` (solo lectura: **no se escribió
 > nada en la base de datos**).
 >
-> **¿Retomas esto en otro equipo?** Lee **§F (seguimiento de la sesión del 11-sep-2026)** y copia el bloque
+> **¿Retomas esto en otro equipo?** Lee **§F (seguimiento de las sesiones del 11 y 13-sep-2026)** y copia el bloque
 > de **§G (prompt listo para pegar en el agente nuevo)** al final del documento.
 >
 > Números de la corrida: **64 productos** (17 `usar_existente` / 3 `crear` / 44 `requiere_revision`),
@@ -180,24 +180,26 @@ así que **no son equivalentes**: hay que crear el insumo o confirmar el mapeo c
 | `BLANCOFIJO MICRO` | #61 BLANCO | el insumo elegido es autogenerado (`IMP-69A34712`); falta BLANCO FIJO MICRO |
 | `BLANCO`, `NEGRO`, `NEGRO OXIDO`, `ROJO`, `ROJO OXIDO`, `VERDE`, `VERDE CROMO`, `AZUL`, `AMARILLO` | — | **nombres de color**: hay que decidir a qué pigmento/tinta corresponde cada uno (el manifiesto lista hasta 5 candidatos por color) |
 
-> **⚠️ Respuestas del formulario perdidas — A6 pendiente de re-capturar (11-sep-2026).** La decisión se
-> preguntó en dos formularios (colorantes T-034 / parafina / blanco fijo; después bioxi / blanco fijo /
-> otros 4 / colores) y en ambos la interfaz reportó *"Questionnaire was accepted but no result was
-> available"*: se contestaron, pero **las respuestas nunca llegaron al agente** (verificado en el transcript
-> de la sesión, en la BD del proxy y en los logs de Cursor). No hay nada que anotar de A6: hay que
-> re-capturarlo. Para retomarlo, basta responder estos 5 puntos:
+> **⚠️→✅ Re-capturada el 13-sep-2026.** Las respuestas de los dos formularios del 11-sep se perdieron
+> (*"Questionnaire was accepted but no result was available"*, verificado en transcript/proxy/logs), así que
+> los 5 puntos se volvieron a preguntar y responder en la sesión del 13-sep-2026:
 >
-> 1. `BIOXIDO DE TITANEO` / `BIOXIDODETITANEO R-902`: usar **#15 `PIG-001`** Dióxido de Titanio R-902
->    (canónico, con precio y stock) *(recomendado)* o **#86 `BIOXIDO DE TITANEO`** (como las 5 versiones actuales).
-> 2. `BLANCOFIJO MICRO` (ficha CHISA PLUS): **crear insumo `BLANCO FIJO MICRO`** *(recomendado)* o mapear a
->    **#61 `BLANCO`** (genérico).
-> 3. `PARAFINA CLORADA S-25` (CHISA PLUS): confirmar con planta/proveedor si es S-25 o S-52; en el catálogo
->    el único candidato es **#95** `PARA FINA CLORADA` (nombre corrupto → corregir a `PARAFINA CLORADA …`).
-> 4. Confirmar los otros mapeos: `CAOLIN`→**#136**, `SOLUCION DE AEROSIL`→**#91** (consistente con A3) y
->    `FASE ACUOSA` (según A3).
-> 5. Confirmar los 9 colores: T-034 → `BLANCO` **#61** · `NEGRO` **#18** · `ROJO` **#16** · `AMARILLO` **#17** ·
->    `AZUL` **#19** · `VERDE` **#20** (igual que la V1); tintas → `ROJO OXIDO` **#77** · `NEGRO OXIDO` **#94** ·
->    `VERDE CROMO` **#101**.
+> 1. `BIOXIDO DE TITANEO` / `BIOXIDODETITANEO R-902`: **#15 `PIG-001`** Dióxido de Titanio R-902
+>    (canónico, costo $85/kg). No se usa #86 `IMP-05BD02CE` (`BIOXIDO DE TITANEO`, costo $0).
+> 2. `BLANCOFIJO MICRO` (ficha CHISA PLUS): **crear insumo `BLANCO FIJO MICRO`**; no se mapea a
+>    **#61 `BLANCO`** (genérico y con código autogenerado `IMP-69A34712`).
+> 3. `PARAFINA CLORADA S-25` (CHISA PLUS): **pendiente de confirmar con planta/proveedor si el material es
+>    S-25 o S-52** ⇒ la ficha entrenamiento22 (CHISA PLUS) **queda excluida de la carga** hasta resolverlo.
+>    En catálogo solo hay S-52 (#88/#97 `IMP-`) y el nombre corrupto #95 `PARA FINA CLORADA`.
+> 4. Confirmados: `CAOLIN` → **#136** `CAOLIN M-325` (la ficha trae el código M-325); `SOLUCION DE AEROSIL`
+>    → **#91** (consistente con A3); `FASE ACUOSA` → **crear insumo** y enlazarlo al semielaborado **#215**
+>    (según A3).
+> 5. Confirmados los 9 colores: T-034 → `BLANCO` **#61** · `NEGRO` **#18** · `ROJO` **#16** · `AMARILLO`
+>    **#17** · `AZUL` **#19** · `VERDE` **#20** (igual que la V1); tintas → `ROJO OXIDO` **#77** ·
+>    `NEGRO OXIDO` **#94** · `VERDE CROMO` **#101** · `AZUL DE FTALOZANINA` **#100**.
+>
+> Efecto en Fase 2/3: A6.1, A6.2, A6.4 y A6.5 quedan **habilitados** para la carga; entrenamiento22
+> (CHISA PLUS) se excluye hasta resolver A6.3.
 
 ### A7. Productos sin match
 
@@ -229,15 +231,24 @@ Los 28 nombres sin match en catálogo son, agrupados:
 - **Impermeabilizantes**: IMPERGLASS 3 / 5 / 7 AÑOS, SHELL HARD (CÁSCARA DE NARANJA), SHELL HARD LISO.
 - **Otros**: HEALER GLASS KIT 1 LT C/ESPÁTULA, PROTECT PLUS.
 
-Preguntas a resolver: (1) ¿se crean como productos nuevos o se mapean a los existentes?
-(2) ¿el `precio_sin_iva` de la lista se guarda tal cual en `productos.precio_venta` (la lista dice "sin IVA")?
-(3) el `rendimiento_teorico` viene como rango de texto (`18-20m2`, `250gr./1m2`) y `productos.rendimiento`
-es un campo corto numérico (`12m` en #3) → ¿se guarda el punto medio, el mínimo o no se toca?
+> **✅ Decisión (13-sep-2026):**
+> 1. **Crear los 28 productos nuevos** de la lista 2025 con sus presentaciones y precios; se mapean a
+>    existentes solo `ARENA SILICA MALLA 250-300` → **#222**, `CHISA GLASS TEXTURADO` → **#404** y
+>    `CHISA GLASS MICRO` → **#3**. Los productos a crear se listan en el dry-run de la Fase 2 para revisión.
+> 2. `productos.precio_venta` = precio de la lista **tal cual (sin IVA)**; el IVA se calcula en los documentos.
+> 3. `productos.rendimiento` = **punto medio redondeado** del rango (`18-20m2` → 19); el texto literal queda
+>    en el manifiesto. Los valores no numéricos (`250gr./1m2`) se convierten a su equivalente m²/unidad cuando
+>    sea posible; si no, el campo queda vacío.
 
 ### A9. `rendimiento_m2_por_kg` (§ decisión 3 del handoff)
 
 Sólo se puede derivar: `m2 del envase ÷ contenido_neto`. Ejemplo: CHISA GLASS MICRO (#3) = 65-70 m² por cubeta
-de 19 L ⇒ ~3.5 m²/L. ¿Se calcula así en la Fase 3 o se captura a mano?
+de 19 L ⇒ ~3.5 m²/L.
+
+> **✅ Decisión (13-sep-2026):** **calcular** `rendimiento_m2_por_kg` = **punto medio del rango m² ÷ contenido
+> neto** y cargarlo en las **versiones nuevas** de la Fase 3. El listado completo de valores calculados se
+> entrega en el **dry-run de la Fase 2** para validación previa a cualquier escritura. Si un producto no trae
+> m² en la lista, su formulación queda sin rendimiento (Obras lo pedirá por línea, como hoy).
 
 ### A10. Formulaciones que ya existen y **difieren** (11 fichas)
 
@@ -261,6 +272,12 @@ ADECIDE 0.40→0.42), entrenamiento12.
 Casos donde **sólo cambia el tamaño de lote** (misma receta, `coincide_receta_difiere_lote`): ninguno en esta corrida
 (antes salían 4 por comparar contra la versión equivocada; ahora se comparan **todas** las versiones).
 
+> **✅ Decisión (13-sep-2026):** **todas las fichas que difieren son receta de planta** ⇒ se cargan como
+> **versión nueva** (inactiva, **sin** `cliente_id`), conservando todas las versiones previas. Ninguna captura
+> de esta corrida es un pedido de cliente/obra. Aplica a: 20-grupo (A1), 21 PINTU FLEX, 2 → #224 (A7.2),
+> 12/13/14/16/18/4 (diferencia por la línea AGUA de A4) y 11/15 (A11). La activación de cada versión nueva
+> queda como acto explícito del negocio.
+
 ### A11. Capturas duplicadas
 
 | Ficha | Situación |
@@ -274,6 +291,11 @@ re-verificar las imágenes los % realmente difieren, se cargan como dos versione
 imagen de origen en `nombre_version`/`comentarios`), y la decisión es cuál es la más reciente/candidata a
 activar. Para las idénticas (`3=17`, `16=18`) basta una sola carga, dejando ambas imágenes registradas en
 `log_importaciones`/`comentarios`.
+
+> **✅ Decisión (13-sep-2026):** `3=17` y `16=18` → **una sola carga** (la imagen gemela queda registrada en
+> `comentarios` / `log_importaciones`). `11` vs `15` → **cargar ambas** como versiones consecutivas del mismo
+> producto (#215): **11 → V2** y **15 → V3** (orden de captura); el negocio decide después cuál activar, ya que
+> ninguna versión nueva se activa automáticamente.
 
 ---
 
@@ -310,9 +332,12 @@ Nada de esto cambia los productos/insumos del manifiesto; sí puede cambiar alg�
 
 ## D. Lo que ya está resuelto y **no** hay que decidir
 
-- **8 fichas ya cargadas idénticas** (`coincide_exacto`, V1 activa) ⇒ no crear nada:
+- **8 fichas ya cargadas idénticas** (`coincide_exacto`) ⇒ no crear nada:
   TINTA AMARILLO OXIDO (63 kg), TINTA ROJO CARMIN (200), TINTA ROJA (60), TINTA NEGRA (50), TINTA VERDE CROMO (52),
   SOLUCION DE AEROSIL 200 (213, fichas 3 y 17), SOLUCION DE RESINA EC-1 (393.87).
+  **Matiz verificado el 13-sep-2026** (tras corregir el bug de `es_activa` en `fase1_matching.py`): la receta de
+  estas fichas coincide con **V1**, pero **V1 ya no es la versión activa** en los 8 productos (hoy están activas
+  **V2** o **V3**). No hay nada que crear; tenerlo presente al comparar contra la receta vigente.
 - **15 productos de ficha** resueltos por nombre/código exacto contra productos **Activos/Fabricados**.
 - `ARENA SILICA` (#222) y `CHISA GLASS MICRO` (#3) existen y están activos.
 - Los 34 componentes con match exacto (`vincular`) no necesitan intervención, salvo el criterio de A3.
@@ -321,13 +346,16 @@ Nada de esto cambia los productos/insumos del manifiesto; sí puede cambiar alg�
 
 ## E. Siguiente paso
 
-Con estas respuestas se puede pasar a la **Fase 2** (`importar_formulaciones_json_cli` + `--dry-run`) usando
-exclusivamente lo aprobado en los manifiestos: sólo se cargan las entradas `usar_existente` / `vincular`,
-y nada de lo marcado `crear` o `requiere_revision` hasta que se resuelva aquí.
+**A1–A11 resueltas (13-sep-2026)** ⇒ se puede pasar a la **Fase 2** (`importar_formulaciones_json_cli` +
+`--dry-run`). Antes, cerrar el pendiente técnico de `fase1_matching.py` (contraste de `es_activa`) y
+re-ejecutar el matching. Casos **excluidos** de la carga hasta nuevo aviso:
+**entrenamiento22 CHISA PLUS** (A6.3: confirmar parafina S-25 vs S-52 con planta) y los renglones de
+`rendimientos.jpeg` sin alias claro (A7.3: `MORTERO PLASTICO`, `PASTA PARA TEXTURIZAR INT./EXT.`,
+`PRIMERP/IMPERMEABILIZAR`, `PINTURA ANTIBACTERIAL`, `CHISA GLASS` genérico).
 
 ---
 
-## F. Seguimiento de la sesión del 11-sep-2026
+## F. Seguimiento (sesiones del 11 y 13-sep-2026)
 
 **Hecho (todo fue solo lectura contra la BD de producción):**
 
@@ -344,17 +372,51 @@ y nada de lo marcado `crear` o `requiere_revision` hasta que se resuelva aquí.
 
 **Pendiente / bloqueado:**
 
-- **A6:** las respuestas del formulario se perdieron (ver nota ⚠️ en §A6) → hay que re-capturarlas.
-- **A7–A11:** requieren decisión de negocio; se revisan una por una igual que A1–A5.
-- **Hallazgo técnico a corregir antes de la Fase 2:** `fase1_matching.py` evalúa la bandera `es_activa`
-  (que el volcado entrega como string `'0'`/`'1'`) con `if f['es_activa']` a secas; como `'0'` es *truthy*
-  en Python, `version_activa` y las etiquetas "(activa)" quedan mal siempre que la versión activa no sea la
-  primera de la lista. Se corrige comparando contra `'1'` (y usando la versión que realmente coincidió en el
-  texto) y se **re-ejecuta** el matching para que `productos_match.json` y `comparativa.*` queden confiables.
-- **Fase 2 y Fase 3 sin ejecutar:** los prompts están en `doc/PROMPT_ENTRENAMIENTO_3_PRODUCCION.md` §4–5.
+- **A6–A11: ✅ resueltas el 13-sep-2026.** Resumen: A6 → mapeos confirmados (#15 TiO2, crear
+  `BLANCO FIJO MICRO`, CAOLÍN→#136, AEROSIL→#91, FASE ACUOSA→crear y enlazar a #215, 9 colores) y
+  **CHISA PLUS diferido** por la parafina S-25/S-52; A7 → crear `VITROGLASS ECOLOGICO` y `SELLADOR INICIAL`,
+  entrenamiento2 = #224 PINTURA VINILICA, alias de rendimientos mapeados y consumibles descartados;
+  A8 → crear los 28 productos de la lista 2025 (3 mapeados), precio sin IVA, rendimiento = punto medio;
+  A9 → `rendimiento_m2_por_kg` calculado (punto medio m² ÷ contenido neto) y reportado en el dry-run;
+  A10 → todas receta de planta (versión nueva inactiva, sin cliente); A11 → 3=17 y 16=18 una sola carga,
+  11 y 15 como V2/V3.
+- **A7.3 (excluidos de la carga):** los renglones sin alias claro de `rendimientos.jpeg` (`MORTERO PLASTICO`,
+  `PASTA PARA TEXTURIZAR INT./EXT.`, `PRIMERP/IMPERMEABILIZAR`, `PINTURA ANTIBACTERIAL`, `CHISA GLASS`
+  genérico) y los 5 consumibles de aplicación (descartados).
+- **✅ Hallazgo técnico corregido el 13-sep-2026:** `fase1_matching.py` normaliza `es_activa` a booleano
+  (`str(...).strip() == '1'`) al cargar el volcado; el matching se re-ejecutó (dump refrescado de la BD el
+  13-sep: 465 productos / 943 formulaciones / 9 977 componentes) y `comparativa.json`/`.md` quedaron
+  corregidos (`version_activa` real —2/3 donde antes decía 1— y etiquetas `(activa)`/`(inactiva)` fijas).
+  `productos_match.json` e `insumos_match.json` no cambian. Sin deriva de datos respecto del dump del 11-sep.
+- **Fase 2 ejecutada (13-sep-2026):** `importar_formulaciones_json_cli --dry-run` (solo lectura) →
+  `dry_run_fase2.txt` + 3 corridas `--solo`. Escrituras detectadas: **0**.
+- **Fase 3 aplicada (13-sep-2026, `--aplicar`):** `log_importaciones` #11 → **29 productos**
+  (#475–#503), **4 insumos** (#156–#159), **12 formulaciones nuevas** (#956–#967; inactivas salvo la V1
+  de #475/#476) y **4 enlaces insumo→semielaborado** (#91→204, #96→206, #105→205, #157→215).
+  Reporte: `fase3_aplicacion.txt`. Verificación posterior de solo lectura: `tools/verificar_fase3.php`.
+- **Pendiente (PASO 3):** precios de la lista 2025 + `rendimiento_m2_por_kg` (propuesta en
+  `propuesta_rendimientos_fase3.md`; faltan datos de envase de negocio), precio de **#476 SELLADOR INICIAL**
+  (R1) y la equivalencia **#83 ↔ #214 EC-1** (4º enlace sin aplicar; evidencia en la propuesta §5).
+
+**Datos de negocio solicitados el 13-sep-2026** (respuesta: *no se tienen a mano todavía*; quedan en
+`propuesta_rendimientos_fase3.md` §3 para cuando existan):
+
+| # | Dato que falta | Para qué se usa | Qué queda pendiente mientras falte |
+|---|----------------|-----------------|-------------------------------------|
+| 1 | Contenido neto (kg) del envase **CUBETA** de los productos de la lista 2025 (¿19 kg para todos?) | `contenido_neto` + `rendimiento_m2_por_kg` (A9) | 21 filas de la lista con `FALTANTE` |
+| 2 | Contenido neto (kg) del **GALÓN** (o 3.785 L + densidad) | ídem | 11 filas con `FALTANTE` |
+| 3 | Presentación real de las 16 filas **"(sin pres.)"** (¿litro? ¿kg? ¿cubeta 19 kg?) | `unidad_venta` / `presentacion_principal` | los 27 productos nuevos quedaron `unidad_venta='Cubeta'` por defecto |
+| 4 | Visto bueno a **POLY-COLOR**: 250 g/m² → **4 m²/kg** (R8) | convención de rendimiento | el valor ya está calculado; solo falta aprobarlo |
+| 5 | Precio de venta de **#476 SELLADOR INICIAL** (R1) | `precio_venta` | producto en catálogo con precio `NULL` |
+| 6 | Confirmación de planta: ¿`SOLUCION DE RESINA` **#83** ≡ **#214 EC-1**? | 4º enlace insumo→semielaborado (A3) | enlace sin aplicar (evidencia: duplicaría EXXOL) |
+
+**Mientras llegan esos datos, la iteración se puede probar sin riesgo**: ninguna versión activa fue
+modificada y las 12 formulaciones nuevas quedaron inactivas. Único cuidado: los 29 productos nuevos están
+`Activo` en el catálogo con `precio_venta = NULL` y sin `contenido_neto` ⇒ **no usarlos en cotizaciones**
+(saldrían en $0); se puede probar con ellos listados en catálogo/Producción, no cotizados.
 
 **Estado del repo:** todo quedó commiteado y pusheado en la rama `iteracion-3` el 11-sep-2026 (ver `git log`).
-Desde el otro equipo: `git pull origin iteracion-3`. **Nada se escribió en la base de datos.**
+Desde el otro equipo: `git pull origin iteracion-3`. **La Fase 3 (13-sep-2026) ya escribió en la BD de producción** (log #11); el commit de la carga sigue pendiente de validación.
 
 ---
 
@@ -373,16 +435,13 @@ Documentos de apoyo:
   doc/PROMPT_ENTRENAMIENTO_3_PRODUCCION.md     (§4 y §5: prompts de Fase 2 y Fase 3)
 
 TRABAJO INMEDIATO (en este orden)
-1) Re-capturar la decisión A6 conmigo (el usuario): las respuestas del formulario anterior se perdieron.
-   Hazme las preguntas de la nota "⚠️ Respuestas del formulario perdidas" en §A6 y anótalas en el documento
-   (con ✅ y fecha). Después seguimos con A7–A11 en orden, una por una: me explicas la decisión, yo respondo
-   y tú la anotas en `decisiones_pendientes.md`.
-2) Corregir el hallazgo técnico de `doc/entrenamiento_3/tools/fase1_matching.py` (contraste de `es_activa`
+1) Corregir el hallazgo técnico de `doc/entrenamiento_3/tools/fase1_matching.py` (contraste de `es_activa`
    contra '1' y uso de la versión realmente coincidente en el texto) y re-ejecutar el matching.
-3) Con A1–A11 resueltas: implementar el método CLI `importar_formulaciones_json_cli` en
-   `application/controllers/produccion/Productos.php` y correr `--dry-run` (Fase 2). Muéstrame el dry-run
-   literal ANTES de escribir nada en la BD.
-4) Solo con mi OK explícito: Fase 3 (carga real como versiones nuevas + precios 2025 + rendimientos) y commit.
+2) Con A1–A11 ya resueltas (✅ 11 y 13-sep-2026, ver secciones A): implementar el método CLI
+   `importar_formulaciones_json_cli` en `application/controllers/produccion/Productos.php` y correr
+   `--dry-run` (Fase 2). Muéstrame el dry-run literal ANTES de escribir nada en la BD.
+   Excluidos de la carga: entrenamiento22 (CHISA PLUS) y los renglones sin alias claro de rendimientos (A7.3).
+3) Solo con mi OK explícito: Fase 3 (carga real como versiones nuevas + precios 2025 + rendimientos) y commit.
 
 REGLAS NO NEGOCIABLES (resumen de doc/HANDOFF_ENTRENAMIENTO_3.md §6)
 - No modificar, desactivar ni borrar formulaciones/versiones/componentes existentes: todo cambio es
@@ -406,4 +465,4 @@ IMPORTANTE
   `cliente_id` + `referencia_cliente` (+ `variante_descripcion`).
 ```
 
-*ERP Chisa Recubrimientos — sesión de revisión de decisiones Fase 1 (11-sep-2026).*
+*ERP Chisa Recubrimientos — sesión de revisión de decisiones Fase 1 (11 y 13-sep-2026).*

@@ -1,0 +1,305 @@
+════════════════════════════════════════════════════════════════════════════════
+APLICACIÓN FASE 3 — ENTRENAMIENTO 3 — CHISA RECUBRIMIENTOS
+Generado: 2026-09-13 23:01:11  |  BD: PRODUCCIÓN (ESCRITURA)
+════════════════════════════════════════════════════════════════════════════════
+
+§1  PRODUCTOS A USAR (id + nombre en BD)
+────────────────────────────────────────────────────────────────────────────────
+  #215   SOLUCION FASE ACUOSA
+  #213   BASE ORGANICA  NARANJA
+  #212   BASE ORGANICA NEGRA
+  #211   BASE ORGANICA ROJO OXIDO
+  #202   BASE ORGANICA BLANCA
+  #224   PINTURA VINILICA
+  #225   CHISA GLASS REF T-034
+  #223   PINTU FLEX
+  #210   BASE ORGANICA AMARILLO OXIDO
+
+§2  PRODUCTOS A CREAR (fichas con producto nuevo)
+────────────────────────────────────────────────────────────────────────────────
+  NOMBRE:         VITROGLASS ECOLOGICO
+    tipo_producto: Fabricado
+    presentacion:  Cubeta
+    contenido_neto: 19 Kg
+    precio_venta:  $5,023.57
+    categoria:     SELLADORES
+
+  NOMBRE:         SELLADOR INICIAL
+    tipo_producto: Fabricado
+    presentacion:  Cubeta
+    contenido_neto: 19 Kg
+    precio_venta:  FALTANTE
+    categoria:     SELLADORES
+
+§3  INSUMOS A VINCULAR (id + nombre_tecnico en BD)
+────────────────────────────────────────────────────────────────────────────────
+  #15    Dióxido de Titanio R-902 (TiO2)
+  #16    Óxido de Hierro Rojo (Fe2O3)
+  #17    Óxido de Hierro Amarillo
+  #18    Negro de Humo (Carbon Black)
+  #19    Pigmento Azul Ftalocianinico
+  #20    Pasta Colorante Verde (base agua)
+  #61    BLANCO
+  #83    SOLUCION DE RESINA
+  #85    TIXO GEL EZ-100
+  #88    PARAFINA CLORADA (S-52)
+  #89    LECITINA DE SOYA
+  #91    SOLUCION DE AEROSIL 200
+  #102   CARBONATO DE OMYA CAR 1-T
+  #103   PIGMENTO AMARILLLO OXIDO
+  #104   PIGMENTO ROJO OXIDO
+  #105   TINTA NEGRA
+  #106   TINTA AZUL
+  #108   EXXOL      D-40
+  #109   ANTI TERRA  204
+  #110   NATROSOL TILOSE
+  #111   SULFATO DE SODIO
+  #112   ADECIDE
+  #113   SKEN   M-8
+  #114   GOMA DE XHATAN
+  #115   AMONIACO
+  #124   TRIPOLIFOSFATO DE POTASIO
+  #125   MONOETILENGLICOL
+  #126   AGUA
+  #128   RESINA W4535
+  #136   CAOLIN M-325
+  #139   TEXANOL
+  #140   DISPERSANTE
+  #141   ANTIESPUMANTE
+
+§4  INSUMOS A CREAR (nombre canónico + unidad)
+────────────────────────────────────────────────────────────────────────────────
+  NUEVO: BERMOCOLL 481 FQ  [unidad=Kg]
+  NUEVO: FASE ACUOSA  [unidad=Kg]
+  NUEVO: RESINA QE-220S  [unidad=Kg]
+  NUEVO: RESINA QE-2383 W-595  [unidad=Kg]
+
+§5  ENLACES INSUMO→SEMIELABORADO A EJECUTAR EN FASE 3 (UPDATE puntual)
+────────────────────────────────────────────────────────────────────────────────
+  insumo #91 (IMP-D0012F55) → tipo='fabricado', producto_id=204 (SOLUCION DE AEROSIL 200)
+  insumo #96 (IMP-7A375D05) → tipo='fabricado', producto_id=206 (TINTA AMARILLO OXIDO)
+  insumo #105 (IMP-AF1B06D8) → tipo='fabricado', producto_id=205 (TINTA NEGRA)
+  insumo #83 (IMP-7FB3924F) → tipo='fabricado', producto_id=214 (SOLUCION DE RESINA EC-1)  [NOTA: Validar equivalencia EC-1]
+  insumo NUEVO (FASE ACUOSA) → tipo='fabricado', producto_id=215 (SOLUCION FASE ACUOSA)  [NOTA: Crear insumo FASE ACUOSA primero, luego enlazar a #215]
+
+§6  FORMULACIONES A CREAR
+────────────────────────────────────────────────────────────────────────────────
+  entrenamiento11.jpeg                   → #215 SOLUCION FASE ACUOSA
+    versión=V2  lote=600.00 kg  comp_ocr=7  filas_detalle=7  conf_ocr=0.9
+    ya_existe: NO
+  entrenamiento12.jpeg                   → #213 BASE ORGANICA  NARANJA
+    versión=V2  lote=1.00 kg  comp_ocr=8  filas_detalle=8  conf_ocr=0.6
+    ya_existe: NO
+  entrenamiento13.jpeg                   → #212 BASE ORGANICA NEGRA
+    versión=V3  lote=200.00 kg  comp_ocr=9  filas_detalle=9  conf_ocr=0.85
+    ya_existe: NO
+  entrenamiento14.jpeg                   → #211 BASE ORGANICA ROJO OXIDO
+    versión=V3  lote=200.00 kg  comp_ocr=9  filas_detalle=9  conf_ocr=0.9
+    ya_existe: NO
+  entrenamiento15.jpeg                   → #215 SOLUCION FASE ACUOSA
+    versión=V3  lote=600.00 kg  comp_ocr=7  filas_detalle=7  conf_ocr=0.85
+    ya_existe: NO
+  entrenamiento16.jpeg                   → #202 BASE ORGANICA BLANCA
+    versión=V3  lote=1000.00 kg  comp_ocr=10  filas_detalle=10  conf_ocr=0.9
+    ya_existe: NO
+  entrenamiento2.jpeg                    → #224 PINTURA VINILICA
+    versión=V2  lote=27.00 kg  comp_ocr=12  filas_detalle=12  conf_ocr=0.8
+    ya_existe: NO
+  entrenamiento20-grupo.jpeg             → #225 CHISA GLASS REF T-034
+    versión=V2  lote=19.35 kg  comp_ocr=7  filas_detalle=17  grupos_color=4  conf_ocr=0.55
+    fase_acuosa (A2): NEGRO=0.401 Kg (45.00%) | BLANCO=7.401 Kg (45.00%) | AZUL=0.453 Kg (45.00%) | AMARILLO=0.453 Kg (45.00%)
+    ya_existe: NO
+  entrenamiento21.jpeg                   → #223 PINTU FLEX
+    versión=V2  lote=27.00 kg  comp_ocr=13  filas_detalle=13  conf_ocr=0.85
+    ya_existe: NO
+  entrenamiento4.jpeg                    → #210 BASE ORGANICA AMARILLO OXIDO
+    versión=V3  lote=200.00 kg  comp_ocr=9  filas_detalle=9  conf_ocr=0.75
+    ya_existe: NO
+  entrenamiento1.jpeg                    → (NUEVO) VITROGLASS ECOLOGICO
+    versión=V1  lote=19.00 kg  comp_ocr=4  filas_detalle=4  rendimiento_m2_kg=9.74 m²/kg  conf_ocr=0.95
+    ya_existe: NO
+  entrenamiento5.jpeg                    → (NUEVO) SELLADOR INICIAL
+    versión=V1  lote=19.00 kg  comp_ocr=3  filas_detalle=3  conf_ocr=0.7
+    ya_existe: NO
+
+§7  FORMULACIONES OMITIDAS
+────────────────────────────────────────────────────────────────────────────────
+  entrenamiento10.jpeg (prod #206): coincide_exacto: receta idéntica a V1 (activa=V2)
+  entrenamiento17.jpeg (prod #204): coincide_exacto: receta idéntica a V1 (activa=V3)
+  entrenamiento19.jpeg (prod #214): coincide_exacto: receta idéntica a V1 (activa=V2)
+  entrenamiento3.jpeg (prod #204): coincide_exacto: receta idéntica a V1 (activa=V3) + A11 duplicado de entrenamiento17.jpeg
+  entrenamiento6.jpeg (prod #208): coincide_exacto: receta idéntica a V1 (activa=V2)
+  entrenamiento7.jpeg (prod #207): coincide_exacto: receta idéntica a V1 (activa=V2)
+  entrenamiento8.jpeg (prod #205): coincide_exacto: receta idéntica a V1 (activa=V2)
+  entrenamiento9.jpeg (prod #209): coincide_exacto: receta idéntica a V1 (activa=V2)
+  entrenamiento18.jpeg: A11: duplicado exacto de entrenamiento16.jpeg (BASE ORGANICA BLANCA, 1000 kg) — se carga una sola vez como entrenamiento16
+  entrenamiento22.jpeg: A6.3: PARAFINA CLORADA S-25 vs S-52 sin confirmar — CHISA PLUS diferido hasta resolución con planta
+
+§8  PRECIOS LISTA 2025 + RENDIMIENTOS CALCULADOS (A8/A9)
+────────────────────────────────────────────────────────────────────────────────
+  CREAR  VITROGLASS ECOLOGICO [SELLADORES]
+    GALON: $1,244.19  (30-32m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $5,023.57  (180-190m2) → 9.74 m²/kg
+  MAPEA→#223 PINTU FLEX                      PINTU FLEX [PINTURAS ARQUITECTONICAS]
+    GALON: $487.74  (18-19.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $2,410.87  (90-95m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISA PLUS [PINTURAS ARQUITECTONICAS]
+    GALON: $658.89  (18-19.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $2,840.13  (90-95m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  MARMOPLAST [PASTAS ARQUITECTONICAS]
+    GALON: $292.22  (1.4-2m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $1,391.16  (7-10m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  SELLADORACRILICO4648 [SELLADORES]
+    GALON: $277.07  (18-20m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $907.37  (90-100m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  HEALERGLASSKIT1LT.C/ESPATULA [SELLADORES]
+    (sin pres.): $262.05  (1.7-2.1m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  REDYPLASTF [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $987.11  (25-30m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  REDYPLASTM [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $1,042.79  (18-22m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  REDYPLASTG [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $1,103.44  (12-14m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  MORTEROPLASTICOMALLA350-400 [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $1,205.56  (16-18m2) → FALTANTE (sin contenido_neto de esa presentación)
+  MAPEA→#222 ARENA SILICA                    ARENASILICAMALLA250-300 [PREPARADORES DE SUPERFICIE]
+    (sin pres.): $1,188.64  (22-25m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  DECOPASTA [PASTAS ARQUITECTONICAS]
+    GALON: $184.75  (3.2-3.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $804.86  (16-18m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISAPLAST [PASTAS ARQUITECTONICAS]
+    GALON: $258.27  (3-4m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $1,016.34  (16-20m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISAPLASTPLUS [PASTAS ARQUITECTONICAS]
+    GALON: $1,106.56  (4-5m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $3,400.29  (24-26m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  PRAIMERGLASS [PINTURAS ARQUITECTONICAS]
+    CUBETA: $1,028.18  (85-90m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISAVINIL [PINTURAS ARQUITECTONICAS]
+    GALON: $418.55  (18-19.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $1,334.31  (90-95m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  PROTECTPLUS [PINTURAS ARQUITECTONICAS]
+    GALON: $823.61  (18-19.6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $4,118.19  (90-95m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  SHELL HARD(CASCARA DENARANJA) [SHELL HARD (CASCARA DE NARANJA)]
+    GALON: $423.02  (4-5m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $1,704.15  (20-25m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  SHELLHARD LISO(CASCARALISO) [SHELL HARD (CASCARA DE NARANJA)]
+    GALON: $495.83  (5-6m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $2,183.04  (25-30m2) → FALTANTE (sin contenido_neto de esa presentación)
+  MAPEA→#3 CHISA GLASS MICRO               CHISA GLASSMICRO [CHISA GLASS]
+    (sin pres.): $4,797.13  (65-70m2) → FALTANTE (sin contenido_neto de esa presentación)
+  MAPEA→#404 CHISA GLASS TEXTURADO Y MICRO   CHISA GLASSTEXTURADO [CHISA GLASS]
+    (sin pres.): $4,797.13  (55-60m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  TRICOLORPLUS [CHISA GLASS]
+    (sin pres.): $7,805.79  (150-190m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CORTPLAST [CHISA GLASS]
+    (sin pres.): $4,393.11  (20-25m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  CHISA MAR [CHISA GLASS]
+    GALON: $875.93  (24-26m2) → FALTANTE (sin contenido_neto de esa presentación)
+    CUBETA: $3,597.23  (120-130m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  POLY-COLOR(ESCAMA) [POLYCOLOR]
+    (sin pres.): $251.24  (250gr./1m2) → 4 m²/kg
+  CREAR  POLY-PLAST [POLYCOLOR]
+    (sin pres.): $2,373.64  (22-25m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  POLYTANO9000(RESINA EPOXICA) [POLYCOLOR]
+    (sin pres.): $3,827.67  (10-12m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  MARMOFLEXREF.BLANCO [GRANOS DE MARMOL]
+    (sin pres.): $4,433.20  (5m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  MARMOFLEXREF.COLOR [GRANOS DE MARMOL]
+    (sin pres.): $4,759.76  (5m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  IMPERGLASS3ANOS [IMPERMEABILIZANTE]
+    (sin pres.): $2,089.25  (45-50m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  IMPERGLASS5ANOS [IMPERMEABILIZANTE]
+    (sin pres.): $2,994.38  (45-50m2) → FALTANTE (sin contenido_neto de esa presentación)
+  CREAR  IMPERGLASS7ANOS [IMPERMEABILIZANTE]
+    (sin pres.): $3,693.85  (45-50m2) → FALTANTE (sin contenido_neto de esa presentación)
+
+════════════════════════════════════════════════════════════════════════════════
+RESUMEN
+────────────────────────────────────────────────────────────────────────────────
+  Productos a USAR:             9
+  Productos a CREAR (fichas):   2
+  Productos a CREAR (lista2025):28
+  Productos MAPEADOS (lista2025):4
+  Insumos a VINCULAR:           33
+  Insumos a CREAR:              4
+  Links Fase 3 (UPDATE):        5
+  Formulaciones a CREAR:        12
+  Formulaciones OMITIDAS:       10
+  MODO:                         ESCRITURA REAL (Fase 3)
+════════════════════════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════════════════════════
+FASE 3 — APLICACIÓN REAL — ENTRENAMIENTO 3
+════════════════════════════════════════════════════════════════════════════════
+
+PRE-FLIGHT OK: 12 formulaciones, 2 productos y 4 insumos por crear (todo dentro del dry-run aprobado).
+
+INSUMOS NUEVOS:
+  + insumo #156  BERMOCOLL 481 FQ  [Kg]
+  + insumo #157  FASE ACUOSA  [Kg]
+  + insumo #158  RESINA QE-220S  [Kg]
+  + insumo #159  RESINA QE-2383 W-595  [Kg]
+
+PRODUCTOS NUEVOS (fichas):
+  + producto #475  VITROGLASS ECOLOGICO               [SELLADORES] codigo=VITROGLASS-ECOLOGICO precio=$5,023.57
+  + producto #476  SELLADOR INICIAL                   [SELLADORES] codigo=SELLADOR-INICIAL precio=PENDIENTE
+
+PRODUCTOS NUEVOS (lista 2025, sin precio — PASO 3 asigna precios):
+  + producto #477  CHISA PLUS                         [PINTURAS ARQUITECTONICAS] codigo=CHISA-PLUS precio=PENDIENTE
+  + producto #478  MARMOPLAST                         [PASTAS ARQUITECTONICAS] codigo=MARMOPLAST precio=PENDIENTE
+  + producto #479  SELLADORACRILICO4648               [SELLADORES] codigo=SELLADORACRILICO4648 precio=PENDIENTE
+  + producto #480  HEALERGLASSKIT1LT.C/ESPATULA       [SELLADORES] codigo=HEALERGLASSKIT1LT-C-ESPATULA precio=PENDIENTE
+  + producto #481  REDYPLASTF                         [PREPARADORES DE SUPERFICIE] codigo=REDYPLASTF precio=PENDIENTE
+  + producto #482  REDYPLASTM                         [PREPARADORES DE SUPERFICIE] codigo=REDYPLASTM precio=PENDIENTE
+  + producto #483  REDYPLASTG                         [PREPARADORES DE SUPERFICIE] codigo=REDYPLASTG precio=PENDIENTE
+  + producto #484  MORTEROPLASTICOMALLA350-400        [PREPARADORES DE SUPERFICIE] codigo=MORTEROPLASTICOMALLA350-400 precio=PENDIENTE
+  + producto #485  DECOPASTA                          [PASTAS ARQUITECTONICAS] codigo=DECOPASTA precio=PENDIENTE
+  + producto #486  CHISAPLAST                         [PASTAS ARQUITECTONICAS] codigo=CHISAPLAST precio=PENDIENTE
+  + producto #487  CHISAPLASTPLUS                     [PASTAS ARQUITECTONICAS] codigo=CHISAPLASTPLUS precio=PENDIENTE
+  + producto #488  PRAIMERGLASS                       [PINTURAS ARQUITECTONICAS] codigo=PRAIMERGLASS precio=PENDIENTE
+  + producto #489  CHISAVINIL                         [PINTURAS ARQUITECTONICAS] codigo=CHISAVINIL precio=PENDIENTE
+  + producto #490  PROTECTPLUS                        [PINTURAS ARQUITECTONICAS] codigo=PROTECTPLUS precio=PENDIENTE
+  + producto #491  SHELL HARD(CASCARA DENARANJA)      [SHELL HARD (CASCARA DE NARANJA)] codigo=SHELL-HARD-CASCARA-DENARANJA precio=PENDIENTE
+  + producto #492  SHELLHARD LISO(CASCARALISO)        [SHELL HARD (CASCARA DE NARANJA)] codigo=SHELLHARD-LISO-CASCARALISO precio=PENDIENTE
+  + producto #493  TRICOLORPLUS                       [CHISA GLASS] codigo=TRICOLORPLUS precio=PENDIENTE
+  + producto #494  CORTPLAST                          [CHISA GLASS] codigo=CORTPLAST precio=PENDIENTE
+  + producto #495  CHISA MAR                          [CHISA GLASS] codigo=CHISA-MAR precio=PENDIENTE
+  + producto #496  POLY-COLOR(ESCAMA)                 [POLYCOLOR] codigo=POLY-COLOR-ESCAMA precio=PENDIENTE
+  + producto #497  POLY-PLAST                         [POLYCOLOR] codigo=POLY-PLAST precio=PENDIENTE
+  + producto #498  POLYTANO9000(RESINA EPOXICA)       [POLYCOLOR] codigo=POLYTANO9000-RESINA-EPOXICA precio=PENDIENTE
+  + producto #499  MARMOFLEXREF.BLANCO                [GRANOS DE MARMOL] codigo=MARMOFLEXREF-BLANCO precio=PENDIENTE
+  + producto #500  MARMOFLEXREF.COLOR                 [GRANOS DE MARMOL] codigo=MARMOFLEXREF-COLOR precio=PENDIENTE
+  + producto #501  IMPERGLASS3ANOS                    [IMPERMEABILIZANTE] codigo=IMPERGLASS3ANOS precio=PENDIENTE
+  + producto #502  IMPERGLASS5ANOS                    [IMPERMEABILIZANTE] codigo=IMPERGLASS5ANOS precio=PENDIENTE
+  + producto #503  IMPERGLASS7ANOS                    [IMPERMEABILIZANTE] codigo=IMPERGLASS7ANOS precio=PENDIENTE
+
+FORMULACIONES (versiones nuevas, comentarios con la imagen de origen):
+  → formulación #956  producto #215  V2  7 componentes  [inactiva]
+  → formulación #957  producto #213  V2  8 componentes  [inactiva]
+  → formulación #958  producto #212  V3  9 componentes  [inactiva]
+  → formulación #959  producto #211  V3  9 componentes  [inactiva]
+  → formulación #960  producto #215  V3  7 componentes  [inactiva]
+  → formulación #961  producto #202  V3  10 componentes  [inactiva]
+  → formulación #962  producto #224  V2  12 componentes  [inactiva]
+  → formulación #963  producto #225  V2  17 componentes  [inactiva]
+  → formulación #964  producto #223  V2  13 componentes  [inactiva]
+  → formulación #965  producto #210  V3  9 componentes  [inactiva]
+  → formulación #966  producto #475  V1  4 componentes  [ACTIVA — V1 de producto nuevo]
+  → formulación #967  producto #476  V1  3 componentes  [ACTIVA — V1 de producto nuevo]
+
+ENLACES INSUMO→SEMIELABORADO (UPDATE puntual):
+  ✓ insumo #91 → tipo=fabricado, producto_id=204 (SOLUCION DE AEROSIL 200)
+  ✓ insumo #96 → tipo=fabricado, producto_id=206 (TINTA AMARILLO OXIDO)
+  ✓ insumo #105 → tipo=fabricado, producto_id=205 (TINTA NEGRA)
+  ⏭ #83 → #214 OMITIDO (equivalencia SOLUCION DE RESINA ≡ EC-1 pendiente de validar)
+  ✓ insumo #157 → tipo=fabricado, producto_id=215 (SOLUCION FASE ACUOSA)
+
+RESUMEN FASE 3:
+  Insumos creados:        4
+  Productos creados:      29
+  Formulaciones nuevas:   12 (activas solo V1 de productos sin formulación previa)
+  Enlaces aplicados:      4 (el #83 queda pendiente)
+  rendimiento_m2_por_kg:  diferido a propuesta (A9)
+  Precios lista 2025:     PASO 3
+════════════════════════════════════════════════════════════════════════════════
