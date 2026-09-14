@@ -14,14 +14,14 @@ Generado por `doc/entrenamiento_3/tools/fase1_matching.py`. 22 fichas analizadas
 
 | Imagen | Producto OCR | Producto BD | kg ficha | kg BD | Versión | Suma % ficha | Estado | Líneas con diferencia | Recomendación |
 |---|---|---|---|---|---|---|---|---|---|
-| entrenamiento10.jpeg | TINTA AMARILLO OXIDO | 206 | 63.0 | 63.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (activa): no crear nada. |
-| entrenamiento17.jpeg | SOLUCION DEAEROSIL200 | 204 | 213.0 | 213.0 | 1 | 100.0 | `coincide_exacto` | 0 de 3 | Ya cargada como V1 (activa): no crear nada. |
-| entrenamiento19.jpeg | SOLUCION DE RESINA EC-1 | 214 | 393.866 | 393.9 | 1 | 100.0 | `coincide_exacto` | 0 de 3 | Ya cargada como V1 (activa): no crear nada. |
-| entrenamiento3.jpeg | SOLUCION DE AEROSIL 200 | 204 | 213.0 | 213.0 | 1 | 100.0 | `coincide_exacto` | 0 de 3 | Ya cargada como V1 (activa): no crear nada. · duplicado de entrenamiento17.jpeg: captura idéntica a la anterior: cargar una sola vez |
-| entrenamiento6.jpeg | TINTA ROJO CARMIN | 208 | 200.0 | 200.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (activa): no crear nada. |
-| entrenamiento7.jpeg | TINTA ROJA | 207 | 60.0 | 60.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (activa): no crear nada. |
-| entrenamiento8.jpeg | TINTA NEGRA | 205 | 50.0 | 50.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (activa): no crear nada. |
-| entrenamiento9.jpeg | TINTA VERDE CROMO | 209 | 52.0 | 52.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (activa): no crear nada. |
+| entrenamiento10.jpeg | TINTA AMARILLO OXIDO | 206 | 63.0 | 63.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (inactiva): no crear nada. |
+| entrenamiento17.jpeg | SOLUCION DEAEROSIL200 | 204 | 213.0 | 213.0 | 1 | 100.0 | `coincide_exacto` | 0 de 3 | Ya cargada como V1 (inactiva): no crear nada. |
+| entrenamiento19.jpeg | SOLUCION DE RESINA EC-1 | 214 | 393.866 | 393.9 | 1 | 100.0 | `coincide_exacto` | 0 de 3 | Ya cargada como V1 (inactiva): no crear nada. |
+| entrenamiento3.jpeg | SOLUCION DE AEROSIL 200 | 204 | 213.0 | 213.0 | 1 | 100.0 | `coincide_exacto` | 0 de 3 | Ya cargada como V1 (inactiva): no crear nada. · duplicado de entrenamiento17.jpeg: captura idéntica a la anterior: cargar una sola vez |
+| entrenamiento6.jpeg | TINTA ROJO CARMIN | 208 | 200.0 | 200.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (inactiva): no crear nada. |
+| entrenamiento7.jpeg | TINTA ROJA | 207 | 60.0 | 60.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (inactiva): no crear nada. |
+| entrenamiento8.jpeg | TINTA NEGRA | 205 | 50.0 | 50.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (inactiva): no crear nada. |
+| entrenamiento9.jpeg | TINTA VERDE CROMO | 209 | 52.0 | 52.0 | 1 | 100.0 | `coincide_exacto` | 0 de 5 | Ya cargada como V1 (inactiva): no crear nada. |
 | entrenamiento11.jpeg | SOLUCION FASE ACUOSA | 215 | 600.0 | 10.0 | 1 | 100.0 | `difiere` | 2 de 8 | Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1. |
 | entrenamiento12.jpeg | BASE ORGANICA NARANJA | 213 | 1.0 | 1.0 | 1 | 100.0 | `difiere` | 2 de 9 | Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1. |
 | entrenamiento13.jpeg | BASE ORGANICA NEGRA | 212 | 200.0 | 200.0 | 1 | 100.0 | `difiere` | 2 de 10 | Crear versión nueva (V2) con la variante de la ficha: 2 línea(s) con diferencia frente a V1. |

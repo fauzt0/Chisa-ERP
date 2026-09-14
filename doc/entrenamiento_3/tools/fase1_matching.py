@@ -150,6 +150,11 @@ insumos = cargar(os.path.join(DUMP, 'insumos.json'))
 formulaciones = cargar(os.path.join(DUMP, 'formulaciones.json'))
 detalle = cargar(os.path.join(DUMP, 'detalle_formulacion.json'))
 
+# es_activa llega del volcado como string/número ('0'/'1'): normalizar a booleano.
+# (Antes se evaluaba con `if f['es_activa']` a secas y '0' es truthy en Python.)
+for f in formulaciones:
+    f['es_activa'] = str(f.get('es_activa', '0')).strip() == '1'
+
 for p in productos:
     p['clave'] = clave(p['nombre'])
 for i in insumos:

@@ -21,7 +21,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "ANTITERRA204",
@@ -72,7 +72,7 @@
     "incidencias": [],
     "total_kg_bd": 63.0,
     "estado": "coincide_exacto",
-    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+    "recomendacion": "Ya cargada como V1 (inactiva): no crear nada."
   },
   {
     "imagen": "entrenamiento17.jpeg",
@@ -92,7 +92,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 3,
     "diff_componentes": [
       {
         "nombre": "SOLUCION DE PLIOWAY E-CH",
@@ -125,7 +125,7 @@
     "incidencias": [],
     "total_kg_bd": 213.0,
     "estado": "coincide_exacto",
-    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+    "recomendacion": "Ya cargada como V1 (inactiva): no crear nada."
   },
   {
     "imagen": "entrenamiento19.jpeg",
@@ -145,7 +145,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "ANTITERRA 204",
@@ -178,7 +178,7 @@
     "incidencias": [],
     "total_kg_bd": 393.9,
     "estado": "coincide_exacto",
-    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+    "recomendacion": "Ya cargada como V1 (inactiva): no crear nada."
   },
   {
     "imagen": "entrenamiento3.jpeg",
@@ -198,7 +198,7 @@
     ],
     "duplicado_de": "entrenamiento17.jpeg",
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 3,
     "diff_componentes": [
       {
         "nombre": "SOLUCIONDEPLIOWAY E-CH",
@@ -231,7 +231,7 @@
     "incidencias": [],
     "total_kg_bd": 213.0,
     "estado": "coincide_exacto",
-    "recomendacion": "Ya cargada como V1 (activa): no crear nada.",
+    "recomendacion": "Ya cargada como V1 (inactiva): no crear nada.",
     "nota_duplicado": "captura idéntica a la anterior: cargar una sola vez"
   },
   {
@@ -256,7 +256,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "ANTITERRA204",
@@ -307,7 +307,7 @@
     "incidencias": [],
     "total_kg_bd": 200.0,
     "estado": "coincide_exacto",
-    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+    "recomendacion": "Ya cargada como V1 (inactiva): no crear nada."
   },
   {
     "imagen": "entrenamiento7.jpeg",
@@ -330,7 +330,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "ANTITERRA204",
@@ -381,7 +381,7 @@
     "incidencias": [],
     "total_kg_bd": 60.0,
     "estado": "coincide_exacto",
-    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+    "recomendacion": "Ya cargada como V1 (inactiva): no crear nada."
   },
   {
     "imagen": "entrenamiento8.jpeg",
@@ -400,7 +400,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "ANTITERRA204",
@@ -451,7 +451,7 @@
     "incidencias": [],
     "total_kg_bd": 50.0,
     "estado": "coincide_exacto",
-    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+    "recomendacion": "Ya cargada como V1 (inactiva): no crear nada."
   },
   {
     "imagen": "entrenamiento9.jpeg",
@@ -471,7 +471,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "ANTITERRA204",
@@ -522,7 +522,7 @@
     "incidencias": [],
     "total_kg_bd": 52.0,
     "estado": "coincide_exacto",
-    "recomendacion": "Ya cargada como V1 (activa): no crear nada."
+    "recomendacion": "Ya cargada como V1 (inactiva): no crear nada."
   },
   {
     "imagen": "entrenamiento11.jpeg",
@@ -754,7 +754,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "AGUA",
@@ -872,7 +872,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "AGUA",
@@ -1094,7 +1094,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "AGUA",
@@ -1224,7 +1224,7 @@
     ],
     "duplicado_de": "entrenamiento16.jpeg",
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "AGUA",
@@ -1837,7 +1837,7 @@
     ],
     "duplicado_de": null,
     "version_que_coincide": 1,
-    "version_activa": 1,
+    "version_activa": 2,
     "diff_componentes": [
       {
         "nombre": "AGUA",
