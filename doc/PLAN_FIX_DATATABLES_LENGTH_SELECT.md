@@ -1,6 +1,6 @@
 # Pendiente — Fix "Mostrar X entradas": número encimado con la flecha del select
 
-> **Estado:** investigación completada, **corrección aún NO aplicada** (se detuvo por límite de créditos).
+> **Estado:** ✅ **aplicado el 2026-09-17** (Opción A: regla global al final de `assets/dist/css/theme.css`; bloque muerto `.dataTables_length select` eliminado de `compras/proveedores/main.php`). Pendiente verificación visual en proveedores/OC.
 > **Rutas afectadas:** `/compras/proveedores` y `/compras/OrdenesCompra` (y, por consistencia, cualquier tabla DataTables del sistema).
 > **Modo:** económico. Este documento deja todo listo para que otro agente aplique el fix en una sola pasada.
 

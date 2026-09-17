@@ -50,7 +50,7 @@ auto-referencias conocidas (A3). La expansión de la TINTA NEGRA (#105→#205) s
 
 | Prueba | Resultado |
 |--------|-----------|
-| `obras/Obras/get_productos_ajax` (selector de productos de obra) | 494 activos; **los 29 nuevos aparecen**; **28/29 con `precio_venta = NULL`** (solo #475 VITROGLASS = $5,023.57) |
+| `obras/Obras/get_productos_ajax` (selector de productos de obra) | 494 activos; **los 29 nuevos aparecen**; precios de la lista 2025 cargados el 14-sep (28/29 con precio; `#476 SELLADOR INICIAL` sigue en NULL) |
 | `produccion/Dashboard/get_catalogo_ajax termino=IMPERGLASS` | 3 resultados: #501, #502, #503 |
 
 ---
@@ -64,8 +64,9 @@ auto-referencias conocidas (A3). La expansión de la TINTA NEGRA (#105→#205) s
    subestiman ese porcentaje en las fórmulas que usan la SOLUCION DE AEROSIL 200.
    **Recomendación:** versión nueva de #204 sustituyendo la línea `#91` por `#118 AEROSIL 200`
    (probable enlace erróneo del importador viejo). Decisión de negocio; mientras, el sesgo es de 12.14 %.
-2. **Catálogo-1.** Los 28 productos nuevos sin precio son seleccionables al armar una obra (saldrían en
-   $0). No cotizarlos hasta el PASO 3; se pueden dejar listados/buscables sin problema.
+2. **Catálogo-1 — ✅ mitigado (2026-09-14/17).** Los precios de la lista 2025 ya se cargaron (30 UPDATE;
+   28/29 productos nuevos con precio). Quedan pendientes `#476 SELLADOR INICIAL` (sin dato de negocio) y el
+   `rendimiento_m2_por_kg` (PASO 3). Mientras, se pueden listar/buscar sin problema.
 3. **Ruido PHP 8**: 42–44 deprecations por render (preexistentes, no bloquean).
 4. Los casos 2.1–2.3 del checklist de Obras siguen OK con los datos vigentes.
 

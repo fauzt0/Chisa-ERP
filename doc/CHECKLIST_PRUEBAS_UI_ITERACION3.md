@@ -141,13 +141,21 @@ Evidencia obtenida con los propios endpoints de la app (DevTools), sobre los dat
 | BUG-UI-03 | Cerrado — diseño búsqueda |
 | BUG-UI-04 | **Cerrado** — columnas + `field_exists`; `lista_ajax` 200 |
 | BUG-UI-05 | **Cerrado** — `select(..., FALSE)` en Inventario; GET 200 |
-| BUG-UI-06 | **Abierto (cosmético)** — POS, definición duplicada de `buscarProductos()` |
-| BUG-UI-07 | **Cerrado en esquema** — `fecha_completado_produccion` aplicada. Re-QA Completada E2E (T9/D6) pendiente |
+| BUG-UI-06 | **Cerrado (2026-09-17)** — POS: una sola definición de `buscarProductos()` en `ventas/pos/main.php`; vuelve a ocultar "Más Vendidos" al buscar |
+| BUG-UI-07 | **Cerrado en esquema** — columnas verificadas en prod 2026-09-17 (`ordenes_venta`, `obras`, `lotes_produccion`). Re-QA Completada E2E (T9/D6) pendiente |
 | BUG-UI-08 | **Cerrado en código** — wrappers `crear`/`actualizar`/`eliminar`. Alta UI TEST no confirmada |
 | BUG-UI-09 | **Cerrado** — `lista_ajax` y KPIs filtran `activo=1`; detalle 404 si eliminada |
-| BUG-DATA-01 | **Abierto (alta, presentación)** — catálogo sin datos comerciales: 491/494 productos sin `precio_venta`, 462 con descripción placeholder "Producto importado desde Excel…", 492 sin foto, 492 sin rendimiento, 180 fabricados activos sin formulación activa |
+| BUG-DATA-01 | **Parcial** — catálogo sin datos comerciales: 461/494 sin `precio_venta` (460 en $0 + 1 NULL; 33 con precio tras T4), 462 con descripción placeholder "Producto importado desde Excel…", 492 sin foto, 492 sin rendimiento, 180 fabricados activos sin formulación activa |
 
 *No se reportan:* deprecations PHP 8.3, productos sin precio #475–#503 (reportados en conjunto como **BUG-DATA-01**), formulaciones inactivas, residuos OV-TEST-001 / OV-2026-0004 / cliente prueba.
+
+### Actualización 2026-09-17 (verificación read-only)
+
+- BUG-UI-04/05/09: cerrados en código y verificados (columnas en prod, `select(..., FALSE)` en Inventario, filtro `activo=1` en CRM Obras).
+- BUG-UI-06: **cerrado** (una sola `buscarProductos()` en `ventas/pos/main.php`).
+- BUG-UI-07: columnas aplicadas en prod; **D6 sigue pendiente** (no se ha re-ejecutado "Completada"; `lotes_produccion = 0`).
+- BUG-UI-08: wrappers públicos presentes en `DescuentosModel`; alta por UI sin confirmar.
+- Limpieza de residuos: OB-00006 → `estatus='Cancelada'`; `PESAJE-venta-26` revertido (movs 22/23; stock #18/#20 de vuelta en 150.00/80.00). OV-TEST-001 / OV-2026-0004 / cliente "Empresa de Prueba" se conservan (son parte del guion de demo).
 
 ### § Verificación de precios e IVA (2026-09-14, read-only)
 
