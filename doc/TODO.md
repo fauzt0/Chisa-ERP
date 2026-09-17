@@ -112,5 +112,6 @@
 | `AUDITORIA_MODULO_OBRAS_2026-08-28.md` | Auditoría de Obras (iteración 3): brechas, riesgos, plan y pendientes |
 | `CHECKLIST_PRUEBAS_OBRAS_ITERACION3.md` | Resultados QA de Obras (TEST-QA) y cierre de BUG-1 a BUG-8 |
 | `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño de la integración con paquetería (iteración 4) |
+| `CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` | Checklist manual para el cierre de la iteración 3 (regresión, Completada E2E, correos, módulos y PASO 3) |
 
 > Nota: los planes, handoffs y verificaciones de iteraciones ya completadas se eliminaron de `doc/` el 2026-08-27; los prompts de la Iteración 3 de Obras se eliminaron el 2026-09-10 (los ya versionados se conservan en el historial de git por si se necesitan).
