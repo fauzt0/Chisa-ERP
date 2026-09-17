@@ -1014,13 +1014,6 @@
   </div>
 </div>
 
-<style>
-/* Fix: evitar que la flecha del select "mostrar X entradas" se encime con el número */
-.dataTables_length select {
-  padding-right: 2rem !important;
-  background-position: right 0.5rem center !important;
-}
-</style>
 <script>
 (function() {
   'use strict';
