@@ -131,11 +131,16 @@ class Obras extends MY_Controller {
             echo json_encode(['success' => false, 'message' => 'Debe seleccionar un cliente']);
             return;
         }
+        $direccion = trim((string) $this->input->post('direccion'));
+        if ($direccion === '') {
+            echo json_encode(['success' => false, 'message' => 'La dirección es obligatoria']);
+            return;
+        }
 
         $data = [
             'nombre' => $nombre,
             'cliente_id' => $cliente_id,
-            'direccion' => $this->input->post('direccion'),
+            'direccion' => $direccion,
             'ciudad' => $this->input->post('ciudad'),
             'estado' => $this->input->post('estado'),
             'codigo_postal' => $this->input->post('codigo_postal'),

@@ -142,8 +142,8 @@ Evidencia obtenida con los propios endpoints de la app (DevTools), sobre los dat
 | BUG-UI-04 | **Cerrado** — columnas + `field_exists`; `lista_ajax` 200 |
 | BUG-UI-05 | **Cerrado** — `select(..., FALSE)` en Inventario; GET 200 |
 | BUG-UI-06 | **Cerrado (2026-09-17)** — POS: una sola definición de `buscarProductos()` en `ventas/pos/main.php`; vuelve a ocultar "Más Vendidos" al buscar |
-| BUG-UI-07 | **Cerrado en esquema** — columnas verificadas en prod 2026-09-17 (`ordenes_venta`, `obras`, `lotes_produccion`). Re-QA Completada E2E (T9/D6) pendiente |
-| BUG-UI-08 | **Cerrado en código** — wrappers `crear`/`actualizar`/`eliminar`. Alta UI TEST no confirmada |
+| BUG-UI-07 | **Cerrado E2E 2026-09-18** — OV-2026-0009 (id 28) Completada sin 500; 1 lote `PROD-20260918-22-2268` generado; entrada PT stock #22 0→1; PESAJE-venta-28 = 3 (no duplicado). Fix: `dov.unidad` → `p.unidad_venta AS unidad` en query de lotes + ENUM `ordenes_venta.estatus` con `'Completada'` + opciones de estatus por tipo (venta/obra). Ver `doc/CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` (B4/B5 ✅). |
+| BUG-UI-08 | **Cerrado E2E 2026-09-18** — TEST-QA-DESC-01 crear 5% Activo / editar 7% Inactivo / eliminar sin 500. Fix: `DescuentosModel` `$dateFields = ['created'=>'fecha_creacion','updated'=>'fecha_modificacion']`; estatus default `'Activo'` en crear/editar. Ver `doc/CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` (A5 ✅). |
 | BUG-UI-09 | **Cerrado** — `lista_ajax` y KPIs filtran `activo=1`; detalle 404 si eliminada |
 | BUG-DATA-01 | **Parcial** — catálogo sin datos comerciales: 461/494 sin `precio_venta` (460 en $0 + 1 NULL; 33 con precio tras T4), 462 con descripción placeholder "Producto importado desde Excel…", 492 sin foto, 492 sin rendimiento, 180 fabricados activos sin formulación activa |
 
@@ -156,6 +156,13 @@ Evidencia obtenida con los propios endpoints de la app (DevTools), sobre los dat
 - BUG-UI-07: columnas aplicadas en prod; **D6 sigue pendiente** (no se ha re-ejecutado "Completada"; `lotes_produccion = 0`).
 - BUG-UI-08: wrappers públicos presentes en `DescuentosModel`; alta por UI sin confirmar.
 - Limpieza de residuos: OB-00006 → `estatus='Cancelada'`; `PESAJE-venta-26` revertido (movs 22/23; stock #18/#20 de vuelta en 150.00/80.00). OV-TEST-001 / OV-2026-0004 / cliente "Empresa de Prueba" se conservan (son parte del guion de demo).
+
+### Actualización 2026-09-18 (cierre E2E)
+
+- **BUG-UI-07 (D6 Completada):** E2E ejecutado por UI. OV-2026-0009 (id 28) Completada sin 500; lote `PROD-20260918-22-2268` (prod 22, 1.00 Kg, Producido) generado; entrada PT `movimientos_productos` tipo `Produccion` stock 0→1; PESAJE-venta-28 = 3 (no duplicado). Fix: `dov.unidad` → `p.unidad_venta AS unidad` en query de lotes; ENUM `ordenes_venta.estatus` agregado `'Completada'`; opciones de estatus por tipo. Ver `doc/CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` (B4/B5 ✅).
+- **BUG-UI-08 (T3 Descuentos):** E2E ejecutado por UI. TEST-QA-DESC-01 crear 5% Activo / editar 7% Inactivo / eliminar sin 500. Fix: `DescuentosModel` `$dateFields` con `fecha_creacion`/`fecha_modificacion`; estatus default `'Activo'` en crear/editar. Ver `doc/CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` (A5 ✅).
+- **SQL migración:** `database/fix_estatus_completada_ov.sql` aplicado en prod (ENUM + OV-2026-0009 `estatus='En Preparación'`).
+- **Extra:** `views/produccion/lotes/main.php` agregado `<th>Origen</th>` (columna faltante vs DataTables 8 cols).
 
 ### § Verificación de precios e IVA (2026-09-14, read-only)
 

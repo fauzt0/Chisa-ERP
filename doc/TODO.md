@@ -1,8 +1,8 @@
 # TODO - Sistema ERP CHISA
 
-**Última actualización:** 2026-09-17
+**Última actualización:** 2026-09-18
 **Desarrollador:** Fausto Solano - CHISA Recubrimientos
-**Rama activa:** `iteracion-3` (base limpia; cambios de docs/fix del 2026-09-17 **sin commitear**; **9 commits locales sin push** a `origin/iteracion-3`; pendiente PR a `main`)
+**Rama activa:** `iteracion-3` (**15 commits locales sin push** a `origin/iteracion-3` tras este cierre; pendiente PR a `main`)
 
 ---
 
@@ -49,6 +49,7 @@
 - [X] **Obras (Iteración 3)** — flujo completo auditado y cerrado: tab Entregas en detalle de obra, trigger `tr_actualizar_entrega_almacen` corregido, pre-órdenes de compra y solicitudes de producción desde obra, PDF resumen alineado a las referencias, y BUG-1 a BUG-8 corregidos (recibo, rutas de archivos, validación de alta, folios con `MAX(CAST)`, footer del detalle) (sep 2026)
 - [X] **Entrenamiento 3 (Producción)** — OCR de 25 capturas, fases 1–3 (29 productos #475–#503, 4 insumos, 12 formulaciones inactivas, 4 enlaces insumo→semielaborado), corrección BOM-1 (V5 de #204, form#968 activa) y pruebas de iteración (sep 2026)
 - [X] **QA UI iteración 3 + fixes de presentación** — BUG-UI-04/05/06/08/09 corregidos, migración T1 (`fecha_completado_produccion`, `lotes_produccion.orden_venta_id/obra_id`), precios lista 2025 (30 UPDATE; 33 productos con precio) y fixes de la demo (campana/cartera/PDFs/ayuda en vivo) (sep 2026)
+- [X] **QA cierre I3 (Completada E2E + descuentos + ENUM)** — Re-verificación E2E: OV-2026-0009 Completada con 1 lote (PROD-20260918-22-2268), descuentos TEST-QA-DESC-01 CRUD sin 500, ENUM `ordenes_venta.estatus` con `'Completada'`, fix `dov.unidad` en query de lotes, fechas `fecha_creacion`/`fecha_modificacion` en descuentos, SQL `database/fix_estatus_completada_ov.sql`. Checklist manual A5/B4/B5 ✅ (2026-09-18)
 
 ## 🟡 Iteración módulo de "Producción" (pendiente)
 
@@ -63,14 +64,14 @@
 - [ ] Mover el SQL directo de `Obras::actualizar_ajax` al modelo (auditoría B5, diferido)
 - [ ] Residuos TEST: OVs `OV-TEST-001` / `OV-2026-0004` y cliente "Empresa de Prueba S.A." **se conservan** (siguen en el guion de demo: cartera y campana). Limpieza 2026-09-17: OB-00006 → `estatus='Cancelada'` (ya estaba `activo=0`); `PESAJE-venta-26` revertido con movimientos de Entrada (movs 22/23; stock de #18/#20 restaurado a 150.00/80.00).
 - [ ] Negocio: poblar `rendimiento_m2_por_kg` en formulaciones activas — hoy **1 de 314** (solo form#966/VITROGLASS = 9.74 m²/kg). PASO 3 bloqueado hasta que negocio confirme el contenido neto de envases (ver `doc/entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md`); `#476 SELLADOR INICIAL` sin precio y equivalencia `#83 ↔ #214` sin confirmar.
-- [ ] Validar `direccion` server-side en `Obras::guardar_ajax()` (hoy el formulario la marca `required`; sin ella la BD responde error 1048) — hallazgo H del checklist de Obras. Confirmado 2026-09-17: sigue sin validación server-side.
+- [X] Validar `direccion` server-side en `Obras::guardar_ajax()` — 2026-09-18: `trim` + JSON `{success:false}` si vacía (mismo patrón que `nombre`/`cliente_id`); evita 1048.
 - [X] Cosméticos de Obras: link real en "Aún no hay entregas" (detalle de obra) y columnas del modal de entrega (`COALESCE` + `fmtCantidad`) — corregidos 2026-09-10
 
 ## 🟡 Pendientes de presentación / catálogo (QA 14-sep)
 
-- [ ] BUG-DATA-01 / T7: catálogo incompleto — 460 productos en $0 + 1 en NULL, 462 con descripción placeholder, 492 sin foto/rendimiento y 180 fabricados sin formulación activa.
-- [ ] D6: re-QA de "Completada" E2E (pesaje → lote + entrada PT). Hoy `lotes_produccion = 0` y `movimientos_productos` tipo `Produccion` = 0; las columnas ya existen en producción.
-- [ ] T3: confirmar por UI el alta/edición de descuentos (`crear_ajax`/`actualizar_ajax` ya usan wrappers públicos).
+- [ ] BUG-DATA-01 / T7: catálogo incompleto — 460 productos en $0 + 1 en NULL, 462 con descripción placeholder, 492 sin foto/rendimiento y 180 fabricados sin formulación activa. **No bloqueante para I4; decisión de negocio.**
+- [X] D6: re-QA de "Completada" E2E (pesaje → lote + entrada PT) — **ejecutado 2026-09-18**, OV-2026-0009 Completada, lote `PROD-20260918-22-2268` generado, entrada PT stock #22 0→1, PESAJE-venta-28 = 3. Fix: `dov.unidad` + ENUM `ordenes_venta.estatus` con `'Completada'`. Ver `doc/CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` (B4/B5 ✅).
+- [X] T3: confirmar por UI el alta/edición de descuentos — **ejecutado 2026-09-18**, TEST-QA-DESC-01 crear 5% Activo / editar 7% Inactivo / eliminar sin 500. Fix: `DescuentosModel` `$dateFields = ['created'=>'fecha_creacion','updated'=>'fecha_modificacion']`. Ver `doc/CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` (A5 ✅).
 - [X] `PLAN_FIX_DATATABLES_LENGTH_SELECT.md` aplicado 2026-09-17 (regla global en `theme.css` + eliminado el bloque muerto de `compras/proveedores`); queda la verificación visual en proveedores/OC.
 
 ## 🟡 Pendientes Facturación
