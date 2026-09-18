@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-09-18  
 **Desarrollador:** Fausto Solano - CHISA Recubrimientos  
-**Rama activa:** `main` (iteración 3 fusionada; **iteración 4** en curso)
+**Rama activa:** `iteracion-4` (desde `main` 2026-09-18)
 
 ---
 
@@ -75,10 +75,16 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 ### 4.5 Logística (si cabe en el sprint)
 - [ ] API paquetería Tres Guerras — diseño en `doc/PLAN_ENVIOS_TRES_GUERRAS.md` (no improvisar).
 
+### 4.0 Catálogo web oficial (I4 arranque)
+Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (22 familias: Recubrimientos, Pinturas, Preparadores, Pastas, Selladores).
+- [X] Cruzar familias/REF de la tienda vs `productos` del ERP (2026-09-18, rama `iteracion-4`).
+- [X] SKUs existentes: 84 fotos nuevas en `uploads/productos/web_*` (no se pisaron las 31+ que ya tenían imagen; **no** se tocó precio). Quedan ~379 sin foto (colores internos sin ficha en la tienda).
+- [X] Familias ausentes dadas de alta (precio 0): COLOR GLASS, MARMO GOT, MARMO ROC.
+
 ### 4.6 Datos de negocio (no bloquean el arranque de I4; sí el PASO 3)
 - [ ] `rendimiento_m2_por_kg`: 1/314 activas. Lista en `doc/entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md`.
 - [ ] Contenido neto CUBETA/GALÓN; presentación de filas "(sin pres.)"; precio #476; `#83` ≡ `#214` EC-1; parafina CHISA PLUS.
-- [ ] BUG-DATA-01: ~461 productos sin precio, placeholders, fotos. **No** cargar precios inventados.
+- [ ] BUG-DATA-01: ~461 productos sin precio, placeholders, fotos. **No** cargar precios inventados. Fotos de 4.0 cubren las familias de la tienda, no todo el catálogo interno.
 
 ### 4.7 Entrenamiento adicional
 - **No hace falta un Entrenamiento 4 de OCR/Excel ahora:** no hay `.xlsx` nuevos en el repo; las fichas de `doc/entrenamiento_3/imagenes` + manifiestos ya se usaron en I3.
