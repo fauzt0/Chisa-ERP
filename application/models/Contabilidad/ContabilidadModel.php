@@ -1,6 +1,7 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+#[AllowDynamicProperties]
 class ContabilidadModel extends CI_Model {
     
     public function __construct() {
@@ -183,10 +184,18 @@ class ContabilidadModel extends CI_Model {
      * Obtiene ejercicio actual
      */
     public function get_ejercicio_actual() {
+        $anio = (int) date('Y');
         $this->db->where('estatus', 'Abierto');
-        $this->db->where('YEAR(fecha_inicio) <=', date('Y'));
-        $this->db->where('YEAR(fecha_fin) >=', date('Y'));
-        
+        $this->db->where('año', $anio);
+        $ej = $this->db->get('ejercicios_fiscales')->row();
+        if ($ej) {
+            return $ej;
+        }
+        $this->db->where('estatus', 'Abierto');
+        $this->db->where('YEAR(fecha_inicio) <=', $anio);
+        $this->db->where('YEAR(fecha_fin) >=', $anio);
+        $this->db->order_by('año', 'DESC');
+        $this->db->limit(1);
         return $this->db->get('ejercicios_fiscales')->row();
     }
     
@@ -243,5 +252,95 @@ class ContabilidadModel extends CI_Model {
         $this->db->limit(10);
         
         return $this->db->get('polizas')->result();
+    }
+
+    public function generar_folio_poliza($tipo) {
+        $prefijos = [
+            'Ingresos' => 'ING',
+            'Egresos' => 'EGR',
+            'Diario' => 'DIA',
+            'Cheque' => 'CHE',
+        ];
+        $prefijo = $prefijos[$tipo] ?? 'DIA';
+
+        $this->db->select('folio');
+        $this->db->from('polizas');
+        $this->db->like('folio', $prefijo, 'after');
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit(1);
+        $ultima = $this->db->get()->row();
+
+        $numero = 1;
+        if ($ultima) {
+            $numero = intval(substr($ultima->folio, strlen($prefijo))) + 1;
+        }
+
+        return $prefijo . str_pad((string) $numero, 6, '0', STR_PAD_LEFT);
+    }
+
+    public function get_periodo_por_fecha($fecha) {
+        $this->db->select('p.*, e.año');
+        $this->db->from('periodos_contables p');
+        $this->db->join('ejercicios_fiscales e', 'p.ejercicio_id = e.id');
+        $this->db->where('p.fecha_inicio <=', $fecha);
+        $this->db->where('p.fecha_fin >=', $fecha);
+        $this->db->order_by('p.id', 'DESC');
+        $this->db->limit(1);
+        return $this->db->get()->row();
+    }
+
+    public function poliza_origen_existente($origen, $origen_id) {
+        $this->db->from('polizas');
+        $this->db->where('origen', $origen);
+        $this->db->where('origen_id', (int) $origen_id);
+        $this->db->where_in('estatus', ['Borrador', 'Autorizada']);
+        return $this->db->count_all_results() > 0;
+    }
+
+    public function get_libro_diario($fecha_inicio, $fecha_fin) {
+        $this->db->select('p.folio, p.tipo_poliza, p.fecha, p.concepto, p.estatus, p.origen,
+            c.codigo as cuenta_codigo, c.nombre as cuenta_nombre, pd.concepto as linea_concepto, pd.debe, pd.haber');
+        $this->db->from('polizas p');
+        $this->db->join('polizas_detalle pd', 'pd.poliza_id = p.id');
+        $this->db->join('cuentas_contables c', 'c.id = pd.cuenta_id');
+        $this->db->where_in('p.estatus', ['Borrador', 'Autorizada']);
+        if ($fecha_inicio) {
+            $this->db->where('p.fecha >=', $fecha_inicio);
+        }
+        if ($fecha_fin) {
+            $this->db->where('p.fecha <=', $fecha_fin);
+        }
+        $this->db->order_by('p.fecha', 'ASC');
+        $this->db->order_by('p.folio', 'ASC');
+        $this->db->order_by('pd.orden', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function get_libro_mayor($fecha_inicio, $fecha_fin) {
+        $this->db->select('c.codigo, c.nombre, c.naturaleza,
+            COALESCE(SUM(pd.debe), 0) as total_debe,
+            COALESCE(SUM(pd.haber), 0) as total_haber', false);
+        $this->db->from('cuentas_contables c');
+        $this->db->join('polizas_detalle pd', 'pd.cuenta_id = c.id', 'inner');
+        $this->db->join('polizas p', 'p.id = pd.poliza_id');
+        $this->db->where_in('p.estatus', ['Borrador', 'Autorizada']);
+        if ($fecha_inicio) {
+            $this->db->where('p.fecha >=', $fecha_inicio);
+        }
+        if ($fecha_fin) {
+            $this->db->where('p.fecha <=', $fecha_fin);
+        }
+        $this->db->group_by('c.id');
+        $this->db->order_by('c.codigo', 'ASC');
+        $rows = $this->db->get()->result();
+        foreach ($rows as $r) {
+            $diff = (float) $r->total_debe - (float) $r->total_haber;
+            if ($r->naturaleza === 'Deudora') {
+                $r->saldo = $diff;
+            } else {
+                $r->saldo = -$diff;
+            }
+        }
+        return $rows;
     }
 }

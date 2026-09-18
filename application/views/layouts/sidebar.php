@@ -180,6 +180,9 @@
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Polizas">
                     Pólizas Contables
                 </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Origenes">
+                    Orígenes operativos
+                </a></li>
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Bancos">
                     Bancos
                 </a></li>

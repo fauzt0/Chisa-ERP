@@ -110,9 +110,14 @@ class VentasModel extends MY_Model {
      * Obtiene una orden con su detalle
      */
     public function get_orden_completa($id) {
-        $this->db->select('ordenes_venta.*, clientes.razon_social, clientes.rfc');
+        $sel = 'ordenes_venta.*, clientes.razon_social, clientes.rfc';
         $this->db->from('ordenes_venta');
         $this->db->join('clientes', 'clientes.id = ordenes_venta.cliente_id');
+        if ($this->db->table_exists('sucursales') && $this->db->field_exists('sucursal_id', 'ordenes_venta')) {
+            $sel .= ', sucursales.nombre as sucursal_nombre, sucursales.codigo as sucursal_codigo, sucursales.direccion as sucursal_direccion, sucursales.telefono as sucursal_telefono';
+            $this->db->join('sucursales', 'sucursales.id = ordenes_venta.sucursal_id', 'left');
+        }
+        $this->db->select($sel);
         $this->db->where('ordenes_venta.id', $id);
         $orden = $this->db->get()->row();
         
@@ -323,13 +328,56 @@ class VentasModel extends MY_Model {
     /**
      * Obtiene estadísticas de ventas
      */
-    public function get_estadisticas() {
+    /**
+     * Valida líneas POS contra precio de catálogo (no confiar en el POST).
+     * @return string|null mensaje de error
+     */
+    public function validar_precios_pos($detalles) {
+        if (empty($detalles) || !is_array($detalles)) {
+            return 'Sin partidas';
+        }
+        foreach ($detalles as $d) {
+            $pid = (int) ($d['producto_id'] ?? 0);
+            if ($pid <= 0) {
+                return 'Producto inválido en el ticket';
+            }
+            $this->db->select('id, nombre, precio_venta, estatus');
+            $this->db->where('id', $pid);
+            $p = $this->db->get('productos')->row();
+            if (!$p || $p->estatus !== 'Activo') {
+                return 'Producto no disponible';
+            }
+            if ((float) $p->precio_venta <= 0) {
+                return 'No se puede vender «' . $p->nombre . '»: precio de lista es $0. Capture el precio en catálogo (BUG-DATA-01).';
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Sustituye precio_unitario del ticket por el de catálogo.
+     */
+    public function aplicar_precios_catalogo($detalles) {
+        foreach ($detalles as &$d) {
+            $this->db->select('precio_venta');
+            $this->db->where('id', (int) $d['producto_id']);
+            $p = $this->db->get('productos')->row();
+            if ($p) {
+                $d['precio_unitario'] = (float) $p->precio_venta;
+            }
+        }
+        unset($d);
+        return $detalles;
+    }
+
+    public function get_estadisticas($sucursal_id = null) {
         $stats = [];
+        $sid = ($sucursal_id && $this->db->field_exists('sucursal_id', 'ordenes_venta')) ? (int) $sucursal_id : null;
         
-        // Ventas del día
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('DATE(fecha_orden)', date('Y-m-d'));
         $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $hoy = $this->db->get('ordenes_venta')->row();
         $stats['ventas_hoy'] = $hoy->total ?? 0;
         $stats['monto_hoy'] = $hoy->monto ?? 0;
@@ -338,6 +386,7 @@ class VentasModel extends MY_Model {
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('DATE(fecha_orden)', date('Y-m-d', strtotime('-1 day')));
         $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $ayer = $this->db->get('ordenes_venta')->row();
         $stats['ventas_ayer'] = $ayer->total ?? 0;
         $stats['monto_ayer'] = $ayer->monto ?? 0;
@@ -352,6 +401,7 @@ class VentasModel extends MY_Model {
         $this->db->where('MONTH(fecha_orden)', date('m'));
         $this->db->where('YEAR(fecha_orden)', date('Y'));
         $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $mes = $this->db->get('ordenes_venta')->row();
         $stats['ventas_mes'] = $mes->total ?? 0;
         $stats['monto_mes'] = $mes->monto ?? 0;
@@ -361,6 +411,7 @@ class VentasModel extends MY_Model {
         $this->db->where('MONTH(fecha_orden)', date('m', strtotime('first day of last month')));
         $this->db->where('YEAR(fecha_orden)', date('Y', strtotime('first day of last month')));
         $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $mes_ant = $this->db->get('ordenes_venta')->row();
         $stats['monto_mes_anterior'] = $mes_ant->monto ?? 0;
 
@@ -372,10 +423,11 @@ class VentasModel extends MY_Model {
         
         // Cotizaciones pendientes
         $this->db->where('estatus', 'Cotización');
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $stats['cotizaciones_pendientes'] = $this->db->count_all_results('ordenes_venta');
 
-        // Total Ordenes Activas (para % de cotizaciones vs total)
         $this->db->where_in('estatus', ['Cotización', 'Confirmada', 'En Preparación']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $total_activas = $this->db->count_all_results('ordenes_venta');
         
         $stats['porcentaje_cotizaciones'] = ($total_activas > 0) 
@@ -384,6 +436,7 @@ class VentasModel extends MY_Model {
         
         // Órdenes en preparación
         $this->db->where('estatus', 'En Preparación');
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $stats['ordenes_preparacion'] = $this->db->count_all_results('ordenes_venta');
 
         $stats['porcentaje_preparacion'] = ($total_activas > 0) 

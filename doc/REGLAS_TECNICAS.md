@@ -548,10 +548,10 @@ Fechas:           fecha_alta, fecha_edicion, fecha_baja (DATE o DATETIME)
 | Reloj | `RelojModel`, `RelojSyncRhModel` |
 | Producción | `ProductosModel` |
 | Compras | `ProveedoresModel`, `InsumosModel`, `OrdenesCompraModel`, `CategoriasModel` |
-| Ventas | `ClientesModel`, `OrdenesModel`, `DescuentosModel` |
+| Ventas | `ClientesModel`, `VentasModel`, `DescuentosModel`, `SucursalesModel` (POS I4) |
 | Obras | `ObrasModel` |
 | Facturación | `FacturasModel` |
-| Contabilidad | `NominaModel`, `BancosModel`, `PolizasModel`, `CuentasContablesModel` |
+| Contabilidad | `ContabilidadModel`, `OrigenesModel` (I4: lee facturas/OC/nóminas → pólizas; no escribe en origen) |
 | Usuarios | `UserModel` |
 | Almacén | `InventarioModel`, `EntregasModel` |
 

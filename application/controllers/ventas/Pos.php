@@ -16,6 +16,8 @@ class Pos extends MY_Controller {
         $this->load->model('Ventas/ClientesModel');
         $this->load->model('Produccion/ProductosModel');
         $this->load->model('Ventas/DescuentosModel');
+        $this->load->model('Ventas/SucursalesModel');
+        $this->SucursalesModel->asegurar_infraestructura();
     }
     
     /**
@@ -26,8 +28,16 @@ class Pos extends MY_Controller {
         $this->viewData['headTitle'] = 'Point of Sale (POS)';
         $this->viewData['breadcrumb'] = 'Inicio > CRM Ventas > POS';
         
-        // Obtener estadísticas
-        $stats = $this->VentasModel->get_estadisticas();
+        $sucursales = $this->SucursalesModel->listar_activas();
+        $sucursal_id = (int) $this->session->userdata('pos_sucursal_id');
+        if ($sucursal_id <= 0 && !empty($sucursales)) {
+            $sucursal_id = (int) $sucursales[0]->id;
+            $this->session->set_userdata('pos_sucursal_id', $sucursal_id);
+        }
+        $this->viewData['sucursales'] = $sucursales;
+        $this->viewData['sucursal_id'] = $sucursal_id;
+        
+        $stats = $this->VentasModel->get_estadisticas($sucursal_id ?: null);
         $this->viewData['response'] = ['stats' => $stats];
         
         $this->viewData['validate'] = '';
@@ -83,17 +93,29 @@ class Pos extends MY_Controller {
         $estatus = $this->input->post('estatus'); // Cotización o Entregada
         $observaciones = $this->input->post('observaciones');
         $detalles = json_decode($this->input->post('detalles'), true);
-        
-        // Descuento
-        $descuento_id = $this->input->post('descuento_id');
-        $descuento_nombre = $this->input->post('descuento_nombre');
-        $descuento_tipo = $this->input->post('descuento_tipo');
-        $descuento_valor = $this->input->post('descuento_valor');
+        $sucursal_id = (int) ($this->input->post('sucursal_id') ?: $this->session->userdata('pos_sucursal_id'));
         
         if(!$cliente_id || !$detalles || count($detalles) == 0) {
             echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
             return;
         }
+
+        $sucursal = $this->SucursalesModel->get($sucursal_id);
+        if (!$sucursal || $sucursal->estatus !== 'Activa') {
+            echo json_encode(['success' => false, 'message' => 'Seleccione una sucursal activa']);
+            return;
+        }
+
+        $err_precio = $this->VentasModel->validar_precios_pos($detalles);
+        if ($err_precio) {
+            echo json_encode(['success' => false, 'message' => $err_precio]);
+            return;
+        }
+        $detalles = $this->VentasModel->aplicar_precios_catalogo($detalles);
+        $descuento_id = $this->input->post('descuento_id');
+        $descuento_nombre = $this->input->post('descuento_nombre');
+        $descuento_tipo = $this->input->post('descuento_tipo');
+        $descuento_valor = $this->input->post('descuento_valor');
         
         // Determinar estatus correcto según tipo de venta
         $estatus_solicitado = $this->input->post('estatus'); // Cotización o Entregada
@@ -116,6 +138,7 @@ class Pos extends MY_Controller {
         // Crear orden
         $data_orden = [
             'cliente_id' => $cliente_id,
+            'sucursal_id' => $sucursal_id,
             'fecha_orden' => date('Y-m-d'),
             'fecha_entrega_estimada' => $this->input->post('fecha_entrega_estimada'),
             'forma_pago' => $forma_pago,
@@ -422,6 +445,41 @@ class Pos extends MY_Controller {
         } else {
             echo json_encode(['success' => false, 'message' => 'Formulación no encontrada']);
         }
+    }
+
+    public function cli_bootstrap() {
+        if (!is_cli()) {
+            show_error('Solo CLI', 403);
+            return;
+        }
+        $this->SucursalesModel->asegurar_infraestructura();
+        $n = $this->db->count_all('sucursales');
+        $col = $this->db->field_exists('sucursal_id', 'ordenes_venta') ? 'si' : 'no';
+        echo json_encode(['sucursales' => $n, 'ov_sucursal_id' => $col], JSON_UNESCAPED_UNICODE) . PHP_EOL;
+    }
+
+    public function seleccionar_sucursal_ajax() {
+        $id = (int) $this->input->post('sucursal_id');
+        $s = $this->SucursalesModel->get($id);
+        if (!$s || $s->estatus !== 'Activa') {
+            echo json_encode(['success' => false, 'message' => 'Sucursal no válida']);
+            return;
+        }
+        $this->session->set_userdata('pos_sucursal_id', $id);
+        echo json_encode(['success' => true, 'sucursal' => $s]);
+    }
+
+    public function crear_sucursal_ajax() {
+        $res = $this->SucursalesModel->crear([
+            'codigo' => $this->input->post('codigo'),
+            'nombre' => $this->input->post('nombre'),
+            'direccion' => $this->input->post('direccion'),
+            'telefono' => $this->input->post('telefono'),
+        ]);
+        if (!empty($res['success'])) {
+            $this->session->set_userdata('pos_sucursal_id', $res['id']);
+        }
+        echo json_encode($res);
     }
     
 }

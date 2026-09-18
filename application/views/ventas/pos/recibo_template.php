@@ -126,6 +126,9 @@ if (!$direccionEmpresa || preg_match('/^M[eé]xico$/ui', $direccionEmpresa)) {
             <p class="mb-0 text-muted small">Folio</p>
             <h6 class="fw-bold mb-0"><?=$orden->folio?></h6>
             <p class="mb-0 text-muted small">Fecha: <?=date('d/m/Y H:i', strtotime($orden->fecha_creacion))?></p>
+            <?php if (!empty($orden->sucursal_nombre)): ?>
+            <p class="mb-0 text-muted small">Sucursal: <?=htmlspecialchars($orden->sucursal_nombre, ENT_QUOTES, 'UTF-8')?></p>
+            <?php endif; ?>
             <p class="mb-0 text-muted small">Pago: <?=$orden->forma_pago?></p>
         </div>
     </div>

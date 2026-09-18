@@ -20,8 +20,24 @@ $stats = $response['stats'] ?? [];
 
 <!-- Título -->
 <div class="row mb-3">
-  <div class="col-md-12">
+  <div class="col-md-6">
     <h2><i class="fas fa-cash-register"></i> Punto de Venta (POS) <button type="button" class="erp-btn-ayuda" data-erp-ayuda="pos" title="Funciones del POS">?</button></h2>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label mb-1">Sucursal / caja</label>
+    <div class="input-group">
+      <select id="pos_sucursal" class="form-select" onchange="cambiarSucursal()">
+        <?php foreach (($sucursales ?? []) as $suc): ?>
+          <option value="<?= (int)$suc->id ?>" <?= ((int)($sucursal_id ?? 0) === (int)$suc->id) ? 'selected' : '' ?>>
+            <?= htmlspecialchars($suc->codigo . ' — ' . $suc->nombre, ENT_QUOTES, 'UTF-8') ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+      <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalSucursal" title="Nueva sucursal">
+        <i class="fas fa-store"></i>
+      </button>
+    </div>
+    <small class="text-muted">Cada ticket queda ligado a esta sucursal. El stock de producto terminado sigue siendo global.</small>
   </div>
 </div>
 
@@ -1170,9 +1186,11 @@ function renderProductos(productos) {
         imagenHtml = `<i class="fas fa-image fa-3x text-muted opacity-25"></i>`;
     }
     
+    const precio = parseFloat(p.precio_venta) || 0;
+    const sinPrecio = precio <= 0;
     html += `
       <div class="col-md-6 mb-3">
-        <div class="card h-100 producto-card border-0 shadow-sm" onclick="agregarAlTicket(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.precio_venta}, ${stock})" style="cursor: pointer; overflow: hidden;">
+        <div class="card h-100 producto-card border-0 shadow-sm ${sinPrecio ? 'opacity-75' : ''}" onclick="agregarAlTicket(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${precio}, ${stock})" style="cursor: pointer; overflow: hidden;">
           <div class="row g-0 h-100">
             <div class="col-4 d-flex align-items-center justify-content-center bg-light">
                 ${imagenHtml}
@@ -1189,7 +1207,7 @@ function renderProductos(productos) {
                       ${p.descripcion || 'Sin descripción'}
                     </p>
                     <div class="d-flex justify-content-between align-items-center mt-2">
-                      <h5 class="text-primary mb-0">$${parseFloat(p.precio_venta).toFixed(2)}</h5>
+                      <h5 class="text-primary mb-0">$${precio.toFixed(2)}${sinPrecio ? ' <span class="badge bg-danger">Sin precio</span>' : ''}</h5>
                       <div>
                         ${p.tipo_producto === 'Fabricado' ? 
                           `<button class="btn btn-xs btn-outline-info me-1" onclick="verFormulacion(${p.id}, '${p.nombre.replace(/'/g, "\\'")}')" title="Ver Formulación" style="font-size: 0.7rem; padding: 0.1rem 0.3rem;">
@@ -1213,6 +1231,10 @@ function renderProductos(productos) {
 }
 
 function agregarAlTicket(id, nombre, precio, stock) {
+  if (parseFloat(precio) <= 0) {
+    notifyShow('No se puede agregar: el producto no tiene precio de lista. Captúrelo en catálogo.', 'warning');
+    return;
+  }
   // Verificar si ya existe en el ticket
   const existe = ticketItems.find(item => item.id === id);
   
@@ -1476,6 +1498,7 @@ function procesarVenta(estatus) {
   
   const data = {
     cliente_id: cliente_id,
+    sucursal_id: $('#pos_sucursal').val(),
     tipo_venta: tipo_venta,
     direccion_envio: direccion_envio || null,
     costo_envio: parseFloat($('#ticket_costo_envio').val()) || 0,
@@ -1580,6 +1603,34 @@ function cancelarTicket() {
   actualizarTotales(); // Recalcular totales
 }
 
+function cambiarSucursal() {
+  const id = $('#pos_sucursal').val();
+  $.post('<?=base_url();?>ventas/Pos/seleccionar_sucursal_ajax', {
+    sucursal_id: id,
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function (raw) {
+    const r = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (r.success) location.reload();
+    else notifyShow(r.message || 'No se pudo cambiar sucursal', 'danger');
+  });
+}
+
+function guardarSucursalNueva() {
+  $.post('<?=base_url();?>ventas/Pos/crear_sucursal_ajax', {
+    codigo: $('#suc_codigo').val(),
+    nombre: $('#suc_nombre').val(),
+    direccion: $('#suc_direccion').val(),
+    telefono: $('#suc_telefono').val(),
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function (raw) {
+    const r = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    notifyShow(r.message || (r.success ? 'Sucursal creada' : 'Error'), r.success ? 'success' : 'danger');
+    if (r.success) location.reload();
+  });
+}
+
 // Inicializar cuando jQuery esté disponible
 if (typeof jQuery !== 'undefined') {
   $(document).ready(initPOS);
@@ -1591,6 +1642,27 @@ if (typeof jQuery !== 'undefined') {
   });
 }
 </script>
+
+<div class="modal fade" id="modalSucursal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nueva sucursal POS</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Código</label><input id="suc_codigo" class="form-control" maxlength="20" placeholder="SUC-NORTE"></div>
+        <div class="mb-2"><label class="form-label">Nombre</label><input id="suc_nombre" class="form-control" maxlength="120" placeholder="Mostrador Norte"></div>
+        <div class="mb-2"><label class="form-label">Dirección</label><input id="suc_direccion" class="form-control" maxlength="255"></div>
+        <div class="mb-2"><label class="form-label">Teléfono</label><input id="suc_telefono" class="form-control" maxlength="50"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarSucursalNueva()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <style>
 .producto-card:hover {

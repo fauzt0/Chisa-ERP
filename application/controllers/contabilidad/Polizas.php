@@ -275,27 +275,6 @@ class Polizas extends MY_Controller {
      * Genera folio automático para póliza
      */
     private function generar_folio($tipo) {
-        $prefijo = '';
-        switch($tipo) {
-            case 'Ingresos': $prefijo = 'ING'; break;
-            case 'Egresos': $prefijo = 'EGR'; break;
-            case 'Diario': $prefijo = 'DIA'; break;
-            case 'Cheque': $prefijo = 'CHE'; break;
-        }
-        
-        $this->db->select('folio');
-        $this->db->from('polizas');
-        $this->db->like('folio', $prefijo, 'after');
-        $this->db->order_by('id', 'DESC');
-        $this->db->limit(1);
-        $ultima = $this->db->get()->row();
-        
-        if($ultima) {
-            $numero = intval(substr($ultima->folio, strlen($prefijo))) + 1;
-        } else {
-            $numero = 1;
-        }
-        
-        return $prefijo . str_pad($numero, 6, '0', STR_PAD_LEFT);
+        return $this->ContabilidadModel->generar_folio_poliza($tipo);
     }
 }

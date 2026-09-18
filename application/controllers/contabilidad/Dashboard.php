@@ -8,6 +8,8 @@ class Dashboard extends MY_Controller {
     public function __construct() {
         parent::__construct();
         $this->load->model('Contabilidad/ContabilidadModel');
+        $this->load->model('Contabilidad/OrigenesModel');
+        $this->OrigenesModel->asegurar_infraestructura();
         
         // El controlador base ya maneja la sesión y los permisos del módulo
     }

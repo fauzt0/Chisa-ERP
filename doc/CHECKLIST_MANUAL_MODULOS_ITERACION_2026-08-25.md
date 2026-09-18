@@ -1,11 +1,11 @@
 # Checklist manual — módulos iterados + entrenamiento_2
 
-**Fecha:** 25 ago 2026  
+**Fecha:** 25 ago 2026 · **addendum I4:** 18 sep 2026 (`iteracion-4`)  
 **URL:** `https://erp.chisarecubrimientos.com.mx/`  
-**Login sugerido:** `presentacion@chisa.mx` / `Demo2026!`  
+**Login sugerido:** el de presentación vigente (el de QA `soporte2@…` puede estar desactualizado).  
 **Leyenda:** ✅ / ⚠️ / ❌ / SKIP  
 
-**Basado en:** `CHECKLIST_PRUEBAS_CRM_VENTAS.md`, `PRUEBAS_MANUALES_RH_2026-08-10.md`, `CHECKLIST_PRUEBA_GENERAL_NOMINA_2026-08-17.md`, `CHECKLIST_MANUAL_POST_E2E_NOMINA.md`, `AUDITORIA_OVERHAUL_PRODUCCION_2026-08-20.md`, `PLAN_ITERACION_PROVEEDORES.md`, `VERIFICACION_MODULO_COMPRAS.md`.
+**Basado en:** `CHECKLIST_PRUEBAS_CRM_VENTAS.md`, `PRUEBAS_MANUALES_RH_2026-08-10.md`, `CHECKLIST_PRUEBA_GENERAL_NOMINA_2026-08-17.md`, `CHECKLIST_MANUAL_POST_E2E_NOMINA.md`, `AUDITORIA_OVERHAUL_PRODUCCION_2026-08-20.md`, `PLAN_ITERACION_PROVEEDORES.md`, `VERIFICACION_MODULO_COMPRAS.md`. `doc/TODO.md` I4: 4.0 catálogo, 4.2 POS sucursales, 4.8 contabilidad.
 
 ---
 
@@ -43,6 +43,8 @@
 | B6 | Cobrar / entregar **solo** TEST | Stock producto baja; insumos **no** | |
 | B7 | `/ventas/Descuentos` CRUD mínimo + visible en POS | OK | |
 | B8 | `/ventas/ObrasVentas` listado + detalle | Carga | |
+| B9 | POS: selector sucursal (Matriz CDMX) + alta caja TEST | OV lleva `sucursal_id`; stats por caja | |
+| B10 | POS: SKU precio $0 (p. ej. REF 308) no entra al ticket ni al POST | Mensaje; precio de catálogo | |
 
 ---
 
@@ -172,6 +174,19 @@ Post-import: Producción → Productos → buscar `AZ-03` / `HOSPITAL` → activ
 
 ---
 
+## I. Contabilidad I4 (solo lectura)
+
+No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documentos reales salvo decisión explícita.
+
+| ID | Acción | Esperado | Resultado |
+|----|--------|----------|-----------|
+| I1 | `/contabilidad/Origenes` | Lista CFDI, OC recibidas, nóminas pagadas | |
+| I2 | Generar pólizas borrador (idempotente) | No duplica `origen`+`origen_id`; debe=haber | |
+| I3 | Reportes: diario / mayor / IVA | Carga; balanza vacía hasta autorizar | |
+| I4 | Dashboard periodo 2026 | Periodo septiembre 2026 abierto | |
+
+---
+
 ## Hoja de resultados
 
 | Bloque | Fecha | Quién | ✅/⚠️/❌ | Folios TEST | Notas |
@@ -184,5 +199,6 @@ Post-import: Producción → Productos → buscar `AZ-03` / `HOSPITAL` → activ
 | F RH empleados | | | | | |
 | G Nómina | | | | | |
 | H Entrenamiento / PDF OC | | | | | |
+| I Contabilidad I4 | | | | | |
 
 **Listo para iterar código cuando:** B4 (cotización sin preorden), C2 (sin fallback 1.0), D4–D6 (pesaje) en ✅ o SKIP justificado, y decisión explícita sobre PDF OC (gaps §H) + import AZ-03.

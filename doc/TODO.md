@@ -18,7 +18,7 @@
 
 - [X] Desarrollo
 - [X] Iteración 3 — cerrada y mergeada a `main` (2026-09-18, `7778571`)
-- [ ] Iteración 4 — **activa**: afinar compras, ventas (mostrador/obras), producción, inventario y estatus
+- [ ] Iteración 4 — **activa**: catálogo web (4.0), contabilidad lectura (4.8), POS sucursales + guard $0 (4.2). Pendiente: smoke POS, compras/OC, obras, merma.
 - [ ] Iteración 5 — **no iniciar**: reloj checador (función nueva + auditoría de punches)
 - [] Despliegue — en producción: `https://erp.chisarecubrimientos.com.mx`
 
@@ -53,9 +53,10 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 - [ ] PDF OC + preview correo/WhatsApp (**no enviar** a proveedores reales).
 
 ### 4.2 Ventas — mostrador (POS) vs obras
-- [ ] **Directa (POS):** cliente + 1 línea con precio ≠ 0 → cotización **sin** preórdenes → confirmar → `En Preparación` si requiere producción, o surtir si hay stock PT.
+- [X] Sucursales POS: tabla `sucursales`, OV con `sucursal_id`, selector de caja (sesión). Matriz CDMX sembrada. Stock PT **sigue global** (kardex por sucursal: posterior).
+- [X] Guard POS: servidor y UI bloquean `precio_venta <= 0` (usa precio de catálogo, no el del ticket).
+- [ ] **Directa (POS):** cliente + 1 línea con precio ≠ 0 → cotización **sin** preórdenes → confirmar → `En Preparación` si requiere producción, o surtir si hay stock PT. (código listo; smoke en UI con usuario válido)
 - [ ] **Indirecta (obra):** agregar producto a obra **no** genera preorden en borrador; preórdenes solo en documento de compromiso (regla de negocio).
-- [ ] Guard POS: avisar o bloquear `precio_venta <= 0` (BUG-DATA-01; #22 REF 308 sigue en $0).
 - [ ] IVA = (subtotal − descuento) × 0.16 en ambos caminos (trigger `trg_ordenes_venta_calcular_totales`).
 - [ ] Entradas/salidas de OV: al entregar, baja **PT** (`movimientos_productos` Salida); insumos **no** se mueven (ya se descontaron en pesaje).
 
@@ -71,6 +72,14 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 - [ ] Merma de pesaje: hoy la UI menciona ~20% pero B3 dejó pasar 66.67% en PIG-003 — decidir tope real y aplicarlo en servidor.
 - [ ] Escalado BOM y `explotar_bom_plano` en simulador vs obra (mismas cantidades).
 - [ ] `grupo_color` en explosión (pendiente de `decisiones_pendientes.md` A1) — solo si toca un caso real de I4.
+
+### 4.8 Contabilidad MX (solo lectura de módulos existentes)
+No se cambian Ventas, Compras, Facturación, Nómina ni Almacén. Contabilidad **lee** documentos y arma pólizas/reportes SAT-básicos.
+- [X] Catálogo mínimo (Clientes, IVA, Ventas, Inventario, Proveedores, Capital) + ejercicio/periodos del año en curso si faltan.
+- [X] Orígenes: CFDI `facturas` Emitida → Ingresos; OC Recibida → Diario (inventario/IVA acreditable/proveedores); nómina Pagada → Egresos. Idempotente por `origen`+`origen_id`.
+- [X] Reportes: balanza, balance general, estado de resultados (ya existían); **libro diario, mayor, auxiliar IVA** (trasladado vs acreditable).
+- [X] Pólizas en **borrador** hasta autorizar; entonces alimentan balanza/balance. OV sin CFDI **no** se póliza. Sync CLI 2026-09-18: 35 pólizas (7 CFDI, 3 OC, 25 nóminas), 0 desbalanceadas; segunda corrida omitió 35.
+- [ ] Fuera de I4: DIOT, XML SAT, conciliación bancaria automática, export Aspel COI/NOI, cobros reales.
 
 ### 4.5 Logística (si cabe en el sprint)
 - [ ] API paquetería Tres Guerras — diseño en `doc/PLAN_ENVIOS_TRES_GUERRAS.md` (no improvisar).
@@ -128,7 +137,8 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 | `GUIA_PRODUCCION_POST_IMPORTACION.md` | Operación post-import |
 | `AUDITORIA_MODULO_OBRAS_2026-08-28.md` | Auditoría de Obras (referencia I4) |
 | `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño paquetería |
-| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Plantilla de smoke por módulo |
+| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Plantilla de smoke por módulo (I4: B9–B10 POS, I Contabilidad) |
+| `entrenamiento_3/manifiestos/decisiones_pendientes.md` | Decisiones de catálogo/BOM pendientes |
 | `entrenamiento_3/manifiestos/decisiones_pendientes.md` | Decisiones de catálogo/BOM pendientes |
 | `entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md` | PASO 3 rendimientos (negocio) |
 | `entrenamiento_3/GUION_DEMO_CLIENTE.md` | Guion de demo |
