@@ -1,118 +1,132 @@
 # TODO - Sistema ERP CHISA
 
-**Última actualización:** 2026-09-18
-**Desarrollador:** Fausto Solano - CHISA Recubrimientos
-**Rama activa:** `iteracion-3` (**15 commits locales sin push** a `origin/iteracion-3` tras este cierre; pendiente PR a `main`)
+**Última actualización:** 2026-09-18  
+**Desarrollador:** Fausto Solano - CHISA Recubrimientos  
+**Rama activa:** `main` (iteración 3 fusionada; **iteración 4** en curso)
 
 ---
 
 ## 📝 Notas Técnicas
 
-- [ ] Validar límite de `max_input_vars` en PHP para formularios con muchos checkboxes. (IMPORTANTE: Esto se debe realizar en cada deployment antes de desplegar a producción). Verificado 2026-09-17: valor efectivo **1000** (default), sin override en `php.conf.d`; subir si algún formulario con muchos checkboxes falla.
+- [ ] Validar límite de `max_input_vars` en PHP para formularios con muchos checkboxes. (IMPORTANTE: en cada deployment). Verificado 2026-09-17: valor efectivo **1000** (default); subir si algún formulario con muchos checkboxes falla.
+- Entorno de producción sigue en `ENVIRONMENT=development` (sin 2FA). No cambiar a `production` en I4 salvo decisión explícita.
+- Overhaul Obras/Producción P1–P9 **cerrado** (2026-08-20). No reimplementar. Handoff histórico: git `doc/AUDITORIA_OVERHAUL_PRODUCCION_2026-08-20.md` si existía; estándares vigentes: `DOCUMENTACION_TECNICA.md`.
+
+---
 
 ## 🟡 Estatus del proyecto
 
 - [X] Desarrollo
-- [ ] Iteraciones
-- [ ] Pruebas — ejecutado el QA de UI de la iteración 3 (`doc/CHECKLIST_PRUEBAS_UI_ITERACION3.md`: 2 pasadas + fixes, 13–14 sep) y el QA de la demo (`doc/entrenamiento_3/REPORTE_QA_DEMO_2026-09-14.md`). La hoja de `doc/CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` sigue vacía; los módulos no cubiertos siguen pendientes (ver "Pruebas pendientes").
+- [X] Iteración 3 — cerrada y mergeada a `main` (2026-09-18, `7778571`)
+- [ ] Iteración 4 — **activa**: afinar compras, ventas (mostrador/obras), producción, inventario y estatus
+- [ ] Iteración 5 — **no iniciar**: reloj checador (función nueva + auditoría de punches)
 - [] Despliegue — en producción: `https://erp.chisarecubrimientos.com.mx`
 
-## Pruebas pendientes
-
-- [ ] verificar envio de correos a los clientes de ordenes de ventas
-- [ ] verificar envío de correos a los proveedores de las ordenes de compra en módulo de proveedores
-- [ ] verificar envío de correos de facturas a los clientes en módulo de facturación
-- [ ] verificación de módulo de proveedores
-- [ ] verificación de módulo de producción
-- [X] verificación de módulo de obras — Iteración 3 cerrada: checklist TEST-QA ejecutado el 2026-09-07 (ver `doc/CHECKLIST_PRUEBAS_OBRAS_ITERACION3.md`)
-- [ ] verificación de módulo de facturación
-- [ ] verificación de módulo de usuarios
-- [ ] verificación de módulo de permisos
-- [ ] verificación de módulo de bitácora
-- [ ] verificación de módulo de dashboard
-- [ ] verificación de módulo de recursos humanos
-- [ ] verificación de módulo de reloj checador
-- [ ] verificación de módulo de citas
-- [ ] verificación de módulo de calendario
+---
 
 ## ✅ Iteraciones completadas
 
-- [X] **Proveedores (Iteraciones 5 y 6)** — comprobantes, email real y WhatsApp, cotizaciones de compra y comparación side-by-side (ago 2026)
-- [X] **Nómina RH (Iteración 2 + Planeador Mensual)** — automatización, planeador mensual, detalle y recibos, corrección H1 enum `'Horas Extras'` (ago 2026)
-- [X] **Producción / Obras (Overhaul)** — formulaciones, preórdenes, pesaje, etiquetas de lote y materiales m²→kg (ago 2026)
-- [X] **Import de formulaciones** — referencia del cliente y `referencia_cliente` en formulaciones (ago 2026)
-- [X] **CRM Ventas** — contactos adicionales por cliente, carga masiva y exportación Excel
-- [X] **Contraste global y responsive** — tema oscuro, badges, tablas responsive (`theme-toggle.js`, `rh-tables-responsive.js`)
-- [X] **Facturación** — conexión API Facture App (emisión, sincronización y smart download)
-- [X] **Reloj checador** — API de conexión (`api/ApiReloj`), módulo RH (`rh/RelojChecador`), proxy local en `doc/iclock/`
-- [X] **PDF Orden de Compra** — estilo Excel histórico, importe con letra, UTF-8 y dirección real del cliente
-- [X] **Obras (Iteración 3)** — flujo completo auditado y cerrado: tab Entregas en detalle de obra, trigger `tr_actualizar_entrega_almacen` corregido, pre-órdenes de compra y solicitudes de producción desde obra, PDF resumen alineado a las referencias, y BUG-1 a BUG-8 corregidos (recibo, rutas de archivos, validación de alta, folios con `MAX(CAST)`, footer del detalle) (sep 2026)
-- [X] **Entrenamiento 3 (Producción)** — OCR de 25 capturas, fases 1–3 (29 productos #475–#503, 4 insumos, 12 formulaciones inactivas, 4 enlaces insumo→semielaborado), corrección BOM-1 (V5 de #204, form#968 activa) y pruebas de iteración (sep 2026)
-- [X] **QA UI iteración 3 + fixes de presentación** — BUG-UI-04/05/06/08/09 corregidos, migración T1 (`fecha_completado_produccion`, `lotes_produccion.orden_venta_id/obra_id`), precios lista 2025 (30 UPDATE; 33 productos con precio) y fixes de la demo (campana/cartera/PDFs/ayuda en vivo) (sep 2026)
-- [X] **QA cierre I3 (Completada E2E + descuentos + ENUM)** — Re-verificación E2E: OV-2026-0009 Completada con 1 lote (PROD-20260918-22-2268), descuentos TEST-QA-DESC-01 CRUD sin 500, ENUM `ordenes_venta.estatus` con `'Completada'`, fix `dov.unidad` en query de lotes, fechas `fecha_creacion`/`fecha_modificacion` en descuentos, SQL `database/fix_estatus_completada_ov.sql`. Checklist manual A5/B4/B5 ✅ (2026-09-18)
+- [X] **Proveedores (I5–I6 históricas)** — comprobantes, email/WhatsApp, cotizaciones y comparación
+- [X] **Nómina RH (I2 + Planeador)** — automatización, detalle, recibos, enum `'Horas Extras'`
+- [X] **Producción / Obras (Overhaul)** — formulaciones, preórdenes, pesaje, etiquetas, m²→kg
+- [X] **Import de formulaciones** — `referencia_cliente`
+- [X] **CRM Ventas** — contactos extra, carga masiva, Excel
+- [X] **Contraste / responsive** — tema oscuro, badges, tablas
+- [X] **Facturación** — API Facture App (emisión, sync, download)
+- [X] **Reloj checador (base)** — `api/ApiReloj`, `rh/RelojChecador`, proxy `doc/iclock/`
+- [X] **PDF OC** — estilo Excel, importe con letra, UTF-8
+- [X] **Obras I3** — tab Entregas (módulo Obras), trigger almacén, preórdenes/solicitudes, PDF, BUG-1 a BUG-8
+- [X] **Entrenamiento 3 (Producción)** — OCR 25 capturas, fases 1–3, BOM-1 (#204 form#968)
+- [X] **QA UI I3 + cierre E2E** — BUG-UI-04/05/06/07/08/09; Completada OV-2026-0009 + lote `PROD-20260918-22-2268`; descuentos CRUD; ENUM `'Completada'`; `direccion` en `guardar_ajax`; merge a `main` 2026-09-18
 
-## 🟡 Iteración módulo de "Producción" (pendiente)
+---
 
-- [ ] Mejorar y cuadrar los procesos de producción a los procesos actuales. Los productos tienen una formulación y se fabrican en lotes de cubetas, por lo que se debe tener un control de inventario de materias primas y productos terminados (por kilo, litro, etc). El flujo de trabajo se especifica en el archivo `doc/produccion.md`
+## 🟢 Iteración 4 — misma área, más detalle (ACTIVA)
 
-## 🟡 Pendientes de Obras / Iteración 4
+No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PASO 3 (contenido neto de envases) sigue bloqueado por negocio. I4 afina flujos ya existentes. Prefijo TEST-QA-. No cobrar/timbrar real, no autorizar `PRE-2026-0001`, no tocar OV-2026-0009 (Completada).
 
-- [X] Validación manual de UI tras el merge del agente cloud (dashboard por permisos, toggle de tema, login/2FA) — hecha en `doc/CHECKLIST_PRUEBAS_UI_ITERACION3.md` (GL0–GL3 ✅; cuenta EHWEB; para Obras usar ids 1, 6 o 7). Nota: el entorno sigue en `development` (sin 2FA).
-- [ ] Integrar `iteracion-3` → `main` (PR) una vez validado. **⚠️ 2026-09-17: 9 commits locales sin push a `origin/iteracion-3`** (el PR los necesita).
-- [ ] API de paquetería "Tres Guerras" (diseño listo en `doc/PLAN_ENVIOS_TRES_GUERRAS.md`)
-- [ ] Tab "Entregas" también en la vista CRM Ventas (`ventas/obras/detalle.php`)
-- [ ] Mover el SQL directo de `Obras::actualizar_ajax` al modelo (auditoría B5, diferido)
-- [ ] Residuos TEST: OVs `OV-TEST-001` / `OV-2026-0004` y cliente "Empresa de Prueba S.A." **se conservan** (siguen en el guion de demo: cartera y campana). Limpieza 2026-09-17: OB-00006 → `estatus='Cancelada'` (ya estaba `activo=0`); `PESAJE-venta-26` revertido con movimientos de Entrada (movs 22/23; stock de #18/#20 restaurado a 150.00/80.00).
-- [ ] Negocio: poblar `rendimiento_m2_por_kg` en formulaciones activas — hoy **1 de 314** (solo form#966/VITROGLASS = 9.74 m²/kg). PASO 3 bloqueado hasta que negocio confirme el contenido neto de envases (ver `doc/entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md`); `#476 SELLADOR INICIAL` sin precio y equivalencia `#83 ↔ #214` sin confirmar.
-- [X] Validar `direccion` server-side en `Obras::guardar_ajax()` — 2026-09-18: `trim` + JSON `{success:false}` si vacía (mismo patrón que `nombre`/`cliente_id`); evita 1048.
-- [X] Cosméticos de Obras: link real en "Aún no hay entregas" (detalle de obra) y columnas del modal de entrega (`COALESCE` + `fmtCantidad`) — corregidos 2026-09-10
+### 4.1 Compras / proveedores — entradas de insumos y productos
+- [ ] Recibir OC TEST: entrada de **insumos** actualiza `insumos.stock_actual` + `movimientos_inventario` (tipo Entrada, referencia de OC).
+- [ ] Recibir producto de reventa (si aplica): entrada a `productos` / `movimientos_productos` sin disparar pesaje ni BOM.
+- [ ] Preorden → autorizar → OC **sin duplicar** (no usar `PRE-2026-0001`).
+- [ ] Unidades: `convertir_unidad_insumo`; no mezclar Kg/Cubeta/Pza en la recepción.
+- [ ] PDF OC + preview correo/WhatsApp (**no enviar** a proveedores reales).
 
-## 🟡 Pendientes de presentación / catálogo (QA 14-sep)
+### 4.2 Ventas — mostrador (POS) vs obras
+- [ ] **Directa (POS):** cliente + 1 línea con precio ≠ 0 → cotización **sin** preórdenes → confirmar → `En Preparación` si requiere producción, o surtir si hay stock PT.
+- [ ] **Indirecta (obra):** agregar producto a obra **no** genera preorden en borrador; preórdenes solo en documento de compromiso (regla de negocio).
+- [ ] Guard POS: avisar o bloquear `precio_venta <= 0` (BUG-DATA-01; #22 REF 308 sigue en $0).
+- [ ] IVA = (subtotal − descuento) × 0.16 en ambos caminos (trigger `trg_ordenes_venta_calcular_totales`).
+- [ ] Entradas/salidas de OV: al entregar, baja **PT** (`movimientos_productos` Salida); insumos **no** se mueven (ya se descontaron en pesaje).
 
-- [ ] BUG-DATA-01 / T7: catálogo incompleto — 460 productos en $0 + 1 en NULL, 462 con descripción placeholder, 492 sin foto/rendimiento y 180 fabricados sin formulación activa. **No bloqueante para I4; decisión de negocio.**
-- [X] D6: re-QA de "Completada" E2E (pesaje → lote + entrada PT) — **ejecutado 2026-09-18**, OV-2026-0009 Completada, lote `PROD-20260918-22-2268` generado, entrada PT stock #22 0→1, PESAJE-venta-28 = 3. Fix: `dov.unidad` + ENUM `ordenes_venta.estatus` con `'Completada'`. Ver `doc/CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` (B4/B5 ✅).
-- [X] T3: confirmar por UI el alta/edición de descuentos — **ejecutado 2026-09-18**, TEST-QA-DESC-01 crear 5% Activo / editar 7% Inactivo / eliminar sin 500. Fix: `DescuentosModel` `$dateFields = ['created'=>'fecha_creacion','updated'=>'fecha_modificacion']`. Ver `doc/CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` (A5 ✅).
-- [X] `PLAN_FIX_DATATABLES_LENGTH_SELECT.md` aplicado 2026-09-17 (regla global en `theme.css` + eliminado el bloque muerto de `compras/proveedores`); queda la verificación visual en proveedores/OC.
+### 4.3 Obras — cálculos y estatus
+- [ ] Materiales: `calcular_insumos_para_proyecto` **sin** fallback rendimiento 1.0; Cubeta/Pza = cantidad×lote; Kg = kg (no 19×19=361).
+- [ ] Estatus reales del ENUM: Planificación → En Cotización → Aprobada → En Ejecución → Pausada → Completada / Cancelada. Completada de producción exige pesaje (mismo parseo `in_array` de `forzar`).
+- [ ] Tab Entregas también en CRM Ventas (`ventas/obras/detalle.php`) — pendiente de I3 diferido.
+- [ ] Mover SQL de `Obras::actualizar_ajax` al modelo (auditoría B5).
+- [ ] Smoke de estatus: no truncar ENUM (CI3 `stricton=false` corrompe valores inválidos a `''`).
 
-## 🟡 Pendientes Facturación
+### 4.4 Producción / inventario (afinar, no rehacer)
+- [ ] Dashboard: pedidos de **OV y obras** visibles; Completada → lote + entrada PT; segundo pesaje bloqueado.
+- [ ] Merma de pesaje: hoy la UI menciona ~20% pero B3 dejó pasar 66.67% en PIG-003 — decidir tope real y aplicarlo en servidor.
+- [ ] Escalado BOM y `explotar_bom_plano` en simulador vs obra (mismas cantidades).
+- [ ] `grupo_color` en explosión (pendiente de `decisiones_pendientes.md` A1) — solo si toca un caso real de I4.
 
-- [ ] Implementar Automatización de Importación (Cron Job / Lazy Load)
-- [ ] Vincular Facturas a Obras/Ordenes de Compra
-- [/] Implementar envío de factura (PDF y XML) por correo electrónico directamente desde el ERP
+### 4.5 Logística (si cabe en el sprint)
+- [ ] API paquetería Tres Guerras — diseño en `doc/PLAN_ENVIOS_TRES_GUERRAS.md` (no improvisar).
 
-## 💡 Mejoras Futuras
+### 4.6 Datos de negocio (no bloquean el arranque de I4; sí el PASO 3)
+- [ ] `rendimiento_m2_por_kg`: 1/314 activas. Lista en `doc/entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md`.
+- [ ] Contenido neto CUBETA/GALÓN; presentación de filas "(sin pres.)"; precio #476; `#83` ≡ `#214` EC-1; parafina CHISA PLUS.
+- [ ] BUG-DATA-01: ~461 productos sin precio, placeholders, fotos. **No** cargar precios inventados.
 
-- [ ] Agregar botón de "Exportar a Excel" en todas las tablas
-- [ ] Agregar logs de cambios y acciones realizadas en bitácora, de todas las secciones del sistema
-- [ ] Revisar los logs de la bitácora en cada una de las secciones del sistema
-- [ ] Optimizar consultas de permisos usando caché de CodeIgniter
-- [ ] Agregar validación de permisos en todas las secciones del sistema
-- [ ] Agregar un módulo para recordatorios de cumpleaños. Cuando sea el cumpleaños del usuario o de algún trabajador, agregar la notificación en el sistema y al trabajador o usuario, mostrarle una pantalla de felicitación
-- [ ] Agregar un nuevo permiso en la sección "administrador", que sea "super administrador", el cual servirá para validaciones especiales como por ejemplo, editar datos fiscales de trabajadores o permisos bloqueados en general, por ejemplo, si un administrador requiere editar estos datos, saldrá una alerta para que el "super administrador" pueda validar la acción o bien ingresar directamente la contraseña del "super administrador".
-- [ ] Agregar un módulo para recordatorios de citas
-- [ ] Agregar un calendario en el CRM
-- [ ] Convertir el array ViewData en un objeto (DTO)
-- [ ] Mejorar botones en las tablas de resultados y mejorar color de textos en alertas con fondos de colores y modals (se pierden las letras con color negro y fondos de color)
-- [ ] Agregar módulo para cargar logo del sistema, el cual se usará en todos los pdf, tickets, recibos, etc.
-- [ ] Mejorar contrato de usuario, homogeneizarlo con los pdf que genera el sistema.
-- [ ] Sweet alerts y notify shows funcionan, pero algunas alertas como warning, presentan contrastes de colores extraños o de poco contraste que dificultan la visión. Es necesario verificar y corregir
+### 4.7 Entrenamiento adicional
+- **No hace falta un Entrenamiento 4 de OCR/Excel ahora:** no hay `.xlsx` nuevos en el repo; las fichas de `doc/entrenamiento_3/imagenes` + manifiestos ya se usaron en I3.
+- Si planta entrega lista 2025 con **contenido neto** o fichas nuevas, retomar PASO 3 con `productos_match.json` / `propuesta_rendimientos_fase3.md` — no re-OCR de las 25 capturas.
 
-## 📚 Documentos de referencia vigentes (doc/)
+---
+
+## 🔵 Iteración 5 — Reloj checador (NO ejecutar aún)
+
+- [ ] **Nueva función** del reloj (definir alcance con negocio al abrir I5).
+- [ ] **Auditoría solamente** (sin cambiar código ni config): comprobar que el ERP **está recibiendo** checadas reales (`api/ApiReloj`, `rh/RelojChecador`, proxy `doc/iclock/`). Tablas/logs de punches, última sync, dispositivos activos. Documentar hallazgo; no “arreglar” en I4.
+- [ ] Referencia: `doc/API_RELOJ_CHECADOR.md`, `doc/iclock/GUIA_INSTALACION.md`.
+
+---
+
+## 🟡 Pendientes diferidos (no I4 salvo que se desbloqueen)
+
+- [ ] Correos reales: OV a cliente, OC a proveedor, factura PDF/XML (UI facturación: “Enviar por Correo (Pendiente)” — no implementado).
+- [ ] Facturación: cron/lazy import; vincular facturas a obras/OC.
+- [ ] Smoke módulos: usuarios, permisos, bitácora, citas, calendario, RH (nómina ya existía).
+- [ ] Residuos demo: conservar `OV-TEST-001` / `OV-2026-0004` / “Empresa de Prueba S.A.” (guion demo).
+
+---
+
+## 💡 Mejoras futuras
+
+- [ ] Exportar a Excel en tablas; bitácora de cambios; caché de permisos; super-administrador; cumpleaños; recordatorios de citas; calendario CRM; DTO de ViewData; logo en PDF; contraste de alerts/SweetAlert; contrato de usuario.
+
+---
+
+## 📚 Documentos vigentes (`doc/`)
 
 | Documento | Uso |
 |-----------|-----|
-| `DOCUMENTACION_TECNICA.md` | Guía arquitectónica, estándares de desarrollo y estado de avance |
-| `REGLAS_TECNICAS.md` | Reglas técnicas que todo agente IA debe seguir al tocar el código |
-| `cotizacion.md` | Requerimientos de negocio originales del cliente (fuente de verdad de módulos) |
-| `produccion.md` | Workflow crítico de producción (venta → producción → entrega) |
-| `API_RELOJ_CHECADOR.md` | Documentación de la API del reloj checador y proxy ZKTeco |
-| `SISTEMA_ALERTAS_NOTIFICACIONES.md` | Arquitectura del sistema global de alertas/notificaciones |
-| `GUIA_PRODUCCION_POST_IMPORTACION.md` | Operación de producción después de importar Excel |
-| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Checklist manual base — hoja de resultados vacía; lo ejecutado de la iteración 3 vive en `CHECKLIST_PRUEBAS_UI_ITERACION3.md` |
-| `CHECKLIST_PRUEBAS_UI_ITERACION3.md` | QA UI de la iteración 3 (2 pasadas + fixes): estado de BUG-UI-01 a BUG-UI-09 |
-| `AUDITORIA_MODULO_OBRAS_2026-08-28.md` | Auditoría de Obras (iteración 3): brechas, riesgos, plan y pendientes |
-| `CHECKLIST_PRUEBAS_OBRAS_ITERACION3.md` | Resultados QA de Obras (TEST-QA) y cierre de BUG-1 a BUG-8 |
-| `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño de la integración con paquetería (iteración 4) |
-| `CHECKLIST_PRUEBAS_MANUAL_2026-09-17.md` | Checklist manual para el cierre de la iteración 3 (regresión, Completada E2E, correos, módulos y PASO 3) |
+| `DOCUMENTACION_TECNICA.md` | Arquitectura y estándares |
+| `REGLAS_TECNICAS.md` | Reglas para agentes |
+| `cotizacion.md` | Requerimientos originales |
+| `produccion.md` | Workflow venta → producción → entrega |
+| `API_RELOJ_CHECADOR.md` | API reloj / ZKTeco (I5) |
+| `SISTEMA_ALERTAS_NOTIFICACIONES.md` | Alertas |
+| `GUIA_PRODUCCION_POST_IMPORTACION.md` | Operación post-import |
+| `AUDITORIA_MODULO_OBRAS_2026-08-28.md` | Auditoría de Obras (referencia I4) |
+| `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño paquetería |
+| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Plantilla de smoke por módulo |
+| `entrenamiento_3/manifiestos/decisiones_pendientes.md` | Decisiones de catálogo/BOM pendientes |
+| `entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md` | PASO 3 rendimientos (negocio) |
+| `entrenamiento_3/GUION_DEMO_CLIENTE.md` | Guion de demo |
 
-> Nota: los planes, handoffs y verificaciones de iteraciones ya completadas se eliminaron de `doc/` el 2026-08-27; los prompts de la Iteración 3 de Obras se eliminaron el 2026-09-10 (los ya versionados se conservan en el historial de git por si se necesitan).
+Los prompts/checklists operativos de I3 se archivaron en git (commit previo a esta limpieza). No re-crearlos.
+
+> Overhaul P1–P9 cerrado. I4 **no** reescribe módulos; reutiliza `explotar_bom_plano`, `calcular_insumos_para_proyecto`, `crear_preordenes_desde_faltantes`, `convertir_unidad_insumo`.
