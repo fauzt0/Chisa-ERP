@@ -148,6 +148,18 @@ class Dashboard extends MY_Controller {
         // Determinar tabla según tipo
         $tabla = ($tipo === 'obra') ? 'obras' : 'ordenes_venta';
 
+        // Validar estatus permitido por tipo (evita el truncado silencioso del ENUM)
+        $permitidos = ($tipo === 'obra')
+            ? ['Planificación', 'En Cotización', 'Aprobada', 'En Ejecución', 'Pausada', 'Completada']
+            : ['Cotización', 'Confirmada', 'En Preparación', 'Completada', 'Entregada'];
+        if (!in_array($nuevo_estatus, $permitidos, true)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Estatus no válido para este tipo de orden.'
+            ]);
+            return;
+        }
+
         // Actualizar el estatus de la orden y la fecha de completado
         $actualizar_data = [
             'estatus' => $nuevo_estatus,
@@ -176,7 +188,7 @@ class Dashboard extends MY_Controller {
                     ->count_all_results('lotes_produccion') > 0;
             } else {
                 $ya_tiene_lotes = $this->db
-                    ->where('orden_produccion_id', $orden_id)
+                    ->where('orden_venta_id', $orden_id)
                     ->count_all_results('lotes_produccion') > 0;
             }
 
@@ -191,7 +203,7 @@ class Dashboard extends MY_Controller {
                     $this->db->join('formulaciones f', 'f.id = op.formulacion_id', 'left');
                     $this->db->where('op.obra_id', $orden_id);
                 } else {
-                    $this->db->select('dov.producto_id, dov.cantidad, dov.unidad, dov.formulacion_id,
+                    $this->db->select('dov.producto_id, dov.cantidad, p.unidad_venta AS unidad, dov.formulacion_id,
                                        p.nombre as producto_nombre, p.codigo as producto_codigo,
                                        f.nombre_version as formulacion_nombre');
                     $this->db->from('detalle_orden_venta dov');

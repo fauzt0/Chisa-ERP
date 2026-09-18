@@ -139,10 +139,15 @@ $icono = $es_obra ? 'hard-hat' : 'file-invoice';
                         <label class="form-label h5">Seleccionar Nuevo Estatus:</label>
                         <select id="nuevo_estatus" class="form-select form-select-lg">
                             <option value="">-- Seleccionar --</option>
-                            <option value="Confirmada" <?=$registro->estatus == 'Confirmada' ? 'selected' : ''?>>Confirmada</option>
-                            <option value="En Proceso" <?=$registro->estatus == 'En Proceso' ? 'selected' : ''?>>En Proceso</option>
-                            <option value="Completada" <?=$registro->estatus == 'Completada' ? 'selected' : ''?>>Completada</option>
-                            <option value="Entregada" <?=$registro->estatus == 'Entregada' ? 'selected' : ''?>>Entregada</option>
+                            <?php if ($es_obra): ?>
+                                <?php foreach (['Planificación','En Cotización','Aprobada','En Ejecución','Pausada','Completada'] as $opcion): ?>
+                                    <option value="<?=$opcion?>" <?=$registro->estatus == $opcion ? 'selected' : ''?>><?=$opcion?></option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach (['Cotización','Confirmada','En Preparación','Completada','Entregada'] as $opcion): ?>
+                                    <option value="<?=$opcion?>" <?=$registro->estatus == $opcion ? 'selected' : ''?>><?=$opcion?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                     <div class="col-md-6 text-end">

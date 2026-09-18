@@ -7,6 +7,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class DescuentosModel extends MY_Model {
     
     protected $tableName = 'descuentos';
+
+    // La tabla usa fecha_creacion/fecha_modificacion (no los defaults fecha_alta/fecha_edicion de MY_Model)
+    protected $dateFields = [
+        'created' => 'fecha_creacion',
+        'updated' => 'fecha_modificacion',
+    ];
     
     protected $datatableConfig = [
         'column_order' => ['id', 'nombre', 'tipo_descuento', 'valor', 'estatus'],
