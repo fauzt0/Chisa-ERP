@@ -254,38 +254,93 @@ class VentasModel extends MY_Model {
     }
     
     /**
-     * Entrega una orden (descuenta stock)
+     * Valida stock de producto terminado para entrega inmediata (POS mostrador).
+     *
+     * @param array<int, array{producto_id?:mixed,cantidad?:mixed}> $lineas
+     * @return array{ok:bool,message:string}
+     */
+    public function validar_stock_pt_lineas(array $lineas) {
+        foreach ($lineas as $detalle) {
+            $producto_id = (int) ($detalle['producto_id'] ?? 0);
+            $cantidad = (float) ($detalle['cantidad'] ?? 0);
+            if ($producto_id <= 0 || $cantidad <= 0) {
+                continue;
+            }
+            $producto = $this->db->select('codigo, nombre, stock_actual')
+                ->where('id', $producto_id)
+                ->get('productos')
+                ->row();
+            if (!$producto) {
+                return ['ok' => false, 'message' => 'Producto no encontrado (ID ' . $producto_id . ').'];
+            }
+            $stock = (float) $producto->stock_actual;
+            if ($stock < $cantidad) {
+                return [
+                    'ok' => false,
+                    'message' => 'Stock insuficiente de producto terminado para «' . $producto->nombre . '» ('
+                        . $producto->codigo . '): disponible ' . number_format($stock, 2)
+                        . ', requiere ' . number_format($cantidad, 2) . '. Use pedido con preparación o surta PT antes de cobrar en mostrador.',
+                ];
+            }
+        }
+        return ['ok' => true, 'message' => ''];
+    }
+
+    /**
+     * Entrega una orden (descuenta stock PT). No permite dejar stock negativo.
+     *
+     * @return array{success:bool,message:string}
      */
     public function entregar_orden($id) {
-        // Obtener detalles
+        $id = (int) $id;
         $this->db->where('orden_venta_id', $id);
         $detalles = $this->db->get('detalle_orden_venta')->result();
-        
-        foreach($detalles as $detalle) {
-            // Descontar stock
-            $this->db->set('stock_actual', 'stock_actual - ' . $detalle->cantidad, FALSE);
-            $this->db->where('id', $detalle->producto_id);
+
+        if (empty($detalles)) {
+            return ['success' => false, 'message' => 'La orden no tiene líneas de producto.'];
+        }
+
+        $lineas = [];
+        foreach ($detalles as $detalle) {
+            $lineas[] = [
+                'producto_id' => $detalle->producto_id,
+                'cantidad' => $detalle->cantidad,
+            ];
+        }
+        $chk = $this->validar_stock_pt_lineas($lineas);
+        if (!$chk['ok']) {
+            return ['success' => false, 'message' => $chk['message']];
+        }
+
+        $this->db->trans_start();
+
+        foreach ($detalles as $detalle) {
+            $this->db->set('stock_actual', 'stock_actual - ' . (float) $detalle->cantidad, false);
+            $this->db->where('id', (int) $detalle->producto_id);
             $this->db->update('productos');
-            
-            // Registrar movimiento de inventario
-            $movimiento = [
+
+            $this->db->insert('movimientos_inventario', [
                 'producto_id' => $detalle->producto_id,
                 'tipo_movimiento' => 'Salida',
                 'cantidad' => $detalle->cantidad,
                 'motivo' => 'Venta - Orden ' . $id,
-                'fecha_movimiento' => date('Y-m-d H:i:s')
-            ];
-            $this->db->insert('movimientos_inventario', $movimiento);
+                'fecha_movimiento' => date('Y-m-d H:i:s'),
+            ]);
         }
-        
-        // Actualizar orden
-        $data = [
-            'estatus' => 'Entregada',
-            'fecha_entrega_real' => date('Y-m-d')
-        ];
-        
+
         $this->db->where('id', $id);
-        return $this->db->update('ordenes_venta', $data);
+        $this->db->update('ordenes_venta', [
+            'estatus' => 'Entregada',
+            'fecha_entrega_real' => date('Y-m-d'),
+        ]);
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            return ['success' => false, 'message' => 'Error al registrar la entrega y el movimiento de inventario.'];
+        }
+
+        return ['success' => true, 'message' => 'Orden entregada correctamente.'];
     }
     
     /**

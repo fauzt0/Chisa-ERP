@@ -112,28 +112,30 @@ class Pos extends MY_Controller {
             return;
         }
         $detalles = $this->VentasModel->aplicar_precios_catalogo($detalles);
+
+        // Determinar estatus (antes de crear OV) para validar stock PT en mostrador
+        $estatus_solicitado = $this->input->post('estatus');
+        if ($estatus_solicitado == 'Cotización') {
+            $estatus_preview = 'Cotización';
+        } elseif ($tipo_venta == 'Mostrador') {
+            $estatus_preview = 'Entregada';
+        } else {
+            $estatus_preview = 'Confirmada';
+        }
+        if ($estatus_preview === 'Entregada') {
+            $chk_stock = $this->VentasModel->validar_stock_pt_lineas($detalles);
+            if (!$chk_stock['ok']) {
+                echo json_encode(['success' => false, 'message' => $chk_stock['message']]);
+                return;
+            }
+        }
+
         $descuento_id = $this->input->post('descuento_id');
         $descuento_nombre = $this->input->post('descuento_nombre');
         $descuento_tipo = $this->input->post('descuento_tipo');
         $descuento_valor = $this->input->post('descuento_valor');
         
-        // Determinar estatus correcto según tipo de venta
-        $estatus_solicitado = $this->input->post('estatus'); // Cotización o Entregada
-        
-        // Lógica de estatus:
-        // - Cotización: siempre queda como Cotización
-        // - Mostrador + Cobrar: Entregada (se entrega inmediatamente)
-        // - Pedido + Cobrar: Confirmada (requiere preparación/envío)
-        if($estatus_solicitado == 'Cotización') {
-            $estatus_final = 'Cotización';
-        } else {
-            // Si se está cobrando (no es cotización)
-            if($tipo_venta == 'Mostrador') {
-                $estatus_final = 'Entregada'; // Mostrador se entrega inmediato
-            } else {
-                $estatus_final = 'Confirmada'; // Pedido requiere preparación
-            }
-        }
+        $estatus_final = $estatus_preview;
         
         // Crear orden
         $data_orden = [
@@ -187,10 +189,20 @@ class Pos extends MY_Controller {
             'estatus_pago' => 'Pendiente'
         ]);
         
-        // Si es venta de Mostrador y Entregada, descontar stock
-        if($estatus_final == 'Entregada') {
-            $this->VentasModel->entregar_orden($orden_id);
-            
+        // Si es venta de Mostrador y Entregada, descontar stock PT (con validación)
+        if ($estatus_final == 'Entregada') {
+            $entrega = $this->VentasModel->entregar_orden($orden_id);
+            if (empty($entrega['success'])) {
+                $this->db->where('id', $orden_id);
+                $this->db->update('ordenes_venta', ['estatus' => 'En Preparación']);
+                echo json_encode([
+                    'success' => false,
+                    'message' => $entrega['message'] ?? 'No se pudo entregar la orden.',
+                    'orden_id' => $orden_id,
+                ]);
+                return;
+            }
+
             // Si NO es crédito, registrar el pago automáticamente
             if($forma_pago != 'Crédito') {
                 // Generar folio de pago

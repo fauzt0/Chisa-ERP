@@ -48,10 +48,10 @@ Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 aut
 |----|--------|----------|---------|-----------|
 | B1 | `/ventas/Ordenes` listado, filtros, Excel | OK | | |
 | B2 | Detalle OV + formatos Factura / Remisión / Moderno | Abren | | |
-| B3 | `/ventas/Pos` buscar producto, ticket, cliente | UI OK | **#1** | |
-| B4 | Guardar **cotización** TEST con fabricado | Aviso faltantes si aplica; **0 preorden** | **#1** | |
-| B5 | Confirmar cotización / compromiso TEST | Preorden Pendiente `origen=venta` solo si faltantes | **#1** | |
-| B6 | Cobrar / entregar **solo** TEST | Stock producto baja; insumos **no** | **#1** | |
+| B3 | `/ventas/Pos` buscar producto, ticket, cliente | UI OK | **#1** | ✅ 24-sep |
+| B4 | Guardar **cotización** TEST con fabricado | Aviso faltantes si aplica; **0 preorden** | **#1** | ✅ OV-2026-0010 |
+| B5 | Confirmar cotización / compromiso TEST | Preorden Pendiente `origen=venta` solo si faltantes | **#1** | ✅ PRE-2026-0007 |
+| B6 | Cobrar mostrador TEST | Si PT ≥ cantidad: baja PT; insumos **no**. Si PT &lt; cantidad: **rechaza** (no negativo) | **#1** | ⚠️ negativo pre-fix; **re-smoke** |
 | B7 | `/ventas/Descuentos` CRUD mínimo + visible en POS | OK | | |
 | B8 | `/ventas/ObrasVentas` listado + detalle | Carga | | |
 | B9 | POS: selector sucursal (Matriz CDMX) + alta caja TEST | OV lleva `sucursal_id`; stats por caja | | |
@@ -77,10 +77,10 @@ Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 aut
 |----|--------|----------|---------|-----------|
 | D1 | `/produccion/Productos` buscar `hospital` / `ROCA` / alias | Filtra AND | | |
 | D2 | Ver formulación (no Guardar salvo TEST consciente) | Cliente, comentarios, rendimiento, grupos | | |
-| D3 | `/produccion/Dashboard` listado + mute | Carga | **#3** | |
-| D4 | E2E emulado: 1 cubeta TEST → Completada **bloqueada** sin pesaje | Error/bloqueo | **#3** | |
-| D5 | Confirmar pesaje → `PESAJE-*`; insumos bajan una vez | Segundo pesaje falla | **#3** | |
-| D6 | Completada → lote + entrada PT; insumos **no** bajan otra vez | OK | **#3** | |
+| D3 | `/produccion/Dashboard` listado + mute | Carga; ruta detalle: `…/detalle/orden_venta/{id}` (no `/venta/`) | **#3** | ✅ OV-2026-0010 |
+| D4 | E2E emulado: 1 cubeta TEST → Completada **bloqueada** sin pesaje | Error/bloqueo | **#3** | ✅ |
+| D5 | Confirmar pesaje → `PESAJE-*`; insumos bajan una vez | Segundo pesaje falla | **#3** | ⚠️ SKIP (1 Kg vs 570 Kg BOM) |
+| D6 | Completada → lote + entrada PT; insumos **no** bajan otra vez | OK | **#3** | ⚠️ SKIP (sin pesaje) |
 | D7 | Etiqueta + `/produccion/Lotes/consultar` | Producto/cubeta/lote/venta | | |
 
 ---
@@ -93,8 +93,8 @@ Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 aut
 | E2 | Insumos vinculados / historial OC del proveedor | Datos visibles | | |
 | E3 | `/compras/OrdenesCompra` crear OC TEST (1 línea) | Borrador → PDF | | |
 | E4 | Comparar PDF ERP vs plantilla Excel histórica (ver §H) | Anotar gaps | | |
-| E5 | Preórdenes: listar; autorizar **solo** TEST | Genera OC | **#2** | |
-| E6 | Recepción parcial TEST (si aplica) | Stock insumo sube | **#2** | |
+| E5 | Preórdenes: listar; autorizar **solo** TEST | Genera OC | **#2** | ✅ PRE-0007→OC-2026-0001 |
+| E6 | Recepción parcial TEST (si aplica) | Stock insumo sube | **#2** | ✅ BLANCO 0→1 Kg |
 | E7 | Pago TEST + comprobante (si iteración 5 activa) | Guarda | | |
 | E8 | Correo/WhatsApp texto (preview; no spam a proveedor real) | Preview OK | | |
 
@@ -191,7 +191,7 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 
 | ID | Acción | Esperado | Aud. P0 | Resultado |
 |----|--------|----------|---------|-----------|
-| I1 | `/contabilidad/Origenes` | Lista CFDI, OC recibidas, nóminas pagadas | **#4** | |
+| I1 | `/contabilidad/Origenes` | Lista CFDI, OC recibidas, nóminas pagadas | **#4** | ✅ 24-sep |
 | I2 | Generar pólizas borrador (idempotente) | No duplica `origen`+`origen_id`; debe=haber | | |
 | I3 | Reportes: diario / mayor / IVA | Carga; balanza vacía hasta autorizar | | |
 | I4 | Dashboard periodo 2026 | Periodo septiembre 2026 abierto | | |
@@ -203,13 +203,13 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | Bloque | Fecha | Quién | ✅/⚠️/❌ | Folios TEST | Notas |
 |--------|-------|-------|---------|-------------|-------|
 | A Clientes | | | | | |
-| B Ventas/POS | | | | | |
+| B Ventas/POS | 24-sep-2026 | Agente smoke P0 | ⚠️ | OV-0010/0011 | B3–B5 ✅; B6 re-smoke post-fix stock PT |
 | C Obras | | | | | |
-| D Producción | | | | | |
-| E Proveedores/OC | | | | | |
+| D Producción | 24-sep-2026 | Agente smoke P0 | ⚠️ | OV-0010 | D3–D4 ✅; D5–D6 SKIP BOM |
+| E Proveedores/OC | 24-sep-2026 | Agente smoke P0 | ✅ | PRE-0007, OC-2026-0001 | E5–E6 |
 | F RH empleados | | | | | |
 | G Nómina | | | | | |
 | H Entrenamiento / PDF OC | | | | | |
-| I Contabilidad I4 | | | | | |
+| I Contabilidad I4 | 24-sep-2026 | Agente smoke P0 | ✅ | — | I1 + cli_probe sandbox |
 
 **Listo para iterar código cuando:** filas **Aud. P0 #1–#3** (B3–B6, E5–E6, D3–D6) en ✅ o SKIP justificado; además C2, y decisión PDF OC (§H) si aplica.

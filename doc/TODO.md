@@ -53,6 +53,21 @@
 | Existe | `obras/pdf_resumen.php` (BOM técnico), entregas CRM, cotización/recibo obra |
 | Falta (entrenamiento_4) | Carátula, resumen general contractual, generador/catálogo de conceptos |
 
+### Smoke P0 manual (2026-09-24, usuario presentación)
+
+Ejecutado vía `doc/SMOKE_P0_AGENTE_EJECUTOR.md`. Cierre: OV-2026-0010/0011 canceladas; PRE-2026-0008 rechazada; **PRE-2026-0001** y **OV-2026-0009** sin tocar.
+
+| Bloque | Resultado | Notas |
+|--------|-----------|--------|
+| B3–B5 | ✅ | Cotización sin preorden; confirmación + preorden; IVA 500×0.16 |
+| B6 | ⚠️→fix | Cobro mostrador bajó PT a negativo — **corregido** `validar_stock_pt_lineas` + `entregar_orden` transaccional |
+| E5–E6 | ✅ | OC-2026-0001; recepción 1 Kg BLANCO |
+| D3–D4 | ✅ | Dashboard OV; Completada sin pesaje bloqueada |
+| D5–D6 | ⚠️ SKIP | BOM 570 Kg vs 1 Kg stock — repetir con BOM chico o stock completo |
+| I + cli_probe | ✅ | Orígenes OK; sandbox `ok: true` |
+
+**P0 cerrados:** #2 Compras, #4 Facture conexión. **#1** tras re-smoke B6 con fix. **#3** pendiente D5–D6 E2E.
+
 ---
 
 ## 📝 Notas Técnicas
@@ -95,7 +110,7 @@
 No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PASO 3 (contenido neto de envases) sigue bloqueado por negocio. I4 afina flujos ya existentes. Prefijo TEST-QA-. No cobrar/timbrar real, no autorizar `PRE-2026-0001`, no tocar OV-2026-0009 (Completada).
 
 ### 4.1 Compras / proveedores — entradas de insumos y productos
-- [ ] Recibir OC TEST: entrada de **insumos** actualiza `insumos.stock_actual` + `movimientos_inventario` (tipo Entrada, referencia de OC).
+- [X] Recibir OC TEST: smoke E6 OC-2026-0001 — BLANCO 0→1 Kg (`recibir_mercancia`).
 - [ ] Recibir producto de reventa (si aplica): entrada a `productos` / `movimientos_productos` sin disparar pesaje ni BOM.
 - [ ] Preorden → autorizar → OC **sin duplicar** (no usar `PRE-2026-0001`).
 - [ ] Unidades: `convertir_unidad_insumo`; no mezclar Kg/Cubeta/Pza en la recepción.
@@ -105,9 +120,10 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 - [X] Sucursales POS: tabla `sucursales`, OV con `sucursal_id`, selector de caja (sesión). Matriz CDMX sembrada. Stock PT **sigue global** (kardex por sucursal: posterior).
 - [X] Guard POS: servidor y UI bloquean `precio_venta <= 0` (usa precio de catálogo, no el del ticket).
 - [X] **Indirecta (obra):** agregar producto usa `consultar_insumos_obra` (sin preorden); preórdenes al pasar a **Aprobada** / compromiso (`verificar_insumos_y_preordenes_obra`).
-- [ ] **Directa (POS):** flujo cotización → confirmar → preparación/surtido — **smoke UI** (checklist B3–B6).
-- [ ] IVA = (subtotal − descuento) × 0.16 — trigger `trg_ordenes_venta_calcular_totales` (verificar en smoke).
-- [ ] Entradas/salidas de OV: al entregar, baja **PT**; insumos no se mueven (smoke B6).
+- [X] **Directa (POS):** cotización → confirmar — smoke 24-sep B3–B5 ✅; B6 revalidar tras guard stock PT.
+- [X] IVA smoke OV-2026-0010: $80 = (500−0)×0.16 (trigger).
+- [X] Guard POS mostrador: no cobrar **Entregada** si `stock_actual` PT &lt; cantidad (`VentasModel::validar_stock_pt_lineas`).
+- [ ] Entregas almacén + ciclo completo B6 (PT suficiente) — re-smoke post-fix.
 
 ### 4.3 Obras — cálculos y estatus
 - [X] Materiales obra: `calcular_materiales_linea_obra` / `calcular_insumos_para_proyecto` sin fallback rendimiento 1.0 del simulador general.
@@ -230,6 +246,7 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 | `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño paquetería |
 | `diagrama_general.png` | Mapa funcional vs oferta |
 | `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Smoke manual + columna **Aud. P0** |
+| `SMOKE_P0_AGENTE_EJECUTOR.md` | Instrucciones agente smoke P0 |
 | `entrenamiento_3/manifiestos/decisiones_pendientes.md` | Decisiones de catálogo/BOM pendientes |
 | `entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md` | PASO 3 rendimientos (negocio) |
 | `entrenamiento_3/GUION_DEMO_CLIENTE.md` | Guion de demo |
