@@ -4,7 +4,54 @@
 **Desarrollador:** Fausto Solano - CHISA Recubrimientos  
 **Rama activa:** `iteracion-4` (base `main` `ff111ce`; commits I4 locales sin push obligatorio)
 
-**Handoff:** `ENVIRONMENT=development`. Rama `iteracion-3` **eliminada** (local + `origin`) el 2026-09-24 — seguir solo en `iteracion-4` / `main`. No timbrar/cobrar real, no autorizar `PRE-2026-0001`, no tocar `OV-2026-0009`. Smoke manual: `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (QA pendiente).
+**Handoff:** `ENVIRONMENT=development`. Rama `iteracion-3` **eliminada** (local + `origin`) el 2026-09-24 — seguir solo en `iteracion-4` / `main`. No timbrar/cobrar real, no autorizar `PRE-2026-0001`, no tocar `OV-2026-0009`. **Smoke:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (columna **Aud. P0**). **Cumplimiento oferta:** § Auditoría diagrama abajo (reloj/Bixpe excluido).
+
+---
+
+## 📋 Auditoría diagrama general (2026-09-24)
+
+**Fuentes:** `doc/diagrama_general.png`, `doc/cotizacion.md`, `sidebar.php`, código. **Excluido:** Reloj Checador / Bixpe / KONECT (I5).
+
+### Resumen por módulo
+
+| Módulo | ✅ | ⚠️ | ❌ | N/A |
+|--------|----|----|----|-----|
+| Admin usuarios | 7 | 1 | 0 | 0 |
+| RH | 8 | 3 | 0 | 0 |
+| Proveedores/Compras | 7 | 3 | 0 | 0 |
+| CRM Clientes | 9 | 1 | 2 | 0 |
+| Ventas / POS | 7 | 2 | 1 | 0 |
+| Obras / cálculo materiales | 7 | 2 | 3 | 0 |
+| Producción | 6 | 2 | 1 | 0 |
+| Almacén | 6 | 0 | 2 | 0 |
+| Facturación | 4 | 2 | 4 | 0 |
+| Contabilidad | 8 | 2 | 2 | 2 |
+| Reportes (dispersos) | 2 | 5 | 0 | 0 |
+| **Total filas** | **~71 (60%)** | **~21 (18%)** | **~15 (13%)** | **2** |
+
+*Ajustes vs matriz inicial:* RH calculadora baja → **⚠️** (cotización: no calcula finiquito oficial; solo datos en `get_datos_calculadora`). Reenvío cotización → **⚠️** (link + SMTP a validar).
+
+### Top 10 — orden de atención
+
+| # | Gap | P | Validar con checklist |
+|---|-----|---|------------------------|
+| 1 | Smoke POS: IVA trigger, entrega baja PT | P0 | **B3–B6** |
+| 2 | Recepción OC → `insumos.stock` + movimientos | P0 | **E5, E6** |
+| 3 | Dashboard producción OV/obras; Completada→PT; 2.º pesaje | P0 | **D3–D6** |
+| 4 | Facturación go-live Facture (sandbox→prod + re-OAuth) | P0 | Decisión negocio; `cli_probe` |
+| 5 | Liga autofactura cliente por OV | P0 | Nuevo desarrollo (no checklist) |
+| 6 | Carátula + resumen general + generador conceptos | P1 | `entrenamiento_4/` (pendiente plantillas) |
+| 7 | Control calidad / viscosidad por lote | P1 | Código nuevo |
+| 8 | Notificaciones cruzadas OV / lote completado | P1 | B6, alertas |
+| 9 | Email factura PDF+XML | P1 | §4.9 diferido |
+| 10 | Reportes exportables RH/Ventas/Almacén | P1 | Post-smoke |
+
+**Huecos contractuales (no confundir con bugs I4):** pasarela de pagos online, autofactura, micontador go-live, calendario CRM, DIOT/conciliación (N/A I4).
+
+### Documental obras (diagrama vs hoy)
+
+| Existe | `obras/pdf_resumen.php` (BOM técnico), entregas CRM, cotización/recibo obra |
+| Falta (entrenamiento_4) | Carátula, resumen general contractual, generador/catálogo de conceptos |
 
 ---
 
@@ -137,9 +184,11 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 - [ ] Contenido neto CUBETA/GALÓN; presentación de filas "(sin pres.)"; precio #476; `#83` ≡ `#214` EC-1; parafina CHISA PLUS.
 - [ ] BUG-DATA-01: ~461 productos sin precio, placeholders, fotos. **No** cargar precios inventados. Fotos de 4.0 cubren las familias de la tienda, no todo el catálogo interno.
 
-### 4.7 Entrenamiento adicional
-- **No hace falta un Entrenamiento 4 de OCR/Excel ahora:** no hay `.xlsx` nuevos en el repo; las fichas de `doc/entrenamiento_3/imagenes` + manifiestos ya se usaron en I3.
-- Si planta entrega lista 2025 con **contenido neto** o fichas nuevas, retomar PASO 3 con `productos_match.json` / `propuesta_rendimientos_fase3.md` — no re-OCR de las 25 capturas.
+### 4.7 Entrenamiento 4 — Ventas/CRM documental (próximo)
+- Carpeta prevista: `doc/entrenamiento_4/` (plantillas que cargará negocio).
+- Alcance diagrama: **carátula**, **resumen general** (distinto de `pdf_resumen.php` técnico), **generador** y **catálogo de conceptos** por obra.
+- **No implementar** hasta tener formatos firmados; reutilizar PDF técnico actual como posible “Anexo”.
+- PASO 3 catálogo (rendimientos/neto): sigue en `entrenamiento_3/manifiestos/` si negocio desbloquea datos.
 
 ---
 
@@ -179,7 +228,8 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 | `GUIA_PRODUCCION_POST_IMPORTACION.md` | Operación post-import |
 | `AUDITORIA_MODULO_OBRAS_2026-08-28.md` | Auditoría de Obras (referencia I4) |
 | `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño paquetería |
-| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Plantilla de smoke por módulo (QA manual pendiente) |
+| `diagrama_general.png` | Mapa funcional vs oferta |
+| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Smoke manual + columna **Aud. P0** |
 | `entrenamiento_3/manifiestos/decisiones_pendientes.md` | Decisiones de catálogo/BOM pendientes |
 | `entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md` | PASO 3 rendimientos (negocio) |
 | `entrenamiento_3/GUION_DEMO_CLIENTE.md` | Guion de demo |

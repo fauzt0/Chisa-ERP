@@ -1,11 +1,22 @@
 # Checklist manual — módulos iterados + entrenamiento_2
 
-**Fecha:** 25 ago 2026 · **addendum I4:** 18 sep 2026 (`iteracion-4`)  
+**Fecha:** 25 ago 2026 · **addendum I4:** 18 sep 2026 · **auditoría diagrama:** 24 sep 2026  
 **URL:** `https://erp.chisarecubrimientos.com.mx/`  
 **Login sugerido:** el de presentación vigente (el de QA `soporte2@…` puede estar desactualizado).  
-**Leyenda:** ✅ / ⚠️ / ❌ / SKIP  
+**Leyenda:** ✅ / ⚠️ / ❌ / SKIP · **Aud. P0** = valida gap P0 de `doc/TODO.md` § Auditoría diagrama.
 
-**Basado en:** `CHECKLIST_PRUEBAS_CRM_VENTAS.md`, `PRUEBAS_MANUALES_RH_2026-08-10.md`, `CHECKLIST_PRUEBA_GENERAL_NOMINA_2026-08-17.md`, `CHECKLIST_MANUAL_POST_E2E_NOMINA.md`, `AUDITORIA_OVERHAUL_PRODUCCION_2026-08-20.md`, `PLAN_ITERACION_PROVEEDORES.md`, `VERIFICACION_MODULO_COMPRAS.md`. `doc/TODO.md` I4: 4.0 catálogo, 4.2 POS sucursales, 4.8 contabilidad.
+**Basado en:** `CHECKLIST_PRUEBAS_CRM_VENTAS.md`, `PRUEBAS_MANUALES_RH_2026-08-10.md`, `CHECKLIST_PRUEBA_GENERAL_NOMINA_2026-08-17.md`, `CHECKLIST_MANUAL_POST_E2E_NOMINA.md`, `AUDITORIA_OVERHAUL_PRODUCCION_2026-08-20.md`, `PLAN_ITERACION_PROVEEDORES.md`, `VERIFICACION_MODULO_COMPRAS.md`, `diagrama_general.png`, `cotizacion.md`.
+
+### Orden sugerido (P0 auditoría)
+
+| P0 | Ítems | Tema |
+|----|-------|------|
+| #1 | **B3, B4, B5, B6** | POS, IVA, entrega PT |
+| #2 | **E5, E6** | Preorden→OC, recepción stock |
+| #3 | **D3, D4, D5, D6** | Dashboard, pesaje, Completada→PT |
+| #4 | **I1** + `cli_probe` | Facture conectado (sin timbrar real salvo decisión) |
+
+Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 autofactura y pasarela: sin filas (desarrollo nuevo).
 
 ---
 
@@ -33,59 +44,59 @@
 
 ## B. CRM — Ventas / POS / Órdenes
 
-| ID | Acción | Esperado | Resultado |
-|----|--------|----------|-----------|
-| B1 | `/ventas/Ordenes` listado, filtros, Excel | OK | |
-| B2 | Detalle OV + formatos Factura / Remisión / Moderno | Abren | |
-| B3 | `/ventas/Pos` buscar producto, ticket, cliente | UI OK | |
-| B4 | Guardar **cotización** TEST con fabricado | Aviso faltantes si aplica; **0 preorden** | |
-| B5 | Confirmar cotización / compromiso TEST | Preorden Pendiente `origen=venta` solo si faltantes | |
-| B6 | Cobrar / entregar **solo** TEST | Stock producto baja; insumos **no** | |
-| B7 | `/ventas/Descuentos` CRUD mínimo + visible en POS | OK | |
-| B8 | `/ventas/ObrasVentas` listado + detalle | Carga | |
-| B9 | POS: selector sucursal (Matriz CDMX) + alta caja TEST | OV lleva `sucursal_id`; stats por caja | |
-| B10 | POS: SKU precio $0 (p. ej. REF 308) no entra al ticket ni al POST | Mensaje; precio de catálogo | |
+| ID | Acción | Esperado | Aud. P0 | Resultado |
+|----|--------|----------|---------|-----------|
+| B1 | `/ventas/Ordenes` listado, filtros, Excel | OK | | |
+| B2 | Detalle OV + formatos Factura / Remisión / Moderno | Abren | | |
+| B3 | `/ventas/Pos` buscar producto, ticket, cliente | UI OK | **#1** | |
+| B4 | Guardar **cotización** TEST con fabricado | Aviso faltantes si aplica; **0 preorden** | **#1** | |
+| B5 | Confirmar cotización / compromiso TEST | Preorden Pendiente `origen=venta` solo si faltantes | **#1** | |
+| B6 | Cobrar / entregar **solo** TEST | Stock producto baja; insumos **no** | **#1** | |
+| B7 | `/ventas/Descuentos` CRUD mínimo + visible en POS | OK | | |
+| B8 | `/ventas/ObrasVentas` listado + detalle | Carga | | |
+| B9 | POS: selector sucursal (Matriz CDMX) + alta caja TEST | OV lleva `sucursal_id`; stats por caja | | |
+| B10 | POS: SKU precio $0 (p. ej. REF 308) no entra al ticket ni al POST | Mensaje; precio de catálogo | | |
 
 ---
 
 ## C. Obras (`/obras/Obras`)
 
-| ID | Acción | Esperado | Resultado |
-|----|--------|----------|-----------|
-| C1 | Listado obras | Carga | |
-| C2 | Obra borrador: producto **sin** rendimiento ni override | Bloquea; **no** calcula con 1.0; **no** preorden | |
-| C3 | Producto **con** rendimiento + m² (ej. MASA ROCA 319) | kg/cubetas/insumos coherentes | |
-| C4 | Aprobar solo obra TEST con faltantes | Preorden `origen=obra`; generar OV no duplica | |
-| C5 | Cancelar/limpiar obra TEST | Folio anotado | |
+| ID | Acción | Esperado | Aud. P0 | Resultado |
+|----|--------|----------|---------|-----------|
+| C1 | Listado obras | Carga | | |
+| C2 | Obra borrador: producto **sin** rendimiento ni override | Bloquea; **no** calcula con 1.0; **no** preorden | | |
+| C3 | Producto **con** rendimiento + m² (ej. MASA ROCA 319) | kg/cubetas/insumos coherentes | | |
+| C4 | Aprobar solo obra TEST con faltantes | Preorden `origen=obra`; generar OV no duplica | | |
+| C5 | Cancelar/limpiar obra TEST | Folio anotado | | |
 
 ---
 
 ## D. Producción
 
-| ID | Acción | Esperado | Resultado |
-|----|--------|----------|-----------|
-| D1 | `/produccion/Productos` buscar `hospital` / `ROCA` / alias | Filtra AND | |
-| D2 | Ver formulación (no Guardar salvo TEST consciente) | Cliente, comentarios, rendimiento, grupos | |
-| D3 | `/produccion/Dashboard` listado + mute | Carga | |
-| D4 | E2E emulado: 1 cubeta TEST → Completada **bloqueada** sin pesaje | Error/bloqueo | |
-| D5 | Confirmar pesaje → `PESAJE-*`; insumos bajan una vez | Segundo pesaje falla | |
-| D6 | Completada → lote + entrada PT; insumos **no** bajan otra vez | OK | |
-| D7 | Etiqueta + `/produccion/Lotes/consultar` | Producto/cubeta/lote/venta | |
+| ID | Acción | Esperado | Aud. P0 | Resultado |
+|----|--------|----------|---------|-----------|
+| D1 | `/produccion/Productos` buscar `hospital` / `ROCA` / alias | Filtra AND | | |
+| D2 | Ver formulación (no Guardar salvo TEST consciente) | Cliente, comentarios, rendimiento, grupos | | |
+| D3 | `/produccion/Dashboard` listado + mute | Carga | **#3** | |
+| D4 | E2E emulado: 1 cubeta TEST → Completada **bloqueada** sin pesaje | Error/bloqueo | **#3** | |
+| D5 | Confirmar pesaje → `PESAJE-*`; insumos bajan una vez | Segundo pesaje falla | **#3** | |
+| D6 | Completada → lote + entrada PT; insumos **no** bajan otra vez | OK | **#3** | |
+| D7 | Etiqueta + `/produccion/Lotes/consultar` | Producto/cubeta/lote/venta | | |
 
 ---
 
 ## E. Proveedores / Compras / OC
 
-| ID | Acción | Esperado | Resultado |
-|----|--------|----------|-----------|
-| E1 | `/compras/Proveedores` listado, filtros, detalle | Carga | |
-| E2 | Insumos vinculados / historial OC del proveedor | Datos visibles | |
-| E3 | `/compras/OrdenesCompra` crear OC TEST (1 línea) | Borrador → PDF | |
-| E4 | Comparar PDF ERP vs plantilla Excel histórica (ver §H) | Anotar gaps | |
-| E5 | Preórdenes: listar; autorizar **solo** TEST | Genera OC | |
-| E6 | Recepción parcial TEST (si aplica) | Stock insumo sube | |
-| E7 | Pago TEST + comprobante (si iteración 5 activa) | Guarda | |
-| E8 | Correo/WhatsApp texto (preview; no spam a proveedor real) | Preview OK | |
+| ID | Acción | Esperado | Aud. P0 | Resultado |
+|----|--------|----------|---------|-----------|
+| E1 | `/compras/Proveedores` listado, filtros, detalle | Carga | | |
+| E2 | Insumos vinculados / historial OC del proveedor | Datos visibles | | |
+| E3 | `/compras/OrdenesCompra` crear OC TEST (1 línea) | Borrador → PDF | | |
+| E4 | Comparar PDF ERP vs plantilla Excel histórica (ver §H) | Anotar gaps | | |
+| E5 | Preórdenes: listar; autorizar **solo** TEST | Genera OC | **#2** | |
+| E6 | Recepción parcial TEST (si aplica) | Stock insumo sube | **#2** | |
+| E7 | Pago TEST + comprobante (si iteración 5 activa) | Guarda | | |
+| E8 | Correo/WhatsApp texto (preview; no spam a proveedor real) | Preview OK | | |
 
 ---
 
@@ -178,12 +189,12 @@ Post-import: Producción → Productos → buscar `AZ-03` / `HOSPITAL` → activ
 
 No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documentos reales salvo decisión explícita.
 
-| ID | Acción | Esperado | Resultado |
-|----|--------|----------|-----------|
-| I1 | `/contabilidad/Origenes` | Lista CFDI, OC recibidas, nóminas pagadas | |
-| I2 | Generar pólizas borrador (idempotente) | No duplica `origen`+`origen_id`; debe=haber | |
-| I3 | Reportes: diario / mayor / IVA | Carga; balanza vacía hasta autorizar | |
-| I4 | Dashboard periodo 2026 | Periodo septiembre 2026 abierto | |
+| ID | Acción | Esperado | Aud. P0 | Resultado |
+|----|--------|----------|---------|-----------|
+| I1 | `/contabilidad/Origenes` | Lista CFDI, OC recibidas, nóminas pagadas | **#4** | |
+| I2 | Generar pólizas borrador (idempotente) | No duplica `origen`+`origen_id`; debe=haber | | |
+| I3 | Reportes: diario / mayor / IVA | Carga; balanza vacía hasta autorizar | | |
+| I4 | Dashboard periodo 2026 | Periodo septiembre 2026 abierto | | |
 
 ---
 
@@ -201,4 +212,4 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | H Entrenamiento / PDF OC | | | | | |
 | I Contabilidad I4 | | | | | |
 
-**Listo para iterar código cuando:** B4 (cotización sin preorden), C2 (sin fallback 1.0), D4–D6 (pesaje) en ✅ o SKIP justificado, y decisión explícita sobre PDF OC (gaps §H) + import AZ-03.
+**Listo para iterar código cuando:** filas **Aud. P0 #1–#3** (B3–B6, E5–E6, D3–D6) en ✅ o SKIP justificado; además C2, y decisión PDF OC (§H) si aplica.
