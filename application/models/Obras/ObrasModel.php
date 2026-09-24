@@ -2,6 +2,85 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 class ObrasModel extends CI_Model {
+
+    /** Estatus válidos del ENUM `obras.estatus` (evita truncar a '' con stricton=false). */
+    public const ESTATUS_OBRA_VALIDOS = [
+        'Planificación',
+        'En Cotización',
+        'Aprobada',
+        'En Ejecución',
+        'Pausada',
+        'Completada',
+        'Cancelada',
+    ];
+
+    public function estatus_obra_valido($estatus) {
+        return in_array((string) $estatus, self::ESTATUS_OBRA_VALIDOS, true);
+    }
+
+    /**
+     * Actualización AJAX de obra: valida estatus, persiste y dispara flujo al pasar a Aprobada.
+     *
+     * @return array{success:bool,message:string,insumos_result?:array}
+     */
+    public function actualizar_obra_desde_post($obra_id, array $post, $modificado_por) {
+        $obra_id = (int) $obra_id;
+        if ($obra_id <= 0) {
+            return ['success' => false, 'message' => 'Obra inválida'];
+        }
+
+        $this->db->select('estatus');
+        $this->db->where('id', $obra_id);
+        $obra_anterior = $this->db->get('obras')->row();
+        if (!$obra_anterior) {
+            return ['success' => false, 'message' => 'Obra no encontrada'];
+        }
+
+        $nuevo_estatus = isset($post['estatus']) ? (string) $post['estatus'] : '';
+        if ($nuevo_estatus !== '' && !$this->estatus_obra_valido($nuevo_estatus)) {
+            return [
+                'success' => false,
+                'message' => 'Estatus de obra no válido. Use uno de: ' . implode(', ', self::ESTATUS_OBRA_VALIDOS),
+            ];
+        }
+
+        $data = [
+            'nombre' => $post['nombre'] ?? null,
+            'estatus' => $nuevo_estatus !== '' ? $nuevo_estatus : $obra_anterior->estatus,
+            'porcentaje_avance' => $post['porcentaje_avance'] ?? null,
+            'costo_real' => $post['costo_real'] ?? null,
+            'condiciones_ambientales' => $post['condiciones_ambientales'] ?? null,
+            'especificaciones_tecnicas' => $post['especificaciones_tecnicas'] ?? null,
+            'descuento_porcentaje' => $post['descuento_porcentaje'] ?? null,
+            'iva_porcentaje' => $post['iva_porcentaje'] ?? null,
+            'anticipo_porcentaje' => $post['anticipo_porcentaje'] ?? null,
+            'modificado_por' => $modificado_por ?: 1,
+        ];
+
+        if (!$this->actualizar_obra($obra_id, $data)) {
+            return ['success' => false, 'message' => 'Error al actualizar la obra'];
+        }
+
+        $this->calcular_totales_obra($obra_id);
+
+        $insumos_result = null;
+        if ($obra_anterior->estatus !== 'Aprobada' && $data['estatus'] === 'Aprobada') {
+            $obra_actual = $this->get_obra_detalle($obra_id);
+            if (empty($obra_actual->orden_venta_id)) {
+                $this->crear_solicitudes_produccion_desde_obra($obra_id);
+            }
+            $usuario_id = (int) $modificado_por;
+            if ($usuario_id > 0) {
+                $insumos_result = $this->verificar_insumos_y_preordenes_obra($obra_id, $usuario_id);
+            }
+        }
+
+        $out = ['success' => true, 'message' => 'Obra actualizada correctamente'];
+        if (!empty($insumos_result)) {
+            $out['insumos_result'] = $insumos_result;
+        }
+        return $out;
+    }
     
     /**
      * Genera el siguiente folio de obra (OB-00001, OB-00002, …)

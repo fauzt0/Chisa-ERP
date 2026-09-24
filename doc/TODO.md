@@ -1,8 +1,10 @@
 # TODO - Sistema ERP CHISA
 
-**Última actualización:** 2026-09-18  
+**Última actualización:** 2026-09-24  
 **Desarrollador:** Fausto Solano - CHISA Recubrimientos  
-**Rama activa:** `iteracion-4` (desde `main` 2026-09-18)
+**Rama activa:** `iteracion-4` (base `main` `ff111ce`; commits I4 locales sin push obligatorio)
+
+**Handoff:** `ENVIRONMENT=development`. Rama `iteracion-3` **eliminada** (local + `origin`) el 2026-09-24 — seguir solo en `iteracion-4` / `main`. No timbrar/cobrar real, no autorizar `PRE-2026-0001`, no tocar `OV-2026-0009`. Smoke manual: `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (QA pendiente).
 
 ---
 
@@ -17,10 +19,10 @@
 ## 🟡 Estatus del proyecto
 
 - [X] Desarrollo
-- [X] Iteración 3 — cerrada y mergeada a `main` (2026-09-18, `7778571`)
-- [ ] Iteración 4 — **activa**: catálogo web (4.0), contabilidad lectura (4.8), POS sucursales + guard $0 (4.2). Pendiente: smoke POS, compras/OC, obras, merma.
+- [X] Iteración 3 — cerrada y mergeada a `main` (2026-09-18, `7778571`); rama `iteracion-3` retirada 2026-09-24
+- [ ] Iteración 4 — **activa**: 4.0 catálogo, 4.2 POS, 4.3 obras (entregas CRM + estatus), 4.8 contabilidad, 4.9 Facture sandbox. Pendiente: smoke POS/compras en UI, 4.1 OC recepción, 4.4 dashboard/merma UI, datos 4.6.
 - [ ] Iteración 5 — **no iniciar**: reloj checador (función nueva + auditoría de punches)
-- [] Despliegue — en producción: `https://erp.chisarecubrimientos.com.mx`
+- [ ] Despliegue — en producción: `https://erp.chisarecubrimientos.com.mx`
 
 ---
 
@@ -32,7 +34,7 @@
 - [X] **Import de formulaciones** — `referencia_cliente`
 - [X] **CRM Ventas** — contactos extra, carga masiva, Excel
 - [X] **Contraste / responsive** — tema oscuro, badges, tablas
-- [X] **Facturación** — API Facture App (emisión, sync, download)
+- [X] **Facturación (base I anteriores)** — API Facture App en sandbox; detalle vivo y huecos en §**4.9** (no es go-live)
 - [X] **Reloj checador (base)** — `api/ApiReloj`, `rh/RelojChecador`, proxy `doc/iclock/`
 - [X] **PDF OC** — estilo Excel, importe con letra, UTF-8
 - [X] **Obras I3** — tab Entregas (módulo Obras), trigger almacén, preórdenes/solicitudes, PDF, BUG-1 a BUG-8
@@ -55,21 +57,21 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 ### 4.2 Ventas — mostrador (POS) vs obras
 - [X] Sucursales POS: tabla `sucursales`, OV con `sucursal_id`, selector de caja (sesión). Matriz CDMX sembrada. Stock PT **sigue global** (kardex por sucursal: posterior).
 - [X] Guard POS: servidor y UI bloquean `precio_venta <= 0` (usa precio de catálogo, no el del ticket).
-- [ ] **Directa (POS):** cliente + 1 línea con precio ≠ 0 → cotización **sin** preórdenes → confirmar → `En Preparación` si requiere producción, o surtir si hay stock PT. (código listo; smoke en UI con usuario válido)
-- [ ] **Indirecta (obra):** agregar producto a obra **no** genera preorden en borrador; preórdenes solo en documento de compromiso (regla de negocio).
-- [ ] IVA = (subtotal − descuento) × 0.16 en ambos caminos (trigger `trg_ordenes_venta_calcular_totales`).
-- [ ] Entradas/salidas de OV: al entregar, baja **PT** (`movimientos_productos` Salida); insumos **no** se mueven (ya se descontaron en pesaje).
+- [X] **Indirecta (obra):** agregar producto usa `consultar_insumos_obra` (sin preorden); preórdenes al pasar a **Aprobada** / compromiso (`verificar_insumos_y_preordenes_obra`).
+- [ ] **Directa (POS):** flujo cotización → confirmar → preparación/surtido — **smoke UI** (checklist B3–B6).
+- [ ] IVA = (subtotal − descuento) × 0.16 — trigger `trg_ordenes_venta_calcular_totales` (verificar en smoke).
+- [ ] Entradas/salidas de OV: al entregar, baja **PT**; insumos no se mueven (smoke B6).
 
 ### 4.3 Obras — cálculos y estatus
-- [ ] Materiales: `calcular_insumos_para_proyecto` **sin** fallback rendimiento 1.0; Cubeta/Pza = cantidad×lote; Kg = kg (no 19×19=361).
-- [ ] Estatus reales del ENUM: Planificación → En Cotización → Aprobada → En Ejecución → Pausada → Completada / Cancelada. Completada de producción exige pesaje (mismo parseo `in_array` de `forzar`).
-- [ ] Tab Entregas también en CRM Ventas (`ventas/obras/detalle.php`) — pendiente de I3 diferido.
-- [ ] Mover SQL de `Obras::actualizar_ajax` al modelo (auditoría B5).
-- [ ] Smoke de estatus: no truncar ENUM (CI3 `stricton=false` corrompe valores inválidos a `''`).
+- [X] Materiales obra: `calcular_materiales_linea_obra` / `calcular_insumos_para_proyecto` sin fallback rendimiento 1.0 del simulador general.
+- [X] Validación servidor de estatus ENUM (`ObrasModel::ESTATUS_OBRA_VALIDOS` en `actualizar_obra_desde_post`).
+- [X] Tab Entregas en CRM Ventas — `ventas/obras/detalle.php` + partial `obras/partials/seguimiento_entregas.php`.
+- [X] SQL de actualización AJAX movido al modelo (`ObrasModel::actualizar_obra_desde_post`; controlador delgado).
+- [ ] Smoke manual de estatus en UI (checklist §C; `stricton=false` en MySQL).
 
 ### 4.4 Producción / inventario (afinar, no rehacer)
 - [ ] Dashboard: pedidos de **OV y obras** visibles; Completada → lote + entrada PT; segundo pesaje bloqueado.
-- [ ] Merma de pesaje: hoy la UI menciona ~20% pero B3 dejó pasar 66.67% en PIG-003 — decidir tope real y aplicarlo en servidor.
+- [X] Merma de pesaje en **servidor**: tope 20% en `ProduccionModel::confirmar_pesaje` (UI aún dice ~20%; caso B3 histórico — validar en smoke D).
 - [ ] Escalado BOM y `explotar_bom_plano` en simulador vs obra (mismas cantidades).
 - [ ] `grupo_color` en explosión (pendiente de `decisiones_pendientes.md` A1) — solo si toca un caso real de I4.
 
@@ -80,6 +82,46 @@ No se cambian Ventas, Compras, Facturación, Nómina ni Almacén. Contabilidad *
 - [X] Reportes: balanza, balance general, estado de resultados (ya existían); **libro diario, mayor, auxiliar IVA** (trasladado vs acreditable).
 - [X] Pólizas en **borrador** hasta autorizar; entonces alimentan balanza/balance. OV sin CFDI **no** se póliza. Sync CLI 2026-09-18: 35 pólizas (7 CFDI, 3 OC, 25 nóminas), 0 desbalanceadas; segunda corrida omitió 35.
 - [ ] Fuera de I4: DIOT, XML SAT, conciliación bancaria automática, export Aspel COI/NOI, cobros reales.
+
+### 4.9 Facturación — Facture App (auditoría conexión, 2026-09-18)
+
+Handoff para retomar integración OAuth / timbrado sin re-leer todo el código.
+
+**Integración vigente**
+
+| Pieza | Ubicación |
+|-------|-----------|
+| Cliente API + OAuth | `application/libraries/FactureApp.php` |
+| Ambiente sandbox/prod | `application/config/factureapp.php` (`factureapp_ambiente`) |
+| HTTP / timbrado / sync | `application/controllers/facturacion/Facturas.php` |
+| Token persistido | `application/models/Facturacion/FacturaApiTokenModel.php` → tabla **`api_tokens`** (`provider = facture_app`) |
+| Catálogos SAT (helper) | `application/helpers/facturacion_helper.php` |
+| UI dashboard | `application/views/facturacion/dashboard.php` (`$conectado` = hay `access_token` en BD) |
+| Callback OAuth | `{base_url}facturacion/Facturas/callback` |
+| Conectar / desconectar | `Facturas/conectar`, `Facturas/desconectar` |
+| Probe CLI (sin timbrar) | `php index.php facturacion/Facturas/cli_probe` |
+
+**Ambiente activo:** `config/factureapp.php` → `factureapp_ambiente = sandbox` (`app.facture.com.mx`). Producción: cambiar a `produccion` (`app.micontador.mx`) y **re-OAuth** (`conectar`). Secretos solo en ese config (**no** en docs).
+
+**Estado de conexión**
+
+- [X] Registro OAuth en BD: **sí** (`api_tokens`, `user_id` NULL = token global del sistema).
+- [X] Última autorización guardada: **2026-02-04** (`updated_at` del registro).
+- [X] `expires_in` almacenado: **365**; `refresh_token` en BD **sin** flujo automático (reautorizar con `conectar`).
+- [X] Probe CLI **2026-09-24**: `ok: true`, ambiente `sandbox`, mensaje *Petición satisfactoria* (`cli_probe`).
+
+**Datos locales (`facturas`) — recontado 2026-09-18**
+
+- **8** filas con `folio_fiscal`. **7 Emitida** + **1 Cancelada** (`id=6`). Contabilidad I4 → **7** pólizas `origen=facturas`.
+- **API real (indicio):** `id=7` folio `1770318424`, sin `orden_venta_id`, con `pdf_path`/`xml_path`.
+- **Snapshot POS:** folios `F-OV-2026-*` sin PDF/XML — no timbrar como CFDI real sin auditar.
+
+**Pendientes sugeridos**
+
+- [X] Centralizar ambiente en `application/config/factureapp.php`.
+- [X] Documentar renovación de token (comentarios en config + `cli_probe`).
+- [ ] Checklist corte a producción: micontador + re-OAuth + smoke timbrado **solo** RFC de prueba hasta go-live.
+- [ ] Diferidos: cron/lazy import, vínculo facturas ↔ obras/OC, envío correo PDF/XML.
 
 ### 4.5 Logística (si cabe en el sprint)
 - [ ] API paquetería Tres Guerras — diseño en `doc/PLAN_ENVIOS_TRES_GUERRAS.md` (no improvisar).
@@ -112,8 +154,8 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 ## 🟡 Pendientes diferidos (no I4 salvo que se desbloqueen)
 
 - [ ] Correos reales: OV a cliente, OC a proveedor, factura PDF/XML (UI facturación: “Enviar por Correo (Pendiente)” — no implementado).
-- [ ] Facturación: cron/lazy import; vincular facturas a obras/OC.
-- [ ] Smoke módulos: usuarios, permisos, bitácora, citas, calendario, RH (nómina ya existía).
+- [ ] Facturación: cron/lazy import; vincular facturas a obras/OC. **Conexión Facture App:** ver § **4.9**.
+- [ ] Smoke módulos: usuarios, permisos, bitácora, citas, calendario, RH (nómina ya existía) — usar checklist manual.
 - [ ] Residuos demo: conservar `OV-TEST-001` / `OV-2026-0004` / “Empresa de Prueba S.A.” (guion demo).
 
 ---
@@ -137,8 +179,7 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 | `GUIA_PRODUCCION_POST_IMPORTACION.md` | Operación post-import |
 | `AUDITORIA_MODULO_OBRAS_2026-08-28.md` | Auditoría de Obras (referencia I4) |
 | `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño paquetería |
-| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Plantilla de smoke por módulo (I4: B9–B10 POS, I Contabilidad) |
-| `entrenamiento_3/manifiestos/decisiones_pendientes.md` | Decisiones de catálogo/BOM pendientes |
+| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Plantilla de smoke por módulo (QA manual pendiente) |
 | `entrenamiento_3/manifiestos/decisiones_pendientes.md` | Decisiones de catálogo/BOM pendientes |
 | `entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md` | PASO 3 rendimientos (negocio) |
 | `entrenamiento_3/GUION_DEMO_CLIENTE.md` | Guion de demo |

@@ -256,6 +256,8 @@ $this->load->view('obras/partials/vinculo_venta', [
     </div>
 </div>
 
+<?php $this->load->view('obras/partials/seguimiento_entregas', ['obra_id' => (int) $obra->id]); ?>
+
 <!-- Facturación -->
 <div class="row mb-4">
     <div class="col-12">

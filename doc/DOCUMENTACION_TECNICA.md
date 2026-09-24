@@ -2,7 +2,7 @@
 
 Este documento sirve como guía arquitectónica, estándar de desarrollo y estado de avance para que cualquier desarrollador o agente de IA pueda retomar este proyecto de forma fluida y sin fricciones.
 
-**Nota I4 (2026-09-18, rama `iteracion-4`):** el overhaul P1–P9 de producción sigue cerrado. I4 no lo reabre. Avance paralelo: catálogo fotos tienda; contabilidad lee CFDI/OC/nómina (`contabilidad/Origenes`); POS multi-sucursal (`sucursales` + `ordenes_venta.sucursal_id`, bloqueo precio $0). Detalle y checkboxes: `doc/TODO.md`.
+**Nota I4 (2026-09-24, rama `iteracion-4`):** overhaul P1–P9 cerrado. Avance: catálogo fotos; contabilidad lectura (`contabilidad/Origenes`); POS sucursales; entregas en `ventas/obras/detalle`; Facture App vía `config/factureapp.php` + `cli_probe`. Detalle: `doc/TODO.md`. Rama `iteracion-3` retirada.
 
 ---
 

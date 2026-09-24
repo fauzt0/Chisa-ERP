@@ -190,58 +190,27 @@ class Obras extends MY_Controller {
      */
     public function actualizar_ajax() {
         $obra_id = $this->input->post('obra_id');
+        $usuario_id = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 1);
 
-        $this->db->select('estatus');
-        $this->db->where('id', $obra_id);
-        $obra_anterior = $this->db->get('obras')->row();
-        
-        $data = [
-            'nombre' => $this->input->post('nombre'),
-            'estatus' => $this->input->post('estatus'),
-            'porcentaje_avance' => $this->input->post('porcentaje_avance'),
-            'costo_real' => $this->input->post('costo_real'),
-            'condiciones_ambientales' => $this->input->post('condiciones_ambientales'),
-            'especificaciones_tecnicas' => $this->input->post('especificaciones_tecnicas'),
-            'descuento_porcentaje' => $this->input->post('descuento_porcentaje'),
-            'iva_porcentaje' => $this->input->post('iva_porcentaje'),
-            'anticipo_porcentaje' => $this->input->post('anticipo_porcentaje'),
-            'modificado_por' => $this->session->userdata('user_id') ?: 1
-        ];
-        
-        $result = $this->ObrasModel->actualizar_obra($obra_id, $data);
-        
-        if($result) {
-            // Recalcular totales
-            $this->ObrasModel->calcular_totales_obra($obra_id);
+        $result = $this->ObrasModel->actualizar_obra_desde_post($obra_id, $this->input->post(), $usuario_id);
 
-            $insumos_result = null;
-            $nuevo_estatus = $this->input->post('estatus');
-            if ($obra_anterior && $obra_anterior->estatus !== 'Aprobada' && $nuevo_estatus === 'Aprobada') {
-                $obra_actual = $this->ObrasModel->get_obra_detalle($obra_id);
-                if (empty($obra_actual->orden_venta_id)) {
-                    $this->ObrasModel->crear_solicitudes_produccion_desde_obra($obra_id);
-                }
-                $usuario_id = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 0);
-                if ($usuario_id > 0) {
-                    $insumos_result = $this->ObrasModel->verificar_insumos_y_preordenes_obra($obra_id, $usuario_id);
-                }
-            }
-            
+        if (!empty($result['success'])) {
             $respuesta = [
                 'success' => true,
-                'message' => 'Obra actualizada correctamente'
+                'message' => $result['message'],
             ];
-            if (!empty($insumos_result)) {
+            if (!empty($result['insumos_result'])) {
                 $this->load->model('Ventas/VentasModel');
-                $respuesta['insumos'] = $this->VentasModel->formatear_insumos_respuesta_json($insumos_result);
+                $respuesta['insumos'] = $this->VentasModel->formatear_insumos_respuesta_json($result['insumos_result']);
             }
             echo json_encode($respuesta);
-        } else {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Error al actualizar la obra'
-            ]);
+            return;
         }
+
+        echo json_encode([
+            'success' => false,
+            'message' => $result['message'] ?? 'Error al actualizar la obra',
+        ]);
     }
     
     /**
