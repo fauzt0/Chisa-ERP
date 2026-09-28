@@ -504,6 +504,23 @@ Fechas:           fecha_alta, fecha_edicion, fecha_baja (DATE o DATETIME)
 - Sincronización bidireccional: validar estatus local vs API, importar facturas faltantes.
 - Envío de factura (PDF + XML) por correo electrónico.
 
+### 9.5 Compras / Proveedores
+
+**Unidades en órdenes de compra (regla clave):**
+- Toda cantidad en `detalle_orden_compra.cantidad_solicitada` (y `cantidad_recibida`) está expresada
+  SIEMPRE en `insumos.unidad_medida`. La línea de OC **no** almacena unidad propia.
+- La conversión desde la unidad de la pre-orden (`preordenes.unidad`) se hace en
+  `PreordenesModel::aprobar()` con `convertir_unidad_insumo()` (helper `unidades_helper.php`).
+  Si la conversión no es segura (ej. `Cubeta` ↔ `Kg`), se **aborta con mensaje** y no se crea la OC.
+- `recibir_mercancia()` valida en dos pasadas antes de escribir: estatus de la OC
+  (`Enviada`, `Confirmada`, `En Tránsito`, `Recibida Parcial`), pertenencia de la línea a la orden,
+  cantidad > 0 y no exceder el pendiente. Nunca recibir sobre OC `Borrador`/`Cancelada`/`Recibida`.
+- El stock de insumos lo mueve el trigger `trg_stock_insumos_movimiento` (AFTER INSERT en
+  `movimientos_inventario`) en `Entrada`/`Salida`. Con `tipo_movimiento = 'Ajuste'` **no** mueve stock.
+- Las OC mueven únicamente insumos (`insumo_id`); la recepción de producto terminado de reventa
+  no está soportada por esquema (`insumo_id` es `NOT NULL` + FK). Si se requiere, usar el patrón
+  `insumos.producto_id` (ver `database/enlazar_semielaborados.sql`).
+
 ---
 
 ## 10. Reglas de Deployment

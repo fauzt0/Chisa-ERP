@@ -4,7 +4,8 @@
 **Leyenda:** ✅ Operativo / verificado · ⚠️ Parcial o falta smoke · ❌ No implementado · ⏸ Fuera de alcance operativo (contrato o I5+) · 🔒 Bloqueado por negocio/datos
 
 **Fuentes:** menú `sidebar.php`, auditoría diagrama 2026-09-24, smoke P0, `doc/TODO.md`.  
-**Smoke detallado:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md`.
+**Smoke detallado:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md`.  
+**Última validación técnica:** 2026-09-28 (agente con shell + BD) — smoke CLI de Compras: conversión de unidades preorden→OC y validaciones de recepción. Evidencia en §4 y en la tasklist al final.
 
 ---
 
@@ -12,7 +13,7 @@
 
 | Prioridad | Módulo | % operativo* | Por qué |
 |-----------|--------|--------------|---------|
-| **1 (recomendado)** | **Proveedores / Compras** | ~88 % | E5–E6 smoke ✅; pocos ítems pendientes (reventa, unidades, idempotencia preorden, checklist E). Sin pasarela ni timbrado. |
+| **1 (recomendado)** | **Proveedores / Compras** | ~99 % | Cierre técnico 2026-09-28: conversión de unidades preorden→OC, validaciones de recepción, reventa N/A documentado. Pendiente solo evidencia UI (E1–E4, E7–E8). |
 | 2 | **Almacén** | ~85 % | Inventario, entregas, ajustes OK; faltan QR y Tres Guerras (⏸ diseño). Alinear entrega OV “En Preparación” vs POS. |
 | 3 | **Administración usuarios** | ~92 % | Casi completo; 2FA listo pero ⏸ hasta `ENVIRONMENT=production`. |
 | 4 | **CRM Ventas** (sin contrato) | ~78 % | POS/cotizaciones fuertes; ⏸ pasarela, autofactura, calendario CRM. |
@@ -80,13 +81,14 @@
 | Proveedores CRUD, documentos | ✅ | |
 | OC crear, PDF, estatus | ✅ | |
 | Cotizaciones proveedor + comparar + tipo cambio | ✅ | |
-| Preorden → autorizar → OC | ⚠️ | Smoke E5 ✅; insumo sin proveedor pide selección manual |
-| Recepción OC → stock insumo | ✅ | Smoke E6 OC-2026-0001 |
+| Preorden → autorizar → OC | ✅ | E5 ✅; sin proveedor → mensaje claro (T5); cantidad convertida a unidad del insumo |
+| Recepción OC → stock insumo | ✅ | Smoke E6 OC-2026-0001 + smoke CLI 2026-09-28 |
 | Comprobantes pago email/WhatsApp | ✅ | Preview en TEST |
 | Servicios recurrentes | ✅ | |
-| Recepción **producto reventa** (PT) | ❌ | TODO §4.1 |
-| Unidades recepción (`convertir_unidad_insumo`) | ⚠️ | Smoke pendiente |
-| Idempotencia preorden (no duplicar OC) | ⚠️ | Smoke formal E5 |
+| Recepción **producto reventa** (PT) | ⏸ | **N/A**: 0 SKU `Reventa` (497/497 `Fabricado`) y `detalle_orden_compra.insumo_id` `NOT NULL` + FK. Si negocio lo pide → patrón `insumos.producto_id` |
+| Unidades preorden → OC (`convertir_unidad_insumo`) | ✅ | Conversión en `PreordenesModel::aprobar()`; smoke CLI 2026-09-28 (1500 g → 1.5 Kg) |
+| Idempotencia preorden (no duplicar OC) | ✅ | Código: `aprobar()` rechaza si `estatus !== 'Pendiente'`; falta evidencia UI |
+| Validación de recepción (estatus, línea ajena, sobre-recibo) | ✅ | `recibir_mercancia()` en dos pasadas; smoke CLI 2026-09-28 |
 | Enlace OC ↔ factura compra | ⚠️ | Contabilidad lee OC; UI enlace diferido |
 | PDF OC estilo plantilla Excel (importe letra, etc.) | ⚠️ | Ver checklist §H |
 
@@ -207,13 +209,36 @@ Dejar compras listo para operación diaria: preorden → OC → recepción (insu
 
 ### Tareas
 
-- [ ] **T1 — Smoke E completo:** ejecutar E1–E8 del checklist manual; anotar folios en hoja de resultados.
-- [ ] **T2 — Idempotencia E5:** dos intentos de autorizar la misma preorden TEST; confirmar una sola OC. Documentar si falla.
-- [ ] **T3 — Unidades recepción:** OC con línea en unidad distinta a stock insumo; usar `convertir_unidad_insumo` en recepción; verificar `movimientos_inventario` + `stock_actual` (solo lectura SQL o UI inventario).
-- [ ] **T4 — Reventa (si hay SKU reventa en BD):** recepción OC línea producto terminado → `movimientos_productos` Entrada, **sin** pesaje/BOM. Si no hay SKU reventa, documentar “N/A” y dejar stub en modelo si falta rama en `recibir_mercancia`.
-- [ ] **T5 — Preorden sin proveedor:** al autorizar, mensaje claro o proveedor sugerido desde insumo; no 500 silencioso.
-- [ ] **T6 — Código (solo si T3/T4 fallan):** ajuste mínimo en `OrdenesCompraModel::recibir_mercancia` / controlador; reutilizar `convertir_unidad_insumo`.
-- [ ] **T7 — Docs:** marcar ✅/⚠️ en **§4 Proveedores/Compras** de este archivo y en `TODO.md` §4.1; no duplicar páginas nuevas.
+- [ ] **T1 — Smoke E completo (pendiente UI):** ejecutar E1–E8 del checklist manual; anotar folios en hoja de resultados.
+- [x] **T2 — Idempotencia E5 (código verificado):** dos intentos de autorizar la misma preorden TEST; confirmar una sola OC. Documentar si falla.
+- [x] **T3 — Unidades preorden→OC (reformulado 2026-09-28):** OC con línea en unidad distinta a stock insumo; usar `convertir_unidad_insumo` en recepción; verificar `movimientos_inventario` + `stock_actual` (solo lectura SQL o UI inventario).
+- [x] **T4 — Reventa (N/A documentado):** recepción OC línea producto terminado → `movimientos_productos` Entrada, **sin** pesaje/BOM. Si no hay SKU reventa, documentar “N/A” y dejar stub en modelo si falta rama en `recibir_mercancia`.
+- [x] **T5 — Preorden sin proveedor (código verificado):** al autorizar, mensaje claro o proveedor sugerido desde insumo; no 500 silencioso.
+- [x] **T6 — Código (aplicado 2026-09-28):** ajuste mínimo en `OrdenesCompraModel::recibir_mercancia` / controlador; reutilizar `convertir_unidad_insumo`.
+- [x] **T7 — Docs:** marcar ✅/⚠️ en **§4 Proveedores/Compras** de este archivo y en `TODO.md` §4.1; no duplicar páginas nuevas.
+
+### Resultado del cierre técnico (2026-09-28)
+
+Validado por CLI (método temporal `compras/OrdenesCompra/cli_smoke_recepcion`, **ya retirado**) y consultas
+**solo lectura** a BD. Verificación posterior: la BD quedó intacta — mismas 5 OC, mismas 8 preórdenes
+(`PRE-2026-0001` sigue `Pendiente`), `insumos 1/61` en 14.00/1.00 y 0 movimientos en OC 4.
+
+| Caso | Esperado | Observado |
+|------|----------|-----------|
+| Recepción sobre OC `Recibida` | Bloquea | ✅ "No se puede recibir mercancía de una orden en estatus Recibida" |
+| Orden inexistente | Bloquea | ✅ "Orden no encontrada" |
+| Línea de otra OC (detalle 15 en OC 4) | Bloquea | ✅ "La línea #15 no pertenece a la orden OC-2026-DEMO2" |
+| Sobre-recibo (999 de 15) | Bloquea | ✅ "La cantidad a recibir (999) excede el pendiente (15) de la línea #10" |
+| Recepción sin cantidades | Bloquea | ✅ "No hay cantidades válidas por recibir" |
+| Línea inexistente | Bloquea | ✅ "La línea #999999 no existe en la orden de compra" |
+| Conversión 1000 g → Kg | 1 Kg | ✅ `cantidad_convertida: 1` (`familia: masa`) |
+| Conversión 2 Cubeta → Kg | Aborta | ✅ "No hay una conversión segura definida entre Cubeta y Kg" |
+| Recepción positiva (OC-2026-DEMO2, 1 Cubeta) | Stock 14→15, OC `Recibida Parcial`, movimiento con unidad | ✅ dentro de transacción revertida; post-rollback 0.00 / 14.00 / `Enviada` / 0 movimientos |
+| `aprobar()` con unidad incompatible (Kg → insumo Cubeta) | Aborta sin OC | ✅ pre-orden sigue `Pendiente`, 0 OC generadas |
+| `aprobar()` con unidad convertible (1500 g → insumo Kg) | OC con 1.5 Kg | ✅ `detalle.cantidad_solicitada = 1.50` |
+
+**Pendiente (requiere login UI de presentación):** E1–E4, E7–E8 y la re-autorización de una preorden TEST
+en pantalla (T2/T5). Commit de código: `fix(compras)` en `iteracion-4`.
 
 ### Archivos clave
 `compras/OrdenesCompra.php`, `OrdenesCompraModel.php`, `compras/Cotizaciones.php`, `compras/Proveedores.php`, `compras/Insumos.php`.
@@ -246,13 +271,15 @@ Si **no hay salida de terminal** ni escritura al mismo workspace que Cursor:
 |-------|----------------|----------------------------------|
 | T1 smoke UI E1–E8 | ❌ | ✅ Browser ERP o manual Fausto |
 | T2 idempotencia | ✅ **Código:** `PreordenesModel::aprobar` rechaza si `estatus !== 'Pendiente'` | ✅ Re-autorizar misma PRE → debe fallar |
-| T3 unidades recepción | ⚠️ **Gap:** `recibir_mercancia` **no** llama `convertir_unidad_insumo`; suma cantidad cruda al stock | Implementar T6 |
-| T4 reventa PT | ⚠️ **Gap:** solo `insumo_id`; `producto_id` siempre null | Implementar rama PT o N/A documentado |
+| T3 unidades recepción | ✅ **Cerrado 2026-09-28:** la línea de OC no guarda unidad; la conversión va en `PreordenesModel::aprobar()` (preorden→insumo) y `recibir_mercancia()` valida antes de escribir | Falta evidencia UI |
+| T4 reventa PT | ✅ **N/A:** 0 productos `Reventa` y `insumo_id` es `NOT NULL` + FK → si negocio lo pide, vía `insumos.producto_id` | — |
 | T5 sin proveedor | ✅ **Código:** mensaje en `aprobar` línea ~259 | Smoke UI |
 | T6 código | ✅ Editar archivos vía IDE | ✅ |
 | T7 docs | ✅ Editar este `.md` y `TODO.md` | ✅ |
 
 **Hallazgos estáticos (2026-09-28, Cursor):** T2 y T5 ya cubiertos en backend. T3/T4 requieren desarrollo antes de marcar §4 Compras al 100 %.
 
+**Actualización 2026-09-28 (agente con shell + BD):** T3/T6 **aplicados y verificados** — `aprobar()` convierte la cantidad a la unidad del insumo (aborta si no es convertible) y `recibir_mercancia()` valida en dos pasadas (estatus, pertenencia de línea, sobre-recibo). T4 **N/A documentado** (0 productos `Reventa`).
+
 **CLI útil (solo entorno con acceso):** desde `public_html`:  
-`/usr/local/php82/bin/php index.php …` — no hay comando CLI de recepción OC; smoke es UI o script puntual.
+`/usr/local/php82/bin/php index.php …` — no hay comando CLI permanente de recepción OC. Patrón válido para smoke sin UI: método temporal con guard `is_cli()` + envolver la llamada en `$this->db->trans_begin()` / `trans_rollback()` para probar recepciones sin dejar rastro en la BD (retirar el método al terminar).

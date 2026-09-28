@@ -98,6 +98,11 @@ Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 aut
 | E7 | Pago TEST + comprobante (si iteración 5 activa) | Guarda | | |
 | E8 | Correo/WhatsApp texto (preview; no spam a proveedor real) | Preview OK | | |
 
+**Nota 2026-09-28 (agente con shell + BD):** además de E5–E6, se validaron por CLI las guardas nuevas de
+`recibir_mercancia()` (estatus de OC, línea ajena, sobre-recibo, línea inexistente) y la conversión de
+unidades en `PreordenesModel::aprobar()` (1500 g → 1.5 Kg; Cubeta→Kg **aborta** con mensaje). E1–E4 y
+E7–E8 siguen pendientes de UI. Evidencia completa en `MODULOS_ESTADO_CHECKLIST.md` §4.
+
 ---
 
 ## F. RH — Empleados / expediente
@@ -206,7 +211,7 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | B Ventas/POS | 24-sep-2026 | Agente smoke P0 | ⚠️ | OV-0010/0011 | B3–B5 ✅; B6 re-smoke post-fix stock PT |
 | C Obras | | | | | |
 | D Producción | 24-sep-2026 | Agente smoke P0 | ⚠️ | OV-0010 | D3–D4 ✅; D5–D6 SKIP BOM |
-| E Proveedores/OC | 24-sep-2026 | Agente smoke P0 | ✅ | PRE-0007, OC-2026-0001 | E5–E6 |
+| E Proveedores/OC | 24-sep-2026 · 28-sep-2026 | Agente smoke P0 · agente CLI+BD | ✅ | PRE-0007, OC-2026-0001 | E5–E6 ✅; 28-sep: guardas de recepción + conversión de unidades (CLI, BD sin cambios). E1–E4/E7–E8 pendientes UI |
 | F RH empleados | | | | | |
 | G Nómina | | | | | |
 | H Entrenamiento / PDF OC | | | | | |

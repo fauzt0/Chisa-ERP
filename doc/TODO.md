@@ -1,6 +1,6 @@
 # TODO - Sistema ERP CHISA
 
-**Última actualización:** 2026-09-24  
+**Última actualización:** 2026-09-28  
 **Desarrollador:** Fausto Solano - CHISA Recubrimientos  
 **Rama activa:** `iteracion-4` (base `main` `ff111ce`; commits I4 locales sin push obligatorio)
 
@@ -82,7 +82,7 @@ Ejecutado vía `doc/SMOKE_P0_AGENTE_EJECUTOR.md`. Cierre: OV-2026-0010/0011 canc
 
 - [X] Desarrollo
 - [X] Iteración 3 — cerrada y mergeada a `main` (2026-09-18, `7778571`); rama `iteracion-3` retirada 2026-09-24
-- [ ] Iteración 4 — **activa**: 4.0 catálogo, 4.2 POS, 4.3 obras (entregas CRM + estatus), 4.8 contabilidad, 4.9 Facture sandbox. Pendiente: smoke POS/compras en UI, 4.1 OC recepción, 4.4 dashboard/merma UI, datos 4.6.
+- [ ] Iteración 4 — **activa**: 4.0 catálogo, 4.2 POS, 4.3 obras (entregas CRM + estatus), 4.8 contabilidad, 4.9 Facture sandbox. Pendiente: smoke en UI de POS/compras (E1–E4, E7–E8), 4.4 dashboard/merma UI, datos 4.6. **4.1 Compras: cierre técnico ✅ 2026-09-28** (unidades preorden→OC + validaciones de recepción).
 - [ ] Iteración 5 — **no iniciar**: reloj checador (función nueva + auditoría de punches)
 - [ ] Despliegue — en producción: `https://erp.chisarecubrimientos.com.mx`
 
@@ -111,9 +111,10 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 
 ### 4.1 Compras / proveedores — entradas de insumos y productos
 - [X] Recibir OC TEST: smoke E6 OC-2026-0001 — BLANCO 0→1 Kg (`recibir_mercancia`).
-- [ ] Recibir producto de reventa (si aplica): entrada a `productos` / `movimientos_productos` sin disparar pesaje ni BOM.
-- [ ] Preorden → autorizar → OC **sin duplicar** (no usar `PRE-2026-0001`).
-- [ ] Unidades: `convertir_unidad_insumo`; no mezclar Kg/Cubeta/Pza en la recepción.
+- [X] Recibir producto de reventa: **N/A documentado** (2026-09-28) — 0 productos `tipo_producto='Reventa'` en BD y `detalle_orden_compra.insumo_id` es `NOT NULL` + FK. Si negocio lo pide: patrón `insumos.producto_id`.
+- [X] Preorden → autorizar → OC **sin duplicar**: garantizado en `PreordenesModel::aprobar()` (rechaza si `estatus !== 'Pendiente'`) y verificado 2026-09-28; falta re-smoke en UI. `PRE-2026-0001` sin tocar.
+- [X] Unidades: `convertir_unidad_insumo` aplicado en `aprobar()` (preorden → unidad del insumo). Reformulación: la línea de OC **no** guarda unidad, por lo que la conversión no puede hacerse en `recibir_mercancia`.
+- [X] Recepción robusta (2026-09-28): `recibir_mercancia()` valida en dos pasadas estatus de la OC, pertenencia de la línea, cantidad > 0 y sobre-recibo. Evidencia en `MODULOS_ESTADO_CHECKLIST.md` §4.
 - [ ] PDF OC + preview correo/WhatsApp (**no enviar** a proveedores reales).
 
 ### 4.2 Ventas — mostrador (POS) vs obras
