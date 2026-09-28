@@ -287,40 +287,90 @@ class OrdenesCompraModel extends MY_Model {
         if(!$orden) {
             return ['success' => false, 'message' => 'Orden no encontrada'];
         }
-        
-        $this->db->trans_start();
-        
-        $todo_recibido = true;
-        
+
+        // Solo se recepciona una OC ya enviada al proveedor (no Borrador ni Cancelada)
+        $estatus_recibibles = ['Enviada', 'Confirmada', 'En Tránsito', 'Recibida Parcial'];
+        if(!in_array($orden->estatus, $estatus_recibibles, true)) {
+            return ['success' => false, 'message' => 'No se puede recibir mercancía de una orden en estatus ' . $orden->estatus];
+        }
+
+        if(!is_array($detalles_recibidos) || empty($detalles_recibidos)) {
+            return ['success' => false, 'message' => 'No se recibieron cantidades para esta orden'];
+        }
+
+        // Pasada 1: validar TODAS las líneas antes de escribir (evita recepciones parciales por error)
+        $lineas = [];
         foreach($detalles_recibidos as $detalle) {
-            $detalle_id = $detalle['detalle_id'];
-            $cantidad_recibida = $detalle['cantidad_recibida'];
-            
-            // Obtener detalle actual
+            $detalle_id = isset($detalle['detalle_id']) ? (int) $detalle['detalle_id'] : 0;
+            $cantidad_recibida = isset($detalle['cantidad_recibida']) ? (float) $detalle['cantidad_recibida'] : 0;
+
+            // Las líneas vacías o en 0 se ignoran (el modal envía todas las líneas)
+            if($detalle_id <= 0 || $cantidad_recibida <= 0) {
+                continue;
+            }
+
             $detalle_actual = $this->db->where('id', $detalle_id)->get('detalle_orden_compra')->row();
-            
-            if(!$detalle_actual) continue;
-            
+
+            if(!$detalle_actual) {
+                return ['success' => false, 'message' => 'La línea #' . $detalle_id . ' no existe en la orden de compra'];
+            }
+
+            if((int) $detalle_actual->orden_compra_id !== (int) $orden_id) {
+                return ['success' => false, 'message' => 'La línea #' . $detalle_id . ' no pertenece a la orden ' . $orden->folio];
+            }
+
+            $pendiente = round((float) $detalle_actual->cantidad_solicitada - (float) $detalle_actual->cantidad_recibida, 2);
+            if($pendiente <= 0) {
+                return ['success' => false, 'message' => 'La línea #' . $detalle_id . ' ya estaba recibida por completo'];
+            }
+
+            if($cantidad_recibida - $pendiente > 0.001) {
+                return [
+                    'success' => false,
+                    'message' => 'La cantidad a recibir (' . $cantidad_recibida . ') excede el pendiente (' . $pendiente . ') de la línea #' . $detalle_id,
+                ];
+            }
+
+            $lineas[] = ['detalle' => $detalle_actual, 'cantidad' => round($cantidad_recibida, 3)];
+        }
+
+        if(empty($lineas)) {
+            return ['success' => false, 'message' => 'No hay cantidades válidas por recibir'];
+        }
+
+        // Pasada 2: aplicar cantidades recibidas + movimientos de inventario
+        $this->db->trans_start();
+
+        $todo_recibido = true;
+
+        foreach($lineas as $linea) {
+            $detalle_actual = $linea['detalle'];
+            $cantidad_recibida = $linea['cantidad'];
+
             // Actualizar cantidad recibida
-            $nueva_cantidad_recibida = $detalle_actual->cantidad_recibida + $cantidad_recibida;
-            
-            $this->db->where('id', $detalle_id);
+            $nueva_cantidad_recibida = round((float) $detalle_actual->cantidad_recibida + $cantidad_recibida, 3);
+
+            $this->db->where('id', $detalle_actual->id);
             $this->db->update('detalle_orden_compra', [
                 'cantidad_recibida' => $nueva_cantidad_recibida
             ]);
-            
+
             // Verificar si todo está recibido
-            if($nueva_cantidad_recibida < $detalle_actual->cantidad_solicitada) {
+            if($nueva_cantidad_recibida < (float) $detalle_actual->cantidad_solicitada) {
                 $todo_recibido = false;
             }
-            
+
             // Obtener insumo actual
             $insumo = $this->db->where('id', $detalle_actual->insumo_id)->get('insumos')->row();
-            
+
+            // La cantidad de la línea está SIEMPRE en insumos.unidad_medida: la conversión
+            // desde la unidad de la pre-orden ocurre en PreordenesModel::aprobar()
+            $unidad_insumo = $insumo->unidad_medida ?? 'sin unidad';
+
             // Crear movimiento de inventario (Polimórfico: Insumos)
             $movimiento = [
                 'insumo_id' => $detalle_actual->insumo_id,
-                'producto_id' => null, // Explicitly null
+                'producto_id' => null, // Las OC solo mueven insumos (ver T4 en doc/MODULOS_ESTADO_CHECKLIST.md)
                 'tipo_movimiento' => 'Entrada',
                 'cantidad' => $cantidad_recibida,
                 'stock_anterior' => $insumo->stock_actual,
@@ -328,16 +378,16 @@ class OrdenesCompraModel extends MY_Model {
                 'costo_unitario' => $detalle_actual->precio_unitario,
                 'costo_total' => $cantidad_recibida * $detalle_actual->precio_unitario,
                 'orden_compra_id' => $orden_id,
-                'motivo' => 'Recepción de orden de compra ' . $orden->folio,
+                'motivo' => 'Recepción de orden de compra ' . $orden->folio . ' (' . $unidad_insumo . ')',
                 'usuario_id' => $user_id,
                 'fecha_movimiento' => date('Y-m-d H:i:s')
             ];
-            
+
             $this->db->insert('movimientos_inventario', $movimiento);
-            
-            // El trigger actualiza stock_actual automáticamente
+
+            // El trigger trg_stock_insumos_movimiento actualiza insumos.stock_actual en Entrada/Salida
         }
-        
+
         // Actualizar estatus de la orden
         $nuevo_estatus = $todo_recibido ? 'Recibida' : 'Recibida Parcial';
         $this->db->where('id', $orden_id);
@@ -345,9 +395,9 @@ class OrdenesCompraModel extends MY_Model {
             'estatus' => $nuevo_estatus,
             'fecha_entrega_real' => date('Y-m-d')
         ]);
-        
+
         $this->db->trans_complete();
-        
+
         if ($this->db->trans_status() === FALSE) {
             return ['success' => false, 'message' => 'Error al recibir mercancía'];
         }
@@ -360,7 +410,7 @@ class OrdenesCompraModel extends MY_Model {
             'orden' => $orden_actualizada,
         ];
     }
-    
+
     /**
      * Genera folio único para orden
      */
