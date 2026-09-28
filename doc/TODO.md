@@ -247,6 +247,7 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 | `diagrama_general.png` | Mapa funcional vs oferta |
 | `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Smoke manual + columna **Aud. P0** |
 | `SMOKE_P0_AGENTE_EJECUTOR.md` | Instrucciones agente smoke P0 |
+| `MODULOS_ESTADO_CHECKLIST.md` | Estado por módulo + tasklist cierre (prioridad: Compras) |
 | `entrenamiento_3/manifiestos/decisiones_pendientes.md` | Decisiones de catálogo/BOM pendientes |
 | `entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md` | PASO 3 rendimientos (negocio) |
 | `entrenamiento_3/GUION_DEMO_CLIENTE.md` | Guion de demo |
