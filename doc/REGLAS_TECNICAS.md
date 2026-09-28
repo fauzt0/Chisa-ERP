@@ -542,8 +542,11 @@ Fechas:           fecha_alta, fecha_edicion, fecha_baja (DATE o DATETIME)
   `Entregada`, por eso el candado **no** puede ser el estatus.
 - **Precio $0:** `validar_precios_pos()` bloquea SKUs con `precio_venta = 0` (BUG-DATA-01) antes del ticket y del POST.
 - **Cancelación:** `cancelar_orden()` devuelve PT con `Entrada` en `movimientos_inventario` solo si estaba `Entregada`.
-- **Pendiente (Almacén, A1):** `AlmacenModel::registrar_entrega()` aún **no** valida stock insuficiente,
-  sobre-entrega ni doble entrega contra `cantidad − cantidad_entregada`: misma clase de bug ya cerrada en POS (2026-09-24).
+- **Almacén (resuelto 2026-09-28):** `AlmacenModel::registrar_entrega()` valida **antes** de escribir: estatus del
+  origen (`Confirmada`/`En Preparación` para OV; `Aprobada`/`En Ejecución` para obra), que la partida pertenezca al
+  origen y coincida con el producto, que no se exceda el pendiente (`cantidad − cantidad_entregada`, con
+  `cantidad_ajustada ?? cantidad_calculada` en obras) y que exista stock PT suficiente (consolidado por producto).
+  Al entregar, `tr_actualizar_entrega_almacen` cierra `cantidad_entregada` y pasa la OV a `Entregada` o la obra a `Completada`.
 
 ---
 

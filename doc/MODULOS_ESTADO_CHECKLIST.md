@@ -14,7 +14,7 @@
 | Prioridad | Módulo | % operativo* | Por qué |
 |-----------|--------|--------------|---------|
 | **1 (recomendado)** | **Proveedores / Compras** | ~100 % | Cierre técnico **+ smoke UI real** 2026-09-28: conversión de unidades preorden→OC (2000 g → 2 Kg en UI), validaciones de recepción, idempotencia y T5 sin proveedor. Reventa N/A documentado. |
-| 2 | **Almacén** | ~85 % | Inventario, entregas, ajustes OK; faltan QR y Tres Guerras (⏸ diseño). Alinear entrega OV “En Preparación” vs POS. |
+| 2 | **Almacén** | ~92 % | 28-sep-2026: guardas de entrega (stock, pendiente, partida, idempotencia) + smoke A1–A3 en transacción revertida. Faltan QR y Tres Guerras (⏸ diseño). |
 | 3 | **Administración usuarios** | ~92 % | Casi completo; 2FA listo pero ⏸ hasta `ENVIRONMENT=production`. |
 | 4 | **CRM Ventas** (sin contrato) | ~80 % | POS/cotizaciones fuertes; 28-sep: **B6 + B10 re-smoke ✅** (stock PT, insumos intactos, tx revertida) + guardas de idempotencia y consolidación de líneas. ⏸ pasarela, autofactura, calendario CRM. |
 | 5 | **Contabilidad** (alcance I4) | ~80 % | Lectura + pólizas borrador OK; ⏸ DIOT, conciliación auto, Aspel pleno. |
@@ -181,9 +181,10 @@
 | Función | Estado | Notas |
 |---------|--------|-------|
 | Dashboard mín/máx | ✅ | |
-| Inventario insumos y PT, ajustes | ✅ | |
-| Entregas OV y obras | ✅ | |
-| Trigger stock ventas/producción | ✅ | |
+| Inventario insumos y PT, ajustes | ✅ | `Ajuste` de PT mueve stock vía trigger `tr_actualizar_stock_producto` |
+| Entregas OV y obras | ✅ | 28-sep-2026: guardas en `AlmacenModel::registrar_entrega()` (estatus origen, partida propia, pendiente, **stock**) + smoke A1/A3 en tx revertida |
+| Idempotencia de entrega | ✅ | Rechaza OV/obra ya `Entregada`/`Completada`; no hay doble descuento de PT |
+| Trigger stock ventas/producción | ✅ | `tr_actualizar_entrega_almacen` cierra `cantidad_entregada` y estatus del origen |
 | Salida por lector QR/barcode | ❌ | Hardware + UI |
 | Tres Guerras rastreo | ⏸ | `PLAN_ENVIOS_TRES_GUERRAS.md` |
 
@@ -276,10 +277,10 @@ Todas T1–T5 ✅ o SKIP documentado; T6 solo si hubo bug; checklist bloque **E*
 
 ## Tasklist agente — segundo módulo sugerido: **Almacén**
 
-- [ ] **A1 — Entrega OV En Preparación** con PT ≥ cantidad (después de producción o ajuste stock TEST): `almacen/Entregas` baja PT una vez. → ⏸ **bloqueado por datos**: solo 1 PT con stock (+1 de REF 308) y está asignado a OV-2026-0009 (intocable); OV-2026-0013 requiere PT con stock −57. Ver propuesta A1-abajo.
+- [x] **A1 — Entrega OV En Preparación** con PT ≥ cantidad: `almacen/Entregas` baja PT **una vez**. → ✅ 28-sep-2026 smoke CLI+BD en **transacción revertida** (parcial 1 de 2 → cierre `Entregada` + `fecha_entrega_real`; kardex en `movimientos_productos`). Datos reales: solo PT con stock ≤ 0, así que el camino feliz se validó con stock inyectado dentro de la misma tx (sin residuos).
 - [x] **A2 — Coherencia con POS:** mostrador Entregada descuenta PT en POS; pedido confirmado descuenta en almacén al entregar — documentado en `REGLAS_TECNICAS` **§9.6 Ventas / POS**. ✅ 28-sep-2026
-- [ ] **A3 — Smoke** bloque almacén (extender checklist si no hay filas; mínimo entrega TEST).
-- [ ] **A4 — QR / Tres Guerras:** dejar ⏸ explícito; no implementar en este sprint salvo orden.
+- [x] **A3 — Smoke** bloque almacén: ✅ 28-sep-2026 bloque **J. Almacén** agregado al checklist manual (J1–J7). Casos: entrega parcial/cierre, stock insuficiente (OV y obra), sobre-entrega, partida ajena, producto que no coincide, doble entrega, consolidación de líneas. 0 residuos.
+- [x] **A4 — QR / Tres Guerras:** ⏸ explícito (J7 + §10); no se implementa en este sprint.
 
 ---
 
