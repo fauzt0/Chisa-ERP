@@ -211,8 +211,8 @@ Dejar compras listo para operación diaria: preorden → OC → recepción (insu
 
 - [ ] **T1 — Smoke E completo (pendiente UI):** ejecutar E1–E8 del checklist manual; anotar folios en hoja de resultados.
 - [x] **T2 — Idempotencia E5 (código verificado):** dos intentos de autorizar la misma preorden TEST; confirmar una sola OC. Documentar si falla.
-- [x] **T3 — Unidades preorden→OC (reformulado 2026-09-28):** OC con línea en unidad distinta a stock insumo; usar `convertir_unidad_insumo` en recepción; verificar `movimientos_inventario` + `stock_actual` (solo lectura SQL o UI inventario).
-- [x] **T4 — Reventa (N/A documentado):** recepción OC línea producto terminado → `movimientos_productos` Entrada, **sin** pesaje/BOM. Si no hay SKU reventa, documentar “N/A” y dejar stub en modelo si falta rama en `recibir_mercancia`.
+- [x] **T3 — Unidades preorden→OC (reformulado 2026-09-28):** la premisa original era incorrecta — `detalle_orden_compra` **no** guarda unidad. Se convierte en `PreordenesModel::aprobar()` (unidad de la pre-orden → `insumos.unidad_medida`, aborta si no es convertible) y `recibir_mercancia()` valida que la cantidad no exceda el pendiente. Verificado por CLI.
+- [x] **T4 — Reventa (N/A documentado):** recepción OC línea producto terminado → `movimientos_productos` Entrada, **sin** pesaje/BOM. Si no hay SKU reventa, documentar “N/A” y dejar stub en modelo si falta rama en `recibir_mercancia`. → **Hecho:** N/A documentado con evidencia (0 productos `Reventa`); **no** se agregó rama PT porque el esquema la impide (`insumo_id` `NOT NULL` + FK).
 - [x] **T5 — Preorden sin proveedor (código verificado):** al autorizar, mensaje claro o proveedor sugerido desde insumo; no 500 silencioso.
 - [x] **T6 — Código (aplicado 2026-09-28):** ajuste mínimo en `OrdenesCompraModel::recibir_mercancia` / controlador; reutilizar `convertir_unidad_insumo`.
 - [x] **T7 — Docs:** marcar ✅/⚠️ en **§4 Proveedores/Compras** de este archivo y en `TODO.md` §4.1; no duplicar páginas nuevas.
