@@ -260,12 +260,21 @@ class VentasModel extends MY_Model {
      * @return array{ok:bool,message:string}
      */
     public function validar_stock_pt_lineas(array $lineas) {
+        // Consolidar por producto: el mismo PT puede venir repetido en varias líneas del ticket
+        $requerido = [];
         foreach ($lineas as $detalle) {
             $producto_id = (int) ($detalle['producto_id'] ?? 0);
             $cantidad = (float) ($detalle['cantidad'] ?? 0);
             if ($producto_id <= 0 || $cantidad <= 0) {
                 continue;
             }
+            if (!isset($requerido[$producto_id])) {
+                $requerido[$producto_id] = 0.0;
+            }
+            $requerido[$producto_id] += $cantidad;
+        }
+
+        foreach ($requerido as $producto_id => $cantidad) {
             $producto = $this->db->select('codigo, nombre, stock_actual')
                 ->where('id', $producto_id)
                 ->get('productos')
@@ -293,6 +302,36 @@ class VentasModel extends MY_Model {
      */
     public function entregar_orden($id) {
         $id = (int) $id;
+
+        $orden = $this->db->select('folio, estatus, fecha_entrega_real')
+            ->where('id', $id)
+            ->get('ordenes_venta')
+            ->row();
+
+        if (!$orden) {
+            return ['success' => false, 'message' => 'Orden de venta no encontrada (ID ' . $id . ').'];
+        }
+        if ($orden->estatus === 'Cancelada') {
+            return ['success' => false, 'message' => 'La orden ' . $orden->folio . ' está cancelada: no se puede entregar.'];
+        }
+
+        // Idempotencia: en mostrador la OV ya nace como 'Entregada', por eso el candado es
+        // fecha_entrega_real + el kardex de la propia orden, no el estatus.
+        $ya_descontada = !empty($orden->fecha_entrega_real);
+        if (!$ya_descontada) {
+            $ya_descontada = (int) $this->db
+                ->where('motivo', 'Venta - Orden ' . $id)
+                ->count_all_results('movimientos_inventario') > 0;
+        }
+        if ($ya_descontada) {
+            return [
+                'success' => false,
+                'message' => 'La orden ' . $orden->folio . ' ya había sido entregada'
+                    . (!empty($orden->fecha_entrega_real) ? ' (' . $orden->fecha_entrega_real . ')' : '')
+                    . ': no se vuelve a descontar stock.',
+            ];
+        }
+
         $this->db->where('orden_venta_id', $id);
         $detalles = $this->db->get('detalle_orden_venta')->result();
 
