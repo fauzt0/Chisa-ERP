@@ -523,6 +523,30 @@ Fechas:           fecha_alta, fecha_edicion, fecha_baja (DATE o DATETIME)
 
 ---
 
+### 9.6 Ventas / POS (entrega de PT y kardex)
+
+**Dos caminos de entrega, dos tablas de kardex (no mezclar):**
+
+| Origen | Cuándo | Método | Tabla kardex | Stock PT |
+|--------|--------|--------|--------------|----------|
+| POS mostrador | `tipo_venta = Mostrador` → la OV nace `Entregada` | `VentasModel::entregar_orden()` | `movimientos_inventario` (sin `stock_anterior/nuevo`) | `productos.stock_actual` se actualiza directo |
+| Almacén | OV `Confirmada` / `En Preparación` | `AlmacenModel::registrar_entrega()` → `ProductosModel::registrar_movimiento()` | `movimientos_productos` | trigger `tr_actualizar_stock_producto` (`stock_actual = stock_nuevo`) |
+
+- **Mostrador:** `Pos::crear_orden_ajax()` valida con `VentasModel::validar_stock_pt_lineas()`
+  **antes** de crear la OV; consolida cantidades por `producto_id` (2 líneas de 1 pza con stock 1 → rechazo).
+  Si el PT no alcanza, la OV queda `En Preparación` y **no** se descuenta stock.
+- **Insumos:** vender PT con stock disponible **no** mueve stock de insumos; solo la verificación
+  (`verificar_insumos_y_preordenes_venta()`) puede crear preórdenes cuando hay faltantes.
+- **Idempotencia:** `entregar_orden()` no vuelve a descontar si la OV ya tiene `fecha_entrega_real`
+  o ya existe el kardex `Venta - Orden {id}`, y rechaza OVs `Cancelada`. En mostrador la OV nace
+  `Entregada`, por eso el candado **no** puede ser el estatus.
+- **Precio $0:** `validar_precios_pos()` bloquea SKUs con `precio_venta = 0` (BUG-DATA-01) antes del ticket y del POST.
+- **Cancelación:** `cancelar_orden()` devuelve PT con `Entrada` en `movimientos_inventario` solo si estaba `Entregada`.
+- **Pendiente (Almacén, A1):** `AlmacenModel::registrar_entrega()` aún **no** valida stock insuficiente,
+  sobre-entrega ni doble entrega contra `cantidad − cantidad_entregada`: misma clase de bug ya cerrada en POS (2026-09-24).
+
+---
+
 ## 10. Reglas de Deployment
 
 ### 10.1 Entornos

@@ -51,11 +51,11 @@ Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 aut
 | B3 | `/ventas/Pos` buscar producto, ticket, cliente | UI OK | **#1** | ✅ 24-sep |
 | B4 | Guardar **cotización** TEST con fabricado | Aviso faltantes si aplica; **0 preorden** | **#1** | ✅ OV-2026-0010 |
 | B5 | Confirmar cotización / compromiso TEST | Preorden Pendiente `origen=venta` solo si faltantes | **#1** | ✅ PRE-2026-0007 |
-| B6 | Cobrar mostrador TEST | Si PT ≥ cantidad: baja PT; insumos **no**. Si PT &lt; cantidad: **rechaza** (no negativo) | **#1** | ⚠️ negativo pre-fix; **re-smoke** |
+| B6 | Cobrar mostrador TEST | Si PT ≥ cantidad: baja PT; insumos **no**. Si PT &lt; cantidad: **rechaza** (no negativo) | **#1** | ✅ 28-sep-2026 CLI+BD (transacción revertida) |
 | B7 | `/ventas/Descuentos` CRUD mínimo + visible en POS | OK | | |
 | B8 | `/ventas/ObrasVentas` listado + detalle | Carga | | |
 | B9 | POS: selector sucursal (Matriz CDMX) + alta caja TEST | OV lleva `sucursal_id`; stats por caja | | |
-| B10 | POS: SKU precio $0 (p. ej. REF 308) no entra al ticket ni al POST | Mensaje; precio de catálogo | | |
+| B10 | POS: SKU precio $0 (p. ej. REF 308) no entra al ticket ni al POST | Mensaje; precio de catálogo | | ✅ 28-sep-2026 `validar_precios_pos()` (producto 10) |
 
 ---
 
@@ -207,7 +207,7 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | Bloque | Fecha | Quién | ✅/⚠️/❌ | Folios TEST | Notas |
 |--------|-------|-------|---------|-------------|-------|
 | A Clientes | | | | | |
-| B Ventas/POS | 24-sep-2026 | Agente smoke P0 | ⚠️ | OV-0010/0011 | B3–B5 ✅; B6 re-smoke post-fix stock PT |
+| B Ventas/POS | 24-sep-2026 · 28-sep-2026 | Agente smoke P0 · agente CLI+BD | ✅ | OV-2026-0010/0011 · OV TEST (rollback) | B3–B5 ✅; 28-sep: **B6 + B10 ✅** con transacción revertida (PT 1→0, insumos 17 174 sin cambio, 0 residuos). Guardas nuevas: idempotencia en `entregar_orden()` + consolidación por producto en `validar_stock_pt_lineas()` |
 | C Obras | | | | | |
 | D Producción | 24-sep-2026 | Agente smoke P0 | ⚠️ | OV-0010 | D3–D4 ✅; D5–D6 SKIP BOM |
 | E Proveedores/OC | 24-sep-2026 · 28-sep-2026 | Agente smoke P0 · agente CLI+BD+UI | ✅ | PRE-0007, OC-2026-0001, OC-2026-0002/0003 (canceladas), PRE-2026-0009 (rechazada), PRE-2026-0012 | E5–E6 ✅; 28-sep: guardas de recepción + conversión de unidades (CLI y **UI real**), E1–E4/E7/E8 ✅. Stock intacto |

@@ -16,7 +16,7 @@
 | **1 (recomendado)** | **Proveedores / Compras** | ~100 % | Cierre técnico **+ smoke UI real** 2026-09-28: conversión de unidades preorden→OC (2000 g → 2 Kg en UI), validaciones de recepción, idempotencia y T5 sin proveedor. Reventa N/A documentado. |
 | 2 | **Almacén** | ~85 % | Inventario, entregas, ajustes OK; faltan QR y Tres Guerras (⏸ diseño). Alinear entrega OV “En Preparación” vs POS. |
 | 3 | **Administración usuarios** | ~92 % | Casi completo; 2FA listo pero ⏸ hasta `ENVIRONMENT=production`. |
-| 4 | **CRM Ventas** (sin contrato) | ~78 % | POS/cotizaciones fuertes; ⏸ pasarela, autofactura, calendario CRM. |
+| 4 | **CRM Ventas** (sin contrato) | ~80 % | POS/cotizaciones fuertes; 28-sep: **B6 + B10 re-smoke ✅** (stock PT, insumos intactos, tx revertida) + guardas de idempotencia y consolidación de líneas. ⏸ pasarela, autofactura, calendario CRM. |
 | 5 | **Contabilidad** (alcance I4) | ~80 % | Lectura + pólizas borrador OK; ⏸ DIOT, conciliación auto, Aspel pleno. |
 | 6 | **Producción** | ~75 % | Core P1–P9 cerrado; D5–D6 E2E pendiente; ⏸ viscosidad/calidad formal. |
 | 7 | **Obras** (+ documental) | ~70 % | Técnico OK; ❌ carátula/resumen/generador → `entrenamiento_4/`. |
@@ -123,8 +123,8 @@
 | Reenvío cotización email | ⚠️ | Link + SMTP a validar |
 | POS sucursales, guard $0, recibo | ✅ | |
 | Cotización sin preorden / confirmar con preorden | ✅ | Smoke B4–B5 |
-| Cobro mostrador sin PT negativo | ✅ | Fix 2026-09-24; **re-smoke B6** |
-| Pedido → En Preparación → almacén entrega | ⚠️ | Entrega OV con PT; flujo mixto POS vs almacén |
+| Cobro mostrador sin PT negativo | ✅ | Fix 2026-09-24; **re-smoke B6 ✅ 2026-09-28** (CLI+BD, transacción revertida). Guardas nuevas: idempotencia de entrega + líneas consolidadas por producto |
+| Pedido → En Preparación → almacén entrega | ⚠️ | Regla ya documentada (§9.6 `REGLAS_TECNICAS`); falta smoke **A1** (bloqueado por datos: sin PT libre fuera de OVs intocables) |
 | Obras listado CRM (`ObrasVentas`) | ✅ | |
 | Calendario CRM | ❌ | Mejora futura |
 | Pasarela pagos online | ⏸ | Contrato §6 |
@@ -276,8 +276,8 @@ Todas T1–T5 ✅ o SKIP documentado; T6 solo si hubo bug; checklist bloque **E*
 
 ## Tasklist agente — segundo módulo sugerido: **Almacén**
 
-- [ ] **A1 — Entrega OV En Preparación** con PT ≥ cantidad (después de producción o ajuste stock TEST): `almacen/Entregas` baja PT una vez.
-- [ ] **A2 — Coherencia con POS:** mostrador Entregada descuenta PT en POS; pedido confirmado descuenta en almacén al entregar — documentar regla en `REGLAS_TECNICAS` una línea si hace falta.
+- [ ] **A1 — Entrega OV En Preparación** con PT ≥ cantidad (después de producción o ajuste stock TEST): `almacen/Entregas` baja PT una vez. → ⏸ **bloqueado por datos**: solo 1 PT con stock (+1 de REF 308) y está asignado a OV-2026-0009 (intocable); OV-2026-0013 requiere PT con stock −57. Ver propuesta A1-abajo.
+- [x] **A2 — Coherencia con POS:** mostrador Entregada descuenta PT en POS; pedido confirmado descuenta en almacén al entregar — documentado en `REGLAS_TECNICAS` **§9.6 Ventas / POS**. ✅ 28-sep-2026
 - [ ] **A3 — Smoke** bloque almacén (extender checklist si no hay filas; mínimo entrega TEST).
 - [ ] **A4 — QR / Tres Guerras:** dejar ⏸ explícito; no implementar en este sprint salvo orden.
 
