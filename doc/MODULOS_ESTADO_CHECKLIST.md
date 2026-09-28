@@ -5,7 +5,7 @@
 
 **Fuentes:** menú `sidebar.php`, auditoría diagrama 2026-09-24, smoke P0, `doc/TODO.md`.  
 **Smoke detallado:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md`.  
-**Última validación técnica:** 2026-09-28 (agente con shell + BD) — smoke CLI de Compras: conversión de unidades preorden→OC y validaciones de recepción. Evidencia en §4 y en la tasklist al final.
+**Última validación técnica:** 2026-09-28 (agente con shell + BD) — smoke **CLI** (conversión de unidades y validaciones de recepción) y smoke **UI real** con sesión autenticada (E1–E5, E7, E8, T2, T5). Evidencia en §4 y en la tasklist al final.
 
 ---
 
@@ -13,7 +13,7 @@
 
 | Prioridad | Módulo | % operativo* | Por qué |
 |-----------|--------|--------------|---------|
-| **1 (recomendado)** | **Proveedores / Compras** | ~99 % | Cierre técnico 2026-09-28: conversión de unidades preorden→OC, validaciones de recepción, reventa N/A documentado. Pendiente solo evidencia UI (E1–E4, E7–E8). |
+| **1 (recomendado)** | **Proveedores / Compras** | ~100 % | Cierre técnico **+ smoke UI real** 2026-09-28: conversión de unidades preorden→OC (2000 g → 2 Kg en UI), validaciones de recepción, idempotencia y T5 sin proveedor. Reventa N/A documentado. |
 | 2 | **Almacén** | ~85 % | Inventario, entregas, ajustes OK; faltan QR y Tres Guerras (⏸ diseño). Alinear entrega OV “En Preparación” vs POS. |
 | 3 | **Administración usuarios** | ~92 % | Casi completo; 2FA listo pero ⏸ hasta `ENVIRONMENT=production`. |
 | 4 | **CRM Ventas** (sin contrato) | ~78 % | POS/cotizaciones fuertes; ⏸ pasarela, autofactura, calendario CRM. |
@@ -87,7 +87,7 @@
 | Servicios recurrentes | ✅ | |
 | Recepción **producto reventa** (PT) | ⏸ | **N/A**: 0 SKU `Reventa` (497/497 `Fabricado`) y `detalle_orden_compra.insumo_id` `NOT NULL` + FK. Si negocio lo pide → patrón `insumos.producto_id` |
 | Unidades preorden → OC (`convertir_unidad_insumo`) | ✅ | Conversión en `PreordenesModel::aprobar()`; smoke CLI 2026-09-28 (1500 g → 1.5 Kg) |
-| Idempotencia preorden (no duplicar OC) | ✅ | Código: `aprobar()` rechaza si `estatus !== 'Pendiente'`; falta evidencia UI |
+| Idempotencia preorden (no duplicar OC) | ✅ | Código: `aprobar()` rechaza si `estatus !== 'Pendiente'`; confirmado en UI real 2026-09-28 (re-autorizar PRE-2026-0012 → bloqueado) |
 | Validación de recepción (estatus, línea ajena, sobre-recibo) | ✅ | `recibir_mercancia()` en dos pasadas; smoke CLI 2026-09-28 |
 | Enlace OC ↔ factura compra | ⚠️ | Contabilidad lee OC; UI enlace diferido |
 | PDF OC estilo plantilla Excel (importe letra, etc.) | ⚠️ | Ver checklist §H |
@@ -209,7 +209,7 @@ Dejar compras listo para operación diaria: preorden → OC → recepción (insu
 
 ### Tareas
 
-- [ ] **T1 — Smoke E completo (pendiente UI):** ejecutar E1–E8 del checklist manual; anotar folios en hoja de resultados.
+- [x] **T1 — Smoke E completo (UI real 2026-09-28):** ejecutar E1–E8 del checklist manual; anotar folios en hoja de resultados.
 - [x] **T2 — Idempotencia E5 (código verificado):** dos intentos de autorizar la misma preorden TEST; confirmar una sola OC. Documentar si falla.
 - [x] **T3 — Unidades preorden→OC (reformulado 2026-09-28):** la premisa original era incorrecta — `detalle_orden_compra` **no** guarda unidad. Se convierte en `PreordenesModel::aprobar()` (unidad de la pre-orden → `insumos.unidad_medida`, aborta si no es convertible) y `recibir_mercancia()` valida que la cantidad no exceda el pendiente. Verificado por CLI.
 - [x] **T4 — Reventa (N/A documentado):** recepción OC línea producto terminado → `movimientos_productos` Entrada, **sin** pesaje/BOM. Si no hay SKU reventa, documentar “N/A” y dejar stub en modelo si falta rama en `recibir_mercancia`. → **Hecho:** N/A documentado con evidencia (0 productos `Reventa`); **no** se agregó rama PT porque el esquema la impide (`insumo_id` `NOT NULL` + FK).
@@ -237,8 +237,34 @@ Validado por CLI (método temporal `compras/OrdenesCompra/cli_smoke_recepcion`, 
 | `aprobar()` con unidad incompatible (Kg → insumo Cubeta) | Aborta sin OC | ✅ pre-orden sigue `Pendiente`, 0 OC generadas |
 | `aprobar()` con unidad convertible (1500 g → insumo Kg) | OC con 1.5 Kg | ✅ `detalle.cantidad_solicitada = 1.50` |
 
-**Pendiente (requiere login UI de presentación):** E1–E4, E7–E8 y la re-autorización de una preorden TEST
-en pantalla (T2/T5). Commit de código: `fix(compras)` en `iteracion-4`.
+### Evidencia smoke UI (2026-09-28, sesión real autenticada)
+
+Ejecutado contra `https://erp.chisarecubrimientos.com.mx` con el usuario de presentación, sesión por cookie
+y llamadas a los **endpoints reales** (`curl`). Sin correos reales (`simular_correo_ajax` es preview;
+`enviar_correo_real_ajax` **no** se invocó) y **sin mover stock**.
+
+| Ítem | Acción | Resultado observado |
+|------|--------|---------------------|
+| E1 | `/compras/Proveedores` + `lista_ajax` + detalle | ✅ 200 · 9 proveedores · detalle del proveedor 1 (COMEX) |
+| E2 | Insumos vinculados + OC del proveedor + historial | ✅ insumo 1 a $100 · OC-2026-DEMO1 · historial paginado |
+| E3 | Crear OC TEST (1 línea) | ✅ `OC-2026-0003` en Borrador (insumo 61, 1 Kg, $10) |
+| E4 | PDF/print de la OC | ✅ 200, HTML imprimible con **importe con letra** y firmas (gap: no es PDF binario) |
+| E5 | Autorizar pre-orden TEST | ✅ `PRE-2026-0012` (2000 g) → `OC-2026-0002` en Borrador |
+| E5b | **Conversión de unidades en UI** | ✅ `detalle.cantidad_solicitada = 2.00` Kg (venía en 2000 g) |
+| E6 | Recepción → stock | ✅ 24-sep OC-2026-0001 (BLANCO 1 Kg) + lógica validada por CLI. **No se repitió** para no alterar inventario real |
+| E7 | Pagos + comprobante | ✅ `get_pagos_orden_ajax` (PAGC-2026-0001 $1,740) + modal de pago/comprobante presente en la vista |
+| E8 | Preview correo + WhatsApp | ✅ destinatario, asunto y cuerpo generados; **no** se envió SMTP |
+| T5 | Autorizar pre-orden **sin** proveedor | ✅ "No hay proveedor sugerido ni seleccionado…" (0 OC creadas) |
+| T2 | Re-autorizar la misma pre-orden | ✅ "Solo se pueden autorizar pre-órdenes en estatus Pendiente" (sin OC duplicada) |
+| Fix nuevo | Recibir mercancía en OC `Borrador` | ✅ "No se puede recibir mercancía de una orden en estatus Borrador" (0 movimientos de inventario) |
+
+**Limpieza (regla TEST-QA-):** `OC-2026-0002` y `OC-2026-0003` → **Cancelada**; `PRE-2026-0009` → **Rechazada**
+(motivo "TEST-QA cierre smoke UI…"); `PRE-2026-0012` → **Convertida** con su OC cancelada.
+`PRE-2026-0001` y `OV-2026-0009` **sin tocar**. `insumos.stock_actual` de BLANCO sigue en `1.00` y
+`movimientos_inventario` no recibió filas de las OC TEST.
+
+**Nota:** el smoke de escritura usó folios automáticos del ERP (`OC-2026-0002/0003`, `PRE-2026-0009/0012`);
+la marca `TEST-QA-` quedó en `observaciones`, `notas` y `motivo_rechazo`. Commit de código: `fix(compras)`.
 
 ### Archivos clave
 `compras/OrdenesCompra.php`, `OrdenesCompraModel.php`, `compras/Cotizaciones.php`, `compras/Proveedores.php`, `compras/Insumos.php`.

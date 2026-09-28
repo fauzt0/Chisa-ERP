@@ -89,19 +89,18 @@ Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 aut
 
 | ID | Acción | Esperado | Aud. P0 | Resultado |
 |----|--------|----------|---------|-----------|
-| E1 | `/compras/Proveedores` listado, filtros, detalle | Carga | | |
-| E2 | Insumos vinculados / historial OC del proveedor | Datos visibles | | |
-| E3 | `/compras/OrdenesCompra` crear OC TEST (1 línea) | Borrador → PDF | | |
-| E4 | Comparar PDF ERP vs plantilla Excel histórica (ver §H) | Anotar gaps | | |
-| E5 | Preórdenes: listar; autorizar **solo** TEST | Genera OC | **#2** | ✅ PRE-0007→OC-2026-0001 |
-| E6 | Recepción parcial TEST (si aplica) | Stock insumo sube | **#2** | ✅ BLANCO 0→1 Kg |
-| E7 | Pago TEST + comprobante (si iteración 5 activa) | Guarda | | |
-| E8 | Correo/WhatsApp texto (preview; no spam a proveedor real) | Preview OK | | |
+| E1 | `/compras/Proveedores` listado, filtros, detalle | Carga | | ✅ 28-sep (9 proveedores + detalle) |
+| E2 | Insumos vinculados / historial OC del proveedor | Datos visibles | | ✅ 28-sep |
+| E3 | `/compras/OrdenesCompra` crear OC TEST (1 línea) | Borrador → PDF | | ✅ 28-sep OC-2026-0003 (cancelada) |
+| E4 | Comparar PDF ERP vs plantilla Excel histórica (ver §H) | Anotar gaps | | ✅ 28-sep: importe con letra y firmas OK; endpoint devuelve HTML imprimible, no PDF binario |
+| E5 | Preórdenes: listar; autorizar **solo** TEST | Genera OC | **#2** | ✅ PRE-0007→OC-2026-0001; UI 28-sep: PRE-2026-0012→OC-2026-0002 (2000 g→2 Kg) y re-autorizar bloqueado |
+| E6 | Recepción parcial TEST (si aplica) | Stock insumo sube | **#2** | ✅ BLANCO 0→1 Kg; 28-sep: recepción en `Borrador` **bloqueada** sin movimientos (no se repitió la entrada real) |
+| E7 | Pago TEST + comprobante (si iteración 5 activa) | Guarda | | ✅ 28-sep (lectura de pagos + modal/comprobante; no se registró pago nuevo) |
+| E8 | Correo/WhatsApp texto (preview; no spam a proveedor real) | Preview OK | | ✅ 28-sep (`simular_correo_ajax` + `whatsapp_texto_ajax`; sin SMTP) |
 
 **Nota 2026-09-28 (agente con shell + BD):** además de E5–E6, se validaron por CLI las guardas nuevas de
 `recibir_mercancia()` (estatus de OC, línea ajena, sobre-recibo, línea inexistente) y la conversión de
-unidades en `PreordenesModel::aprobar()` (1500 g → 1.5 Kg; Cubeta→Kg **aborta** con mensaje). E1–E4 y
-E7–E8 siguen pendientes de UI. Evidencia completa en `MODULOS_ESTADO_CHECKLIST.md` §4.
+unidades en `PreordenesModel::aprobar()` (1500 g → 1.5 Kg; Cubeta→Kg **aborta** con mensaje). Además, E1–E5, E7 y E8 quedaron validados en **UI real** (28-sep, sesión autenticada por cookie) y se comprobó que la recepción en OC `Borrador` queda bloqueada. Evidencia completa en `MODULOS_ESTADO_CHECKLIST.md` §4.
 
 ---
 
@@ -211,7 +210,7 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | B Ventas/POS | 24-sep-2026 | Agente smoke P0 | ⚠️ | OV-0010/0011 | B3–B5 ✅; B6 re-smoke post-fix stock PT |
 | C Obras | | | | | |
 | D Producción | 24-sep-2026 | Agente smoke P0 | ⚠️ | OV-0010 | D3–D4 ✅; D5–D6 SKIP BOM |
-| E Proveedores/OC | 24-sep-2026 · 28-sep-2026 | Agente smoke P0 · agente CLI+BD | ✅ | PRE-0007, OC-2026-0001 | E5–E6 ✅; 28-sep: guardas de recepción + conversión de unidades (CLI, BD sin cambios). E1–E4/E7–E8 pendientes UI |
+| E Proveedores/OC | 24-sep-2026 · 28-sep-2026 | Agente smoke P0 · agente CLI+BD+UI | ✅ | PRE-0007, OC-2026-0001, OC-2026-0002/0003 (canceladas), PRE-2026-0009 (rechazada), PRE-2026-0012 | E5–E6 ✅; 28-sep: guardas de recepción + conversión de unidades (CLI y **UI real**), E1–E4/E7/E8 ✅. Stock intacto |
 | F RH empleados | | | | | |
 | G Nómina | | | | | |
 | H Entrenamiento / PDF OC | | | | | |

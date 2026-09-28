@@ -82,7 +82,7 @@ Ejecutado vía `doc/SMOKE_P0_AGENTE_EJECUTOR.md`. Cierre: OV-2026-0010/0011 canc
 
 - [X] Desarrollo
 - [X] Iteración 3 — cerrada y mergeada a `main` (2026-09-18, `7778571`); rama `iteracion-3` retirada 2026-09-24
-- [ ] Iteración 4 — **activa**: 4.0 catálogo, 4.2 POS, 4.3 obras (entregas CRM + estatus), 4.8 contabilidad, 4.9 Facture sandbox. Pendiente: smoke en UI de POS/compras (E1–E4, E7–E8), 4.4 dashboard/merma UI, datos 4.6. **4.1 Compras: cierre técnico ✅ 2026-09-28** (unidades preorden→OC + validaciones de recepción).
+- [ ] Iteración 4 — **activa**: 4.0 catálogo, 4.2 POS, 4.3 obras (entregas CRM + estatus), 4.8 contabilidad, 4.9 Facture sandbox. Pendiente: re-smoke UI de POS (B6), 4.4 dashboard/merma UI, datos 4.6. **4.1 Compras: cerrado ✅ 2026-09-28** (técnico + smoke UI E1–E8, T2/T5).
 - [ ] Iteración 5 — **no iniciar**: reloj checador (función nueva + auditoría de punches)
 - [ ] Despliegue — en producción: `https://erp.chisarecubrimientos.com.mx`
 
@@ -115,7 +115,7 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 - [X] Preorden → autorizar → OC **sin duplicar**: garantizado en `PreordenesModel::aprobar()` (rechaza si `estatus !== 'Pendiente'`) y verificado 2026-09-28; falta re-smoke en UI. `PRE-2026-0001` sin tocar.
 - [X] Unidades: `convertir_unidad_insumo` aplicado en `aprobar()` (preorden → unidad del insumo). Reformulación: la línea de OC **no** guarda unidad, por lo que la conversión no puede hacerse en `recibir_mercancia`.
 - [X] Recepción robusta (2026-09-28): `recibir_mercancia()` valida en dos pasadas estatus de la OC, pertenencia de la línea, cantidad > 0 y sobre-recibo. Evidencia en `MODULOS_ESTADO_CHECKLIST.md` §4.
-- [ ] PDF OC + preview correo/WhatsApp (**no enviar** a proveedores reales).
+- [X] PDF OC + preview correo/WhatsApp: preview verificado en UI 2026-09-28 (`simular_correo_ajax` + `whatsapp_texto_ajax`, sin SMTP). **Gap:** `generar_pdf` entrega HTML imprimible, no PDF binario (ver checklist §H).
 
 ### 4.2 Ventas — mostrador (POS) vs obras
 - [X] Sucursales POS: tabla `sucursales`, OV con `sucursal_id`, selector de caja (sesión). Matriz CDMX sembrada. Stock PT **sigue global** (kardex por sucursal: posterior).
