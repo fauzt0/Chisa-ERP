@@ -63,11 +63,12 @@ Ejecutado vía `doc/SMOKE_P0_AGENTE_EJECUTOR.md`. Cierre: OV-2026-0010/0011 canc
 | B6 | ⚠️→fix | Cobro mostrador bajó PT a negativo — **corregido** `validar_stock_pt_lineas` + `entregar_orden` transaccional |
 | E5–E6 | ✅ | OC-2026-0001; recepción 1 Kg BLANCO |
 | D3–D4 | ✅ | Dashboard OV; Completada sin pesaje bloqueada |
-| D5–D6 | ✅ parcial | **Evidencia real 17–18-sep-2026:** `PESAJE-venta-28` → OV-2026-0009 `Completada` → lote `PROD-20260918-22-2268` + entrada PT, sin doble descuento. Falta re-smoke UI (ninguna orden abierta pasa el filtro de insumos: 2 por stock, 2 por unidades ambiguas) → guion en §4.4 |
+| D5–D6 | ✅ | **Evidencia real 17–18-sep-2026:** `PESAJE-venta-28` → OV-2026-0009 `Completada` → lote `PROD-20260918-22-2268` + entrada PT, sin doble descuento. Falta re-smoke UI (ninguna orden abierta pasa el filtro de insumos: 2 por stock, 2 por unidades ambiguas) → guion en §4.4; **corrida Opción A completada 28-sep-2026** (CLI+BD, tx revertida: 44 asserts, 0 fallos, 0 residuos) |
 | I + cli_probe | ✅ | Orígenes OK; sandbox `ok: true` |
 
 **P0 cerrados:** #1 (re-smoke B6 28-sep), #2 Compras, #4 Facture conexión. **#3** con evidencia real de flujo
-(17–18-sep) y pendiente solo el re-smoke UI + el fix del atajo de `revision_manual` en `puede_completar_produccion()` (§4.4).
+(17–18-sep) y con el **fix del atajo de `revision_manual`** aplicado 28-sep-2026 (`60d9bb8`) + corrida D5–D6 en
+transacción revertida (§4.4); queda pendiente **solo el re-smoke en UI**.
 
 ---
 
@@ -140,18 +141,29 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
   **Completada → lote + entrada PT** ✅ con evidencia real persistente (17–18-sep: `PESAJE-venta-28` →
   `OV-2026-0009` `Completada` → lote id 1 `PROD-20260918-22-2268` + `movimientos_productos` id 3
   (`Produccion`, 1 Kg, `venta_id = 28`) → `productos` id 22 stock 0→1 vía `tr_actualizar_stock_producto`,
-  con **0** salidas de insumos nuevas); **2.º pesaje bloqueado** ⚠️ (guardas presentes, rechazo no observado en
-  corrida); **re-smoke UI** ⚠️ (ver *Guion smoke D5–D6* abajo).
+  con **0** salidas de insumos nuevas); **2.º pesaje bloqueado** ✅ (observado **28-sep-2026** en corrida con
+  transacción revertida: `success = false` y mensaje literal *"Los insumos de esta orden ya fueron descontados por
+  pesaje anterior."*, con **0** filas nuevas en `movimientos_inventario`); **re-smoke UI** ⚠️ (ver *Guion smoke D5–D6*
+  abajo y *Resultado de la corrida*).
 - [X] Merma de pesaje en **servidor**: tope 20% en `ProduccionModel::confirmar_pesaje` (UI aún dice ~20%; caso B3 histórico — validar en smoke D).
 - [ ] Escalado BOM y `explotar_bom_plano` en simulador vs obra (mismas cantidades).
 - [ ] `grupo_color` en explosión (pendiente de `decisiones_pendientes.md` A1) — solo si toca un caso real de I4.
-- [ ] **Fix P1 (hallazgo 28-sep-2026):** `ProduccionModel::puede_completar_produccion()` devuelve **`ok = true`** cuando
+- [X] **Fix P1 (hallazgo 28-sep-2026):** `ProduccionModel::puede_completar_produccion()` devuelve **`ok = true`** cuando
   `revision_manual` no está vacío pero `insumos` quedó vacío: el atajo `if (empty($verificacion['insumos']))` (paso 2,
   línea ~1141) se evalúa **antes** del chequeo de `revision_manual` (paso 3, línea ~1146). Verificado en vivo con
   `OV-2025-0013` (id 13): `get_estado_pesaje_orden` → `bloqueada = true`, pero `puede_completar_produccion` → `ok = true`
   (*"Sin insumos calculables para esta orden."*), lo que en la UI permite marcar **Completada** sin pesaje ni consumo de
   insumos y generar lote + entrada PT. Fix sugerido: mover el chequeo de `revision_manual` antes del atajo (o marcar
   `bloqueada` y devolver `ok = false`).
+  **Cerrado 28-sep-2026 (`60d9bb8`):** el chequeo de `revision_manual` se movió **antes** del atajo `empty($insumos)`,
+  conservando **literalmente** los mensajes. Matriz antes/después sobre **34** órdenes (27 OV + 7 obras, ambas con el
+  código actual y con el HEAD previo): delta exacto de **5** filas, todas con `count_revision_manual ≥ 1` **e**
+  `count_insumos = 0` — `OV-2025-0013`, `OV-2025-0014`, `OV-2026-0001`, `OV-2026-0002` y `OB-00002`, todas con
+  `ok = true → false` y mensaje → *"No se puede completar: hay insumos con unidades ambiguas que requieren revisión
+  manual."*; las otras **29** filas **sin cambio** (incluidas las que ya devolvían `ok = false`, p. ej. `OV-TEST-001`
+  y `OB-TEST-002`). Auditoría de consumidores de `revision_manual` (28-sep-2026): `descontar_stock_produccion()`,
+  `get_estado_pesaje_orden()`, `get_estado_stock_multiple()`, `ProductosModel` (verificaciones de preorden) y
+  `ObrasModel`/`Dashboard` **sí** evalúan la ambigüedad antes de cualquier atajo — el único patrón invertido era éste.
 
 #### Guion smoke D5–D6 (Producción) — números medidos el 28-sep-2026
 
@@ -176,7 +188,7 @@ Punto de partida a respetar: `insumos` 61 (BLANCO) = **1.00 Kg**; `productos` 3 
 3. `ProduccionModel::confirmar_pesaje_y_descontar(27, 'venta', [['insumo_id' => 61, 'cantidad_real' => 570.35]], 1)`
    → assert `success = true`, 1 detalle y **una** salida con `referencia = PESAJE-venta-27`.
 4. Repetir la llamada → assert `success = false` con *"Los insumos de esta orden ya fueron descontados por pesaje anterior."*
-   (**2.º pesaje bloqueado**, hoy no observado; es el punto que cierra el sub-punto ⚠️).
+   (**2.º pesaje bloqueado**: observado el 28-sep-2026, ver *Resultado de la corrida* abajo — cierra el sub-punto ⚠️).
 5. `puede_completar_produccion(27, 'venta')` → assert `ok = true` (*"Pesaje confirmado. Lista para completar."*).
 6. Replicar el cierre del controlador (`produccion/Dashboard::actualizar_estatus_ajax` → `Completada`): actualizar
    estatus, insertar lote y llamar `procesar_inventario_por_produccion(27, 'venta', $lotes)`.
@@ -193,6 +205,38 @@ Punto de partida a respetar: `insumos` 61 (BLANCO) = **1.00 Kg**; `productos` 3 
 4. UI: **Completada** → verificar lote + etiqueta + entrada PT (producto 3 pasa de -57.00 a -56.00).
 5. Limpieza obligatoria (regla de items TEST): cancelar la OV `TEST-*`, **reverso** de BLANCO a 1.00 Kg y del
    producto 3 a -57.00, y borrar el lote `QA-*`.
+
+#### Resultado de la corrida — 28-sep-2026 (Opción A, transacción revertida)
+
+Ejecutada con un controlador CLI **temporal** `produccion/Cli_fase1_smoke` (borrado al terminar; patrón de los smokes
+A1/J1/B6: `MY_Controller` omite sesión y permisos cuando `is_cli()` es `true`; `php -l` en limpio). Salida cruda:
+**44 asserts, 0 fallos**, y re-assert del baseline de 28-sep-2026 íntegro.
+
+| Paso | Resultado observado |
+|------|---------------------|
+| 0 · Datos vigentes | `OV-2026-0008` (id 27) en `Cotización`, 1 línea `PROD-0001` × 1.00 Cubeta, `revision_manual = 0`, insumo 61 teórico **570.35 Kg** (stock 1.00) |
+| 1 · Inyección (dentro de la TX) | `insumos` 61 → **571.35** |
+| 2 · `confirmar_pesaje_y_descontar(27, 'venta', [{insumo_id: 61, cantidad_real: 570.35}], 1)` | `success = true`, 1 detalle; **una** fila con `referencia = PESAJE-venta-27` (id 41, `Salida`, 570.35, `571.35 → 1.00`, `usuario_id = 1`); `movimientos_inventario` 27 → 28; trigger `trg_stock_insumos_movimiento` deja `insumos` 61 = **1.00** |
+| 3 · 2.º pesaje (llamada idéntica) | `success = false`, mensaje literal **"Los insumos de esta orden ya fueron descontados por pesaje anterior."**; **0** filas nuevas (28 → 28) |
+| 4 · `puede_completar_produccion(27, 'venta')` | `ok = true`, *"Pesaje confirmado. Lista para completar."* |
+| 5 · Cierre estilo `Dashboard::actualizar_estatus_ajax` | OV-27 → `Completada` + `fecha_completado_produccion`; lote id 2 `PROD-20260928-3-8944` (1 Cubeta, `Producido`); `procesar_inventario_por_produccion` → `true`; **+1** `lotes_produccion` (1 → 2); **+1** `movimientos_productos` (`Produccion`, `venta_id = 27`, cantidad 1.00, motivo con el código del lote); producto 3: **−57.00 → −56.00** (`tr_actualizar_stock_producto`); **0** filas nuevas en `movimientos_inventario` (28 = 28) |
+| 6 · Fix P1 end-to-end | `puede_completar_produccion(13, 'venta')` → `ok = false`, `bloqueada = true`, *"No se puede completar: hay insumos con unidades ambiguas que requieren revisión manual."* |
+| 7 · `trans_rollback()` | Ejecutado |
+| 8 · Re-assert baseline | **13/13 OK:** `insumos` 61 = 1.00; producto 3 = −57.00; producto 22 = 1.00; producto 10 = 0.00; `lotes_produccion` = 1; `ordenes_produccion` = 0; `movimientos_inventario` = 27; `movimientos_productos` = 3; `ordenes_venta` = 27; `ordenes_compra` = 7; `preordenes` = 10; `facturas` = 9; `polizas` = 35. Además OV-27 = `Cotización` con `fecha_completado_produccion = NULL`, OV-13 = `En Preparación` y **0** filas con `referencia = PESAJE-venta-27` (confirmado también por consulta SQL fuera del script) |
+
+Extras de solo lectura (mismo controlador, sin transacción): `get_estado_pesaje_orden(13, 'venta')` →
+`bloqueada = true`, `stock_suficiente = false`, `consumido = false`, `revision_manual = 1`. Las 4 órdenes abiertas con
+producto fabricado (`sin_productos = 0`, `stock_suficiente = 0` en todas):
+
+| id | folio | `count(insumos)` | `count(revision_manual)` | `bloqueada` |
+|----|-------|------------------|--------------------------|-------------|
+| 13 | `OV-2025-0013` | 0 | 1 | 1 |
+| 21 | `OV-TEST-001` | 2 | 1 | 1 |
+| 23 | `OV-2026-0004` | 1 | 0 | 1 |
+| 27 | `OV-2026-0008` | 1 | 0 | 1 |
+
+**Sin probar en esta corrida:** el re-smoke en **UI real** (ninguna orden abierta pasa aún el filtro de insumos) y el
+sub-paso D7 (etiqueta / consulta de lote); sólo se validó el cierre por código con transacción revertida.
 
 ### 4.8 Contabilidad MX (solo lectura de módulos existentes)
 

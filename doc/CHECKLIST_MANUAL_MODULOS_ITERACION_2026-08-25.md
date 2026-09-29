@@ -79,7 +79,7 @@ Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 aut
 | D2 | Ver formulación (no Guardar salvo TEST consciente) | Cliente, comentarios, rendimiento, grupos | | |
 | D3 | `/produccion/Dashboard` listado + mute | Carga; ruta detalle: `…/detalle/orden_venta/{id}` (no `/venta/`) | **#3** | ✅ OV-2026-0010 |
 | D4 | E2E emulado: 1 cubeta TEST → Completada **bloqueada** sin pesaje | Error/bloqueo | **#3** | ✅ |
-| D5 | Confirmar pesaje → `PESAJE-*`; insumos bajan una vez | Segundo pesaje falla | **#3** | ✅ Evidencia real 17-sep-2026 (`PESAJE-venta-28`, 3 salidas: insumos 17/18/20). Rechazo del **2.º pesaje**: guarda `insumos_ya_consumidos()` presente; llamada repetida **aún no observada** |
+| D5 | Confirmar pesaje → `PESAJE-*`; insumos bajan una vez | Segundo pesaje falla | **#3** | ✅ Evidencia real 17-sep-2026 (`PESAJE-venta-28`, 3 salidas: insumos 17/18/20). Rechazo del **2.º pesaje**: **observado 28-sep-2026** (OV-2026-0008, transacción revertida) — `success = false`, mensaje literal *"Los insumos de esta orden ya fueron descontados por pesaje anterior."*, **0** filas nuevas en `movimientos_inventario` |
 | D6 | Completada → lote + entrada PT; insumos **no** bajan otra vez | OK | **#3** | ✅ Evidencia real 18-sep-2026: `OV-2026-0009` `Completada` 13:51 → lote `PROD-20260918-22-2268` + `movimientos_productos` #3 (0→1 Kg, `venta_id=28`) y **0** salidas de insumos nuevas |
 | D7 | Etiqueta + `/produccion/Lotes/consultar` | Producto/cubeta/lote/venta | | |
 
@@ -234,7 +234,7 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | A Clientes | | | | | |
 | B Ventas/POS | 24-sep-2026 · 28-sep-2026 | Agente smoke P0 · agente CLI+BD | ✅ | OV-2026-0010/0011 · OV TEST (rollback) | B3–B5 ✅; 28-sep: **B6 + B10 ✅** con transacción revertida (PT 1→0, insumos 17 174 sin cambio, 0 residuos). Guardas nuevas: idempotencia en `entregar_orden()` + consolidación por producto en `validar_stock_pt_lineas()` |
 | C Obras | | | | | |
-| D Producción | 24-sep-2026 · 28-sep-2026 (auditoría) | Agente smoke P0 · agente CLI+BD | ⚠️→✅ | OV-0010 · OV-2026-0009 (17–18-sep) | D3–D4 ✅ (Completada sin pesaje bloqueada); **D5–D6 ✅ con evidencia real persistente** (ver filas D5/D6). Pendiente: re-smoke UI post-fix y fix del atajo de `revision_manual` en `puede_completar_produccion()` (`TODO.md` §4.4) |
+| D Producción | 24-sep-2026 · 28-sep-2026 (auditoría) | Agente smoke P0 · agente CLI+BD | ⚠️→✅ | OV-0010 · OV-2026-0009 (17–18-sep) · OV-2026-0008 (28-sep, rollback) | D3–D4 ✅ (Completada sin pesaje bloqueada); **D5–D6 ✅ con evidencia real persistente** (ver filas D5/D6) y **corrida Opción A 28-sep-2026** (44 asserts, 0 fallos, 0 residuos) + **fix del atajo de `revision_manual` aplicado** (`60d9bb8`). Pendiente: re-smoke UI post-fix |
 | E Proveedores/OC | 24-sep-2026 · 28-sep-2026 | Agente smoke P0 · agente CLI+BD+UI | ✅ | PRE-0007, OC-2026-0001, OC-2026-0002/0003 (canceladas), PRE-2026-0009 (rechazada), PRE-2026-0012 | E5–E6 ✅; 28-sep: guardas de recepción + conversión de unidades (CLI y **UI real**), E1–E4/E7/E8 ✅. Stock intacto |
 | F RH empleados | | | | | |
 | G Nómina | | | | | |
@@ -246,6 +246,7 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 **Listo para iterar código cuando:** filas **Aud. P0 #1–#3** (B3–B6, E5–E6, D3–D6) en ✅ o SKIP justificado; además C2, y decisión PDF OC (§H) si aplica.
 
 > **Cierre 28-sep-2026 (auditoría posterior):** #1 y #2 quedaron en ✅ el mismo 28-sep; **#3 Producción** cuenta con
-> **evidencia real persistente** de D5/D6 (17–18-sep, `OV-2026-0009`), por lo que ya **no** es un SKIP: lo que falta es
-> el re-smoke en UI con el código actual y el fix del atajo de `revision_manual` en
-> `ProduccionModel::puede_completar_produccion()` (detalle y guion con números medidos en `TODO.md` §4.4).
+> **evidencia real persistente** de D5/D6 (17–18-sep, `OV-2026-0009`), por lo que ya **no** es un SKIP. El **fix del
+> atajo de `revision_manual` en `ProduccionModel::puede_completar_produccion()`** se aplicó el **28-sep-2026**
+> (`60d9bb8`; matriz antes/después de 34 órdenes: 5 filas corregidas, 29 sin cambio) junto con la corrida D5–D6 en
+> transacción revertida (detalle y guion en `TODO.md` §4.4). Único pendiente: el **re-smoke en UI** con el código actual.

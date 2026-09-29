@@ -83,7 +83,7 @@ revertida) / B (UI con limpieza): **`TODO.md` §4.4**.
 |----|--------|----------------|
 | D3 | `/produccion/Dashboard` | Carga; pedidos OV/obra visibles si hay TEST |
 | D4 | Completada **sin** pesaje | Debe **fallar** / bloquear |
-| D5 | Confirmar pesaje | `PESAJE-*`; insumos bajan; **segundo** pesaje falla — ✅ evidencia real 17-sep (`PESAJE-venta-28`, 3 salidas) |
+| D5 | Confirmar pesaje | `PESAJE-*`; insumos bajan; **segundo** pesaje falla — ✅ evidencia real 17-sep (`PESAJE-venta-28`, 3 salidas); **rechazo del 2.º pesaje observado 28-sep-2026** (OV-2026-0008, transacción revertida): `success = false` con *"Los insumos de esta orden ya fueron descontados por pesaje anterior."* y 0 filas nuevas en `movimientos_inventario` |
 | D6 | Completada tras pesaje | Lote + entrada PT; insumos no bajan otra vez — ✅ evidencia real 18-sep (lote `PROD-20260918-22-2268`, 0 salidas nuevas) |
 
 ### P0 #4 — Facturación conexión (`Aud. P0` **#4**)

@@ -18,7 +18,7 @@
 | 3 | **Administración usuarios** | ~92 % | Casi completo; 2FA listo pero ⏸ hasta `ENVIRONMENT=production`. |
 | 4 | **CRM Ventas** (sin contrato) | ~80 % | POS/cotizaciones fuertes; 28-sep: **B6 + B10 re-smoke ✅** (stock PT, insumos intactos, tx revertida) + guardas de idempotencia y consolidación de líneas. ⏸ pasarela, autofactura, calendario CRM. |
 | 5 | **Contabilidad** (alcance I4) | ~80 % | Lectura + pólizas borrador OK; ⏸ DIOT, conciliación auto, Aspel pleno. |
-| 6 | **Producción** | ~85 % | Core P1–P9 cerrado; **D5–D6 con evidencia real 17–18-sep** (`PESAJE-venta-28` → OV-2026-0009 `Completada` → lote + entrada PT, sin doble descuento); pendiente re-smoke UI + fix del atajo de `revision_manual` en `puede_completar_produccion()` (ver `TODO.md` §4.4); ⏸ viscosidad/calidad formal. |
+| 6 | **Producción** | ~85 % | Core P1–P9 cerrado; **D5–D6 con evidencia real 17–18-sep** (`PESAJE-venta-28` → OV-2026-0009 `Completada` → lote + entrada PT, sin doble descuento) + **corrida D5–D6 28-sep-2026 (CLI+BD, tx revertida)** y **fix del atajo de `revision_manual` aplicado 28-sep-2026 (`60d9bb8`)**; pendiente re-smoke UI (ver `TODO.md` §4.4); ⏸ viscosidad/calidad formal. |
 | 7 | **Obras** (+ documental) | ~70 % | Técnico OK; ❌ carátula/resumen/generador → `entrenamiento_4/`. |
 | 8 | **Facturación** | ~55 % | Sandbox OK; ❌ go-live, email, autofactura. |
 
@@ -105,7 +105,7 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Dashboard pedidos OV/obras | ✅ | D3 ✅; **D5–D6 con evidencia real 17–18-sep** (`PESAJE-venta-28` → lote 1 + entrada PT sin doble descuento). Re-smoke UI pendiente: ninguna orden abierta pasa hoy el filtro de insumos (2 por stock, 2 por unidades ambiguas) |
 | Pesaje, merma 20 % servidor | ✅ | |
 | Completada sin pesaje bloqueada | ✅ | D4 smoke |
-| Guarda al completar con unidades ambiguas | ⚠️ | **Hallazgo 28-sep**: con `revision_manual` no vacío e `insumos` vacío, `puede_completar_produccion()` devuelve `ok = true` (comprobado en `OV-2025-0013`): el atajo `empty($insumos)` se evalúa antes del chequeo de `revision_manual`. Fix P1 en `TODO.md` §4.4 |
+| Guarda al completar con unidades ambiguas | ✅ | **Hallazgo 28-sep, cerrado 28-sep-2026 (`60d9bb8`)**: el chequeo de `revision_manual` se movió antes del atajo `empty($insumos)`, así que con unidades ambiguas `puede_completar_produccion()` devuelve `ok = false` + `bloqueada = true` (antes `ok = true` en `OV-2025-0013`, lo que permitía marcar Completada sin pesaje). Matriz antes/después de 34 órdenes: **5** filas corregidas (`OV-2025-0013`, `OV-2025-0014`, `OV-2026-0001`, `OV-2026-0002`, `OB-00002`), 29 sin cambio. Detalle y corrida D5–D6 en `TODO.md` §4.4 |
 | Lote, etiqueta, consultar lote | ✅ | |
 | Preorden compra desde faltantes | ✅ | |
 | Touchscreen / catálogo planta | ✅ | |
