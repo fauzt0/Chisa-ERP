@@ -624,22 +624,33 @@ class Productos extends MY_Controller {
      * Ajusta el stock de un producto (AJAX)
      */
     public function ajustar_stock_ajax() {
-        $producto_id = $this->input->post('producto_id');
-        $tipo_movimiento = $this->input->post('tipo_movimiento');
+        $producto_id = (int) $this->input->post('producto_id');
+        $tipo_movimiento = (string) $this->input->post('tipo_movimiento');
         $cantidad = $this->input->post('cantidad');
-        $motivo = $this->input->post('motivo');
+        $motivo = trim((string) $this->input->post('motivo'));
+        $usuario_id = (int) $this->session->userdata('id');
         
-        if(!$producto_id || !$tipo_movimiento || !$cantidad) {
+        if(empty($producto_id) || !is_numeric($cantidad) || (float) $cantidad <= 0) {
             echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+            return;
+        }
+        
+        if(!in_array($tipo_movimiento, ['Entrada', 'Salida'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Tipo de movimiento no válido']);
+            return;
+        }
+        
+        if($motivo === '') {
+            echo json_encode(['success' => false, 'message' => 'El motivo del ajuste es obligatorio']);
             return;
         }
         
         $data = [
             'producto_id' => $producto_id,
             'tipo_movimiento' => $tipo_movimiento,
-            'cantidad' => $cantidad,
+            'cantidad' => (float) $cantidad,
             'motivo' => $motivo,
-            'usuario_id' => $this->session->userdata('user_id')
+            'usuario_id' => $usuario_id ?: null
         ];
         
         $result = $this->ProductosModel->registrar_movimiento($data);
