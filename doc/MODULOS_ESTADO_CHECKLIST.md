@@ -181,7 +181,7 @@
 | Función | Estado | Notas |
 |---------|--------|-------|
 | Dashboard mín/máx | ✅ | |
-| Inventario insumos y PT, ajustes | ✅ | `Ajuste` de PT mueve stock vía trigger `tr_actualizar_stock_producto` |
+| Inventario insumos y PT, ajustes | ✅ | Movimiento `Entrada`/`Salida` mueve stock vía trigger `tr_actualizar_stock_producto`; valida tipo, cantidad, motivo y `usuario_id` de sesión (clave `id`) — smoke J6 28-sep-2026 |
 | Entregas OV y obras | ✅ | 28-sep-2026: guardas en `AlmacenModel::registrar_entrega()` (estatus origen, partida propia, pendiente, **stock**) + smoke A1/A3 en tx revertida |
 | Idempotencia de entrega | ✅ | Rechaza OV/obra ya `Entregada`/`Completada`; no hay doble descuento de PT |
 | Trigger stock ventas/producción | ✅ | `tr_actualizar_entrega_almacen` cierra `cantidad_entregada` y estatus del origen |
@@ -281,6 +281,7 @@ Todas T1–T5 ✅ o SKIP documentado; T6 solo si hubo bug; checklist bloque **E*
 - [x] **A2 — Coherencia con POS:** mostrador Entregada descuenta PT en POS; pedido confirmado descuenta en almacén al entregar — documentado en `REGLAS_TECNICAS` **§9.6 Ventas / POS**. ✅ 28-sep-2026
 - [x] **A3 — Smoke** bloque almacén: ✅ 28-sep-2026 bloque **J. Almacén** agregado al checklist manual (J1–J7). Casos: entrega parcial/cierre, stock insuficiente (OV y obra), sobre-entrega, partida ajena, producto que no coincide, doble entrega, consolidación de líneas. 0 residuos.
 - [x] **A4 — QR / Tres Guerras:** ⏸ explícito (J7 + §10); no se implementa en este sprint.
+- [x] **Extra J6 (28-sep-2026) — auditoría de ajustes:** `Inventario::ajustar_stock_ajax()` y `produccion/Productos::ajustar_stock_ajax()` validan tipo (`Entrada`/`Salida`), cantidad numérica > 0 y motivo obligatorio, y leen el usuario de la clave de sesión **`id`** (antes `userdata('user_id')` → `movimientos_productos.usuario_id` NULL). Smoke CLI `almacen/Inventario/cli_smoke_j6` en tx revertida. Decisión: `Salida` > stock permitida a propósito (corrige sobre-conteos) informando el stock resultante.
 
 ---
 

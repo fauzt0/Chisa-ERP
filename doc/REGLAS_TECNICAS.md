@@ -547,6 +547,15 @@ Fechas:           fecha_alta, fecha_edicion, fecha_baja (DATE o DATETIME)
   origen y coincida con el producto, que no se exceda el pendiente (`cantidad − cantidad_entregada`, con
   `cantidad_ajustada ?? cantidad_calculada` en obras) y que exista stock PT suficiente (consolidado por producto).
   Al entregar, `tr_actualizar_entrega_almacen` cierra `cantidad_entregada` y pasa la OV a `Entregada` o la obra a `Completada`.
+- **Ajustes manuales (Almacén > Inventario, 2026-09-28):** `Inventario::ajustar_stock_ajax()` valida en servidor
+  `tipo_movimiento ∈ {Entrada, Salida}`, cantidad numérica > 0 y `motivo` obligatorio; el usuario de auditoría se lee
+  de la clave de sesión **`id`** (la que escribe `Auth::_create_user_session()`), **no** `user_id`. El mismo defecto
+  (`userdata('user_id')` → `usuario_id` NULL en `movimientos_productos`) se corrigió en `produccion/Productos::ajustar_stock_ajax()`.
+  - **Decisión:** una `Salida` mayor al stock **se permite** (sirve para corregir sobre-conteos y mermas ya ocurridas);
+    el endpoint responde `stock_actual` y el mensaje muestra el stock resultante (puede quedar negativo). El camino de
+    **entrega** (POS/Almacén) sí bloquea stock insuficiente: ahí no se entrega mercancía inexistente.
+  - `application/controllers/produccion/ajustar_stock_method.php` es un **snippet huérfano** (sin `<?php` ni clase, no
+    enrutable) con la versión antigua del endpoint: candidato a borrar.
 
 ---
 

@@ -211,7 +211,7 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | J3 | Entregar más que el pendiente / partida ajena / producto que no coincide | Rechaza; nada se escribe | | ✅ 28-sep-2026 (pendiente 5 y se piden 6; partida 19 en OV-0015) |
 | J4 | Reintentar entrega de la **misma** OV | Rechaza (ya `Entregada`); stock intacto | | ✅ 28-sep-2026 |
 | J5 | Entrega de obra (`Aprobada` / `En Ejecución`) | Baja PT; `obras_productos.cantidad_entregada`; obra → `Completada` | | ✅ 28-sep-2026 (OB-00002) |
-| J6 | Ajuste de inventario (`/almacen/Inventario`) + motivo | Movimiento `Ajuste` con usuario y stock coherente | | |
+| J6 | Ajuste de inventario (`/almacen/Inventario`) + motivo | Movimiento con `usuario_id` real y stock coherente (trigger) | | ✅ 28-sep-2026 CLI (tx revertida): 5 rechazos (tipo, cantidad, motivo, producto) + `Entrada`/`Salida` 0.01 con `usuario_id`=1; ⚠️ `Salida` > stock **permitida** a propósito, informa stock resultante |
 | J7 | QR / Tres Guerras | ⏸ fuera de alcance (diseño pendiente) | | |
 
 **Nota 28-sep-2026:** el camino feliz de J1/J5 se validó **en transacción revertida** (los pendientes reales tienen PT con stock ≤ 0). No quedaron folios, kardex ni entregas.
@@ -231,6 +231,6 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | G Nómina | | | | | |
 | H Entrenamiento / PDF OC | | | | | |
 | I Contabilidad I4 | 24-sep-2026 | Agente smoke P0 | ✅ | — | I1 + cli_probe sandbox |
-| J Almacén | 28-sep-2026 | Agente CLI+BD | ✅ | ENT-2026-0003..0005 (rollback) | A1–A3 + guardas en `registrar_entrega()` (estatus origen, partida, pendiente, stock consolidado); OB-00002 → `Completada`; 0 residuos |
+| J Almacén | 28-sep-2026 | Agente CLI+BD | ✅ | ENT-2026-0003..0005 (rollback) | A1–A3 + guardas en `registrar_entrega()` (estatus origen, partida, pendiente, stock consolidado); OB-00002 → `Completada`; J6 ajuste con `usuario_id` real; 0 residuos |
 
 **Listo para iterar código cuando:** filas **Aud. P0 #1–#3** (B3–B6, E5–E6, D3–D6) en ✅ o SKIP justificado; además C2, y decisión PDF OC (§H) si aplica.
