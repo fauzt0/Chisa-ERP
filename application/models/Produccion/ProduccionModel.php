@@ -1138,11 +1138,12 @@ class ProduccionModel extends CI_Model {
         if (!empty($verificacion['sin_productos'])) {
             return ['ok' => true, 'message' => 'Sin productos fabricados que requieran insumos.'];
         }
-        if (empty($verificacion['insumos'])) {
-            return ['ok' => true, 'message' => 'Sin insumos calculables para esta orden.'];
-        }
 
-        // 3) Faltantes o revisión manual
+        // 3) Unidades ambiguas ANTES del atajo "sin insumos calculables"
+        //    (Fix P1, 28-sep-2026: cuando `revision_manual` no estaba vacío pero
+        //     `insumos` quedó vacío — unidad ambigua no empuja insumo calculable —
+        //     el atajo devolvía ok=true y la orden podía marcarse Completada
+        //     sin pesaje ni consumo. Verificado en vivo en OV-2025-0013.)
         if (!empty($verificacion['revision_manual'])) {
             return [
                 'ok' => false,
@@ -1150,6 +1151,11 @@ class ProduccionModel extends CI_Model {
                 'bloqueada' => true,
             ];
         }
+        if (empty($verificacion['insumos'])) {
+            return ['ok' => true, 'message' => 'Sin insumos calculables para esta orden.'];
+        }
+
+        // 4) Faltantes de stock
         if (!$verificacion['stock_suficiente']) {
             return [
                 'ok' => false,
@@ -1158,7 +1164,7 @@ class ProduccionModel extends CI_Model {
             ];
         }
 
-        // 4) Stock OK pero sin pesaje confirmado
+        // 5) Stock OK pero sin pesaje confirmado
         return [
             'ok' => false,
             'message' => 'Debe confirmar el pesaje y descontar los insumos antes de marcar como Completada.',
