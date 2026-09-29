@@ -1,7 +1,7 @@
 <?php
 $titulo = 'Resumen de Obra';
 $presupuesto = $presupuesto ?? null;
-$this->load->view('obras/partials/print_head');
+$this->load->view('obras/partials/print_head', ['titulo' => $titulo]);
 ?>
     <div style="font-size:9px; margin-bottom:10px;"><strong>OBRA:</strong> <?=htmlspecialchars($presupuesto->obra_nombre ?? '-')?> · <strong>PRES. REF.:</strong> <?=htmlspecialchars($presupuesto->pres_ref ?? '-')?></div>
     <table class="tabla-datos">

@@ -15,7 +15,10 @@ $logoUrl = base_url(!empty($empresa->logo) ? $empresa->logo : 'assets/dist/img/b
 $marcaTexto = $marca['texto'] ?? '';
 $marcaLogo = $marca['logo'] ?? '';
 $folio = $presupuesto ? $presupuesto->folio : 'SIN-FOLIO';
+// Cachear variables para que print_foot (vista hija) las reciba
+$this->load->vars(['titulo' => $titulo, 'folio' => $folio, 'empresa' => $empresa]);
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>

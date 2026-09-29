@@ -1,5 +1,23 @@
+<?php
+$empresa = is_object($empresa ?? null) ? $empresa : (object) [];
+$folio = $folio ?? 'SIN-FOLIO';
+$titulo = $titulo ?? 'Documento';
+$fixUtf8 = static function ($s) {
+    $s = (string) $s;
+    if ($s !== '' && preg_match('/Ã|Â|â€/', $s)) {
+        $f = @utf8_decode($s);
+        if (is_string($f) && $f !== '') return $f;
+    }
+    return $s;
+};
+$direccion = $fixUtf8(trim(implode(', ', array_filter([
+    trim($fixUtf8($empresa->calle ?? '')),
+    $fixUtf8($empresa->ciudad ?? ''),
+    $fixUtf8($empresa->estado ?? ''),
+]))));
+?>
     <div class="pg-footer">
-        <span><?=htmlspecialchars($fixUtf8(trim(implode(', ', array_filter([$empresa->calle ?? '', $empresa->ciudad ?? '', $empresa->estado ?? ''])))))?></span>
+        <span><?=htmlspecialchars($direccion)?></span>
         <span class="pg-num">Hoja 1 de 1</span>
     </div>
 </div>

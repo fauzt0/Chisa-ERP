@@ -19,7 +19,7 @@
 | 4 | **CRM Ventas** (sin contrato) | ~80 % | POS/cotizaciones fuertes; 28-sep: **B6 + B10 re-smoke ✅** (stock PT, insumos intactos, tx revertida) + guardas de idempotencia y consolidación de líneas. ⏸ pasarela, autofactura, calendario CRM. |
 | 5 | **Contabilidad** (alcance I4) | ~80 % | Lectura + pólizas borrador OK; ⏸ DIOT, conciliación auto, Aspel pleno. |
 | 6 | **Producción** | ~85 % | Core P1–P9 cerrado; **D5–D6 con evidencia real 17–18-sep** (`PESAJE-venta-28` → OV-2026-0009 `Completada` → lote + entrada PT, sin doble descuento) + **corrida D5–D6 28-sep-2026 (CLI+BD, tx revertida)** y **fix del atajo de `revision_manual` aplicado 28-sep-2026 (`60d9bb8`)**; pendiente re-smoke UI (ver `TODO.md` §4.4); ⏸ viscosidad/calidad formal. |
-| 7 | **Obras** (+ documental) | ~70 % | Técnico OK; ❌ carátula/resumen/generador → `entrenamiento_4/`. |
+| 7 | **Obras** (+ documental) | ~90 % | Fase 5 (iteración-5): presupuestos, APU, generadores, revisión de cuantificación, 8 vistas de impresión y exportación Excel/PDF con marca de agua. ✔ |
 | 8 | **Facturación** | ~55 % | Sandbox OK; ❌ go-live, email, autofactura. |
 
 \*“100 % operativo” = flujos diarios internos TEST-QA, **sin** promesas contractuales marcadas ⏸/❌.
@@ -146,9 +146,13 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Entregas tab Obras + CRM | ✅ | |
 | Pagos parciales, estatus ENUM | ✅ | |
 | Smoke estatus UI (§C) | ⚠️ | |
-| Carátula documental | ❌ | `entrenamiento_4/` |
-| Resumen general contractual | ❌ | Distinto PDF técnico |
-| Generador / catálogo conceptos | ❌ | `entrenamiento_4/` |
+| Carátula documental | ✅ | Fase 5 `obras/presupuesto.php` (V1) |
+| Resumen general contractual | ✅ | Fase 5 `obras/resumen.php` (V2) |
+| Generador / catálogo conceptos | ✅ | Fase 5 `obras/generador.php` (V5) + `catalogo.php` (V3) |
+| Presupuestos de venta (folio PRES-#####) | ✅ | Fase 5 `PresupuestosObraModel` (entidad nueva, NO cotizaciones de compras) |
+| APU / cuadrillas / parametros | ✅ | Fase 5 `ApuModel` (fórmula en `REGLAS_TECNICAS.md` §13) |
+| Revisión de cuantificación | ✅ | Fase 5 `RevisionCuantificacionModel` |
+| Exportación Excel/PDF con marca de agua | ✅ | Fase 5 `ExportacionObraModel` (Dompdf fallback html2pdf.js) |
 
 ---
 

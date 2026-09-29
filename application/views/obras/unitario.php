@@ -2,7 +2,7 @@
 $titulo = 'Análisis de Precio Unitario';
 $presupuesto = $presupuesto ?? null;
 $apu = $apu ?? [];
-$this->load->view('obras/partials/print_head');
+$this->load->view('obras/partials/print_head', ['titulo' => $titulo]);
 ?>
 <?php foreach (($presupuesto->conceptos ?? []) as $c): ?>
     <?php $a = $apu[$c->id] ?? null; if (!$a) continue; ?>

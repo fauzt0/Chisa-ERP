@@ -1,7 +1,7 @@
 <?php
 $titulo = 'Catálogo de Conceptos';
 $presupuesto = $presupuesto ?? null;
-$this->load->view('obras/partials/print_head');
+$this->load->view('obras/partials/print_head', ['titulo' => $titulo]);
 ?>
     <table class="tabla-datos">
         <thead><tr><th>CODIGO</th><th>DESCRIPCION</th><th>UNIDAD</th><th>CANTIDAD</th><th>P.U.</th><th>IMPORTE</th></tr></thead>

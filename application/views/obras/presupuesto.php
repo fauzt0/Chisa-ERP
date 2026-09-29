@@ -2,7 +2,7 @@
 $titulo = 'Presupuesto de Obra';
 $presupuesto = $presupuesto ?? null;
 $cliente = $cliente ?? null;
-$this->load->view('obras/partials/print_head');
+$this->load->view('obras/partials/print_head', ['titulo' => $titulo]);
 ?>
     <div style="font-size:9px; margin-bottom:10px;">
         <div>CIUDAD DE MEXICO A <?=strtoupper(date('d'))?> DE <?=strtoupper(date('F'))?> DEL <?=date('Y')?></div>

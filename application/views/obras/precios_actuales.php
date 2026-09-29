@@ -1,7 +1,7 @@
 <?php
 $titulo = 'Precios Actuales (PRECIO_ACT)';
 $precios_actuales = $precios_actuales ?? [];
-$this->load->view('obras/partials/print_head');
+$this->load->view('obras/partials/print_head', ['titulo' => $titulo]);
 ?>
     <table class="tabla-datos">
         <thead><tr><th>CODIGO</th><th>DESCRIPCION</th><th>TIPO</th><th>UNIDAD</th><th>PRECIO</th><th>FECHA</th></tr></thead>

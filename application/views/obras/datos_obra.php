@@ -2,7 +2,7 @@
 $titulo = 'Datos de Obra Contratada';
 $obra = $obra ?? null;
 $cliente = $cliente ?? null;
-$this->load->view('obras/partials/print_head');
+$this->load->view('obras/partials/print_head', ['titulo' => $titulo]);
 ?>
     <table class="tabla-datos" style="width:80%;">
         <tbody>

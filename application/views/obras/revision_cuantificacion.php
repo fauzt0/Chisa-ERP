@@ -1,7 +1,7 @@
 <?php
 $titulo = 'Revisión de Cuantificación';
 $revisiones = $revisiones ?? [];
-$this->load->view('obras/partials/print_head');
+$this->load->view('obras/partials/print_head', ['titulo' => $titulo]);
 ?>
     <table class="tabla-datos">
         <thead><tr><th>DESC</th><th>TOTAL CUANTI</th><th>COTIZADO</th><th>DIFERENCIA</th><th>%</th><th>COMENTARIOS</th></tr></thead>

@@ -2,7 +2,7 @@
 $titulo = 'Generador de Cuantificación';
 $presupuesto = $presupuesto ?? null;
 $generadores = $generadores ?? [];
-$this->load->view('obras/partials/print_head');
+$this->load->view('obras/partials/print_head', ['titulo' => $titulo]);
 ?>
 <?php foreach ($generadores as $g): ?>
     <div style="margin-bottom:14px; border:1px solid #cbd5e1; padding:8px;">

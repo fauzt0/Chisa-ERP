@@ -1,8 +1,8 @@
 # TODO - Sistema ERP CHISA
 
-**Última actualización:** 2026-09-28  
+**Última actualización:** 2026-09-29  
 **Desarrollador:** Fausto Solano - CHISA Recubrimientos  
-**Rama activa:** `iteracion-4` (base `main` `ff111ce`; commits I4 locales sin push obligatorio)
+**Rama activa:** `iteracion-5` (base `iteracion-4` `c44a2cd`; commits locales sin push obligatorio)
 
 **Handoff:** `ENVIRONMENT=development`. Rama `iteracion-3` **eliminada** (local + `origin`) el 2026-09-24 — seguir solo en `iteracion-4` / `main`. No timbrar/cobrar real, no autorizar `PRE-2026-0001`, no tocar `OV-2026-0009`. **Smoke:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (columna **Aud. P0**). **Cumplimiento oferta:** § Auditoría diagrama abajo (reloj/Bixpe excluido).
 
@@ -357,3 +357,61 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 Los prompts/checklists operativos de I3 se archivaron en git (commit previo a esta limpieza). No re-crearlos.
 
 > Overhaul P1–P9 cerrado. I4 **no** reescribe módulos; reutiliza `explotar_bom_plano`, `calcular_insumos_para_proyecto`, `crear_preordenes_desde_faltantes`, `convertir_unidad_insumo`.
+
+---
+
+## Fase 5 · Obras y Presupuestos (V1) — 2026-09-29
+
+**Rama `iteracion-5`. CERO push. CERO cambios en `main`.**
+
+### Implementado (hecho)
+- Migración idempotente `doc/MIGRACION_FASE5_OBRAS.sql` (A1–A10): `conceptos_obra`,
+  `presupuestos_obra`, `presupuesto_obra_conceptos`, `concepto_apu_materiales`,
+  `concepto_apu_cuadrillas`, `parametros_apu`, `obra_generadores`, `obra_generador_lineas`,
+  `obra_revisiones_cuantificacion`, `precios_insumo_historial` + ALTER `obras.sucursal_id`,
+  `sucursales.logo_marca_agua/texto_marca_agua`. Verificada 2 ejecuciones = 0 errores.
+- 6 modelos nuevos en `application/models/Obras/`: `ConceptosObraModel`, `PresupuestosObraModel`,
+  `ApuModel`, `GeneradoresModel`, `RevisionCuantificacionModel`, `ExportacionObraModel`.
+- Ampliación `SucursalesModel::get_marca_agua()` + columnas de marca de agua.
+- UI Ventas: `ObrasVentas::crear()`, `guardar_obra_ajax()` + endpoints AJAX de partidas, APU,
+  generador y revisión. Vista `ventas/obras/crear.php` + pestañas reales en `detalle.php`.
+- 8 vistas de impresión C1–C8 (`application/views/obras/`) + exportación Excel/PDF con marca de agua.
+
+### Smoke verificado (Fase F)
+- APU Z-01C = **306.66018163809525** (diff 0.0000, tolerancia ±0.01) — fórmula exacta de los archivos.
+- Presupuesto control 16550: subtotal 2,015,160.00 / IVA 322,425.60 / TOTAL 2,337,585.60 (exacto).
+- Generador SUMA+ACUMULADO=TOTAL y "aplicar a partida" actualiza cantidad. ✔
+
+### DECISIONES TOMADAS (documentar)
+1. **Fórmula APU real (fuente de verdad = archivos)**: costo_directo = material + MO + IMSS + RCYV
+   + HERRAMIENTA; **ISN se calcula y se muestra pero NO suma** (igual que los archivos IMSS y ZOCLOS);
+   indirecto se aplica sobre costo_directo. Los archivos usan **HERRAMIENTA 9% e INDIRECTO 24%** para el
+   proyecto ZOCLOS (→ 306.66). El §3.3 del prompt decía "5% / 34%" (corresponde al proyecto IMSS, control
+   304.90); por eso `parametros_apu` queda **parametrizado** (NO hardcodeado) y se sembró 9%/24% para
+   reproducir el control Z-01C. Ver `doc/REGLAS_TECNICAS.md` §Fase5.
+2. **Material Z-01C**: subtotal material = 54.40 (LOSETA 49.608 + ADHESIVO 4.389 + JUNTA 0.398).
+   El "LOSETA 54.40" del prompt es el SUBTOTAL MATERIAL, no una 4.ª línea (el prompt sumaba 108.79 por
+   doble conteo).
+3. **Dompdf NO instalado**: `composer require dompdf/dompdf:^2.0` falló por advisories PKSA (bloqueo de
+   seguridad de Packagist). Se implementó fallback a **html2pdf.js** (CDN) + `?auto=1`, y el import de
+   Dompdf queda en try/catch (patrón `compras/OrdenesCompra.php`). PENDIENTE: decidir si se ignora el
+   advisory o se usa mPDF/TCPDF para PDF server-side real.
+4. **Marca de agua Excel**: encabezado de página `setOddHeader` (PhpSpreadsheet no soporta marca de agua
+   diagonal nativa). En PDF/HTML: div diagonal semitransparente + logo.
+
+### PENDIENTES detectados (NO inventar precios)
+- **P1 (ya auditado) — brecha Kg↔Cubeta**: 462 productos en `unidad_venta='Kg'` vs 35 en `Cubeta`;
+  128 insumos en `Kg`. Productos CHISA-GLASS-REF-* (≈50 filas) en Kg con `precio_venta=0.00`.
+  Decisión de negocio pendiente del usuario.
+- **Precios faltantes**: 464/497 productos (93%) sin `precio_venta` y 220 sin `costo_produccion`.
+  Insumos de loseta/adhesivo/mortero/tablaroca/masking/poliuretano NO existían; se dieron de alta 6 con
+  precio 0.00 (`LOSETA-CERAMICA-60X120`, `ADHESIVO-INTERCERAMIC-SELECT`, `JUNTA-SIN-ARENA`,
+  `POLIURETANO-COMEX`, `MASKING-TAPE`, `TABLAROCA-DURROCK`). → **PENDIENTE CAPTURA DE PRECIO**.
+- `SELLADOR-INICIAL` (476) tiene `precio_venta = NULL`.
+- **16619 HOSPITAL SANTIAGO PAPASQUIARO.pdf** = escaneado SIN capa de texto → **PENDIENTE OCR/captura**.
+- Carga inicial de conceptos ejecutada (26 códigos de §3.2). Los APU de cada concepto se capturan vía UI.
+
+### Reglas de repo cumplidas
+R1 branch iteracion-5 ✔ · R2 español ✔ · R3 commits por fase ✔ · R4 sin Cli_* ✔ · R5 docs ✔ ·
+R6 ProduccionModel intacto ✔ · R7 git limpio ✔ · R8 .gitignore entrenamiento_4 ✔ · R9 precios 0.00 + TODO ✔.
+

@@ -644,4 +644,53 @@ Antes de dar por terminado cualquier cambio, el agente IA debe verificar:
 
 > **ERP Chisa Recubrimientos** — Departamento de Ingeniería de Software
 >
+
+---
+
+## 13. Fase 5 · Obras y Presupuestos — FÓRMULA DEL APU (vinculante)
+
+**Fuente de verdad:** archivos de `doc/entrenamiento_4/` (PRECIO_ACT / UNITARIO).
+
+### 13.1 Fórmula del APU (parametrizada en `parametros_apu`)
+
+```
+subtotal_material = Σ ( material.cantidad × material.costo_unitario )
+subtotal_mo        = Σ ( (salario_semanal / 7) / rendimiento_jor × cant_cuadrilla )
+
+imss        = subtotal_mo × (imss / 100)             -- 32.792 %
+rcyv        = subtotal_mo × (rcyv / 100)             -- 27.208 %
+isn         = subtotal_mo × (isn / 100)              --  3.000 %  (se muestra, NO suma)
+herramienta = subtotal_mo × (herramienta / 100)      --  9.000 %  (proyecto ZOCLOS)
+
+costo_directo  = subtotal_material + subtotal_mo + imss + rcyv + herramienta
+indirecto      = costo_directo × (indirecto_utilidad / 100)   -- 24.000 % (proyecto ZOCLOS)
+P.UNITARIO     = costo_directo + indirecto
+```
+
+> ⚠️ **ISN no suma al costo directo** (igual que los archivos fuente IMSS y ZOCLOS).
+> El P.U. SIEMPRE se calcula; nunca se captura a mano en el presupuesto.
+
+### 13.2 Valores de control (smoke obligatorio)
+- Z-01C → P.UNITARIO = **306.66018163809525** (material 54.39511, MO 114.1488095, herramienta 9%, indirecto 24%).
+- Z-02 → 357.99442634920638 · Z-03 → 332.4143764.
+- IMSS R1A (con parámetros 5%/34%) → P.U. 304.90.
+- 16550 → 8,400.00 × 239.90 = 2,015,160.00 · IVA 322,425.60 · TOTAL 2,337,585.60.
+
+### 13.3 Unidades y parámetros
+- Unidades de concepto: `M2`, `ML`, `M3`, `PZA`, `LOTE`, `SERVICIO` (enum `conceptos_obra.unidad`).
+- Cuadrillas de los archivos:
+  - 1 OFICIAL ALBAÑIL + MANDOS MEDIOS = 8,500.00 /sem · 1 AYUDANTE TBR. = 6,700.00 /sem.
+  - CUADRILLA No.2 (1 OFICIAL COLOCADOR) = 8,000.00 /sem · 1 AYUDANTE = 6,382.75 /sem.
+- `parametros_apu` (activo vigente): imss 32.792, rcyv 27.208, isn 3.000, herramienta 9.000, indirecto 24.000.
+- Generador: `area = largo × alto × pzas`; `descuento` por simbología resta del área; `total = Σ(area−descuento) + acumulado_anterior`.
+- Simbología: P=PUERTA · C.V.=CUADRO DE VÁLVULAS · H.M.=HUECO EN MURO · BOQ.H/V=BOCA DE HUEVO ·
+  C.=CANCEL · V=VENTANA · G.E.=GABINETE ELÉCTRICO · V.A.=VANO DE ACCESO · O=OTRO.
+
+### 13.4 Reglas de negocio nuevas
+- `presupuestos_obra` es entidad nueva (NO usar `cotizaciones`/`cotizaciones_detalle`, son de COMPRAS).
+- Folio presupuesto: `PRES-#####` con `MAX(CAST(SUBSTRING(folio,6) AS UNSIGNED))`.
+- Resolución de sucursal: `presupuesto.sucursal_id → obra.sucursal_id → usuario sesión → primera activa`.
+- Totales: `subtotal = Σ importe; descuento_monto = subtotal × desc% /100; base = subtotal − descuento;
+  iva = base × iva% /100; total = base + iva`.
+
 > *Este documento es vinculante para cualquier agente de IA que trabaje en este proyecto.*
