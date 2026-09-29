@@ -378,7 +378,13 @@ Los prompts/checklists operativos de I3 se archivaron en git (commit previo a es
 - 8 vistas de impresión C1–C8 (`application/views/obras/`) + exportación Excel/PDF con marca de agua.
 
 ### Smoke verificado (Fase F)
-- APU Z-01C = **306.66018163809525** (diff 0.0000, tolerancia ±0.01) — fórmula exacta de los archivos.
+- APU Z-01C = **306.66018163809525** (diff 0.000000000000 exacto, tolerancia ±0.01). Hallazgo
+  de revisión: `concepto_apu_materiales.costo_unitario/importe` era `DECIMAL(12,2)` y **truncaba**
+  el adhesivo real 7.9802 $/kg → 7.98 (0.55 kg × 7.9802 = 4.38911 exacto de fuente); con escala 2
+  daba PU 306.66004523809522 (diff 0.0001364). Se amplió a **DECIMAL(12,4)** (CREATE +
+  upgrade idempotente en `ApuModel::asegurar_infraestructura()` + `round(...,4)` en ambos
+  `agregar_material()`) y se re-verificó el control exacto vía `index.php smaketmp apu`.
+  Material exacto: 0.13×381.60 (49.608) + 0.55×7.9802 (4.38911) + 0.01×39.80 (0.398) = 54.39511.
 - Presupuesto control 16550: subtotal 2,015,160.00 / IVA 322,425.60 / TOTAL 2,337,585.60 (exacto).
 - Generador SUMA+ACUMULADO=TOTAL y "aplicar a partida" actualiza cantidad. ✔
 
@@ -389,13 +395,15 @@ Los prompts/checklists operativos de I3 se archivaron en git (commit previo a es
    proyecto ZOCLOS (→ 306.66). El §3.3 del prompt decía "5% / 34%" (corresponde al proyecto IMSS, control
    304.90); por eso `parametros_apu` queda **parametrizado** (NO hardcodeado) y se sembró 9%/24% para
    reproducir el control Z-01C. Ver `doc/REGLAS_TECNICAS.md` §Fase5.
-2. **Material Z-01C**: subtotal material = 54.40 (LOSETA 49.608 + ADHESIVO 4.389 + JUNTA 0.398).
-   El "LOSETA 54.40" del prompt es el SUBTOTAL MATERIAL, no una 4.ª línea (el prompt sumaba 108.79 por
+2. Material Z-01C CORREGIDO en revision: subtotal material exacto = 54.39511
+   (LOSETA 0.13x381.60 = 49.608 + ADHESIVO 0.55x7.9802 = 4.38911 + JUNTA 0.01x39.80 = 0.398).
+   El LOSETA 54.40 del prompt es el SUBTOTAL MATERIAL, no una 4.a linea (el prompt sumaba 108.79 por
    doble conteo).
-3. **Dompdf NO instalado**: `composer require dompdf/dompdf:^2.0` falló por advisories PKSA (bloqueo de
-   seguridad de Packagist). Se implementó fallback a **html2pdf.js** (CDN) + `?auto=1`, y el import de
-   Dompdf queda en try/catch (patrón `compras/OrdenesCompra.php`). PENDIENTE: decidir si se ignora el
-   advisory o se usa mPDF/TCPDF para PDF server-side real.
+3. PDF server-side con mPDF RESUELTO: composer require mpdf/mpdf:^8.2 instalado SIN advisories
+   (No security vulnerability advisories found). ExportacionObraModel::exportar_pdf() usa mPDF 8.x
+   como motor preferido (carta, UTF-8, marca de agua de sucursal nativa en TODAS las paginas) y conserva
+   el fallback HTML + html2pdf.js si mPDF no estuviera disponible. Smoke CLI smaketmp pdf = OK
+   (engine=mpdf, %PDF-1.4, 73437 bytes, 2 paginas).
 4. **Marca de agua Excel**: encabezado de página `setOddHeader` (PhpSpreadsheet no soporta marca de agua
    diagonal nativa). En PDF/HTML: div diagonal semitransparente + logo.
 
@@ -410,6 +418,16 @@ Los prompts/checklists operativos de I3 se archivaron en git (commit previo a es
 - `SELLADOR-INICIAL` (476) tiene `precio_venta = NULL`.
 - **16619 HOSPITAL SANTIAGO PAPASQUIARO.pdf** = escaneado SIN capa de texto → **PENDIENTE OCR/captura**.
 - Carga inicial de conceptos ejecutada (26 códigos de §3.2). Los APU de cada concepto se capturan vía UI.
+- **5.ª pestaña Documentos en Ventas (HECHO)**: `presupuestos_tabs.php` + endpoints
+  `ObrasVentas::documentos_ajax/subir_documento_ajax/eliminar_documento_ajax` (misma regla de
+  subida que `obras/Obras::subir_archivo_ajax`, expuesta en Ventas para no exigir permisos del
+  módulo Obras). Smoke HTTP 200 + JSON `{"success":true}`.
+- **Listado real de 38 proveedores químicos (HECHO)**: `LISTA DE PRODUCTOS QUIMICOS PROVEEDORES ERP.xlsx`
+  (filas 6–43: PROVEEDOR col C, RFC col G; producto/presentación cols A/B). `importar_excel_ajax()`
+  ahora detecta ese layout (sin romper la plantilla A–O) y carga producto/presentación en
+  `observaciones`; `tipo_proveedor='Materia Prima'`. **Idempotente por RFC** (segunda corrida = 38
+  omitidos). Smoke CLI `smaketmp proveedores` = OK. Domicilios del XLSX = sólo email/teléfono de
+  contacto → `direccion/ciudad/estado/cp=''` y `pais='México'`.
 
 ### Reglas de repo cumplidas
 R1 branch iteracion-5 ✔ · R2 español ✔ · R3 commits por fase ✔ · R4 sin Cli_* ✔ · R5 docs ✔ ·

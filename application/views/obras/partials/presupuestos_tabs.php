@@ -8,6 +8,7 @@ $obra_id = (int) ($obra->id ?? 0);
             <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabApu"><i class="fas fa-calculator"></i> Unitarios (APU)</a></li>
             <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabGeneradores"><i class="fas fa-ruler-combined"></i> Generadores</a></li>
             <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabRevision"><i class="fas fa-clipboard-check"></i> Revisión de cuantificación</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabDocumentos"><i class="fas fa-folder-open"></i> Documentos</a></li>
         </ul>
     </div>
     <div class="card-body">
@@ -66,6 +67,17 @@ $obra_id = (int) ($obra->id ?? 0);
                     <thead><tr><th>DESC</th><th>TOTAL CUANTI</th><th>COTIZADO</th><th>DIFERENCIA</th><th>%</th><th>Comentario</th></tr></thead>
                     <tbody id="tablaRevision"></tbody>
                 </table>
+            </div>
+
+            <!-- ── Tab Documentos ── -->
+            <div class="tab-pane fade" id="tabDocumentos">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="mb-0">Documentos de la obra</h6>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalDocObra"><i class="fas fa-upload"></i> Subir documento</button>
+                </div>
+                <div id="listaDocumentosObra" class="row">
+                    <p class="text-muted">Cargando…</p>
+                </div>
             </div>
 
         </div>
@@ -161,11 +173,35 @@ $obra_id = (int) ($obra->id ?? 0);
     </div>
 </div>
 
+<!-- Modal subir documento de la obra -->
+<div class="modal fade" id="modalDocObra" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white"><h5 class="modal-title">Subir documento</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-2"><label class="form-label">Archivo</label>
+                    <input type="file" id="docObraArchivo" class="form-control" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.dwg,.dxf">
+                    <small class="text-muted">JPG, PNG, GIF, PDF, DOC, XLS, DWG/DXF — máx. 10 MB</small>
+                </div>
+                <div class="mb-2"><label class="form-label">Categoría</label>
+                    <select id="docObraCategoria" class="form-select">
+                        <option>Plano</option><option>Foto</option><option>Contrato</option><option>Cotizacion</option><option>Otro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" id="btnSubirDocObra" onclick="subirDocumentoObra()">Subir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 var BASE = '<?=base_url()?>ventas/ObrasVentas/';
 var presupuestoActual = 0;
 
-function initTabsPresupuesto() { listarPresupuestos(); listarConceptos(); listarGeneradores(); }
+function initTabsPresupuesto() { listarPresupuestos(); listarConceptos(); listarGeneradores(); listarDocumentosObra(); }
 
 function listarPresupuestos() {
     $.get(BASE + 'listar_presupuestos_ajax', {obra_id: <?=$obra_id?>}, function(res) {
@@ -382,6 +418,74 @@ function compararRevision() {
             h += '<tr><td>' + (r.descripcion||'') + '</td><td>' + r.total_cuantificado + '</td><td>' + r.total_cotizado + '</td><td>' + r.diferencia + '</td><td>' + r.diferencia_pct + '%</td><td>' + (r.comentario||'') + '</td></tr>';
         });
         $('#tablaRevision').html(h);
+    }, 'json');
+}
+
+/* ── Pestaña Documentos (archivos de la obra) ── */
+
+function listarDocumentosObra() {
+    $.get(BASE + 'documentos_ajax', {obra_id: <?=$obra_id?>}, function(res) {
+        if (!res.success) { $('#listaDocumentosObra').html('<p class="text-muted">No fue posible cargar los documentos.</p>'); return; }
+        var h = '';
+        (res.archivos || []).forEach(function(a) {
+            var ruta = a.ruta_archivo || '';
+            if (ruta.charAt(0) === '/') { ruta = ruta.substr(1); }
+            var ext = (a.extension || '').toLowerCase();
+            var esImg = ['.jpg', '.jpeg', '.png', '.gif'].indexOf(ext) >= 0;
+            h += '<div class="col-md-3 mb-3"><div class="card h-100"><div class="card-body text-center">';
+            if (esImg) {
+                h += '<img src="<?=base_url()?>' + ruta + '" class="img-fluid mb-2" alt="">';
+            } else {
+                h += '<i class="fas fa-file fa-3x mb-2 text-secondary"></i>';
+            }
+            h += '<h6 class="small mb-1">' + (a.nombre_original || '') + '</h6>';
+            h += '<span class="badge bg-secondary">' + (a.categoria || 'Otro') + '</span> ';
+            h += '<span class="badge bg-light text-dark">' + Math.round((a.tamano || 0) / 1024) + ' KB</span>';
+            h += '<div class="mt-2">';
+            h += '<a class="btn btn-sm btn-outline-primary" href="<?=base_url()?>' + ruta + '" target="_blank"><i class="fas fa-external-link-alt"></i> Abrir</a> ';
+            h += '<button class="btn btn-sm btn-outline-danger" onclick="eliminarDocumentoObra(' + a.id + ')"><i class="fas fa-trash"></i></button>';
+            h += '</div></div></div></div>';
+        });
+        $('#listaDocumentosObra').html(h || '<p class="text-muted">No hay documentos adjuntos.</p>');
+    }, 'json');
+}
+
+function subirDocumentoObra() {
+    var input = document.getElementById('docObraArchivo');
+    if (!input || !input.files.length) { alert('Seleccione un archivo'); return; }
+    var fd = new FormData();
+    fd.append('archivo', input.files[0]);
+    fd.append('obra_id', <?=$obra_id?>);
+    fd.append('categoria', $('#docObraCategoria').val() || 'Otro');
+    $('#btnSubirDocObra').prop('disabled', true);
+    $.ajax({
+        url: BASE + 'subir_documento_ajax',
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function(res) {
+            $('#btnSubirDocObra').prop('disabled', false);
+            if (res.success) {
+                $('#modalDocObra').modal('hide');
+                input.value = '';
+                listarDocumentosObra();
+            } else {
+                alert(res.message || 'Error al subir el documento');
+            }
+        },
+        error: function() {
+            $('#btnSubirDocObra').prop('disabled', false);
+            alert('Error de conexión al subir el documento');
+        }
+    });
+}
+
+function eliminarDocumentoObra(id) {
+    if (!confirm('¿Eliminar este documento?')) return;
+    $.post(BASE + 'eliminar_documento_ajax', {archivo_id: id}, function(res) {
+        if (res.success) { listarDocumentosObra(); }
+        else { alert(res.message || 'Error al eliminar'); }
     }, 'json');
 }
 

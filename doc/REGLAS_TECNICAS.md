@@ -672,6 +672,9 @@ P.UNITARIO     = costo_directo + indirecto
 
 ### 13.2 Valores de control (smoke obligatorio)
 - Z-01C → P.UNITARIO = **306.66018163809525** (material 54.39511, MO 114.1488095, herramienta 9%, indirecto 24%).
+  Material exacto: 0.13×381.60 (49.608) + 0.55×7.9802 (4.38911) + 0.01×39.80 (0.398) = 54.39511.
+  ⚠️ Precisión: `costo_unitario/importe` en `DECIMAL(12,4)` (antes 12,2 truncaba 7.9802→7.98 y daba
+  306.66004523809522, diff 0.0001364). Upgrade idempotente en `ApuModel::asegurar_infraestructura()`.
 - Z-02 → 357.99442634920638 · Z-03 → 332.4143764.
 - IMSS R1A (con parámetros 5%/34%) → P.U. 304.90.
 - 16550 → 8,400.00 × 239.90 = 2,015,160.00 · IVA 322,425.60 · TOTAL 2,337,585.60.
@@ -685,6 +688,17 @@ P.UNITARIO     = costo_directo + indirecto
 - Generador: `area = largo × alto × pzas`; `descuento` por simbología resta del área; `total = Σ(area−descuento) + acumulado_anterior`.
 - Simbología: P=PUERTA · C.V.=CUADRO DE VÁLVULAS · H.M.=HUECO EN MURO · BOQ.H/V=BOCA DE HUEVO ·
   C.=CANCEL · V=VENTANA · G.E.=GABINETE ELÉCTRICO · V.A.=VANO DE ACCESO · O=OTRO.
+
+### 13.5 PDF de presupuestos (mPDF, revisión 2026-09-29)
+- Motor preferido: **mPDF 8.x** (`composer require mpdf/mpdf:^8.2`, sin advisories PKSA; Dompdf
+  NO instalable por advisories). Fallback: HTML imprimible + html2pdf.js en el navegador.
+- `ExportacionObraModel::exportar_pdf($tipo, $id, $devolver_string=false)`: carta, UTF-8, marca de
+  agua de sucursal nativa en TODAS las páginas, imágenes por ruta local (`_preparar_html_para_mpdf`).
+- 5.ª pestaña **Documentos** en Ventas: `ObrasVentas::documentos_ajax/subir_documento_ajax/
+  eliminar_documento_ajax` (misma regla de subida que `obras/Obras::subir_archivo_ajax`).
+- Carga de proveedores químicos: `Proveedores::importar_excel_ajax()` detecta el layout de
+  `LISTA DE PRODUCTOS QUIMICOS PROVEEDORES ERP.xlsx` (C=proveedor, G=RFC; producto/presentación
+  A/B → `observaciones`, tipo `Materia Prima`); plantilla A–O intacta; idempotente por RFC.
 
 ### 13.4 Reglas de negocio nuevas
 - `presupuestos_obra` es entidad nueva (NO usar `cotizaciones`/`cotizaciones_detalle`, son de COMPRAS).

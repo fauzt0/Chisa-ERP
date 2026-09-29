@@ -133,43 +133,95 @@ class ExportacionObraModel extends CI_Model {
     }
 
     /**
-     * Exportación PDF server-side (Dompdf) con fallback a HTML + html2pdf.js.
-     * La marca de agua diagonal va embebida en la vista (texto + logo sucursal).
+     * Exporta a PDF el presupuesto.
+     * Motor preferido: mPDF server-side (composer require mpdf/mpdf — doc/REGLAS_TECNICAS.md).
+     * Fallback: HTML imprimible + html2pdf.js en el navegador (dompdf no instalado por advisory PKSA).
+     *
+     * @param string $tipo            Tipo de vista C1..C8
+     * @param int    $presupuesto_id  Presupuesto
+     * @param bool   $devolver_string Si true, regresa ['pdf' => binario] sin enviar cabeceras (pruebas/CLI)
+     * @return array|null
      */
-    public function exportar_pdf($tipo, $presupuesto_id) {
-        $data = $this->preparar_datos($tipo, (int) $presupuesto_id);
+    public function exportar_pdf($tipo, $presupuesto_id, $devolver_string = false) {
+        $data = $this->preparar_datos($tipo, $presupuesto_id);
         if (!$data) {
             show_404();
-            return;
+            return null;
         }
 
         $vista = $this->nombre_vista($tipo);
         $html = $this->load->view('obras/' . $vista, $data, true);
+        $folio = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) ($data['presupuesto']->folio ?? 'presupuesto'));
+        $nombreArchivo = $folio . '_' . strtoupper(preg_replace('/[^A-Za-z0-9]+/', '_', $vista)) . '.pdf';
 
-        $filename = 'PRES_' . str_replace('/', '_', $data['presupuesto']->folio) . '_' . $tipo . '.pdf';
+        // 1) mPDF server-side
+        if (class_exists('Mpdf\\Mpdf')) {
+            try {
+                $htmlPdf = $this->_preparar_html_para_mpdf($html);
 
-        try {
-            if (class_exists('Dompdf\\Dompdf') || file_exists(APPPATH . 'third_party/dompdf/autoload.inc.php')) {
-                if (file_exists(APPPATH . 'third_party/dompdf/autoload.inc.php')) {
-                    require_once APPPATH . 'third_party/dompdf/autoload.inc.php';
+                $tempDir = FCPATH . 'uploads/tmp';
+                if (!is_dir($tempDir)) {
+                    @mkdir($tempDir, 0755, true);
                 }
-                $dompdf = new Dompdf\Dompdf();
-                $dompdf->loadHtml($html);
-                $dompdf->setPaper('letter', 'portrait');
-                $dompdf->render();
+
+                $mpdf = new \Mpdf\Mpdf([
+                    'mode' => 'utf-8',
+                    'format' => 'letter',
+                    'margin_left' => 8,
+                    'margin_right' => 8,
+                    'margin_top' => 8,
+                    'margin_bottom' => 8,
+                    'tempDir' => is_writable($tempDir) ? $tempDir : null,
+                ]);
+                $mpdf->showImageErrors = false;
+
+                // Marca de agua de sucursal en TODAS las páginas (motor mPDF, diagonal)
+                $marcaTexto = trim((string) ($data['marca_agua']['texto'] ?? ''));
+                if ($marcaTexto !== '') {
+                    $mpdf->SetWatermarkText($marcaTexto, 0.08);
+                    $mpdf->showWatermarkText = true;
+                }
+
+                $mpdf->WriteHTML($htmlPdf);
+                $pdf = $mpdf->Output($nombreArchivo, \Mpdf\Output\Destination::STRING_RETURN);
+
+                if ($devolver_string) {
+                    return ['success' => true, 'pdf' => $pdf, 'output' => 'pdf', 'engine' => 'mpdf', 'nombre' => $nombreArchivo];
+                }
+
                 header('Content-Type: application/pdf');
-                header('Content-Disposition: attachment; filename="' . $filename . '"');
-                echo $dompdf->output();
-                return;
+                header('Content-Disposition: inline; filename="' . $nombreArchivo . '"');
+                header('Content-Length: ' . strlen($pdf));
+                echo $pdf;
+                return ['success' => true, 'output' => 'pdf', 'engine' => 'mpdf', 'nombre' => $nombreArchivo];
+            } catch (\Throwable $e) {
+                // Caer al fallback HTML+html2pdf.js
+                log_message('error', 'ExportacionObraModel::exportar_pdf mPDF fallo: ' . $e->getMessage());
             }
-        } catch (Throwable $e) {
-            // fallback a HTML con html2pdf.js (la vista ya lo incluye)
         }
 
-        header('Content-Type: text/html; charset=utf-8');
-        echo $html;
+        // 2) Fallback: HTML imprimible + html2pdf.js en el navegador
+        return ['success' => true, 'content' => $html, 'filename' => $folio . '_' . $vista . '.html', 'output' => 'html'];
     }
 
+    /**
+     * Adaptaciones del HTML de las vistas C1..C8 para mPDF:
+     * - rutas locales de imagenes (no depender de red),
+     * - footer no absoluto (mPDF no respeta absolute dentro de contenedor),
+     * - sin toolbar/scripts (son de la vista HTML),
+     * - sin div de marca de agua (la pone el watermark nativo de mPDF).
+     */
+    private function _preparar_html_para_mpdf($html) {
+        $base = rtrim(base_url(), '/');
+        if ($base !== '' && $base !== rtrim(FCPATH, '/')) {
+            $html = str_replace($base, rtrim(FCPATH, '/'), $html);
+        }
+        $html = str_replace('.pg-footer { position: absolute;', '.pg-footer { position: relative;', $html);
+        $html = preg_replace('#<div class="toolbar">.*?</div>#s', '', $html);
+        $html = preg_replace('#<script\b[^>]*>.*?</script>#si', '', $html);
+        $html = preg_replace('#<div class="marca-agua">.*?</div>#su', '', $html);
+        return $html;
+    }
     /**
      * Exportación Excel (PhpSpreadsheet) con marca de agua de sucursal.
      * DECISIÓN: encabezado de página con texto de sucursal (setOddHeader) porque

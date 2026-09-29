@@ -152,7 +152,9 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Presupuestos de venta (folio PRES-#####) | ✅ | Fase 5 `PresupuestosObraModel` (entidad nueva, NO cotizaciones de compras) |
 | APU / cuadrillas / parametros | ✅ | Fase 5 `ApuModel` (fórmula en `REGLAS_TECNICAS.md` §13) |
 | Revisión de cuantificación | ✅ | Fase 5 `RevisionCuantificacionModel` |
-| Exportación Excel/PDF con marca de agua | ✅ | Fase 5 `ExportacionObraModel` (Dompdf fallback html2pdf.js) |
+| Exportación Excel/PDF con marca de agua | ✅ | Fase 5 `ExportacionObraModel` (mPDF 8.x server-side; fallback html2pdf.js) |
+| 5.ª pestaña Documentos en Ventas (subir/listar/eliminar) | ✅ | `ObrasVentas::documentos_ajax/subir/eliminar` + `presupuestos_tabs.php` |
+| Carga real 38 proveedores químicos (idempotente por RFC) | ✅ | `Proveedores::importar_excel_ajax()` detecta layout lista químicos |
 
 ---
 

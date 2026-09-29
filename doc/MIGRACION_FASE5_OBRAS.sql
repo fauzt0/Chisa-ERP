@@ -93,8 +93,8 @@ CREATE TABLE IF NOT EXISTS concepto_apu_materiales (
     descripcion_libre VARCHAR(255) NULL,
     unidad VARCHAR(20) NULL,
     cantidad DECIMAL(12,4) NOT NULL DEFAULT 0.0000,
-    costo_unitario DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-    importe DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    costo_unitario DECIMAL(12,4) NOT NULL DEFAULT 0.0000,
+    importe DECIMAL(12,4) NOT NULL DEFAULT 0.0000,
     origen ENUM('formulacion','manual') NOT NULL DEFAULT 'manual',
     orden INT(11) NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
@@ -230,6 +230,16 @@ SET @col := (SELECT COUNT(*) FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sucursales' AND COLUMN_NAME = 'texto_marca_agua');
 SET @sql := IF(@col = 0,
     'ALTER TABLE sucursales ADD COLUMN texto_marca_agua VARCHAR(120) NULL',
+    'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- concepto_apu_materiales: precisión 4 decimales (revisión 2026-09-29 — el adhesivo
+-- Z-01C usa 7.9802 $/kg; con escala 2 el P.U. se desplazaba 0.0001364)
+SET @col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'concepto_apu_materiales'
+               AND COLUMN_NAME = 'costo_unitario' AND NUMERIC_SCALE = 4);
+SET @sql := IF(@col = 0,
+    'ALTER TABLE concepto_apu_materiales MODIFY costo_unitario DECIMAL(12,4) NOT NULL DEFAULT 0.0000, MODIFY importe DECIMAL(12,4) NOT NULL DEFAULT 0.0000',
     'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 

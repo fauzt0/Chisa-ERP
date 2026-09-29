@@ -696,6 +696,87 @@ class ObrasVentas extends MY_Controller {
         }
         $this->ExportacionObraModel->exportar_excel($tipo, (int) $presupuesto_id, $hojas);
     }
+
+    /**
+     * Documentos (archivos adjuntos) de la obra — AJAX.
+     * Alimenta la pestaña "Documentos" de la vista de obra en Ventas.
+     */
+    public function documentos_ajax() {
+        $obra_id = (int) $this->input->get('obra_id');
+        if ($obra_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Obra inválida']);
+            return;
+        }
+        $this->load->model('Obras/ObrasModel');
+        echo json_encode([
+            'success' => true,
+            'archivos' => $this->ObrasModel->get_archivos_obra($obra_id),
+        ]);
+    }
+
+    /**
+     * Sube un documento a la obra (AJAX) — misma regla de subida que
+     * obras/Obras::subir_archivo_ajax, expuesta aquí para no exigir al usuario
+     * de Ventas permisos sobre el módulo Obras.
+     */
+    public function subir_documento_ajax() {
+        $obra_id = (int) $this->input->post('obra_id');
+
+        if ($obra_id <= 0 || !isset($_FILES['archivo'])) {
+            echo json_encode(['success' => false, 'message' => 'No se recibió ningún archivo']);
+            return;
+        }
+        if (!$this->ObrasModel->get_obra_detalle($obra_id)) {
+            echo json_encode(['success' => false, 'message' => 'Obra no encontrada']);
+            return;
+        }
+
+        $config['upload_path'] = './uploads/obras/' . $obra_id . '/';
+        $config['allowed_types'] = 'jpg|jpeg|png|gif|pdf|doc|docx|xls|xlsx|dwg|dxf';
+        $config['max_size'] = 10240;
+        $config['encrypt_name'] = true;
+
+        if (!is_dir($config['upload_path'])) {
+            mkdir($config['upload_path'], 0755, true);
+        }
+
+        $this->load->library('upload', $config);
+
+        if (!$this->upload->do_upload('archivo')) {
+            echo json_encode(['success' => false, 'message' => $this->upload->display_errors('', '')]);
+            return;
+        }
+
+        $upload_data = $this->upload->data();
+        $id = $this->ObrasModel->guardar_archivo([
+            'obra_id' => $obra_id,
+            'nombre_original' => $upload_data['orig_name'],
+            'nombre_archivo' => $upload_data['file_name'],
+            'ruta_archivo' => 'uploads/obras/' . $obra_id . '/' . $upload_data['file_name'],
+            'tipo_archivo' => $upload_data['file_type'],
+            'extension' => $upload_data['file_ext'],
+            'tamano' => $upload_data['file_size'] * 1024,
+            'categoria' => $this->input->post('categoria') ?: 'Otro',
+            'descripcion' => $this->input->post('descripcion'),
+            'etiquetas' => $this->input->post('etiquetas'),
+            'subido_por' => $this->session->userdata('id') ?: 1,
+        ]);
+
+        echo json_encode($id
+            ? ['success' => true, 'message' => 'Documento subido correctamente']
+            : ['success' => false, 'message' => 'Error al guardar la información del documento']);
+    }
+
+    /**
+     * Elimina un documento de la obra (AJAX).
+     */
+    public function eliminar_documento_ajax() {
+        $archivo_id = (int) $this->input->post('archivo_id');
+        $result = $archivo_id > 0 ? $this->ObrasModel->eliminar_archivo($archivo_id) : false;
+        echo json_encode($result
+            ? ['success' => true, 'message' => 'Documento eliminado']
+            : ['success' => false, 'message' => 'Error al eliminar el documento']);
+    }
 }
 
 

@@ -623,8 +623,19 @@ class Proveedores extends MY_Controller {
                     continue;
                 }
                 $fila = $sheetData[$i];
-                $razon = $this->_normalizar_celda_excel($fila['A'] ?? '');
-                $rfc = strtoupper(preg_replace('/\s+/', '', $this->_normalizar_celda_excel($fila['C'] ?? '')));
+                $esListaQuim = isset($fila['G']) && !isset($fila['N'])
+                    && is_string($fila['C'] ?? null) && trim((string) ($fila['C'] ?? '')) !== '';
+                if ($esListaQuim) {
+                    $prodQ = trim((string) ($fila['A'] ?? ''));
+                    if ($prodQ === '' || preg_match('/^(PRODUCTO|LISTA|CHISA)/i', $prodQ)) { continue; }
+                    $razon = trim((string) ($fila['C'] ?? ''));
+                    $rfc = strtoupper(preg_replace('/\s+/', '', trim((string) ($fila['G'] ?? ''))));
+                    $tipoQ = 'Materia Prima';
+                } else {
+                    $razon = $this->_normalizar_celda_excel($fila['A'] ?? '');
+                    $rfc = strtoupper(preg_replace('/\s+/', '', $this->_normalizar_celda_excel($fila['C'] ?? '')));
+                    $tipoQ = null;
+                }
 
                 if ($razon === '' && $rfc === '') {
                     continue;
@@ -641,20 +652,20 @@ class Proveedores extends MY_Controller {
                 $rows[] = [
                     '_linea' => $i,
                     'razon_social' => $razon,
-                    'nombre_comercial' => $this->_normalizar_celda_excel($fila['B'] ?? ''),
+                    'nombre_comercial' => (isset($esListaQuim) && $esListaQuim) ? trim((string) ($fila['B'] ?? '')) : $this->_normalizar_celda_excel($fila['B'] ?? ''),
                     'rfc' => $rfc,
-                    'tipo_proveedor' => $this->_normalizar_celda_excel($fila['D'] ?? ''),
-                    'contacto_principal' => $this->_normalizar_celda_excel($fila['E'] ?? ''),
-                    'telefono' => $this->_normalizar_celda_excel($fila['F'] ?? ''),
-                    'telefono_alternativo' => $this->_normalizar_celda_excel($fila['G'] ?? ''),
-                    'email' => $this->_normalizar_celda_excel($fila['H'] ?? ''),
-                    'direccion' => $this->_normalizar_celda_excel($fila['I'] ?? ''),
-                    'ciudad' => $this->_normalizar_celda_excel($fila['J'] ?? ''),
-                    'estado' => $this->_normalizar_celda_excel($fila['K'] ?? ''),
-                    'codigo_postal' => $this->_normalizar_celda_excel($fila['L'] ?? ''),
-                    'pais' => $this->_normalizar_celda_excel($fila['M'] ?? ''),
-                    'dias_credito' => $this->_normalizar_celda_excel($fila['N'] ?? ''),
-                    'observaciones' => $this->_normalizar_celda_excel($fila['O'] ?? ''),
+                    'tipo_proveedor' => (isset($esListaQuim) && $esListaQuim) ? $tipoQ : $this->_normalizar_celda_excel($fila['D'] ?? ''),
+                    'contacto_principal' => (isset($esListaQuim) && $esListaQuim) ? trim((string) ($fila['F'] ?? '')) : $this->_normalizar_celda_excel($fila['E'] ?? ''),
+                    'telefono' => (isset($esListaQuim) && $esListaQuim) ? trim((string) ($fila['E'] ?? '')) : $this->_normalizar_celda_excel($fila['F'] ?? ''),
+                    'telefono_alternativo' => (isset($esListaQuim) && $esListaQuim) ? '' : $this->_normalizar_celda_excel($fila['G'] ?? ''),
+                    'email' => (isset($esListaQuim) && $esListaQuim) ? trim((string) ($fila['D'] ?? '')) : $this->_normalizar_celda_excel($fila['H'] ?? ''),
+                    'direccion' => (isset($esListaQuim) && $esListaQuim) ? '' : $this->_normalizar_celda_excel($fila['I'] ?? ''),
+                    'ciudad' => (isset($esListaQuim) && $esListaQuim) ? '' : $this->_normalizar_celda_excel($fila['J'] ?? ''),
+                    'estado' => (isset($esListaQuim) && $esListaQuim) ? '' : $this->_normalizar_celda_excel($fila['K'] ?? ''),
+                    'codigo_postal' => (isset($esListaQuim) && $esListaQuim) ? '' : $this->_normalizar_celda_excel($fila['L'] ?? ''),
+                    'pais' => 'México',
+                    'dias_credito' => 0,
+                    'observaciones' => (isset($esListaQuim) && $esListaQuim) ? ('Producto: ' . trim((string) ($fila['A'] ?? '')) . ' | Presentación: ' . trim((string) ($fila['B'] ?? ''))) : $this->_normalizar_celda_excel($fila['O'] ?? ''),
                 ];
             }
 

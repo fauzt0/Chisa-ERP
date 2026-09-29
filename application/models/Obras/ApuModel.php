@@ -25,8 +25,8 @@ class ApuModel extends CI_Model {
                 descripcion_libre VARCHAR(255) NULL,
                 unidad VARCHAR(20) NULL,
                 cantidad DECIMAL(12,4) NOT NULL DEFAULT 0.0000,
-                costo_unitario DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-                importe DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                costo_unitario DECIMAL(12,4) NOT NULL DEFAULT 0.0000,
+                importe DECIMAL(12,4) NOT NULL DEFAULT 0.0000,
                 origen ENUM('formulacion','manual') NOT NULL DEFAULT 'manual',
                 orden INT(11) NOT NULL DEFAULT 0,
                 PRIMARY KEY (id),
@@ -68,6 +68,27 @@ class ApuModel extends CI_Model {
                 KEY idx_parametros_apu_activo (activo)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             COMMENT='Factores parametrizados del APU (NO hardcodear)'");
+        }
+
+        // Upgrade de precisión (decidido en la revisión de Fase 5): los archivos
+        // fuente usan costos con 4 decimales (Z-01C: adhesivo 7.9802/kg → 4.38911),
+        // por lo que DECIMAL(12,2) truncaba y desplazaba el P.UNITARIO en 0.0001364.
+        // Idempotente: solo altera si la columna aún tiene escala 2.
+        if ($this->db->table_exists('concepto_apu_materiales')) {
+            $col = $this->db->query(
+                "SELECT NUMERIC_PRECISION AS p, NUMERIC_SCALE AS s
+                   FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = 'concepto_apu_materiales'
+                    AND COLUMN_NAME = 'costo_unitario'"
+            )->row();
+            if ($col && ((int) $col->p !== 12 || (int) $col->s !== 4)) {
+                $this->db->query(
+                    'ALTER TABLE concepto_apu_materiales
+                        MODIFY costo_unitario DECIMAL(12,4) NOT NULL DEFAULT 0.0000,
+                        MODIFY importe DECIMAL(12,4) NOT NULL DEFAULT 0.0000'
+                );
+            }
         }
 
         // Seed con los valores observados en los archivos fuente (ZOCLOS → 306.66)
@@ -209,7 +230,7 @@ class ApuModel extends CI_Model {
             'unidad' => trim((string) ($data['unidad'] ?? '')) ?: null,
             'cantidad' => $cantidad,
             'costo_unitario' => $costo,
-            'importe' => round($cantidad * $costo, 2),
+            'importe' => round($cantidad * $costo, 4),
             'origen' => ($data['origen'] ?? 'manual') === 'formulacion' ? 'formulacion' : 'manual',
             'orden' => (int) ($data['orden'] ?? 0),
         ]);
@@ -278,7 +299,7 @@ class ApuModel extends CI_Model {
                 'unidad' => $ins['unidad'] ?? 'Kg',
                 'cantidad' => (float) ($ins['cantidad'] ?? 0),
                 'costo_unitario' => (float) ($ins['costo'] ?? 0),
-                'importe' => round((float) ($ins['cantidad'] ?? 0) * (float) ($ins['costo'] ?? 0), 2),
+                'importe' => round((float) ($ins['cantidad'] ?? 0) * (float) ($ins['costo'] ?? 0), 4),
                 'origen' => 'formulacion',
                 'orden' => $orden,
             ]);
