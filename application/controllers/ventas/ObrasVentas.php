@@ -680,6 +680,22 @@ class ObrasVentas extends MY_Controller {
     public function listar_conceptos_ajax() {
         echo json_encode(['success' => true, 'conceptos' => $this->ConceptosObraModel->listar()]);
     }
+
+    /* ─── Fase 5 · Exportación desde Ventas ─────────────────────────── */
+
+    public function exportar_pdf_presupuesto($presupuesto_id, $tipo = 'presupuesto') {
+        $this->load->model('Obras/ExportacionObraModel');
+        $this->ExportacionObraModel->exportar_pdf($tipo, (int) $presupuesto_id);
+    }
+
+    public function exportar_excel($presupuesto_id, $tipo = 'presupuesto') {
+        $this->load->model('Obras/ExportacionObraModel');
+        $hojas = $this->input->get('hojas') ?: null;
+        if (is_string($hojas)) {
+            $hojas = array_filter(array_map('trim', explode(',', $hojas)));
+        }
+        $this->ExportacionObraModel->exportar_excel($tipo, (int) $presupuesto_id, $hojas);
+    }
 }
 
 

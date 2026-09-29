@@ -687,6 +687,42 @@ class Obras extends MY_Controller {
         $this->load->view('obras/pdf_resumen', $data);
     }
 
+    /* ─── Fase 5 · Vistas de impresión y exportación de presupuestos ── */
+
+    /**
+     * Renderiza una vista de impresión C1..C8 (HTML + html2pdf.js, soporta ?auto=1).
+     */
+    public function imprimir_presupuesto($tipo, $presupuesto_id) {
+        $this->load->model('Obras/ExportacionObraModel');
+        $data = $this->ExportacionObraModel->preparar_datos($tipo, (int) $presupuesto_id);
+        if (!$data) {
+            show_404();
+            return;
+        }
+        $vista = $this->ExportacionObraModel->nombre_vista($tipo);
+        $this->load->view('obras/' . $vista, $data);
+    }
+
+    /**
+     * Exporta a PDF el presupuesto (Dompdf si está disponible; si no, HTML + html2pdf.js).
+     */
+    public function exportar_pdf_presupuesto($presupuesto_id, $tipo = 'presupuesto') {
+        $this->load->model('Obras/ExportacionObraModel');
+        $this->ExportacionObraModel->exportar_pdf($tipo, (int) $presupuesto_id);
+    }
+
+    /**
+     * Exporta a Excel el presupuesto (hojas[] = vistas solicitadas).
+     */
+    public function exportar_excel($presupuesto_id, $tipo = 'presupuesto') {
+        $this->load->model('Obras/ExportacionObraModel');
+        $hojas = $this->input->get('hojas') ?: null;
+        if (is_string($hojas)) {
+            $hojas = array_filter(array_map('trim', explode(',', $hojas)));
+        }
+        $this->ExportacionObraModel->exportar_excel($tipo, (int) $presupuesto_id, $hojas);
+    }
+
     /**
      * Órdenes de venta del cliente disponibles para vincular (AJAX)
      */
