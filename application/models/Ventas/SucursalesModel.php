@@ -29,6 +29,16 @@ class SucursalesModel extends CI_Model {
                 ADD KEY idx_ov_sucursal (sucursal_id)");
         }
 
+        // Fase 5: marca de agua para exportaciones de obras/presupuestos
+        if ($this->db->table_exists('sucursales')) {
+            if (!$this->db->field_exists('logo_marca_agua', 'sucursales')) {
+                $this->db->query("ALTER TABLE sucursales ADD COLUMN logo_marca_agua VARCHAR(255) NULL");
+            }
+            if (!$this->db->field_exists('texto_marca_agua', 'sucursales')) {
+                $this->db->query("ALTER TABLE sucursales ADD COLUMN texto_marca_agua VARCHAR(120) NULL");
+            }
+        }
+
         $this->db->where('codigo', 'SUC-MATRIZ');
         if ($this->db->count_all_results('sucursales') === 0) {
             $this->db->insert('sucursales', [
@@ -72,4 +82,45 @@ class SucursalesModel extends CI_Model {
         ]);
         return ['success' => true, 'id' => (int) $this->db->insert_id(), 'message' => 'Sucursal creada'];
     }
+
+    /**
+     * Marca de agua de una sucursal para exportaciones (Excel/PDF).
+     * Devuelve {logo, texto} con fallback al logo de configuracion_empresa y
+     * al nombre de la sucursal.
+     */
+    public function get_marca_agua($sucursal_id = null) {
+        $this->asegurar_infraestructura();
+
+        $sucursal = null;
+        if (!empty($sucursal_id)) {
+            $sucursal = $this->get($sucursal_id);
+        }
+        if (!$sucursal) {
+            $this->db->where('estatus', 'Activa');
+            $this->db->order_by('id', 'ASC');
+            $sucursal = $this->db->get('sucursales')->row();
+        }
+
+        $logo = null;
+        $texto = null;
+        if ($sucursal) {
+            $logo = $sucursal->logo_marca_agua ?? null;
+            $texto = $sucursal->texto_marca_agua ?? null;
+            if (empty($texto)) {
+                $texto = 'Sucursal: ' . $sucursal->nombre;
+            }
+        }
+
+        if (empty($logo)) {
+            $this->load->model('Config/EmpresaModel');
+            $empresa = $this->EmpresaModel->get_config();
+            $logo = $empresa->logo ?? null;
+        }
+
+        return [
+            'logo' => $logo,
+            'texto' => $texto ?: '',
+        ];
+    }
 }
+
