@@ -232,5 +232,6 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | H Entrenamiento / PDF OC | | | | | |
 | I Contabilidad I4 | 24-sep-2026 | Agente smoke P0 | ✅ | — | I1 + cli_probe sandbox |
 | J Almacén | 28-sep-2026 | Agente CLI+BD | ✅ | ENT-2026-0003..0005 (rollback) | A1–A3 + guardas en `registrar_entrega()` (estatus origen, partida, pendiente, stock consolidado); OB-00002 → `Completada`; J6 ajuste con `usuario_id` real; 0 residuos |
+| K Auditoría de sesión (transversal) | 28-sep-2026 | Agente CLI+BD | ✅ | — (solo código) | 55 usos de `userdata('user_id')` (siempre NULL / usuario 1) → `userdata('id')` en 19 archivos; huérfano `produccion/ajustar_stock_method.php` eliminado; smoke J6 prueba `usuario_id` real |
 
 **Listo para iterar código cuando:** filas **Aud. P0 #1–#3** (B3–B6, E5–E6, D3–D6) en ✅ o SKIP justificado; además C2, y decisión PDF OC (§H) si aplica.

@@ -285,6 +285,27 @@ Todas T1–T5 ✅ o SKIP documentado; T6 solo si hubo bug; checklist bloque **E*
 
 ---
 
+## Auditoría de usuario en sesión (transversal, 28-sep-2026)
+
+La sesión de CHISA expone el id del usuario en la clave **`id`** (`Auth::_create_user_session()` escribe `id`, `role`,
+`name`, `email`, `departamento`); **`user_id` nunca se escribe**. Por eso los **55 usos** de
+`$this->session->userdata('user_id')` repartidos en **19 archivos** devolvían `NULL` o caían al fallback `?: 1`
+(atribución falsa al usuario 1) en Almacén, Ventas, Producción, Obras, Contabilidad y RH.
+
+- **Cambio:** todos los sitios usan `session->userdata('id')`; los patrones redundantes
+  (`userdata('user_id') ?: userdata('id')`) se simplificaron a `userdata('id')`. Se conservan los fallbacks
+  `?: 1` / `?: 0` solo para contextos CLI/cron sin sesión.
+- **Sin cambio de flujo:** las 55 lecturas eran asignaciones a campos de auditoría (ninguna en `WHERE`/comparación,
+  verificado con `grep`); `php -l` OK en los 18 archivos PHP modificados.
+- **Daño histórico (solo lectura, no se reescribe):** `empleados.usuario_alta_id` 18/18 NULL,
+  `cuentas_contables.usuario_creacion` 16/16 NULL, `movimientos_inventario.usuario_id` 17/27 NULL,
+  `obras_productos.agregado_por` 6/6 = usuario 1, `facturas_obras.creado_por` 1/1 = usuario 1.
+- **Limpieza:** eliminado el snippet huérfano `application/controllers/produccion/ajustar_stock_method.php`
+  (copia del endpoint antiguo de ajuste, sin `<?php` ni clase, no enrutable).
+- **Regla permanente:** `REGLAS_TECNICAS` **§2.1 Sesión y Autenticación**.
+
+---
+
 ## Mantenimiento de este documento
 
 Al cerrar un módulo, cambiar su fila en la tabla “¿Qué módulo cerrar…?” y marcar funciones ✅. Referenciar desde `doc/TODO.md` § Documentos vigentes.

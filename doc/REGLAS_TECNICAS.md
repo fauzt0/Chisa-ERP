@@ -83,6 +83,15 @@ project_root/
       return;
   }
   ```
+- **Claves de sesión (fuente de verdad: `Auth::_create_user_session()`):** la sesión guarda **`id`**, `role`, `name`,
+  `email`, `departamento` (`Perfil` solo actualiza `name`/`email`). **`user_id` NO existe nunca**: cualquier
+  `userdata('user_id')` devuelve `NULL` o cae al fallback (`?: 1` → atribuye todo al usuario 1; `?: 0` → 0).
+  **Regla:** usar `(int) $this->session->userdata('id')`, dejando los fallbacks (`?: 1` / `?: 0`) solo para
+  contextos CLI/cron sin sesión.
+  - Corregido el 28-sep-2026: **55 usos** de `userdata('user_id')` en 19 archivos (Almacén, Ventas, Producción,
+    Obras, Contabilidad, RH) → `userdata('id')`. Auditoría histórica ya dañada: `empleados.usuario_alta_id` 18/18 NULL,
+    `cuentas_contables.usuario_creacion` 16/16 NULL, `movimientos_inventario.usuario_id` 17/27 NULL,
+    `obras_productos.agregado_por` 6/6 = usuario 1.
 
 ### 2.2 API Token
 
@@ -554,8 +563,8 @@ Fechas:           fecha_alta, fecha_edicion, fecha_baja (DATE o DATETIME)
   - **Decisión:** una `Salida` mayor al stock **se permite** (sirve para corregir sobre-conteos y mermas ya ocurridas);
     el endpoint responde `stock_actual` y el mensaje muestra el stock resultante (puede quedar negativo). El camino de
     **entrega** (POS/Almacén) sí bloquea stock insuficiente: ahí no se entrega mercancía inexistente.
-  - `application/controllers/produccion/ajustar_stock_method.php` es un **snippet huérfano** (sin `<?php` ni clase, no
-    enrutable) con la versión antigua del endpoint: candidato a borrar.
+  - `application/controllers/produccion/ajustar_stock_method.php` (snippet huérfano con la versión antigua del endpoint)
+    fue **eliminado** el 28-sep-2026.
 
 ---
 
