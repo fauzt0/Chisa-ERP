@@ -70,14 +70,21 @@ Anotar folio OC y, si la UI lo muestra, stock antes/después.
 
 **Ruta detalle OV:** `/produccion/Dashboard/detalle/orden_venta/{id}` (no usar `/detalle/venta/`).
 
-**Pesaje E2E:** si el BOM pide cientos de Kg, recepcionar stock suficiente en E6 **o** usar producto/ línea con BOM pequeño; con 1 Kg vs 570 Kg teóricos D5–D6 quedarán SKIP (UI bloquea pesaje sin stock).
+**Pesaje E2E (medido 28-sep-2026):** hay **dos** bloqueos, no solo stock — stock (BLANCO 1 Kg vs 570.35 Kg por cubeta
+y 6 844.2 Kg por 12 cubetas) y **unidades ambiguas** (`revision_manual`: `"Kg" ↔ "L"` en solventes y
+`"Kg" ↔ "Cubeta"` en el insumo INS00001), que hoy frenan `OV-2025-0013` y `OV-TEST-001`. Es decir: hoy **ninguna**
+orden abierta llega al camino feliz. Guion con números medidos, tabla de bloqueos y opciones A (transacción
+revertida) / B (UI con limpieza): **`TODO.md` §4.4**.
+
+> D5–D6 **ya tienen evidencia real persistente** (17–18-sep-2026: `PESAJE-venta-28` → `OV-2026-0009` `Completada`
+> → lote `PROD-20260918-22-2268` + entrada PT, sin doble descuento). Lo que falta es la corrida en UI con el código actual.
 
 | ID | Acción | Esperado clave |
 |----|--------|----------------|
 | D3 | `/produccion/Dashboard` | Carga; pedidos OV/obra visibles si hay TEST |
 | D4 | Completada **sin** pesaje | Debe **fallar** / bloquear |
-| D5 | Confirmar pesaje | `PESAJE-*`; insumos bajan; **segundo** pesaje falla |
-| D6 | Completada tras pesaje | Lote + entrada PT; insumos no bajan otra vez |
+| D5 | Confirmar pesaje | `PESAJE-*`; insumos bajan; **segundo** pesaje falla — ✅ evidencia real 17-sep (`PESAJE-venta-28`, 3 salidas) |
+| D6 | Completada tras pesaje | Lote + entrada PT; insumos no bajan otra vez — ✅ evidencia real 18-sep (lote `PROD-20260918-22-2268`, 0 salidas nuevas) |
 
 ### P0 #4 — Facturación conexión (`Aud. P0` **#4**)
 

@@ -92,6 +92,10 @@ project_root/
     Obras, Contabilidad, RH) → `userdata('id')`. Auditoría histórica ya dañada: `empleados.usuario_alta_id` 18/18 NULL,
     `cuentas_contables.usuario_creacion` 16/16 NULL, `movimientos_inventario.usuario_id` 17/27 NULL,
     `obras_productos.agregado_por` 6/6 = usuario 1.
+  - **Residual cosmético (28-sep-2026):** quedan **3** lecturas de `userdata('username')`
+    (`produccion/Productos.php`, `produccion/Dashboard.php`, `MY_Controller.php`) como fallback de
+    `userdata('email') ?: userdata('username')`. La sesión **nunca** escribe `username`, así que siempre resuelven
+    por `email`; **no** usar `username` en código nuevo y no añadir más usos.
 
 ### 2.2 API Token
 

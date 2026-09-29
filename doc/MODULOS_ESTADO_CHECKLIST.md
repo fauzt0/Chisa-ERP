@@ -18,11 +18,14 @@
 | 3 | **Administración usuarios** | ~92 % | Casi completo; 2FA listo pero ⏸ hasta `ENVIRONMENT=production`. |
 | 4 | **CRM Ventas** (sin contrato) | ~80 % | POS/cotizaciones fuertes; 28-sep: **B6 + B10 re-smoke ✅** (stock PT, insumos intactos, tx revertida) + guardas de idempotencia y consolidación de líneas. ⏸ pasarela, autofactura, calendario CRM. |
 | 5 | **Contabilidad** (alcance I4) | ~80 % | Lectura + pólizas borrador OK; ⏸ DIOT, conciliación auto, Aspel pleno. |
-| 6 | **Producción** | ~75 % | Core P1–P9 cerrado; D5–D6 E2E pendiente; ⏸ viscosidad/calidad formal. |
+| 6 | **Producción** | ~85 % | Core P1–P9 cerrado; **D5–D6 con evidencia real 17–18-sep** (`PESAJE-venta-28` → OV-2026-0009 `Completada` → lote + entrada PT, sin doble descuento); pendiente re-smoke UI + fix del atajo de `revision_manual` en `puede_completar_produccion()` (ver `TODO.md` §4.4); ⏸ viscosidad/calidad formal. |
 | 7 | **Obras** (+ documental) | ~70 % | Técnico OK; ❌ carátula/resumen/generador → `entrenamiento_4/`. |
 | 8 | **Facturación** | ~55 % | Sandbox OK; ❌ go-live, email, autofactura. |
 
 \*“100 % operativo” = flujos diarios internos TEST-QA, **sin** promesas contractuales marcadas ⏸/❌.
+Las filas **⚠️** que siguen en §4 Compras (**enlace OC ↔ factura de compra** y **plantilla PDF estilo Excel**) son
+diferidos de alcance, no bloqueos del flujo diario: por eso la fila se cuenta como ~100 % y el criterio del cierre
+es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 
 **Decisión:** usar la **tasklist § Proveedores/Compras** al final de este archivo para el próximo agente.
 
@@ -82,7 +85,7 @@
 | OC crear, PDF, estatus | ✅ | |
 | Cotizaciones proveedor + comparar + tipo cambio | ✅ | |
 | Preorden → autorizar → OC | ✅ | E5 ✅; sin proveedor → mensaje claro (T5); cantidad convertida a unidad del insumo |
-| Recepción OC → stock insumo | ✅ | Smoke E6 OC-2026-0001 + smoke CLI 2026-09-28 |
+| Recepción OC → stock insumo | ✅ | Smoke E6 OC-2026-0001 (entrada real 24-sep: BLANCO 0→1 Kg) + smoke CLI 2026-09-28 en **transacción revertida** con las guardas nuevas |
 | Comprobantes pago email/WhatsApp | ✅ | Preview en TEST |
 | Servicios recurrentes | ✅ | |
 | Recepción **producto reventa** (PT) | ⏸ | **N/A**: 0 SKU `Reventa` (497/497 `Fabricado`) y `detalle_orden_compra.insumo_id` `NOT NULL` + FK. Si negocio lo pide → patrón `insumos.producto_id` |
@@ -99,9 +102,10 @@
 | Función | Estado | Notas |
 |---------|--------|-------|
 | Productos, formulaciones, BOM, simulador | ✅ | Overhaul cerrado |
-| Dashboard pedidos OV/obras | ⚠️ | D3 ✅; D5–D6 E2E pendiente |
+| Dashboard pedidos OV/obras | ✅ | D3 ✅; **D5–D6 con evidencia real 17–18-sep** (`PESAJE-venta-28` → lote 1 + entrada PT sin doble descuento). Re-smoke UI pendiente: ninguna orden abierta pasa hoy el filtro de insumos (2 por stock, 2 por unidades ambiguas) |
 | Pesaje, merma 20 % servidor | ✅ | |
 | Completada sin pesaje bloqueada | ✅ | D4 smoke |
+| Guarda al completar con unidades ambiguas | ⚠️ | **Hallazgo 28-sep**: con `revision_manual` no vacío e `insumos` vacío, `puede_completar_produccion()` devuelve `ok = true` (comprobado en `OV-2025-0013`): el atajo `empty($insumos)` se evalúa antes del chequeo de `revision_manual`. Fix P1 en `TODO.md` §4.4 |
 | Lote, etiqueta, consultar lote | ✅ | |
 | Preorden compra desde faltantes | ✅ | |
 | Touchscreen / catálogo planta | ✅ | |
@@ -124,7 +128,7 @@
 | POS sucursales, guard $0, recibo | ✅ | |
 | Cotización sin preorden / confirmar con preorden | ✅ | Smoke B4–B5 |
 | Cobro mostrador sin PT negativo | ✅ | Fix 2026-09-24; **re-smoke B6 ✅ 2026-09-28** (CLI+BD, transacción revertida). Guardas nuevas: idempotencia de entrega + líneas consolidadas por producto |
-| Pedido → En Preparación → almacén entrega | ⚠️ | Regla ya documentada (§9.6 `REGLAS_TECNICAS`); falta smoke **A1** (bloqueado por datos: sin PT libre fuera de OVs intocables) |
+| Pedido → En Preparación → almacén entrega | ✅ | Regla en §9.6 `REGLAS_TECNICAS`; guardas + smoke **J1–J5** 2026-09-28 en transacción revertida (los pendientes reales no tienen PT libre fuera de OVs intocables) |
 | Obras listado CRM (`ObrasVentas`) | ✅ | |
 | Calendario CRM | ❌ | Mejora futura |
 | Pasarela pagos online | ⏸ | Contrato §6 |
@@ -223,6 +227,11 @@ Dejar compras listo para operación diaria: preorden → OC → recepción (insu
 Validado por CLI (método temporal `compras/OrdenesCompra/cli_smoke_recepcion`, **ya retirado**) y consultas
 **solo lectura** a BD. Verificación posterior: la BD quedó intacta — mismas 5 OC, mismas 8 preórdenes
 (`PRE-2026-0001` sigue `Pendiente`), `insumos 1/61` en 14.00/1.00 y 0 movimientos en OC 4.
+
+> **Nota de alcance (28-sep-2026, auditoría posterior):** ese “5 OC / 8 preórdenes” es el **estado previo al smoke
+> UI** del mismo día. Tras el smoke UI el conteo quedó en **7 OC / 10 preórdenes** (se crearon y cancelaron
+> `OC-2026-0002/0003`, `PRE-2026-0009` quedó `Rechazada` y `PRE-2026-0012` `Convertida` con su OC cancelada).
+> El dato vigente es el del bloque *Evidencia smoke UI*; `insumos 1/61` sigue en 14.00 / 1.00.
 
 | Caso | Esperado | Observado |
 |------|----------|-----------|

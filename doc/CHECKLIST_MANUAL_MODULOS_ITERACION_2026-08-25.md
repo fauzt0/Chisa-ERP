@@ -1,6 +1,6 @@
 # Checklist manual — módulos iterados + entrenamiento_2
 
-**Fecha:** 25 ago 2026 · **addendum I4:** 18 sep 2026 · **auditoría diagrama:** 24 sep 2026  
+**Fecha:** 25 ago 2026 · **addendum I4:** 18 sep 2026 · **auditoría diagrama:** 24 sep 2026 · **cierre I4 (smoke UI + PDF OC):** 28 sep 2026  
 **URL:** `https://erp.chisarecubrimientos.com.mx/`  
 **Login sugerido:** el de presentación vigente (el de QA `soporte2@…` puede estar desactualizado).  
 **Leyenda:** ✅ / ⚠️ / ❌ / SKIP · **Aud. P0** = valida gap P0 de `doc/TODO.md` § Auditoría diagrama.
@@ -79,8 +79,8 @@ Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 aut
 | D2 | Ver formulación (no Guardar salvo TEST consciente) | Cliente, comentarios, rendimiento, grupos | | |
 | D3 | `/produccion/Dashboard` listado + mute | Carga; ruta detalle: `…/detalle/orden_venta/{id}` (no `/venta/`) | **#3** | ✅ OV-2026-0010 |
 | D4 | E2E emulado: 1 cubeta TEST → Completada **bloqueada** sin pesaje | Error/bloqueo | **#3** | ✅ |
-| D5 | Confirmar pesaje → `PESAJE-*`; insumos bajan una vez | Segundo pesaje falla | **#3** | ⚠️ SKIP (1 Kg vs 570 Kg BOM) |
-| D6 | Completada → lote + entrada PT; insumos **no** bajan otra vez | OK | **#3** | ⚠️ SKIP (sin pesaje) |
+| D5 | Confirmar pesaje → `PESAJE-*`; insumos bajan una vez | Segundo pesaje falla | **#3** | ✅ Evidencia real 17-sep-2026 (`PESAJE-venta-28`, 3 salidas: insumos 17/18/20). Rechazo del **2.º pesaje**: guarda `insumos_ya_consumidos()` presente; llamada repetida **aún no observada** |
+| D6 | Completada → lote + entrada PT; insumos **no** bajan otra vez | OK | **#3** | ✅ Evidencia real 18-sep-2026: `OV-2026-0009` `Completada` 13:51 → lote `PROD-20260918-22-2268` + `movimientos_productos` #3 (0→1 Kg, `venta_id=28`) y **0** salidas de insumos nuevas |
 | D7 | Etiqueta + `/produccion/Lotes/consultar` | Producto/cubeta/lote/venta | | |
 
 ---
@@ -138,7 +138,7 @@ Detalle largo: `PRUEBAS_MANUALES_RH_2026-08-10.md`.
 
 ---
 
-## H. Hallazgos `doc/entrenamiento_2/` (verificación 25-ago-2026)
+## H. Hallazgos `doc/entrenamiento_2/` (verificación 25-ago-2026 · **PDF OC actualizado 28-sep-2026**)
 
 ### Archivos presentes
 
@@ -153,18 +153,27 @@ Detalle largo: `PRUEBAS_MANUALES_RH_2026-08-10.md`.
 
 Vista actual: `application/views/compras/ordenes_compra/pdf_oc.php` (`/compras/OrdenesCompra/generar_pdf/{id}`).
 
-| Elemento en Excel histórico | PDF ERP actual | Gap |
-|----------------------------|----------------|-----|
+| Elemento en Excel histórico | PDF ERP actual (verificado 28-sep-2026) | Gap |
+|----------------------------|----------------------------------------|-----|
 | Título + Nº OC + fecha | Folio + fecha + estatus | Parcial (OK funcional) |
-| Bloque PROVEEDOR (dir, tel, attn, email, cuenta) | Razón social, RFC, tel, dir | ⚠️ Falta attn/email/cuenta bancaria en PDF |
-| Bloque CLIENTE (datos Chisa) | Logo + razón social en header | ⚠️ No hay bloque “CLIENTE” explícito al estilo Excel |
+| Bloque PROVEEDOR (dir, tel, attn, email, cuenta) | At’n, razón social, nombre comercial, RFC, teléfono, correo, dirección (`pdf_oc.php:168-189`) | ⚠️ attn/correo **resueltos**; sigue faltando **cuenta bancaria** |
+| Bloque CLIENTE (datos Chisa) | Bloque “Cliente” explícito: razón social, nombre comercial, RFC, teléfono, correo, dirección (`pdf_oc.php:191-211`) | ✅ Existe desde 18-sep-2026 |
 | Tabla Cantidad \| Unidad \| Descripción \| P.U. \| Importe | # \| Código \| Descripción \| Unidad \| Cant \| P.U. \| Subtotal | ⚠️ Orden de columnas distinto; Excel no usa “código” |
-| Importe con letra | — | ❌ No existe |
+| Importe con letra | Sí — `numero_a_letras_mxn($total)` (`pdf_oc.php:62` + `helpers/numeros_letras_helper.php`) | ✅ Existe desde 18-sep-2026 |
 | Subtotal / IVA 16% / Total | Sí (+ descuento) | OK |
-| Firmas (Firmo cheque / Elaboró / Autorizó / Elabora cheque) | Elaboró·Compras / Autorizó·Gerencia / Aceptó·Proveedor | ⚠️ Roles distintos |
+| Firmas (Firmo cheque / Elaboró / Autorizó / Elabora cheque) | Solicitó · Elaboró · Autorizó (`pdf_oc.php:288-308`) | ⚠️ Roles distintos al Excel; **no** hay “Aceptó Proveedor” ni “Firmo cheque” |
 | Importar las 58 OC a BD | — | ❌ Fuera de alcance del importador de formulaciones |
 
-**Conclusión OC:** el flujo crear OC → PDF **ya existe** y cubre lo operativo. Para “formato similar al Excel” hace falta una **iteración de plantilla PDF** (importe con letra, bloque cliente, firmas, opcionalmente columnas al estilo plantilla). No confundir el `.xls` con carga de productos.
+**Addendum 28-sep-2026 (agente con shell — evidencia E4 del smoke UI):** las filas anteriores de
+importe con letra, bloque Cliente y attn/correo **ya no son gaps**; el PDF los trae. Lo que queda vivo para
+una iteración de plantilla es: (1) **PDF binario** — `generar_pdf` devuelve HTML imprimible y **no hay librería
+PDF instalada** (`vendor/` sin dompdf/mpdf/tcpdf; `composer.lock` solo las menciona como sugerencias de
+PhpSpreadsheet); (2) cuenta bancaria del proveedor; (3) roles de firma al estilo Excel; (4) opcionalmente
+columnas sin “código”. No confundir con el flujo operativo, que está cerrado.
+
+**Conclusión OC:** el flujo crear OC → PDF **ya existe** y cubre lo operativo, incluido el importe con letra.
+Para “formato similar al Excel” solo falta una **iteración de plantilla PDF** (binario, cuenta bancaria, firmas,
+opcionalmente columnas al estilo plantilla). No confundir el `.xls` con carga de productos.
 
 ### Productos / formulaciones — qué entrenar
 
@@ -225,7 +234,7 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | A Clientes | | | | | |
 | B Ventas/POS | 24-sep-2026 · 28-sep-2026 | Agente smoke P0 · agente CLI+BD | ✅ | OV-2026-0010/0011 · OV TEST (rollback) | B3–B5 ✅; 28-sep: **B6 + B10 ✅** con transacción revertida (PT 1→0, insumos 17 174 sin cambio, 0 residuos). Guardas nuevas: idempotencia en `entregar_orden()` + consolidación por producto en `validar_stock_pt_lineas()` |
 | C Obras | | | | | |
-| D Producción | 24-sep-2026 | Agente smoke P0 | ⚠️ | OV-0010 | D3–D4 ✅; D5–D6 SKIP BOM |
+| D Producción | 24-sep-2026 · 28-sep-2026 (auditoría) | Agente smoke P0 · agente CLI+BD | ⚠️→✅ | OV-0010 · OV-2026-0009 (17–18-sep) | D3–D4 ✅ (Completada sin pesaje bloqueada); **D5–D6 ✅ con evidencia real persistente** (ver filas D5/D6). Pendiente: re-smoke UI post-fix y fix del atajo de `revision_manual` en `puede_completar_produccion()` (`TODO.md` §4.4) |
 | E Proveedores/OC | 24-sep-2026 · 28-sep-2026 | Agente smoke P0 · agente CLI+BD+UI | ✅ | PRE-0007, OC-2026-0001, OC-2026-0002/0003 (canceladas), PRE-2026-0009 (rechazada), PRE-2026-0012 | E5–E6 ✅; 28-sep: guardas de recepción + conversión de unidades (CLI y **UI real**), E1–E4/E7/E8 ✅. Stock intacto |
 | F RH empleados | | | | | |
 | G Nómina | | | | | |
@@ -235,3 +244,8 @@ No alterar Ventas/Compras/RH. Prefijo TEST. **No** autorizar pólizas de documen
 | K Auditoría de sesión (transversal) | 28-sep-2026 | Agente CLI+BD | ✅ | — (solo código) | 55 usos de `userdata('user_id')` (siempre NULL / usuario 1) → `userdata('id')` en 19 archivos; huérfano `produccion/ajustar_stock_method.php` eliminado; smoke J6 prueba `usuario_id` real |
 
 **Listo para iterar código cuando:** filas **Aud. P0 #1–#3** (B3–B6, E5–E6, D3–D6) en ✅ o SKIP justificado; además C2, y decisión PDF OC (§H) si aplica.
+
+> **Cierre 28-sep-2026 (auditoría posterior):** #1 y #2 quedaron en ✅ el mismo 28-sep; **#3 Producción** cuenta con
+> **evidencia real persistente** de D5/D6 (17–18-sep, `OV-2026-0009`), por lo que ya **no** es un SKIP: lo que falta es
+> el re-smoke en UI con el código actual y el fix del atajo de `revision_manual` en
+> `ProduccionModel::puede_completar_produccion()` (detalle y guion con números medidos en `TODO.md` §4.4).

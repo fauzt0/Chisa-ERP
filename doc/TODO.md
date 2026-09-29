@@ -63,10 +63,11 @@ Ejecutado vía `doc/SMOKE_P0_AGENTE_EJECUTOR.md`. Cierre: OV-2026-0010/0011 canc
 | B6 | ⚠️→fix | Cobro mostrador bajó PT a negativo — **corregido** `validar_stock_pt_lineas` + `entregar_orden` transaccional |
 | E5–E6 | ✅ | OC-2026-0001; recepción 1 Kg BLANCO |
 | D3–D4 | ✅ | Dashboard OV; Completada sin pesaje bloqueada |
-| D5–D6 | ⚠️ SKIP | BOM 570 Kg vs 1 Kg stock — repetir con BOM chico o stock completo |
+| D5–D6 | ✅ parcial | **Evidencia real 17–18-sep-2026:** `PESAJE-venta-28` → OV-2026-0009 `Completada` → lote `PROD-20260918-22-2268` + entrada PT, sin doble descuento. Falta re-smoke UI (ninguna orden abierta pasa el filtro de insumos: 2 por stock, 2 por unidades ambiguas) → guion en §4.4 |
 | I + cli_probe | ✅ | Orígenes OK; sandbox `ok: true` |
 
-**P0 cerrados:** #2 Compras, #4 Facture conexión. **#1** tras re-smoke B6 con fix. **#3** pendiente D5–D6 E2E.
+**P0 cerrados:** #1 (re-smoke B6 28-sep), #2 Compras, #4 Facture conexión. **#3** con evidencia real de flujo
+(17–18-sep) y pendiente solo el re-smoke UI + el fix del atajo de `revision_manual` en `puede_completar_produccion()` (§4.4).
 
 ---
 
@@ -112,7 +113,7 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 ### 4.1 Compras / proveedores — entradas de insumos y productos
 - [X] Recibir OC TEST: smoke E6 OC-2026-0001 — BLANCO 0→1 Kg (`recibir_mercancia`).
 - [X] Recibir producto de reventa: **N/A documentado** (2026-09-28) — 0 productos `tipo_producto='Reventa'` en BD y `detalle_orden_compra.insumo_id` es `NOT NULL` + FK. Si negocio lo pide: patrón `insumos.producto_id`.
-- [X] Preorden → autorizar → OC **sin duplicar**: garantizado en `PreordenesModel::aprobar()` (rechaza si `estatus !== 'Pendiente'`) y verificado 2026-09-28; falta re-smoke en UI. `PRE-2026-0001` sin tocar.
+- [X] Preorden → autorizar → OC **sin duplicar**: garantizado en `PreordenesModel::aprobar()` (rechaza si `estatus !== 'Pendiente'`) y **verificado en UI real el 2026-09-28** (re-autorizar `PRE-2026-0012` → bloqueado, sin OC duplicada). T5 (sin proveedor) también verificado en UI: mensaje claro y 0 OC. `PRE-2026-0001` sin tocar.
 - [X] Unidades: `convertir_unidad_insumo` aplicado en `aprobar()` (preorden → unidad del insumo). Reformulación: la línea de OC **no** guarda unidad, por lo que la conversión no puede hacerse en `recibir_mercancia`.
 - [X] Recepción robusta (2026-09-28): `recibir_mercancia()` valida en dos pasadas estatus de la OC, pertenencia de la línea, cantidad > 0 y sobre-recibo. Evidencia en `MODULOS_ESTADO_CHECKLIST.md` §4.
 - [X] PDF OC + preview correo/WhatsApp: preview verificado en UI 2026-09-28 (`simular_correo_ajax` + `whatsapp_texto_ajax`, sin SMTP). **Gap:** `generar_pdf` entrega HTML imprimible, no PDF binario (ver checklist §H).
@@ -121,10 +122,10 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 - [X] Sucursales POS: tabla `sucursales`, OV con `sucursal_id`, selector de caja (sesión). Matriz CDMX sembrada. Stock PT **sigue global** (kardex por sucursal: posterior).
 - [X] Guard POS: servidor y UI bloquean `precio_venta <= 0` (usa precio de catálogo, no el del ticket).
 - [X] **Indirecta (obra):** agregar producto usa `consultar_insumos_obra` (sin preorden); preórdenes al pasar a **Aprobada** / compromiso (`verificar_insumos_y_preordenes_obra`).
-- [X] **Directa (POS):** cotización → confirmar — smoke 24-sep B3–B5 ✅; B6 revalidar tras guard stock PT.
+- [X] **Directa (POS):** cotización → confirmar — smoke 24-sep B3–B5 ✅; **B6 + B10 re-smoke ✅ 28-sep-2026** (transacción revertida) tras la guarda de stock PT.
 - [X] IVA smoke OV-2026-0010: $80 = (500−0)×0.16 (trigger).
 - [X] Guard POS mostrador: no cobrar **Entregada** si `stock_actual` PT &lt; cantidad (`VentasModel::validar_stock_pt_lineas`).
-- [ ] Entregas almacén + ciclo completo B6 (PT suficiente) — re-smoke post-fix.
+- [X] Entregas almacén + ciclo completo B6 (PT suficiente) — **cerrado 28-sep-2026**: B6 re-smoke ✅ (tx revertida) y bloque **J. Almacén** (J1–J7) ✅ con guardas de `registrar_entrega()`. Nota: el camino feliz se validó con stock inyectado dentro de la transacción porque los pendientes reales tienen PT ≤ 0.
 
 ### 4.3 Obras — cálculos y estatus
 - [X] Materiales obra: `calcular_materiales_linea_obra` / `calcular_insumos_para_proyecto` sin fallback rendimiento 1.0 del simulador general.
@@ -134,12 +135,67 @@ No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PAS
 - [ ] Smoke manual de estatus en UI (checklist §C; `stricton=false` en MySQL).
 
 ### 4.4 Producción / inventario (afinar, no rehacer)
-- [ ] Dashboard: pedidos de **OV y obras** visibles; Completada → lote + entrada PT; segundo pesaje bloqueado.
+- [~] Dashboard: pedidos de **OV y obras** visibles; Completada → lote + entrada PT; segundo pesaje bloqueado.
+  Estado por sub-punto (auditoría 28-sep-2026, evidencia en BD): **OV/obras visibles** ✅;
+  **Completada → lote + entrada PT** ✅ con evidencia real persistente (17–18-sep: `PESAJE-venta-28` →
+  `OV-2026-0009` `Completada` → lote id 1 `PROD-20260918-22-2268` + `movimientos_productos` id 3
+  (`Produccion`, 1 Kg, `venta_id = 28`) → `productos` id 22 stock 0→1 vía `tr_actualizar_stock_producto`,
+  con **0** salidas de insumos nuevas); **2.º pesaje bloqueado** ⚠️ (guardas presentes, rechazo no observado en
+  corrida); **re-smoke UI** ⚠️ (ver *Guion smoke D5–D6* abajo).
 - [X] Merma de pesaje en **servidor**: tope 20% en `ProduccionModel::confirmar_pesaje` (UI aún dice ~20%; caso B3 histórico — validar en smoke D).
 - [ ] Escalado BOM y `explotar_bom_plano` en simulador vs obra (mismas cantidades).
 - [ ] `grupo_color` en explosión (pendiente de `decisiones_pendientes.md` A1) — solo si toca un caso real de I4.
+- [ ] **Fix P1 (hallazgo 28-sep-2026):** `ProduccionModel::puede_completar_produccion()` devuelve **`ok = true`** cuando
+  `revision_manual` no está vacío pero `insumos` quedó vacío: el atajo `if (empty($verificacion['insumos']))` (paso 2,
+  línea ~1141) se evalúa **antes** del chequeo de `revision_manual` (paso 3, línea ~1146). Verificado en vivo con
+  `OV-2025-0013` (id 13): `get_estado_pesaje_orden` → `bloqueada = true`, pero `puede_completar_produccion` → `ok = true`
+  (*"Sin insumos calculables para esta orden."*), lo que en la UI permite marcar **Completada** sin pesaje ni consumo de
+  insumos y generar lote + entrada PT. Fix sugerido: mover el chequeo de `revision_manual` antes del atajo (o marcar
+  `bloqueada` y devolver `ok = false`).
+
+#### Guion smoke D5–D6 (Producción) — números medidos el 28-sep-2026
+
+Medición hecha con `ProduccionModel::get_insumos_requeridos_para_orden()` (solo lectura). El bloqueo real **no es
+solo el stock**: de las 4 órdenes abiertas con producto fabricado, 2 se caen por stock y 2 por unidades ambiguas.
+
+| Orden | Producto / línea | Insumos requeridos (medido) | Bloqueo exacto |
+|-------|------------------|-----------------------------|----------------|
+| `OV-2025-0013` (id 13, **En Preparación**) | PROD-0001 × 2 Cubetas | INS00001 (Pintura Vinílica Blanca) | `revision_manual`: *No hay una conversión segura definida entre "Kg" (fórmula) y "Cubeta" (insumo)* |
+| `OV-TEST-001` (id 21, Confirmada) | PROD-PINT-001 × 5 Cubetas (form. 10) | Resina 61.75 Kg (stock 500) ✅ · Pigmento 14.25 Kg (50) ✅ · **Solvente 5 L** | `revision_manual`: conversión insegura **"Kg" ↔ "L"** (líquidos sin densidad) |
+| `OV-2026-0004` (id 23, Confirmada) | PROD-0001 × 12 Cubetas | BLANCO 6 844.20 Kg | stock 1.00 Kg (faltan 6 843.20) |
+| `OV-2026-0008` (id 27, **Cotización**) | PROD-0001 × 1 Cubeta | BLANCO 570.35 Kg | stock 1.00 Kg; además `Cotización` **no** aparece en el dashboard |
+
+Punto de partida a respetar: `insumos` 61 (BLANCO) = **1.00 Kg**; `productos` 3 = **-57.00**; producto 10 =
+**0.00**; `lotes_produccion` = **1**; `ordenes_produccion` = **0**; 27 filas en `movimientos_inventario`.
+
+**Opción A — recomendada (transacción revertida, 0 residuos):**
+
+1. `$this->db->trans_begin();`
+2. Inyectar materia prima: `UPDATE insumos SET stock_actual = stock_actual + 570.35 WHERE id = 61;`
+   (alcanza 1 cubeta; el tope de merma de 20 % permite hasta 684.42).
+3. `ProduccionModel::confirmar_pesaje_y_descontar(27, 'venta', [['insumo_id' => 61, 'cantidad_real' => 570.35]], 1)`
+   → assert `success = true`, 1 detalle y **una** salida con `referencia = PESAJE-venta-27`.
+4. Repetir la llamada → assert `success = false` con *"Los insumos de esta orden ya fueron descontados por pesaje anterior."*
+   (**2.º pesaje bloqueado**, hoy no observado; es el punto que cierra el sub-punto ⚠️).
+5. `puede_completar_produccion(27, 'venta')` → assert `ok = true` (*"Pesaje confirmado. Lista para completar."*).
+6. Replicar el cierre del controlador (`produccion/Dashboard::actualizar_estatus_ajax` → `Completada`): actualizar
+   estatus, insertar lote y llamar `procesar_inventario_por_produccion(27, 'venta', $lotes)`.
+   Asserts: +1 `lotes_produccion`, +1 `movimientos_productos` (`Produccion`, `venta_id = 27`) y **0** filas nuevas
+   en `movimientos_inventario`.
+7. `$this->db->trans_rollback();` y confirmar que los conteos vuelven al punto de partida.
+   *(Los métodos internos abren `trans_start()`; CI3 resuelve los anidados con SAVEPOINT — mismo patrón de los smokes A1/J1.)*
+
+**Opción B — E2E con UI real (deja residuo, requiere limpieza):**
+
+1. Recepcionar BLANCO vía OC por ≥ 571 Kg (E5/E6) o ajustar `insumos` 61 con el módulo de almacén.
+2. POS: crear **OV TEST-*** de PROD-0001 × 1 Cubeta y pasarla a `Confirmada`/`En Preparación` (así aparece en `/produccion/Dashboard`).
+3. UI: confirmar pesaje (BLANCO 570.35) y verificar que los insumos bajan **una vez**.
+4. UI: **Completada** → verificar lote + etiqueta + entrada PT (producto 3 pasa de -57.00 a -56.00).
+5. Limpieza obligatoria (regla de items TEST): cancelar la OV `TEST-*`, **reverso** de BLANCO a 1.00 Kg y del
+   producto 3 a -57.00, y borrar el lote `QA-*`.
 
 ### 4.8 Contabilidad MX (solo lectura de módulos existentes)
+
 No se cambian Ventas, Compras, Facturación, Nómina ni Almacén. Contabilidad **lee** documentos y arma pólizas/reportes SAT-básicos.
 - [X] Catálogo mínimo (Clientes, IVA, Ventas, Inventario, Proveedores, Capital) + ejercicio/periodos del año en curso si faltan.
 - [X] Orígenes: CFDI `facturas` Emitida → Ingresos; OC Recibida → Diario (inventario/IVA acreditable/proveedores); nómina Pagada → Egresos. Idempotente por `origen`+`origen_id`.
@@ -174,11 +230,12 @@ Handoff para retomar integración OAuth / timbrado sin re-leer todo el código.
 - [X] `expires_in` almacenado: **365**; `refresh_token` en BD **sin** flujo automático (reautorizar con `conectar`).
 - [X] Probe CLI **2026-09-24**: `ok: true`, ambiente `sandbox`, mensaje *Petición satisfactoria* (`cli_probe`).
 
-**Datos locales (`facturas`) — recontado 2026-09-18**
+**Datos locales (`facturas`) — recontado 2026-09-28**
 
-- **8** filas con `folio_fiscal`. **7 Emitida** + **1 Cancelada** (`id=6`). Contabilidad I4 → **7** pólizas `origen=facturas`.
-- **API real (indicio):** `id=7` folio `1770318424`, sin `orden_venta_id`, con `pdf_path`/`xml_path`.
-- **Snapshot POS:** folios `F-OV-2026-*` sin PDF/XML — no timbrar como CFDI real sin auditar.
+- **9** filas con `folio_fiscal` (UUID). **8 Emitida** + **1 Cancelada** (`id=6`, `F-OV-2025-0015`). Contabilidad I4 → **7** pólizas `origen=facturas` (las pólizas ya generadas no se recalculan solas).
+- **API real (indicio):** `id=7` folio `1770318424`, sin `orden_venta_id`, con `pdf_path`/`xml_path` — es la **única** fila con PDF/XML local.
+- **Snapshot POS:** los folios `F-OV-*` (`id=6` cancelada y `id=8–14` emitidas) **no** tienen PDF/XML — no timbrar como CFDI real sin auditar. Nota: hoy **todas** las filas traen `folio_fiscal` (UUID), por lo que el indicador “sin folio” ya no sirve para detectar el snapshot: usar el prefijo `F-OV-`.
+- **8 de 9** filas tienen `orden_venta_id`; la única sin OV es `id=7`.
 
 **Pendientes sugeridos**
 
