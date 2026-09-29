@@ -18,6 +18,9 @@ $stats = $response['stats'] ?? [];
     <div class="col-md-6">
         <h2><i class="fas fa-hard-hat"></i> Gestión de Obras <button type="button" class="erp-btn-ayuda" data-erp-ayuda="obras_lista" title="Funciones de obras">?</button></h2>
     </div>
+    <div class="col-md-6 text-end">
+        <a href="<?=base_url('ventas/ObrasVentas/crear')?>" class="btn btn-primary"><i class="fas fa-plus"></i> Nueva Obra</a>
+    </div>
 </div>
 <?php $this->load->view('ventas/cartera/_panel', ['response' => $response]); ?>
 <!-- Estadísticas -->

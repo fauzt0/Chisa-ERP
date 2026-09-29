@@ -61,6 +61,11 @@ $this->load->view('obras/partials/vinculo_venta', [
 ]);
 ?>
 
+<?php
+// Fase 5: pestañas de presupuestos/APU/generadores/revisión
+$this->load->view('obras/partials/presupuestos_tabs', ['obra' => $obra]);
+?>
+
 <!-- Información General -->
 <div class="row mb-4">
     <div class="col-md-6">

@@ -13,6 +13,11 @@ class ObrasVentas extends MY_Controller {
         $this->load->model('Obras/ObrasModel');
         $this->load->model('Ventas/VentasModel');
         $this->load->model('Ventas/CarteraModel');
+        $this->load->model('Obras/ConceptosObraModel');
+        $this->load->model('Obras/PresupuestosObraModel');
+        $this->load->model('Obras/ApuModel');
+        $this->load->model('Obras/GeneradoresModel');
+        $this->load->model('Obras/RevisionCuantificacionModel');
     }
     
     /**
@@ -437,4 +442,245 @@ class ObrasVentas extends MY_Controller {
             'message' => 'Orden ' . $obra->orden_venta_folio . ' confirmada y enviada a producción'
         ]);
     }
+
+    /* ══════════════════════════════════════════════════════════════════
+       FASE 5 · OBRAS Y PRESUPUESTOS (crear/consultar obra + cotizar)
+       ══════════════════════════════════════════════════════════════════ */
+
+    /**
+     * Formulario para crear una obra (carátula V8) desde Ventas.
+     */
+    public function crear() {
+        $this->load->model('Ventas/SucursalesModel');
+        $data['pageTitle'] = 'Nueva Obra';
+        $data['headTitle'] = 'Nueva Obra';
+        $data['breadcrumb'] = 'Inicio > CRM Ventas > Obras > Nueva';
+        $data['clientes'] = $this->db->where('estatus', 'Activo')->order_by('razon_social', 'ASC')->get('clientes')->result();
+        $data['sucursales'] = $this->SucursalesModel->listar_activas();
+        $data['estatus_validos'] = ObrasModel::ESTATUS_OBRA_VALIDOS;
+        $data['validate'] = '';
+        $data['pageView'] = 'ventas/obras/crear';
+        $this->load->view('layouts/general_template', $data);
+    }
+
+    /**
+     * Crea una obra desde Ventas (AJAX). Folio OB-##### automático.
+     */
+    public function guardar_obra_ajax() {
+        $nombre = trim((string) $this->input->post('nombre'));
+        if ($nombre === '') {
+            echo json_encode(['success' => false, 'message' => 'El nombre de la obra es obligatorio']);
+            return;
+        }
+        $cliente_id = (int) $this->input->post('cliente_id');
+        if ($cliente_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Debe seleccionar un cliente']);
+            return;
+        }
+        $direccion = trim((string) $this->input->post('direccion'));
+        if ($direccion === '') {
+            echo json_encode(['success' => false, 'message' => 'La dirección es obligatoria']);
+            return;
+        }
+
+        $estatus = (string) ($this->input->post('estatus') ?: 'Planificación');
+        if (!$this->ObrasModel->estatus_obra_valido($estatus)) {
+            echo json_encode(['success' => false, 'message' => 'Estatus no válido']);
+            return;
+        }
+
+        $sucursal_id = $this->input->post('sucursal_id');
+        $data = [
+            'nombre' => $nombre,
+            'cliente_id' => $cliente_id,
+            'direccion' => $direccion,
+            'ciudad' => $this->input->post('ciudad'),
+            'estado' => $this->input->post('estado'),
+            'codigo_postal' => $this->input->post('codigo_postal'),
+            'coordenadas_gps' => $this->input->post('coordenadas_gps'),
+            'area_total' => $this->input->post('area_total') ?: null,
+            'tipo_superficie' => $this->input->post('tipo_superficie'),
+            'condiciones_ambientales' => $this->input->post('condiciones_ambientales'),
+            'especificaciones_tecnicas' => $this->input->post('especificaciones_tecnicas'),
+            'estatus' => $estatus,
+            'fecha_inicio_estimada' => $this->input->post('fecha_inicio_estimada') ?: null,
+            'fecha_fin_estimada' => $this->input->post('fecha_fin_estimada') ?: null,
+            'descripcion' => $this->input->post('descripcion'),
+            'notas_internas' => $this->input->post('notas_internas'),
+            'anticipo_porcentaje' => $this->input->post('anticipo_porcentaje') ?: 0,
+            'condiciones_pago' => $this->input->post('condiciones_pago'),
+            'descuento_porcentaje' => $this->input->post('descuento_porcentaje') ?: 0,
+            'iva_porcentaje' => $this->input->post('iva_porcentaje') ?: 16,
+            'costo_estimado' => $this->input->post('costo_estimado') ?: 0,
+            'creado_por' => $this->session->userdata('id') ?: 1,
+        ];
+        if (!empty($sucursal_id)) {
+            $data['sucursal_id'] = (int) $sucursal_id;
+        }
+
+        $obra_id = $this->ObrasModel->crear_obra($data);
+        if ($obra_id) {
+            $this->ObrasModel->calcular_totales_obra($obra_id);
+            echo json_encode(['success' => true, 'message' => 'Obra creada correctamente', 'obra_id' => $obra_id]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al crear la obra']);
+        }
+    }
+
+    /* ─── Presupuestos ─────────────────────────────────────────────── */
+
+    public function crear_presupuesto_ajax() {
+        $obra = $this->ObrasModel->get_obra_detalle((int) $this->input->post('obra_id'));
+        if (!$obra) {
+            echo json_encode(['success' => false, 'message' => 'Obra no encontrada']);
+            return;
+        }
+        $res = $this->PresupuestosObraModel->crear([
+            'obra_id' => (int) $obra->id,
+            'cliente_id' => (int) $obra->cliente_id,
+            'sucursal_id' => $this->input->post('sucursal_id') ?: null,
+            'tipo' => $this->input->post('tipo') ?: 'Presupuesto',
+            'fecha' => $this->input->post('fecha') ?: date('Y-m-d'),
+            'validez_dias' => (int) ($this->input->post('validez_dias') ?: 15),
+            'pres_ref' => $this->input->post('pres_ref'),
+            'atencion' => $this->input->post('atencion'),
+            'condiciones_pago' => $this->input->post('condiciones_pago'),
+            'notas_legales' => $this->input->post('notas_legales'),
+            'descuento_porcentaje' => $this->input->post('descuento_porcentaje') ?: 0,
+            'iva_porcentaje' => $this->input->post('iva_porcentaje') ?: 16,
+            'creado_por' => $this->session->userdata('id') ?: 1,
+        ]);
+        echo json_encode($res);
+    }
+
+    public function listar_presupuestos_ajax() {
+        $obra_id = (int) $this->input->get('obra_id');
+        $presupuestos = $this->PresupuestosObraModel->listar(['obra_id' => $obra_id]);
+        echo json_encode(['success' => true, 'presupuestos' => $presupuestos]);
+    }
+
+    public function get_presupuesto_ajax() {
+        $presupuesto_id = (int) $this->input->get('presupuesto_id');
+        $presupuesto = $this->PresupuestosObraModel->get_detalle($presupuesto_id);
+        if (!$presupuesto) {
+            echo json_encode(['success' => false, 'message' => 'Presupuesto no encontrado']);
+            return;
+        }
+        $apu = [];
+        foreach ($presupuesto->conceptos as $c) {
+            if (!empty($c->concepto_id)) {
+                $apu[$c->id] = $this->ApuModel->calcular_precio_unitario((int) $c->concepto_id);
+            }
+        }
+        $conceptos = $this->ConceptosObraModel->listar();
+        echo json_encode(['success' => true, 'presupuesto' => $presupuesto, 'apu' => $apu, 'conceptos' => $conceptos]);
+    }
+
+    /* ─── Partidas (conceptos del presupuesto) ──────────────────────── */
+
+    public function agregar_partida_ajax() {
+        $res = $this->PresupuestosObraModel->agregar_concepto($this->input->post());
+        echo json_encode($res);
+    }
+
+    public function actualizar_partida_ajax() {
+        $id = (int) $this->input->post('id');
+        $res = $this->PresupuestosObraModel->actualizar_concepto($id, $this->input->post());
+        echo json_encode($res);
+    }
+
+    public function eliminar_partida_ajax() {
+        $id = (int) $this->input->post('id');
+        $res = $this->PresupuestosObraModel->eliminar_concepto($id);
+        echo json_encode($res);
+    }
+
+    /**
+     * Usa el P.UNITARIO del APU de un concepto como P.U. de la partida.
+     */
+    public function usar_pu_partida_ajax() {
+        $partida_id = (int) $this->input->post('partida_id');
+        $this->db->where('id', $partida_id);
+        $partida = $this->db->get('presupuesto_obra_conceptos')->row();
+        if (!$partida || empty($partida->concepto_id)) {
+            echo json_encode(['success' => false, 'message' => 'La partida no tiene concepto con APU']);
+            return;
+        }
+        $apu = $this->ApuModel->calcular_precio_unitario((int) $partida->concepto_id);
+        $this->PresupuestosObraModel->actualizar_concepto($partida_id, ['precio_unitario' => round($apu['precio_unitario'], 2)]);
+        echo json_encode(['success' => true, 'precio_unitario' => round($apu['precio_unitario'], 2)]);
+    }
+
+    /* ─── APU (Unitarios) ──────────────────────────────────────────── */
+
+    public function get_apu_ajax() {
+        $concepto_id = (int) $this->input->get('concepto_id');
+        $apu = $this->ApuModel->calcular_precio_unitario($concepto_id);
+        $apu['materiales_lista'] = $this->ApuModel->get_materiales($concepto_id);
+        $apu['cuadrillas_lista'] = $this->ApuModel->get_cuadrillas($concepto_id);
+        echo json_encode($apu);
+    }
+
+    public function agregar_material_apu_ajax() {
+        echo json_encode($this->ApuModel->agregar_material($this->input->post()));
+    }
+
+    public function eliminar_material_apu_ajax() {
+        echo json_encode($this->ApuModel->eliminar_material((int) $this->input->post('id')));
+    }
+
+    public function agregar_cuadrilla_apu_ajax() {
+        echo json_encode($this->ApuModel->agregar_cuadrilla($this->input->post()));
+    }
+
+    public function eliminar_cuadrilla_apu_ajax() {
+        echo json_encode($this->ApuModel->eliminar_cuadrilla((int) $this->input->post('id')));
+    }
+
+    /* ─── Generadores ───────────────────────────────────────────────── */
+
+    public function listar_generadores_ajax() {
+        $obra_id = (int) $this->input->get('obra_id');
+        $generadores = $this->GeneradoresModel->listar(['obra_id' => $obra_id]);
+        foreach ($generadores as $g) {
+            $g->lineas = $this->GeneradoresModel->listar_lineas($g->id);
+        }
+        echo json_encode(['success' => true, 'generadores' => $generadores]);
+    }
+
+    public function crear_generador_ajax() {
+        echo json_encode($this->GeneradoresModel->crear($this->input->post()));
+    }
+
+    public function agregar_linea_generador_ajax() {
+        echo json_encode($this->GeneradoresModel->agregar_linea($this->input->post()));
+    }
+
+    public function eliminar_linea_generador_ajax() {
+        echo json_encode($this->GeneradoresModel->eliminar_linea((int) $this->input->post('id')));
+    }
+
+    public function aplicar_generador_ajax() {
+        echo json_encode($this->GeneradoresModel->aplicar_a_partida((int) $this->input->post('generador_id')));
+    }
+
+    /* ─── Revisión de cuantificación ────────────────────────────────── */
+
+    public function comparar_revision_ajax() {
+        $obra_id = (int) $this->input->post('obra_id');
+        $res = $this->RevisionCuantificacionModel->comparar($obra_id);
+        $res['revisiones'] = $this->RevisionCuantificacionModel->listar($obra_id);
+        echo json_encode($res);
+    }
+
+    public function actualizar_revision_ajax() {
+        echo json_encode($this->RevisionCuantificacionModel->actualizar_revision((int) $this->input->post('id'), $this->input->post()));
+    }
+
+    public function listar_conceptos_ajax() {
+        echo json_encode(['success' => true, 'conceptos' => $this->ConceptosObraModel->listar()]);
+    }
 }
+
+
+
