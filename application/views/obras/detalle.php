@@ -16,6 +16,10 @@ $badgeColors = [
     'Cancelada' => 'danger'
 ];
 $badgeColor = $badgeColors[$obra->estatus] ?? 'secondary';
+
+// Presupuestos de la obra para el menú de exportación PDF/Excel (marca de agua).
+$presupuestos_export = $response['presupuestos'] ?? [];
+$hojas_export = 'presupuesto,resumen,catalogo,unitario,generador,precios_actuales,revision_cuantificacion,datos_obra';
 ?>
 
 <!-- Breadcrumb -->
@@ -38,6 +42,22 @@ $badgeColor = $badgeColors[$obra->estatus] ?? 'secondary';
         <h3 class="text-muted"><?=$obra->nombre?></h3>
     </div>
     <div class="col-md-6 text-end">
+        <?php if (!empty($presupuestos_export)): ?>
+        <div class="btn-group btn-group-lg mb-2 me-1">
+            <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-file-pdf"></i> Exportar presupuesto
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <?php foreach ($presupuestos_export as $pres): ?>
+                <li><h6 class="dropdown-header"><?=htmlspecialchars($pres->folio, ENT_QUOTES, 'UTF-8')?> · <?=htmlspecialchars($pres->tipo ?? 'Presupuesto', ENT_QUOTES, 'UTF-8')?></h6></li>
+                <li><a class="dropdown-item" target="_blank" href="<?=base_url()?>obras/Obras/exportar_pdf_presupuesto/<?= (int) $pres->id?>/presupuesto"><i class="fas fa-file-pdf text-danger"></i> PDF con marca de agua (C1 Presupuesto)</a></li>
+                <li><a class="dropdown-item" target="_blank" href="<?=base_url()?>obras/Obras/exportar_pdf_presupuesto/<?= (int) $pres->id?>/datos_obra"><i class="fas fa-file-pdf text-danger"></i> PDF Datos de Obra Contratada (C8)</a></li>
+                <li><a class="dropdown-item" href="<?=base_url()?>obras/Obras/exportar_excel/<?= (int) $pres->id?>/presupuesto?hojas=<?=$hojas_export?><i class="fas fa-file-excel text-success"></i> Excel con las 8 hojas</a></li>
+                <li><a class="dropdown-item" target="_blank" href="<?=base_url()?>obras/Obras/imprimir_presupuesto/presupuesto/<?= (int) $pres->id ?>"><i class="fas fa-print text-secondary"></i> Vista para imprimir</a></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
         <button class="btn btn-warning btn-lg mb-2" data-bs-toggle="modal" data-bs-target="#modalEditarObra">
             <i class="fas fa-edit"></i> Editar Obra
         </button>

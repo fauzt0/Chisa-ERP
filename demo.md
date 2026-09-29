@@ -126,6 +126,22 @@
 
 ---
 
+### 9. Obras desde Ventas — exportación con marca de agua (5 min)
+- **Ruta:** `/ventas/ObrasVentas` → detalle de obra (p. ej. OB-00001) → bloque de pestañas
+- **Qué mostrar:**
+  1. Pestañas **Partidas · Unitarios (APU) · Generadores · Revisión · Documentos** (5.ª pestaña nueva).
+  2. Barra **"Exportar con marca de agua"** (aparece al haber presupuesto): menú **PDF** C1–C8,
+     menú **Excel** C1–C8 + **"Libro con las 8 hojas"**, y **"Vista para imprimir"**.
+  3. El PDF sale **carta, server-side con mPDF**, con la sucursal en diagonal en TODAS las páginas
+     (si `sucursales.texto_marca_agua` está vacío se usa `Sucursal: <nombre>`).
+  4. En Excel la marca va en el **encabezado de página** (`oddHeader`) y el libro de 8 hojas trae
+     una hoja por reporte (C1..C8).
+- **Alternativa módulo Obras:** `/obras/Obras/detalle/{id}` → botón rojo **Exportar presupuesto**.
+- **Verificado:** 8/8 PDF (`%PDF`, 2 págs, ExtGState `/CA 0.08` = watermark) y 8/8 XLSX (`PK`,
+  `oddHeader = Sucursal: Matriz CDMX`) ✅ · libro de 8 hojas = 18.8 KB ✅
+
+---
+
 ## Recordatorios técnicos
 
 | Regla | Detalle |
@@ -143,6 +159,7 @@
 - [ ] `PRE-2026-0001` visible como Pendiente
 - [ ] Basura jul-2026 Pendiente (para pago en vivo)
 - [ ] Opcional: ejecutar seeds si quieres OC DEMO1 con adeudo $1,160 completo
+- [ ] Obra con presupuesto activo (hoy `PRES-00001`, obra OB-00001) para la demo de exportación PDF/Excel
 
 ---
 

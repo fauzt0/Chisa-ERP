@@ -107,8 +107,12 @@ class Obras extends MY_Controller {
         $this->viewData['headTitle'] = 'Detalle de Obra';
         $this->viewData['breadcrumb'] = 'Inicio > Obras > Detalle';
         
+        $this->load->model('Obras/PresupuestosObraModel');
         $this->viewData['response'] = [
-            'obra' => $obra
+            'obra' => $obra,
+            // Presupuestos activos de la obra: alimentan el menú de exportación
+            // PDF/Excel con marca de agua (ver vistas/obras/detalle.php).
+            'presupuestos' => $this->PresupuestosObraModel->listar(['obra_id' => (int) $obra_id]),
         ];
         $this->viewData['validate'] = '';
         $this->viewData['pageView'] = 'obras/detalle';

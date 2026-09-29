@@ -429,6 +429,40 @@ Los prompts/checklists operativos de I3 se archivaron en git (commit previo a es
   omitidos). Smoke CLI `smaketmp proveedores` = OK. Domicilios del XLSX = sólo email/teléfono de
   contacto → `direccion/ciudad/estado/cp=''` y `pais='México'`.
 
+### CIERRE FASE G — validación pre-demo (2026-09-29)
+Corrida de validación de los 4 módulos + exportaciones. Hallazgos y correcciones:
+
+- **Hallazgo (faltante real de UI):** los endpoints `exportar_pdf_presupuesto`, `exportar_excel` e
+  `imprimir_presupuesto` respondían 200 pero **ninguna vista los enlazaba** (0 coincidencias en
+  `application/views/`): era imposible exportar sin escribir la URL a mano. Corregido:
+  - `views/obras/partials/presupuestos_tabs.php` → barra **"Exportar con marca de agua"**
+    (`#barraExportar`, visible solo con presupuesto seleccionado) con menú **PDF C1–C8**, menú
+    **Excel C1–C8**, **"Libro con las 8 hojas"** (`?hojas=`) y **"Vista para imprimir"**.
+    JS: `exportarObraPdf()`, `exportarObraExcel()`, `exportarObraExcelTodas()`, `VISTAS_EXPORT`.
+  - `views/obras/detalle.php` + `controllers/obras/Obras.php::detalle()` → botón **"Exportar
+    presupuesto"** (dropdown por presupuesto: PDF C1, PDF C8, Excel 8 hojas, vista imprimible);
+    `detalle()` ahora entrega `response['presupuestos']` (`PresupuestosObraModel::listar`).
+- **Evidencia exportaciones (sesión HTTP real, presupuesto 8 / PRES-00001):**
+  - 8/8 **PDF** `%PDF-` (~58–87 KB, 2 páginas) con `ExtGState /CA 0.08 /ca 0.08` → marca de agua
+    nativa de mPDF presente en **todas** las páginas.
+  - 8/8 **XLSX** `PK` con `oddHeader = "&C&8Sucursal: Matriz CDMX"`; `?hojas=` de las 8 vistas →
+    libro de **8 hojas** (18,854 B) nombres `Presupuesto…Datos_obra`.
+  - `get_marca_agua()` confirmado con doble fallback: texto → `Sucursal: <nombre sucursal>`;
+    logo → `configuraciones_empresa.logo`. Por eso la marca sale aunque
+    `sucursales.texto_marca_agua` esté `NULL` (única sucursal activa = Matriz CDMX).
+- **Pestaña Documentos** verificada end-to-end: `documentos_ajax` / `subir_documento_ajax` /
+  `eliminar_documento_ajax` (tabla real: **`obras_archivos`**, no existe `documentos_obra`).
+- **Higiene:** `uploads/tmp/` (tempDir de mPDF) añadido a `.gitignore` + `uploads/tmp/.htaccess`
+  (`Require all denied`; el host ya devolvía 403). Folio de prueba `SMOKE-PDF-1` renombrado a
+  **`PRES-00001`** para que el documento cliente no salga con folio de smoke test.
+- **Sin hallazgos:** RH/Compras/Ventas/Obras HTTP 200 sin `Fatal error`/`Parse error`; `composer
+  audit` = no advisories; `php -l` limpio en archivos tocados; PHP 8.3.33; `application/logs/`
+  sin errores nuevos.
+- **Pendiente de decisión de negocio (no bloquea demo):** no existe un "archivo/reporte de estatus
+  de obra" aparte — lo que existe es el badge de estatus + avance en `obras/Obras/detalle`, el PDF
+  **C8 Datos de Obra Contratada** y la pestaña Documentos. Si el cliente espera un reporte de
+  estatus/avance imprimible (tipo acta), habría que especificarlo como vista C9.
+
 ### Reglas de repo cumplidas
 R1 branch iteracion-5 ✔ · R2 español ✔ · R3 commits por fase ✔ · R4 sin Cli_* ✔ · R5 docs ✔ ·
 R6 ProduccionModel intacto ✔ · R7 git limpio ✔ · R8 .gitignore entrenamiento_4 ✔ · R9 precios 0.00 + TODO ✔.

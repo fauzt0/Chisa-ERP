@@ -15,6 +15,10 @@ application/logs/*
 !application/logs/index.html
 !application/logs/.htaccess
 
+# Temporal de mPDF (exportación PDF de obras) y subidas efímeras
+uploads/tmp/*
+!uploads/tmp/.htaccess
+
 # Permitir archivos .htaccess de seguridad
 !application/*/.htaccess
 !.htaccess

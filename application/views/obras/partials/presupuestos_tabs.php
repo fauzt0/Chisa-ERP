@@ -27,6 +27,43 @@ $obra_id = (int) ($obra->id ?? 0);
                 </div>
             </div>
 
+            <!-- ── Exportación con marca de agua (PDF mPDF / Excel PhpSpreadsheet) ── -->
+            <div class="alert alert-light border py-2 mb-3 d-none" id="barraExportar">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="fw-bold small"><i class="fas fa-stamp"></i> Exportar con marca de agua:</span>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-danger dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-file-pdf"></i> PDF</button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraPdf('presupuesto');return false;">C1 · Presupuesto</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraPdf('resumen');return false;">C2 · Resumen</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraPdf('catalogo');return false;">C3 · Catálogo de conceptos</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraPdf('unitario');return false;">C4 · Unitarios (APU)</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraPdf('generador');return false;">C5 · Generadores</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraPdf('precios_actuales');return false;">C6 · Precios actuales</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraPdf('revision_cuantificacion');return false;">C7 · Revisión de cuantificación</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraPdf('datos_obra');return false;">C8 · Datos de obra contratada</a></li>
+                        </ul>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-file-excel"></i> Excel</button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraExcel('presupuesto');return false;">C1 · Presupuesto</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraExcel('resumen');return false;">C2 · Resumen</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraExcel('catalogo');return false;">C3 · Catálogo de conceptos</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraExcel('unitario');return false;">C4 · Unitarios (APU)</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraExcel('generador');return false;">C5 · Generadores</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraExcel('precios_actuales');return false;">C6 · Precios actuales</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraExcel('revision_cuantificacion');return false;">C7 · Revisión de cuantificación</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraExcel('datos_obra');return false;">C8 · Datos de obra contratada</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarObraExcelTodas();return false;"><i class="fas fa-table"></i> <strong>Libro con las 8 hojas</strong></a></li>
+                        </ul>
+                    </div>
+                    <a class="btn btn-sm btn-outline-secondary" id="btnVistaImprimir" target="_blank" href="#"><i class="fas fa-print"></i> Vista para imprimir</a>
+                    <span class="small text-muted ms-auto">Motor PDF: mPDF 8.x · carta · marca de agua de sucursal en todas las páginas</span>
+                </div>
+            </div>
+
             <!-- ── Tab Partidas ── -->
             <div class="tab-pane fade show active" id="tabPartidas">
                 <div class="d-flex justify-content-between mb-2">
@@ -217,10 +254,35 @@ function listarPresupuestos() {
 
 function cargarPresupuesto(id) {
     presupuestoActual = parseInt(id) || 0;
-    if (!presupuestoActual) { $('#tablaPartidas tbody').empty(); $('#totalesPresupuesto').empty(); return; }
+    if (!presupuestoActual) {
+        $('#barraExportar').addClass('d-none');
+        $('#tablaPartidas tbody').empty(); $('#totalesPresupuesto').empty();
+        return;
+    }
+    $('#barraExportar').removeClass('d-none');
+    $('#btnVistaImprimir').attr('href', BASE + 'imprimir_presupuesto/presupuesto/' + presupuestoActual);
     $.get(BASE + 'get_presupuesto_ajax', {presupuesto_id: presupuestoActual}, function(res) {
         if (res.success) renderPartidas(res.presupuesto, res.apu);
     }, 'json');
+}
+
+/* ── Exportación con marca de agua (PDF = mPDF server-side, Excel = PhpSpreadsheet) ── */
+var VISTAS_EXPORT = ['presupuesto', 'resumen', 'catalogo', 'unitario', 'generador',
+                     'precios_actuales', 'revision_cuantificacion', 'datos_obra'];
+
+function exportarObraPdf(tipo) {
+    if (!presupuestoActual) { alert('Seleccione o cree un presupuesto antes de exportar'); return; }
+    window.open(BASE + 'exportar_pdf_presupuesto/' + presupuestoActual + '/' + tipo, '_blank');
+}
+
+function exportarObraExcel(tipo) {
+    if (!presupuestoActual) { alert('Seleccione o cree un presupuesto antes de exportar'); return; }
+    window.location.href = BASE + 'exportar_excel/' + presupuestoActual + '/' + tipo;
+}
+
+function exportarObraExcelTodas() {
+    if (!presupuestoActual) { alert('Seleccione o cree un presupuesto antes de exportar'); return; }
+    window.location.href = BASE + 'exportar_excel/' + presupuestoActual + '/presupuesto?hojas=' + VISTAS_EXPORT.join(',');
 }
 
 function renderPartidas(p, apu) {

@@ -698,6 +698,22 @@ class ObrasVentas extends MY_Controller {
     }
 
     /**
+     * Renderiza una vista de impresión C1..C8 (HTML con marca de agua, ?auto=1 imprime directo).
+     * Duplicado intencional de obras/Obras::imprimir_presupuesto() para que la pestaña de
+     * presupuestos de Ventas no dependa de la ruta del módulo Obras.
+     */
+    public function imprimir_presupuesto($tipo, $presupuesto_id) {
+        $this->load->model('Obras/ExportacionObraModel');
+        $data = $this->ExportacionObraModel->preparar_datos($tipo, (int) $presupuesto_id);
+        if (!$data) {
+            show_404();
+            return;
+        }
+        $vista = $this->ExportacionObraModel->nombre_vista($tipo);
+        $this->load->view('obras/' . $vista, $data);
+    }
+
+    /**
      * Documentos (archivos adjuntos) de la obra — AJAX.
      * Alimenta la pestaña "Documentos" de la vista de obra en Ventas.
      */
