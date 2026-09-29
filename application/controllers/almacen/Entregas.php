@@ -88,7 +88,7 @@ class Entregas extends MY_Controller {
         
         // Preparar datos
         // FIX: la sesión guarda 'id', no 'user_id'
-        $usuario_id_ov = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 0);
+        $usuario_id_ov = (int) ($this->session->userdata('id') ?: 0);
         $data = [
             'tipo_origen' => 'Orden Venta',
             'orden_venta_id' => $orden_id,
@@ -135,7 +135,7 @@ class Entregas extends MY_Controller {
         
         // Preparar datos
         // FIX: la sesión guarda 'id', no 'user_id'
-        $usuario_id = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 0);
+        $usuario_id = (int) ($this->session->userdata('id') ?: 0);
         $data = [
             'tipo_origen' => 'Obra',
             'obra_id' => $obra_id,

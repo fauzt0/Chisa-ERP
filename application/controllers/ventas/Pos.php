@@ -153,7 +153,7 @@ class Pos extends MY_Controller {
             'descuento_nombre' => $descuento_nombre ?: null,
             'descuento_tipo' => $descuento_tipo ?: null,
             'descuento_valor' => $descuento_valor ?: 0,
-            'creado_por' => (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 0),
+            'creado_por' => (int) ($this->session->userdata('id') ?: 0),
         ];
         
         $orden_id = $this->VentasModel->crear_orden($data_orden);
@@ -167,7 +167,7 @@ class Pos extends MY_Controller {
         $this->VentasModel->agregar_detalle($orden_id, $detalles);
         
         // Verificar insumos: solo consulta en cotización; pre-órdenes al comprometer venta
-        $usuario_id = (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 0);
+        $usuario_id = (int) ($this->session->userdata('id') ?: 0);
         $insumos_result = null;
         if ($usuario_id > 0) {
             $es_compromiso = in_array($estatus_final, ['Confirmada', 'En Preparación', 'Entregada'], true);

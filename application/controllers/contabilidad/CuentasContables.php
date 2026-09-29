@@ -139,7 +139,7 @@ class CuentasContables extends MY_Controller {
             'requiere_auxiliar' => $this->input->post('requiere_auxiliar') ? 1 : 0,
             'tipo_auxiliar' => $this->input->post('tipo_auxiliar'),
             'saldo_inicial' => $this->input->post('saldo_inicial') ?: 0,
-            'usuario_creacion' => $this->session->userdata('user_id')
+            'usuario_creacion' => $this->session->userdata('id')
         ];
         
         // Validaciones

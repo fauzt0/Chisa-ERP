@@ -208,7 +208,7 @@ class VentasModel extends MY_Model {
 
         $insumos_result = null;
         $CI =& get_instance();
-        $usuario_id = (int) ($CI->session->userdata('id') ?: $CI->session->userdata('user_id') ?: 0);
+        $usuario_id = (int) ($CI->session->userdata('id') ?: 0);
         if ($usuario_id > 0) {
             $insumos_result = $this->verificar_insumos_y_preordenes_venta($id, $usuario_id);
         }

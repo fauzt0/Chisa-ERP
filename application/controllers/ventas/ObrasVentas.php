@@ -284,7 +284,7 @@ class ObrasVentas extends MY_Controller {
             'razon_social_receptor' => $razon_social_receptor,
             'direccion_receptor' => $direccion_receptor,
             'notas' => $notas,
-            'creado_por' => $this->session->userdata('user_id') ?? 1
+            'creado_por' => $this->session->userdata('id') ?? 1
         ];
         
         $this->db->insert('facturas_obras', $data_factura);
@@ -420,7 +420,7 @@ class ObrasVentas extends MY_Controller {
             echo json_encode(['success' => false, 'message' => 'ID de obra no proporcionado']);
             return;
         }
-        $usuario_id = $this->session->userdata('user_id') ?: 1;
+        $usuario_id = $this->session->userdata('id') ?: 1;
         echo json_encode($this->ObrasModel->generar_orden_venta_desde_obra($obra_id, $usuario_id));
     }
 

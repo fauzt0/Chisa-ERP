@@ -794,7 +794,7 @@ class ObrasModel extends CI_Model {
         }
 
         $CI =& get_instance();
-        $usuario_id = $CI->session->userdata('user_id') ?: 1;
+        $usuario_id = $CI->session->userdata('id') ?: 1;
 
         foreach ($obra->productos as $producto) {
             $cantidad = $producto->cantidad_ajustada ?: $producto->cantidad_calculada;

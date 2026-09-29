@@ -312,7 +312,7 @@ class Productos extends MY_Controller {
             'foto_producto' => $foto_producto,
             'catalogo_pdf' => $catalogo_pdf,
             'fecha_actualizacion_catalogo' => $catalogo_pdf ? date('Y-m-d H:i:s') : NULL,
-            'usuario_creacion' => $this->session->userdata('user_id')
+            'usuario_creacion' => $this->session->userdata('id')
         ];
         
         // Validaciones
@@ -432,7 +432,7 @@ class Productos extends MY_Controller {
             'unidad_produccion' => $this->input->post('unidad_produccion'),
             'costo_mano_obra' => $this->input->post('costo_mano_obra') ?: 0,
             'costo_indirecto' => $this->input->post('costo_indirecto') ?: 0,
-            'usuario_creacion' => $this->session->userdata('user_id')
+            'usuario_creacion' => $this->session->userdata('id')
         ];
         
         if(empty($data['producto_id']) || empty($data['cantidad_producida'])) {
@@ -488,7 +488,7 @@ class Productos extends MY_Controller {
             'rendimiento_m2_por_kg' => $this->input->post('rendimiento_m2_por_kg') ?: null,
             'costo_mano_obra'       => $this->input->post('costo_mano_obra') ?: 0,
             'costo_indirecto'       => $this->input->post('costo_indirecto') ?: 0,
-            'usuario_creacion'      => $this->session->userdata('user_id'),
+            'usuario_creacion'      => $this->session->userdata('id'),
         ];
 
         $res = $this->ProductosModel->guardar_formulacion_completa($cabecera, $componentes, $modo, $formulacion_id);
@@ -609,7 +609,7 @@ class Productos extends MY_Controller {
     public function registrar_salida_escaneo_ajax() {
         $codigo = $this->input->post('codigo');
         $cantidad = $this->input->post('cantidad');
-        $user_id = $this->session->userdata('user_id');
+        $user_id = $this->session->userdata('id');
         
         if(!$codigo || !$cantidad) {
             echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
@@ -967,7 +967,7 @@ class Productos extends MY_Controller {
                 'costo_indirecto'      => $formulacion_orig->costo_indirecto,
                 'version'              => $nueva_version,
                 'es_activa'            => FALSE,
-                'usuario_creacion'     => $this->session->userdata('user_id'),
+                'usuario_creacion'     => $this->session->userdata('id'),
                 'fecha_creacion'       => date('Y-m-d H:i:s'),
             ];
 
@@ -1245,7 +1245,7 @@ class Productos extends MY_Controller {
 
         $this->db->insert('log_importaciones', [
             'archivo'                => $nombre_archivo,
-            'usuario_id'             => (int)($this->session->userdata('user_id') ?: 0),
+            'usuario_id'             => (int)($this->session->userdata('id') ?: 0),
             'formulaciones_creadas'  => count($importados),
             'productos_importados'   => count(array_unique(array_column($importados, 'producto'))),
             'insumos_creados'        => $insumos_creados_cnt,
@@ -1859,7 +1859,7 @@ class Productos extends MY_Controller {
             'rendimiento_m2_por_kg' => $rendimiento_m2,
             'version'            => $version,
             'es_activa'          => FALSE,
-            'usuario_creacion'   => $this->session->userdata('user_id'),
+            'usuario_creacion'   => $this->session->userdata('id'),
             'fecha_creacion'     => date('Y-m-d H:i:s'),
         ]);
         $formulacion_id = $this->db->insert_id();
@@ -2202,7 +2202,7 @@ class Productos extends MY_Controller {
             'contenido_neto' => $kg_lote > 0 ? $kg_lote : null,
             'unidad_contenido' => 'Kg',
             'estatus'        => 'Activo',
-            'usuario_creacion' => (int)($this->session->userdata('user_id') ?: 0),
+            'usuario_creacion' => (int)($this->session->userdata('id') ?: 0),
             'fecha_creacion' => date('Y-m-d H:i:s'),
         ]);
 

@@ -607,7 +607,7 @@ class Clientes extends MY_Controller {
             return;
         }
 
-        $usuario_id = (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 1);
+        $usuario_id = (int) ($this->session->userdata('id') ?: 1);
         $data = [
             'cliente_id' => $cliente_id,
             'tipo' => $tipo,

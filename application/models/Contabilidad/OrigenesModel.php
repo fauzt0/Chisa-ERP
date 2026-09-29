@@ -426,10 +426,10 @@ class OrigenesModel extends CI_Model {
             'total_debe' => round($debe, 2),
             'total_haber' => round($haber, 2),
             'estatus' => $autorizar ? 'Autorizada' : 'Borrador',
-            'usuario_creacion' => $this->session->userdata('user_id'),
+            'usuario_creacion' => $this->session->userdata('id'),
         ];
         if ($autorizar) {
-            $data['usuario_autorizacion'] = $this->session->userdata('user_id');
+            $data['usuario_autorizacion'] = $this->session->userdata('id');
             $data['fecha_autorizacion'] = date('Y-m-d H:i:s');
         }
         return $this->ContabilidadModel->crear_poliza($data, $p['detalle']);

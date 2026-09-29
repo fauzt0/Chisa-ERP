@@ -130,7 +130,7 @@ class Nomina extends MY_Controller {
             'periodo_fin' => $this->input->post('periodo_fin'),
             'tipo_nomina' => $this->input->post('tipo_nomina'),
             'fecha_pago' => $this->input->post('fecha_pago'),
-            'usuario_creacion' => $this->session->userdata('user_id')
+            'usuario_creacion' => $this->session->userdata('id')
         ];
         
         $result = $this->db->insert('nominas', $data);
@@ -358,9 +358,9 @@ class Nomina extends MY_Controller {
             'origen_id' => $nomina_id,
             'total_debe' => $nomina->total_percepciones,
             'total_haber' => $nomina->total_percepciones,
-            'usuario_creacion' => $this->session->userdata('user_id'),
+            'usuario_creacion' => $this->session->userdata('id'),
             'estatus' => 'Autorizada',
-            'usuario_autorizacion' => $this->session->userdata('user_id'),
+            'usuario_autorizacion' => $this->session->userdata('id'),
             'fecha_autorizacion' => date('Y-m-d H:i:s')
         ];
         

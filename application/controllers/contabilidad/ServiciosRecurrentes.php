@@ -200,7 +200,7 @@ class ServiciosRecurrentes extends MY_Controller {
             'cuenta_bancaria_id' => $this->input->post('cuenta_bancaria_id') ?: NULL,
             'fecha_inicio' => $this->input->post('fecha_inicio'),
             'notas' => $this->input->post('notas'),
-            'usuario_creacion' => $this->session->userdata('user_id')
+            'usuario_creacion' => $this->session->userdata('id')
         ];
         
         $result = $this->db->insert('servicios_recurrentes', $data);
@@ -248,7 +248,7 @@ class ServiciosRecurrentes extends MY_Controller {
             'referencia' => $referencia,
             'notas' => $notas,
             'estatus' => 'Pagado',
-            'usuario_registro' => $this->session->userdata('user_id')
+            'usuario_registro' => $this->session->userdata('id')
         ]);
         
         // Generar póliza y movimiento bancario
@@ -333,9 +333,9 @@ class ServiciosRecurrentes extends MY_Controller {
             'origen_id' => $pago_id,
             'total_debe' => $monto,
             'total_haber' => $monto,
-            'usuario_creacion' => $this->session->userdata('user_id'),
+            'usuario_creacion' => $this->session->userdata('id'),
             'estatus' => 'Autorizada',
-            'usuario_autorizacion' => $this->session->userdata('user_id'),
+            'usuario_autorizacion' => $this->session->userdata('id'),
             'fecha_autorizacion' => date('Y-m-d H:i:s')
         ];
         
@@ -374,7 +374,7 @@ class ServiciosRecurrentes extends MY_Controller {
             'concepto' => 'Pago de ' . $servicio->nombre_servicio,
             'monto' => $monto,
             'saldo' => $nuevo_saldo,
-            'usuario_creacion' => $this->session->userdata('user_id')
+            'usuario_creacion' => $this->session->userdata('id')
         ]);
         
         // Actualizar saldo

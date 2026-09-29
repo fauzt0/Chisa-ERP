@@ -200,7 +200,7 @@ class Bancos extends MY_Controller {
             'saldo_inicial' => $this->input->post('saldo_inicial') ?: 0,
             'saldo_actual' => $this->input->post('saldo_inicial') ?: 0,
             'cuenta_contable_id' => $this->input->post('cuenta_contable_id') ?: NULL,
-            'usuario_creacion' => $this->session->userdata('user_id')
+            'usuario_creacion' => $this->session->userdata('id')
         ];
         
         $result = $this->db->insert('cuentas_bancarias', $data);
@@ -245,7 +245,7 @@ class Bancos extends MY_Controller {
             'referencia' => $this->input->post('referencia'),
             'monto' => $monto,
             'saldo' => $nuevo_saldo,
-            'usuario_creacion' => $this->session->userdata('user_id')
+            'usuario_creacion' => $this->session->userdata('id')
         ];
         
         $this->db->trans_start();
@@ -323,9 +323,9 @@ class Bancos extends MY_Controller {
             'origen_id' => $movimiento_id,
             'total_debe' => $mov->monto,
             'total_haber' => $mov->monto,
-            'usuario_creacion' => $this->session->userdata('user_id'),
+            'usuario_creacion' => $this->session->userdata('id'),
             'estatus' => 'Autorizada',
-            'usuario_autorizacion' => $this->session->userdata('user_id'),
+            'usuario_autorizacion' => $this->session->userdata('id'),
             'fecha_autorizacion' => date('Y-m-d H:i:s')
         ];
         

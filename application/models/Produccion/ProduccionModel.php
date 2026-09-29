@@ -450,7 +450,7 @@ class ProduccionModel extends CI_Model {
             return ['success' => false, 'message' => $mensaje, 'detalles' => array_values($faltantes), 'tipo_error' => 'stock_insuficiente'];
         }
 
-        $usuario_id = (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 1);
+        $usuario_id = (int) ($this->session->userdata('id') ?: 1);
         $ref = $this->referencia_pesaje($ref_tipo, $ref_id);
         $pesajes = [];
 
@@ -769,7 +769,7 @@ class ProduccionModel extends CI_Model {
                 'stock_nuevo'     => $stock_anterior + $lote['cantidad'],
                 'motivo'          => 'Folio Lote: ' . $lote['codigo_barras'],
                 'fecha_movimiento'=> date('Y-m-d H:i:s'),
-                'usuario_id'      => $this->session->userdata('user_id') ?: 1
+                'usuario_id'      => $this->session->userdata('id') ?: 1
             ];
             
             // Vincular con OV u Obra según corresponda

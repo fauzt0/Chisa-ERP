@@ -158,7 +158,7 @@ class Polizas extends MY_Controller {
             'concepto' => $this->input->post('concepto'),
             'referencia' => $this->input->post('referencia'),
             'origen' => 'manual',
-            'usuario_creacion' => $this->session->userdata('user_id')
+            'usuario_creacion' => $this->session->userdata('id')
         ];
         
         // Detalle de la póliza
@@ -206,7 +206,7 @@ class Polizas extends MY_Controller {
         
         $data = [
             'estatus' => 'Autorizada',
-            'usuario_autorizacion' => $this->session->userdata('user_id'),
+            'usuario_autorizacion' => $this->session->userdata('id'),
             'fecha_autorizacion' => date('Y-m-d H:i:s')
         ];
         

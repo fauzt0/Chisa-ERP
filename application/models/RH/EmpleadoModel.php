@@ -128,7 +128,7 @@ class EmpleadoModel extends MY_Model {
         }
         
         // Agregar usuario que da de alta
-        $data['usuario_alta_id'] = $this->session->userdata('user_id') ?? null;
+        $data['usuario_alta_id'] = $this->session->userdata('id') ?? null;
         
         // Insertar empleado (automáticamente agrega fecha_alta y estatus=1)
         $id = $this->insert($data);
@@ -170,7 +170,7 @@ class EmpleadoModel extends MY_Model {
         }
         
         // Agregar usuario que edita
-        $data['usuario_edicion_id'] = $this->session->userdata('user_id') ?? null;
+        $data['usuario_edicion_id'] = $this->session->userdata('id') ?? null;
         
         // Actualizar (automáticamente agrega fecha_edicion)
         $this->update($id, $data);

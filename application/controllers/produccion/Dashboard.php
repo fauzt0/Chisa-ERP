@@ -392,7 +392,7 @@ class Dashboard extends MY_Controller {
             return;
         }
 
-        $usuario_id = (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 0);
+        $usuario_id = (int) ($this->session->userdata('id') ?: 0);
         if ($usuario_id <= 0) {
             echo json_encode(['success' => false, 'message' => 'Sesión inválida']);
             return;
@@ -468,7 +468,7 @@ class Dashboard extends MY_Controller {
             $insumos_canonicos,
             $origen_tipo,
             (int) $orden_id,
-            $this->session->userdata('user_id'),
+            $this->session->userdata('id'),
             $notas
         );
 

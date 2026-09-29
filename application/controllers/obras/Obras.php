@@ -163,7 +163,7 @@ class Obras extends MY_Controller {
             'anticipo_porcentaje' => $this->input->post('anticipo_porcentaje') ?: 0,
             'condiciones_pago' => $this->input->post('condiciones_pago'),
             'tiempo_entrega' => $this->input->post('tiempo_entrega'),
-            'creado_por' => $this->session->userdata('user_id') ?: 1
+            'creado_por' => $this->session->userdata('id') ?: 1
         ];
         
         $obra_id = $this->ObrasModel->crear_obra($data);
@@ -190,7 +190,7 @@ class Obras extends MY_Controller {
      */
     public function actualizar_ajax() {
         $obra_id = $this->input->post('obra_id');
-        $usuario_id = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 1);
+        $usuario_id = (int) ($this->session->userdata('id') ?: 1);
 
         $result = $this->ObrasModel->actualizar_obra_desde_post($obra_id, $this->input->post(), $usuario_id);
 
@@ -218,7 +218,7 @@ class Obras extends MY_Controller {
      */
     public function eliminar_ajax() {
         $obra_id = $this->input->post('obra_id');
-        $usuario_id = $this->session->userdata('user_id');
+        $usuario_id = $this->session->userdata('id');
         
         $result = $this->ObrasModel->eliminar_obra($obra_id, $usuario_id);
         
@@ -260,7 +260,7 @@ class Obras extends MY_Controller {
 
         $data = array_merge($preparado['data'], [
             'obra_id' => $obra_id,
-            'agregado_por' => $this->session->userdata('user_id') ?: 1,
+            'agregado_por' => $this->session->userdata('id') ?: 1,
         ]);
 
         $id = $this->ObrasModel->agregar_producto($data);
@@ -268,7 +268,7 @@ class Obras extends MY_Controller {
         if ($id) {
             $this->ObrasModel->calcular_totales_obra($obra_id);
 
-            $usuario_id = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 0);
+            $usuario_id = (int) ($this->session->userdata('id') ?: 0);
             $insumos_result = ($usuario_id > 0)
                 ? $this->ObrasModel->consultar_insumos_obra($obra_id)
                 : null;
@@ -353,7 +353,7 @@ class Obras extends MY_Controller {
             'obra_id' => $this->input->post('obra_id'),
             'comentario' => $this->input->post('comentario'),
             'tipo' => $this->input->post('tipo') ?: 'General',
-            'usuario_id' => $this->session->userdata('user_id') ?: 1
+            'usuario_id' => $this->session->userdata('id') ?: 1
         ];
         
         $id = $this->ObrasModel->agregar_comentario($data);
@@ -411,7 +411,7 @@ class Obras extends MY_Controller {
                 'categoria' => $this->input->post('categoria') ?: 'Otro',
                 'descripcion' => $this->input->post('descripcion'),
                 'etiquetas' => $this->input->post('etiquetas'),
-                'subido_por' => $this->session->userdata('user_id') ?: 1
+                'subido_por' => $this->session->userdata('id') ?: 1
             ];
             
             $id = $this->ObrasModel->guardar_archivo($data);
@@ -516,7 +516,7 @@ class Obras extends MY_Controller {
             'referencia' => $this->input->post('referencia'),
             'concepto' => $this->input->post('concepto'),
             'notas' => $this->input->post('notas'),
-            'recibido_por' => $this->session->userdata('user_id') ?: 1
+            'recibido_por' => $this->session->userdata('id') ?: 1
         ];
         
         $pago_id = $this->ObrasModel->registrar_pago($data);
@@ -729,7 +729,7 @@ class Obras extends MY_Controller {
             return;
         }
 
-        $usuario_id = $this->session->userdata('user_id') ?: 1;
+        $usuario_id = $this->session->userdata('id') ?: 1;
         $result = $this->ObrasModel->generar_orden_venta_desde_obra($obra_id, $usuario_id);
         echo json_encode($result);
     }
