@@ -720,8 +720,11 @@ class GestionUsuarios extends MY_Controller {
     $this->viewData['pageTitle'] = 'Datos de la Empresa';
     $this->viewData['headTitle'] = 'Datos de la Empresa';
     $this->viewData['breadcrumb'] = 'Inicio > Administradores > Datos de la Empresa';
+    $this->load->model('Ventas/SucursalesModel');
     $this->viewData['response'] = [
       'empresa' => $this->EmpresaModel->get_config(),
+      // Marca de agua por sucursal para exportaciones de obras (PDF/Excel)
+      'sucursales' => $this->SucursalesModel->listar_todas(),
     ];
     $this->viewData['pageView'] = 'usuarios/empresa/main';
     $this->load->view('layouts/general_template', $this->viewData);

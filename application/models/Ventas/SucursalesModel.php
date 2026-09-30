@@ -84,6 +84,55 @@ class SucursalesModel extends CI_Model {
     }
 
     /**
+     * Todas las sucursales (activas e inactivas) para el panel de configuración
+     * de marca de agua (usuarios/GestionUsuarios/empresa).
+     */
+    public function listar_todas() {
+        $this->asegurar_infraestructura();
+        $this->db->order_by('estatus', 'ASC');
+        $this->db->order_by('nombre', 'ASC');
+        return $this->db->get('sucursales')->result();
+    }
+
+    /**
+     * Actualiza campos de una sucursal, incluida su marca de agua
+     * (texto_marca_agua / logo_marca_agua) usada por ExportacionObraModel.
+     * Cadena vacía = NULL, para que get_marca_agua() aplique el fallback
+     * ("Sucursal: <nombre>" + logo de configuracion_empresa).
+     */
+    public function actualizar($id, array $data) {
+        $this->asegurar_infraestructura();
+        if (!$this->get($id)) {
+            return ['success' => false, 'message' => 'Sucursal no encontrada'];
+        }
+
+        $permitidas = ['nombre', 'direccion', 'telefono', 'estatus', 'texto_marca_agua', 'logo_marca_agua'];
+        $update = [];
+        foreach ($permitidas as $campo) {
+            if (!array_key_exists($campo, $data)) {
+                continue;
+            }
+            $valor = is_string($data[$campo]) ? trim($data[$campo]) : $data[$campo];
+            if ($campo === 'estatus') {
+                if (!in_array($valor, ['Activa', 'Inactiva'], true)) {
+                    continue;
+                }
+                $update[$campo] = $valor;
+                continue;
+            }
+            $update[$campo] = ($valor === '' || $valor === null) ? null : $valor;
+        }
+
+        if (empty($update)) {
+            return ['success' => false, 'message' => 'No hay cambios que guardar'];
+        }
+
+        $this->db->where('id', (int) $id)->update('sucursales', $update);
+
+        return ['success' => true, 'message' => 'Sucursal actualizada', 'sucursal' => $this->get($id)];
+    }
+
+    /**
      * Marca de agua de una sucursal para exportaciones (Excel/PDF).
      * Devuelve {logo, texto} con fallback al logo de configuracion_empresa y
      * al nombre de la sucursal.

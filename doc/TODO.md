@@ -467,3 +467,91 @@ Corrida de validación de los 4 módulos + exportaciones. Hallazgos y correccion
 R1 branch iteracion-5 ✔ · R2 español ✔ · R3 commits por fase ✔ · R4 sin Cli_* ✔ · R5 docs ✔ ·
 R6 ProduccionModel intacto ✔ · R7 git limpio ✔ · R8 .gitignore entrenamiento_4 ✔ · R9 precios 0.00 + TODO ✔.
 
+
+---
+
+### SEGUIMIENTO 2026-09-29 (auditoría pre-demo) — marca de agua por sucursal a medias y permisos del login demo
+
+Revisión de **solo lectura** (sin `INSERT`/`UPDATE`: no se tocó datos). Se documenta y se comitea el
+WIP que estaba suelto en el árbol de trabajo.
+
+> **Corrección a la sección “Reglas de repo cumplidas” de arriba:** `R7 git limpio ✔` era inexacto —
+> había **3 archivos modificados sin commitear** (los del WIP de abajo). Con este commit el árbol
+> vuelve a estar limpio.
+
+#### 1. Marca de agua por sucursal: el backend ya resuelve por sucursal, falta **la UI**
+
+Verificado en código, no es suposición: `ExportacionObraModel::get_marca_agua($presupuesto_id)`
+(líneas 46-50) resuelve la sucursal **del presupuesto** con
+`PresupuestosObraModel::resolver_sucursal_id()` y la pasa a `SucursalesModel::get_marca_agua($sucursal_id)`,
+que aplica el doble fallback ya conocido (`texto_marca_agua` → `Sucursal: <nombre>`;
+`logo_marca_agua` → `configuraciones_empresa.logo`). Es decir: **la marca ya es por sucursal**; lo que no
+existe es la forma de **capturarla** sin recurrir a SQL.
+
+WIP heredado (ahora commiteado; inocuo en producción, nada de esto se ejecuta desde la UI):
+
+| Archivo | Qué hace hoy | Riesgo |
+|---------|--------------|--------|
+| `models/Ventas/SucursalesModel.php` | `listar_todas()` (activas e inactivas) y `actualizar()` con lista blanca `nombre/direccion/telefono/estatus/texto_marca_agua/logo_marca_agua`, cadena vacía → `NULL` para que aplique el fallback | **Nulo**: ningún controlador/vista los llama todavía (código muerto) |
+| `controllers/usuarios/GestionUsuarios.php::empresa()` (línea ~720) | Carga `Ventas/SucursalesModel` y entrega `'sucursales' => listar_todas()` a la vista | **Nulo**: `views/usuarios/empresa/main.php` **no referencia** `sucursales` ni `marca_agua` (0 coincidencias) → no hay formulario |
+| `views/obras/partials/print_head.php` | `$folio = $presupuesto ? … : ($folio_custom ?? 'SIN-FOLIO')` | **Nulo**: indefinida protegida por `??`, sin warning |
+
+Para cerrarla:
+
+- [ ] Panel en `views/usuarios/empresa/main.php`: una fila por sucursal con
+      `marca[<id>][texto_marca_agua]` + carga de `logo_marca_agua` + guardar (usar `showErpToast()`,
+      Bootstrap 5 y el layout de tarjetas ya usado en esa pantalla).
+- [ ] Endpoint AJAX/POST en `GestionUsuarios` que valide y delegue en `SucursalesModel::actualizar()`;
+      el logo debe ir al mismo destino y con las mismas validaciones de subida que usan las demás
+      cargas del sistema (`uploads/`, no `uploads/tmp/`).
+- [ ] Definir qué permiso protege el guardado (la pantalla hoy cae bajo `protected $modulo = 'Administradores'`,
+      sin `requiere_permiso()` específico).
+- [ ] Smoke: fijar texto en Matriz CDMX → exportar C1 en PDF y Excel y ver el texto nuevo; vaciar →
+      debe regresar el fallback `Sucursal: Matriz CDMX`. Idealmente con **dos** sucursales activas y
+      dos presupuestos de sucursal distinta para probar que la marca no se mezcla.
+
+
+#### 2. El login de la guía (`presentacion@chisa.mx`) no tiene permisos de Obras
+
+`admin.id = 9` tiene 31 privilegios activos pero **0** filas con `permiso LIKE 'obras_%'`:
+
+| admin | usuario | `obras_*` activas | `compras_autorizar_preordenes` · `compras_pagos` · `compras_servicios_recurrentes` | `admin_simular_alertas` | activos |
+|-------|---------|------------------:|-----------------------------------------------------------------------------------|------------------------|---------|
+| 1 | `soporte2@especialistasweb.com.mx` | 5 | ✅ | ✅ | 79 |
+| 6 | `ggeneral@chisarecubrimientos.com.mx` | 5 | ❌ (sólo `compras_ordenes_*` + `compras_recepcion`) | ❌ | 67 |
+| 7 | `facturacion@chisarecubrimientos.com.mx` | 5 | ❌ (idem) | ❌ | 67 |
+| 9 | `presentacion@chisa.mx` | **0** | ✅ | ✅ | 31 |
+
+Consecuencia medida (HTTP): `/ventas/ObrasVentas`, `/obras/Obras`, `/obras/Obras/detalle/1`,
+`ventas/ObrasVentas/exportar_pdf_presupuesto/8/presupuesto` y `…/exportar_excel/8/presupuesto`
+responden **`307 → /deny`** con el login 9, mientras dashboard, perfil, usuarios, roles, bitácora,
+simulador, RH, reloj, proveedores, servicios recurrentes, órdenes de compra e insumos responden 200.
+El menú **CRM Ventas → Obras** se muestra igualmente porque `views/layouts/sidebar.php:140` **no** filtra
+por permiso → en vivo se ve un “Acceso Denegado” al hacer clic.
+
+Ni `ventas/ObrasVentas` ni `obras/Obras` usan `requiere_permiso()`: sólo `protected $modulo = 'Obras'`,
+así que **basta un** `obras_*` (`obras_consult`) para habilitar sección + exportaciones. **Decisión de
+la demo del 29-Sep: no se tocó la BD**; se presentó con el admin id 1 (el único con cobertura completa).
+Pendiente si se quiere seguir usando el login de demo: alta de `obras_*` en `privilege` para el id 9
+ojo con `UserModel`, que al guardar **reemplaza** el set completo de privilegios del usuario.
+
+#### 3. Re-verificación de exportaciones sobre el WIP (solo lectura)
+
+- `php -l` limpio en los 3 archivos del WIP; `application/logs/` sin errores nuevos; mPDF **8.3.1**.
+- CLI `php index.php ventas/ObrasVentas/exportar_pdf_presupuesto 8 presupuesto` → PDF reconstruido con
+  `qpdf`: **2 páginas** y `/ExtGState` con `/GS2 → /CA 0.08 /ca 0.08` (watermark nativo de mPDF activo).
+  `…/exportar_excel 8 presupuesto` → `.xlsx` válido con `sheet1.xml` lleno. Coincide con la evidencia
+  HTTP de la Fase G (8/8 PDF, 8/8 XLSX).
+- **Trampa al validar por CLI:** con `ENVIRONMENT = development` los *deprecation notices* de PHP 8.3 del
+  core de CI3 (`Creation of dynamic property CI_URI::$config`, `CI_Router::$uri`, …) se imprimen **antes**
+  del binario, así que el archivo no arranca con `%PDF` (en la prueba, en el offset 24 702) y `unzip`
+  reporta “extra bytes at beginning” en el `.xlsx`. **Es ruido de CLI**: por HTTP el cuerpo sale limpio.
+  Al validar por CLI, recortar desde `%PDF`/`PK` o apagar `display_errors`.
+- `ENVIRONMENT` se define en `index.php:56` como `development` → el **2FA no pide código** al entrar desde
+  otra IP, así que el login de demo desde laptop no se traba.
+
+### Reglas de repo (esta entrada)
+R1 branch `iteracion-5` ✔ · R2 español ✔ · R3 commit por cambio ✔ · R4 sin controladores `Cli_*` (la
+validación por CLI fue efímera, nada quedó en `application/controllers/`) ✔ · R5 docs (`demo.md` + esta
+entrada) ✔ · R6 `ProduccionModel` intacto ✔ · R7 **git limpio de verdad** tras este commit ✔.
+
