@@ -1,6 +1,7 @@
 # Guía de Demostración — 10 Jul 2026
 
-> **Verificada en vivo:** 10 Jul 2026 ~08:00 — todas las rutas y AJAX de esta guía responden OK.
+> **Verificada en vivo:** 10 Jul 2026 ~08:00 — todas las rutas y AJAX de esta guía responden OK.  
+> **Última revisión del documento:** 2026-10-06 (evidencia de exportaciones y permisos del 2026-09-29; ver `doc/TODO.md` § SEGUIMIENTO).
 >
 > **Login:** `presentacion@chisa.mx` / `Demo2026!`
 >
@@ -191,6 +192,9 @@
 
 ## Documentación de respaldo
 
-- `AUDITORIA_PRESENTACION_10JUL2026.md` — scorecard técnico
-- `HANDOFF_COMPRAS_PRESENTACION.md` — detalle módulo Compras
-- `PLAN_PRESENTACION_MANANA.md` — plan general actualizado
+> Los antiguos `AUDITORIA_PRESENTACION_10JUL2026.md`, `HANDOFF_COMPRAS_PRESENTACION.md` y
+> `PLAN_PRESENTACION_MANANA.md` **no existen en el repo** (eran referencias muertas). Documentación vigente:
+
+- `doc/MODULOS_ESTADO_CHECKLIST.md` — estado por módulo y cierre
+- `doc/TODO.md` — pendientes, auditoría diagrama y seguimiento
+- `doc/CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` — smoke manual (columna **Aud. P0**)
