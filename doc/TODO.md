@@ -1,10 +1,12 @@
 # TODO - Sistema ERP CHISA
 
-**Última actualización:** 2026-09-29  
+**Última actualización:** 2026-10-06  
 **Desarrollador:** Fausto Solano - CHISA Recubrimientos  
-**Rama activa:** `iteracion-5` (base `iteracion-4` `c44a2cd`; commits locales sin push obligatorio)
+**Rama activa:** `iteracion-5` (base `iteracion-4` `c44a2cd`). **Iteración 4 cerrada 2026-10-06:** su contenido
+está íntegro en `iteracion-5` (`c44a2cd` es ancestro) y la rama `iteracion-4` se retiró (no existía en remoto).
+Commits locales sin push obligatorio.
 
-**Handoff:** `ENVIRONMENT=development`. Rama `iteracion-3` **eliminada** (local + `origin`) el 2026-09-24 — seguir solo en `iteracion-4` / `main`. No timbrar/cobrar real, no autorizar `PRE-2026-0001`, no tocar `OV-2026-0009`. **Smoke:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (columna **Aud. P0**). **Cumplimiento oferta:** § Auditoría diagrama abajo (reloj/Bixpe excluido).
+**Handoff:** `ENVIRONMENT=development`. Rama `iteracion-3` **eliminada** (local + `origin`) el 2026-09-24 — seguir solo en `iteracion-5` / `main` (rama `iteracion-4` eliminada el 2026-10-06). No timbrar/cobrar real, no autorizar `PRE-2026-0001`, no tocar `OV-2026-0009`. **Smoke:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (columna **Aud. P0**). **Cumplimiento oferta:** § Auditoría diagrama abajo (reloj/Bixpe excluido).
 
 ---
 
@@ -84,8 +86,8 @@ transacción revertida (§4.4); queda pendiente **solo el re-smoke en UI**.
 
 - [X] Desarrollo
 - [X] Iteración 3 — cerrada y mergeada a `main` (2026-09-18, `7778571`); rama `iteracion-3` retirada 2026-09-24
-- [ ] Iteración 4 — **activa**: 4.0 catálogo, 4.2 POS, 4.3 obras (entregas CRM + estatus), 4.8 contabilidad, 4.9 Facture sandbox. Pendiente: re-smoke UI de POS (B6), 4.4 dashboard/merma UI, datos 4.6. **4.1 Compras: cerrado ✅ 2026-09-28** (técnico + smoke UI E1–E8, T2/T5).
-- [ ] Iteración 5 — **no iniciar**: reloj checador (función nueva + auditoría de punches)
+- [X] Iteración 4 — **cerrada 2026-10-06**: 4.0 catálogo, 4.1 Compras ✅ (2026-09-28), 4.2 POS, 4.3 obras (entregas CRM + estatus), 4.8 contabilidad, 4.9 Facture sandbox. Contenido íntegro en `iteracion-5` (`c44a2cd`); rama `iteracion-4` retirada 2026-10-06 (sin rama remota). **Pendiente heredado único:** re-smoke **UI** de Producción (D5–D6), ver §4.4.
+- [ ] Iteración 5 — **activa**: Fase 5 Obras/Presupuestos (V1) sobre `iteracion-5` (ver §Fase 5). Reloj checador (función nueva + auditoría de punches) sigue **no iniciado**.
 - [ ] Despliegue — en producción: `https://erp.chisarecubrimientos.com.mx`
 
 ---
@@ -553,4 +555,26 @@ ojo con `UserModel`, que al guardar **reemplaza** el set completo de privilegios
 R1 branch `iteracion-5` ✔ · R2 español ✔ · R3 commit por cambio ✔ · R4 sin controladores `Cli_*` (la
 validación por CLI fue efímera, nada quedó en `application/controllers/`) ✔ · R5 docs (`demo.md` + esta
 entrada) ✔ · R6 `ProduccionModel` intacto ✔ · R7 **git limpio de verdad** tras este commit ✔.
+
+---
+
+### SEGUIMIENTO 2026-10-06 — cierre de Iteración 4, limpieza documental y retiro de ramas
+
+- **Iteración 4 cerrada.** Todo su contenido está íntegro en `iteracion-5` (`c44a2cd` es ancestro directo); la
+  rama `iteracion-4` se retiró (local y remoto). **No había** commits sin consolidar ni rama remota
+  (`origin/iteracion-4` nunca existió) → no se perdió nada.
+- **Auditoría retirada:** `doc/AUDITORIA_MODULO_OBRAS_2026-08-28.md` eliminada (B1–B6 cumplidos; B5 — SQL en
+  el controlador `Obras::actualizar_ajax` — ya resuelto al delegar en `ObrasModel::actualizar_obra_desde_post`).
+- **Docs actualizados a 2026-10-06:** este `TODO.md`, `MODULOS_ESTADO_CHECKLIST.md`
+  (Fecha/Rama → `iteracion-5`), `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md`, `REGLAS_TECNICAS.md`
+  (v1.1), `DOCUMENTACION_TECNICA.md` y `demo.md`.
+- **Pendiente heredado de I4 (único):** re-smoke **UI** de Producción D5–D6 (§4.4). El resto de P0 (POS B6,
+  Compras, Facture) quedó cerrado con evidencia al 2026-09-28.
+- **En curso:** Fase 5 Obras/Presupuestos (V1) sobre `iteracion-5`. Reloj checador (Iteración 5 funcional)
+  **no iniciado**.
+
+### Reglas de repo (entrada 2026-10-06)
+R1 branch `iteracion-5` ✔ · R2 español ✔ · R3 commit por cambio (3 commits) ✔ · R4 sin `Cli_*` ✔ ·
+R5 docs actualizados ✔ · R6 `ProduccionModel` intacto ✔ · R7 **git limpio verificado** ✔ · R8 rama `iteracion-4`
+retirada tras confirmar 0 pendientes locales/remotos ✔.
 

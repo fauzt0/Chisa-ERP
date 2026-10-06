@@ -1,6 +1,6 @@
 # Checklist manual — módulos iterados + entrenamiento_2
 
-**Fecha:** 25 ago 2026 · **addendum I4:** 18 sep 2026 · **auditoría diagrama:** 24 sep 2026 · **cierre I4 (smoke UI + PDF OC):** 28 sep 2026  
+**Fecha:** 25 ago 2026 · **addendum I4:** 18 sep 2026 · **auditoría diagrama:** 24 sep 2026 · **cierre I4 (smoke UI + PDF OC):** 28 sep 2026 · **cierre I4 confirmado:** 2026-10-06  
 **URL:** `https://erp.chisarecubrimientos.com.mx/`  
 **Login sugerido:** el de presentación vigente (el de QA `soporte2@…` puede estar desactualizado).  
 **Leyenda:** ✅ / ⚠️ / ❌ / SKIP · **Aud. P0** = valida gap P0 de `doc/TODO.md` § Auditoría diagrama.

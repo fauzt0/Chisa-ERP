@@ -1,11 +1,13 @@
 # Checklist de módulos ERP CHISA — estado y cierre
 
-**Fecha:** 2026-09-28 · **Rama:** `iteracion-4`  
+**Fecha:** 2026-10-06 · **Rama:** `iteracion-5`  
 **Leyenda:** ✅ Operativo / verificado · ⚠️ Parcial o falta smoke · ❌ No implementado · ⏸ Fuera de alcance operativo (contrato o I5+) · 🔒 Bloqueado por negocio/datos
 
 **Fuentes:** menú `sidebar.php`, auditoría diagrama 2026-09-24, smoke P0, `doc/TODO.md`.  
 **Smoke detallado:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md`.  
 **Última validación técnica:** 2026-09-28 (agente con shell + BD) — smoke **CLI** (conversión de unidades y validaciones de recepción) y smoke **UI real** con sesión autenticada (E1–E5, E7, E8, T2, T5). Evidencia en §4 y en la tasklist al final.
+
+**Estado de iteración:** Iteración 4 **cerrada** el 2026-10-06 (contenido íntegro en `iteracion-5`; rama `iteracion-4` retirada). Pendiente heredado único: re-smoke **UI** de Producción (D5–D6).
 
 ---
 

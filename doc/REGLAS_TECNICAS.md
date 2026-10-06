@@ -2,7 +2,7 @@
 
 > **Propósito:** Guía de reglas estrictas y estándares técnicos que todo agente de IA debe seguir al desarrollar, modificar o extender este sistema ERP.
 >
-> **Versión:** 1.0 | **Última actualización:** 2026-06-19
+> **Versión:** 1.1 | **Última actualización:** 2026-10-06
 
 ---
 

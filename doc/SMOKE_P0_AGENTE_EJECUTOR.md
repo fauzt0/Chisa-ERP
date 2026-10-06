@@ -4,6 +4,10 @@
 
 **Auditoría posterior:** otro agente/humano contrasta el entregable con código y checklist; no re-ejecutar UI completa salvo dudas puntuales.
 
+> **Estado (2026-10-06):** el ciclo P0 de la auditoría diagrama está **cerrado** — #1 POS (B6), #2 Compras y
+> #4 Facture conexión con evidencia al 2026-09-28. Queda **solo** el re-smoke **UI** de Producción (#3, D5–D6),
+> ver `TODO.md` §4.4. Iteración 4 cerrada; rama activa `iteracion-5`.
+
 ---
 
 ## Objetivo
@@ -18,7 +22,7 @@ Ejecutar las filas con **Aud. P0** del checklist y dejar **evidencia** verificab
 |------|--------|
 | URL | `https://erp.chisarecubrimientos.com.mx/` |
 | Repo | `/home/admin/domains/erp.chisarecubrimientos.com.mx/public_html` |
-| Rama | `iteracion-4` |
+| Rama | `iteracion-5` |
 | PHP CLI | `/usr/local/php82/bin/php index.php …` desde `public_html` |
 | Entorno | `ENVIRONMENT=development` (2FA no obligatorio en dev) |
 
