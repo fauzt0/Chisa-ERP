@@ -344,7 +344,6 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 | `API_RELOJ_CHECADOR.md` | API reloj / ZKTeco (I5) |
 | `SISTEMA_ALERTAS_NOTIFICACIONES.md` | Alertas |
 | `GUIA_PRODUCCION_POST_IMPORTACION.md` | Operación post-import |
-| `AUDITORIA_MODULO_OBRAS_2026-08-28.md` | Auditoría de Obras (referencia I4) |
 | `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño paquetería |
 | `diagrama_general.png` | Mapa funcional vs oferta |
 | `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Smoke manual + columna **Aud. P0** |
