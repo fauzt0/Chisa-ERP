@@ -300,7 +300,7 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 - [X] Familias ausentes dadas de alta (precio 0): COLOR GLASS, MARMO GOT, MARMO ROC.
 
 ### 4.6 Datos de negocio (no bloquean el arranque de I4; sí el PASO 3)
-- [ ] `rendimiento_m2_por_kg`: 1/314 activas. Lista en `doc/entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md`.
+- [ ] `rendimiento_m2_por_kg`: 1/314 activas. Lista histórica archivada en git (`doc/entrenamiento_3/…`, retirada 2026-10-06).
 - [ ] Contenido neto CUBETA/GALÓN; presentación de filas "(sin pres.)"; precio #476; `#83` ≡ `#214` EC-1; parafina CHISA PLUS.
 - [ ] BUG-DATA-01: ~461 productos sin precio, placeholders, fotos. **No** cargar precios inventados. Fotos de 4.0 cubren las familias de la tienda, no todo el catálogo interno.
 
@@ -308,7 +308,7 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 - Carpeta prevista: `doc/entrenamiento_4/` (plantillas que cargará negocio).
 - Alcance diagrama: **carátula**, **resumen general** (distinto de `pdf_resumen.php` técnico), **generador** y **catálogo de conceptos** por obra.
 - **No implementar** hasta tener formatos firmados; reutilizar PDF técnico actual como posible “Anexo”.
-- PASO 3 catálogo (rendimientos/neto): sigue en `entrenamiento_3/manifiestos/` si negocio desbloquea datos.
+- PASO 3 catálogo (rendimientos/neto): pendiente de **datos de negocio** (dossier I3 archivado en git el 2026-10-06).
 
 ---
 
@@ -351,11 +351,9 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 | `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Smoke manual + columna **Aud. P0** |
 | `SMOKE_P0_AGENTE_EJECUTOR.md` | Instrucciones agente smoke P0 |
 | `MODULOS_ESTADO_CHECKLIST.md` | Estado por módulo + tasklist cierre (prioridad: Compras) |
-| `entrenamiento_3/manifiestos/decisiones_pendientes.md` | Decisiones de catálogo/BOM pendientes |
-| `entrenamiento_3/manifiestos/propuesta_rendimientos_fase3.md` | PASO 3 rendimientos (negocio) |
-| `entrenamiento_3/GUION_DEMO_CLIENTE.md` | Guion de demo |
+| `entrenamiento_4/` | Plantillas de negocio para Obras/Fase 5 (dossier activo; binarios fuera de git) |
 
-Los prompts/checklists operativos de I3 se archivaron en git (commit previo a esta limpieza). No re-crearlos.
+Los prompts/checklists operativos y los dossiers de training de I1–I3 (`doc/entrenamiento/`, `doc/entrenamiento_2/`, `doc/entrenamiento_3/`) se retiraron el 2026-10-06 (material histórico ya procesado; recuperable desde git). No re-crearlos.
 
 > Overhaul P1–P9 cerrado. I4 **no** reescribe módulos; reutiliza `explotar_bom_plano`, `calcular_insumos_para_proyecto`, `crear_preordenes_desde_faltantes`, `convertir_unidad_insumo`.
 

@@ -1,4 +1,4 @@
-# Checklist manual — módulos iterados + entrenamiento_2
+# Checklist manual — módulos iterados (I3/I4)
 
 **Fecha:** 25 ago 2026 · **addendum I4:** 18 sep 2026 · **auditoría diagrama:** 24 sep 2026 · **cierre I4 (smoke UI + PDF OC):** 28 sep 2026 · **cierre I4 confirmado:** 2026-10-06  
 **URL:** `https://erp.chisarecubrimientos.com.mx/`  
@@ -140,6 +140,10 @@ Detalle largo: `PRUEBAS_MANUALES_RH_2026-08-10.md`.
 
 ## H. Hallazgos `doc/entrenamiento_2/` (verificación 25-ago-2026 · **PDF OC actualizado 28-sep-2026**)
 
+> **Retirado 2026-10-06:** el dossier `doc/entrenamiento_2/` (y su fuente duplicada en `doc/`) se eliminó por ser
+> material histórico de iteración 3 ya procesado. Las tablas de abajo se conservan como referencia histórica;
+> los comandos que apuntaban a esos archivos ya no aplican. Recuperable desde git.
+
 ### Archivos presentes
 
 | Archivo | Tipo | Notas |
@@ -186,13 +190,8 @@ opcionalmente columnas al estilo plantilla). No confundir el `.xls` con carga de
 | FICHAS 2014 (entrenamiento_2) | Subconjunto del ya importado. **No** reimportar completo. |
 | FICHAS en `doc/FICHAS_CHISA_GLASS_2014.xls` | Ya usado — no rehacer. |
 
-**Comando CLI (solo cuando autorices el import):**
-
-```bash
-cd /home/admin/domains/erp.chisarecubrimientos.com.mx/public_html
-IMPORT_FILE="doc/entrenamiento_2/CHISA GLASS REF AZ-03-1.xlsx" IMPORT_MODE=dedup \
-  /usr/local/php82/bin/php index.php produccion/Productos importar_archivo_cli
-```
+> **Comando CLI retirado (2026-10-06):** apuntaba a `doc/entrenamiento_2/CHISA GLASS REF AZ-03-1.xlsx`, ya
+> eliminado. Recuperable desde git si se reautoriza ese import.
 
 Post-import: Producción → Productos → buscar `AZ-03` / `HOSPITAL` → activar formulación → Simulador 1–2 kg.
 
