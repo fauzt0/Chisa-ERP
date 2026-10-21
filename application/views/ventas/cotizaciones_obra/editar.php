@@ -21,6 +21,12 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
       <a class="btn btn-link" href="<?=base_url('ventas/CotizacionesObra')?>">Volver</a>
     </div>
   </div>
+  <?php if (!empty($response['padre'])): ?>
+  <div class="alert alert-info">Adición de <a href="<?=base_url('ventas/CotizacionesObra/editar/'.$response['padre']->id)?>"><?=htmlspecialchars($response['padre']->folio)?></a>. El folio de esta subcotización es independiente.</div>
+  <?php endif; ?>
+  <?php if ($c && !empty($c->es_consulta)): ?>
+  <div class="alert alert-secondary">Consulta de archivo. Las partidas no se desglosaron; el Excel original está en el expediente de abajo.</div>
+  <?php endif; ?>
 
   <div class="card mb-3">
     <div class="card-body">

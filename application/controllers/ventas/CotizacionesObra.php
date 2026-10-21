@@ -64,8 +64,13 @@ class CotizacionesObra extends MY_Controller {
             $this->load->model('Ventas/SeguimientoModel');
             $seguimiento = $this->SeguimientoModel->paquete('cotizacion', $cot->id);
         }
+        $padre = null;
+        if ($cot && !empty($cot->parent_id)) {
+            $padre = $this->db->select('id, folio')->where('id', (int) $cot->parent_id)->get('cotizaciones_comerciales')->row();
+        }
         $this->viewData['response'] = [
             'cotizacion' => $cot,
+            'padre' => $padre,
             'sucursales' => $this->SucursalesModel->listar_activas(),
             'clientes' => $this->CotizacionesObraModel->buscar_clientes(''),
             'conceptos' => $this->CotizacionesObraModel->buscar_conceptos('', 120),
