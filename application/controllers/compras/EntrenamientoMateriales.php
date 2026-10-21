@@ -119,7 +119,36 @@ class EntrenamientoMateriales extends MY_Controller {
         if ($ok) {
             $this->registrar_bitacora("Entrenamiento: guardado insumo #{$id}", 'Compras');
         }
-        echo json_encode(['success' => (bool) $ok, 'message' => $ok ? 'Guardado correctamente' : 'Sin cambios o error al guardar']);
+        $payload = ['success' => (bool) $ok, 'message' => $ok ? 'Guardado correctamente' : 'Sin cambios o error al guardar'];
+        if ($this->input->post('volver') === '1') {
+            $this->session->set_flashdata('em_msg', $payload['message']);
+            $this->session->set_flashdata('em_ok', $payload['success'] ? '1' : '0');
+            redirect('compras/EntrenamientoMateriales/editar/' . $id);
+            return;
+        }
+        echo json_encode($payload);
+    }
+
+    public function editar($id = null) {
+        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $id = (int) $id;
+        $insumo = $id > 0 ? $this->InsumosModel->get_insumo($id) : null;
+        if (!$insumo) {
+            show_404();
+            return;
+        }
+        $filas = $this->_armar_filas([$insumo]);
+        $this->viewData['pageTitle'] = 'Entrenar ' . ($insumo->codigo ?? '');
+        $this->viewData['headTitle'] = 'Entrenar ' . ($insumo->codigo ?? '');
+        $this->viewData['breadcrumb'] = 'Inicio > Compras > Entrenamiento de materiales > ' . ($insumo->codigo ?? '');
+        $this->viewData['response'] = [
+            'fila' => $filas[0],
+            'proveedores_activos' => $this->ProveedoresModel->listar_activos(),
+            'aviso' => $this->session->flashdata('em_msg'),
+            'aviso_ok' => $this->session->flashdata('em_ok') === '1',
+        ];
+        $this->viewData['pageView'] = 'compras/entrenamiento_materiales/editar';
+        $this->load->view('layouts/general_template', $this->viewData);
     }
 
     // -----------------------------------------------------------------------

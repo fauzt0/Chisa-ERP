@@ -109,11 +109,12 @@ $csrf_hash         = $this->security->get_csrf_hash();
               <?php else: ?>—<?php endif; ?>
             </td>
             <td>
-              <button type="button" class="btn btn-sm btn-outline-primary btn-editar"
-                      data-id="<?= (int)$f['id'] ?>"
-                      title="Editar">
+              <a class="btn btn-sm btn-outline-primary btn-editar"
+                 href="<?= base_url('compras/EntrenamientoMateriales/editar/' . (int)$f['id']) ?>"
+                 data-id="<?= (int)$f['id'] ?>"
+                 title="Editar">
                 <i class="fas fa-pencil-alt"></i>
-              </button>
+              </a>
             </td>
           </tr>
           <?php endforeach; ?>
@@ -367,10 +368,12 @@ $csrf_hash         = $this->security->get_csrf_hash();
   }
 
   /* ---- abrir modal ---- */
-  $(document).on('click', '.btn-editar', function () {
+  $(document).on('click', 'a.btn-editar', function (e) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.which === 2) return;
+    e.preventDefault();
     var id = $(this).data('id');
     if (!id) return;
-    var btn = $(this).prop('disabled', true);
+    var btn = $(this);
     $.getJSON(BASE + 'compras/EntrenamientoMateriales/get_fila_ajax', { id: id }, function (res) {
       btn.prop('disabled', false);
       if (!res || !res.success || !res.fila) {
@@ -379,8 +382,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
       }
       abrirModalFila(res.fila);
     }).fail(function () {
-      btn.prop('disabled', false);
-      window.alert('No se pudo abrir el material');
+      window.location = btn.attr('href');
     });
   });
 

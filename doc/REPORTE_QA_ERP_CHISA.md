@@ -1,4 +1,4 @@
-# Reporte QA — ERP CHISA Recubrimientos
+# Reporte QA — ERP CHISA Recubrimientos (actualizado 21/10/2026 07:20 CDMX)
 Fecha: 21/10/2026 (hora CDMX). Entorno: https://erp.chisarecubrimientos.com.mx/ — usuario soporte2@especialistasweb.com.mx.
 
 ## Veredicto
@@ -72,3 +72,64 @@ Hallazgos del plan:
 
 ## Capturas
 Carpeta /workspace/erp/ (empresa_mojibake.png, admin_lista_mojibake.png, entrenamiento_lapiz_sin_modal.webp, insumos.png, proveedor_ficha.png, formula957_revertida.webp, RES-002_estado_final_sin_cambios.webp, recibo_mojibake_NOM000038.webp, produccion_dashboard_detalle30_error.webp, productos_stock_negativo.webp, rh_empleados_busqueda_english.png, pos_matraz_toast_burbujeo.png, pos_variantes_sin_variantes.png, ov0008_modal_fecha13_vs_lista14.png, ordenes_lista.png, factura_modal_cp_vacio.png).
+
+
+---
+# Actualización tras correcciones (21/10/2026, 07:00–07:20 CDMX)
+
+## Verificación de correcciones
+| # | Prueba | Resultado |
+|---|---|---|
+| 1 | Raíz / | OMITIDO (sigue mostrando CodeIgniter, según lo indicado) |
+| 2 | Lápiz de Entrenamiento, RES-002 | FALLA: no abre el modal; `get_fila_ajax?id=3` responde bien, así que la falla está en el JS del cliente |
+| 3 | Inicio > Ver de orden reciente | OK: sin error PHP (/produccion/Dashboard/detalle/orden_venta/30) |
+| 4 | POS GLASS: Variantes y matraz | OK: Variantes solo en MICRO y COLOR 2; el matraz no agrega nada al ticket |
+| 5 | Consulta ROMACO + aplicaciones, CCO-2026-0003 | NO VERIFICABLE: el dato no existe en el servidor |
+| 6 | Historial: columna Cliente; v2 inactiva sin cliente | OK |
+
+## Re-ejecución del plan PRUEBAS_GROKBOT_I5
+| Pantalla | Resultado | Notas |
+|---|---|---|
+| Menús (Admin, RH, Reloj, Proveedores, Producción, CRM) | OK | Todos los submenús esperados |
+| Campana | OK | 9+; OB-00002 sin cuadrilla (no se tocó) |
+| Admin usuarios / roles | OK | El buscador requiere Enter |
+| Admin datos de empresa | FALLA | "CHISA MÃ©xico" persiste |
+| RH departamentos, nómina, reloj | OK | |
+| RH empleados | PARCIAL | La lista carga; no se abrió ficha en esta ronda |
+| Proveedores categorías, proveedores, OC, cotizaciones | OK | |
+| Proveedores insumos | FALLA | "Solo stock bajo" sin resultados (el almacén dice 106 en stock bajo) |
+| Entrenamiento de materiales | FALLA | El lápiz no abre; no se hizo el cambio de RES-002 |
+| Historial de formulaciones | OK | Columna Cliente presente; filtro xlsx da 6 filas; kilos no editables |
+| Lotes | OK | |
+| Clientes ROMACO | FALLA (dato) | No existe |
+| POS | OK | Obra opcional y "Pasar a cotización" visibles; GLASS OK |
+| Órdenes de Venta | FALLA | OV-0008 en Cotización y OV-0009 Completada; OV-0004 total $6,960 con envío $1,000; fecha del modal un día antes |
+| Cotizaciones de obra | FALLA (dato) | Vacía; no existe CCO-2026-0003 |
+| Obras OB-00002 | FALLA | Avance 20% vs 0.0% |
+| Consulta | Sin resultados | No hay datos de demo |
+| Facturación / Almacén | OK | |
+| Contabilidad pólizas | FALLA | Tabla vacía |
+
+## Bitácora de esta ronda (todo revertido)
+| Hora | Pantalla | Cambio | Antes | Después | ¿Revertido? |
+|---|---|---|---|---|---|
+| — | Entrenamiento RES-002 | Ninguno (el lápiz no abre) | — | — | N/A |
+| 07:14:19 | Historial, BASE-ORGANICA-NARANJA v2 (id 957) | Se asoció CLIENTE MOSTRADOR | Sin cliente | CLIENTE MOSTRADOR (sigue inactiva, componentes iguales) | Sí, a las 07:14:28 |
+| 07:14:35 | Mismo | Se asoció de nuevo para verificar | Sin cliente | CLIENTE MOSTRADOR | Sí, a las 07:14:44 |
+Estado final: v2 inactiva y "Sin cliente". No se cambiaron precios, recetas ni cotizaciones.
+
+## Defectos abiertos
+1. CRÍTICO: el lápiz de Entrenamiento de materiales no abre el modal. Pasos: Proveedores > Entrenamiento de materiales > buscar RES-002 > clic en el lápiz.
+2. BLOQUEANTE DE DEMO: faltan ROMACO, CCO-2026-0003 y CCO-2026-0417 en el servidor.
+3. Totales de OV-2026-0004: $6,000 + $960 + $1,000 debería dar $7,960, pero muestra $6,960. Pasos: Órdenes de Venta > abrir OV-2026-0004.
+4. La fecha del modal de OV sale un día antes que la de la lista (zona horaria).
+5. OV-2026-0008 y OV-2026-0009 no están canceladas.
+6. El avance de OB-00002 no coincide entre /obras/Obras y /ventas/ObrasVentas/detalle/2.
+7. El filtro "Solo stock bajo" de Insumos sale vacío.
+8. Pólizas contables vacías aunque el dashboard indica 10.
+9. Mojibake en Datos de la Empresa y en el usuario "PresentaciÃ³n".
+10. El buscador de administradores requiere Enter.
+Corregidos: error PHP en "Ver" del Inicio, Variantes y matraz del POS, columna Cliente en el Historial.
+
+## Veredicto actualizado
+Todavía no está listo para la demo. Lo bloquean la falta de los datos de CCO-2026-0003 y ROMACO, y el lápiz de Entrenamiento. Los totales de OV-2026-0004 se notarían si alguien los revisa en la presentación.

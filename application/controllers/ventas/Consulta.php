@@ -21,7 +21,13 @@ class Consulta extends MY_Controller {
             'tipo' => $this->input->get('tipo') ?: 'todos',
             'solo_aplicacion' => $this->input->get('aplicacion') === '1',
         ];
-        $buscar = $this->input->get('q') !== null;
+        $buscar = $this->input->get('q') !== null
+            || trim((string) $filtros['cliente']) !== ''
+            || trim((string) $filtros['lugar']) !== ''
+            || trim((string) $filtros['desde']) !== ''
+            || trim((string) $filtros['hasta']) !== ''
+            || !empty($filtros['solo_aplicacion'])
+            || ($filtros['tipo'] !== 'todos');
         $this->viewData['pageTitle'] = 'Consulta de ventas';
         $this->viewData['headTitle'] = 'Consulta de ventas';
         $this->viewData['breadcrumb'] = 'Inicio > CRM Ventas > Consulta';
