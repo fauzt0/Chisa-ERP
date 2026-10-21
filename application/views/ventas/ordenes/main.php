@@ -451,7 +451,7 @@ function renderDetalleOrden(orden) {
       <div class="col-md-6">
         <h6><i class="fas fa-file-invoice"></i> Información de la Orden</h6>
         <table class="table table-sm">
-          <tr><th width="40%">Folio:</th><td>${orden.folio}</td></tr>
+          <tr><th width="40%">Folio:</th><td>${orden.folio} ${orden.estatus === 'Cotización' ? `<button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="nuevaVersionOrden(${orden.id})">Nueva versión</button>` : ''}</td></tr>
           <tr><th>Fecha:</th><td>${new Date(orden.fecha_orden).toLocaleDateString('es-MX')}</td></tr>
           <tr><th>Tipo:</th><td><span class="badge bg-${orden.tipo_venta == 'Mostrador' ? 'secondary' : 'primary'}">${orden.tipo_venta}</span></td></tr>
           <tr><th>Estatus:</th><td><span class="badge bg-info">${orden.estatus}</span></td></tr>
@@ -744,6 +744,15 @@ function guardarPago() {
       $('#modalPago').modal('hide');
       tabla.ajax.reload();
     }
+  });
+}
+
+function nuevaVersionOrden(id) {
+  var nota = prompt('Qué cambió en esta versión?', '') || '';
+  $.post('<?=base_url();?>ventas/Pos/version_orden_ajax', { id: id, nota: nota }, function (res) {
+    res = typeof res === 'string' ? JSON.parse(res) : res;
+    notifyShow(res.message || 'Listo', res.success ? 'success' : 'danger');
+    if (res.success && typeof tabla !== 'undefined') tabla.ajax.reload();
   });
 }
 

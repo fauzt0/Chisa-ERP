@@ -59,10 +59,13 @@ class CotizacionesObra extends MY_Controller {
         $this->viewData['pageTitle'] = $cot ? $cot->folio : 'Nueva cotización de obra';
         $this->viewData['headTitle'] = $cot ? ('Editar ' . $cot->folio) : 'Nueva cotización de obra';
         $this->viewData['breadcrumb'] = 'Inicio > CRM Ventas > Cotizaciones de obra';
+        $versiones = [];
         $seguimiento = null;
         if ($cot) {
             $this->load->model('Ventas/SeguimientoModel');
+            $this->load->model('Ventas/CapturaPosModel');
             $seguimiento = $this->SeguimientoModel->paquete('cotizacion', $cot->id);
+            $versiones = $this->CapturaPosModel->arbol('cotizacion', $cot->id);
         }
         $padre = null;
         if ($cot && !empty($cot->parent_id)) {
@@ -77,6 +80,7 @@ class CotizacionesObra extends MY_Controller {
             'obras' => $obras,
             'puede_editar' => $this->puede_editar(),
             'seguimiento' => $seguimiento,
+            'versiones' => $versiones,
         ];
         $this->viewData['pageView'] = 'ventas/cotizaciones_obra/editar';
         $this->load->view('layouts/general_template', $this->viewData);
@@ -126,6 +130,52 @@ class CotizacionesObra extends MY_Controller {
             );
         }
         echo json_encode($res);
+    }
+
+    public function version_ajax() {
+        if (!$this->puede_editar()) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso']);
+            return;
+        }
+        $id = (int) $this->input->post('id');
+        $cot = $this->CotizacionesObraModel->get($id);
+        if (!$cot) {
+            echo json_encode(['success' => false, 'message' => 'Cotización no encontrada']);
+            return;
+        }
+        $lineas = [];
+        foreach ($cot->detalles as $d) {
+            $lineas[] = [
+                'tipo' => $d->tipo,
+                'producto_id' => $d->producto_id,
+                'grupo' => $d->grupo,
+                'concepto' => $d->concepto,
+                'unidad' => $d->unidad,
+                'cantidad' => $d->cantidad,
+                'precio_unitario' => $d->precio_unitario,
+            ];
+        }
+        $nota = trim((string) $this->input->post('nota'));
+        $guardado = $this->CotizacionesObraModel->guardar([
+            'cliente_id' => $cot->cliente_id,
+            'obra_id' => $cot->obra_id,
+            'sucursal_id' => $cot->sucursal_id,
+            'constructora' => $cot->constructora,
+            'atencion' => $cot->atencion,
+            'obra_nombre' => $cot->obra_nombre,
+            'ubicacion' => $cot->ubicacion,
+            'introduccion' => $cot->introduccion,
+            'observaciones' => 'Versión de ' . $cot->folio . ($nota !== '' ? '. ' . $nota : ''),
+        ], $lineas, $this->session->userdata('id'));
+        if (empty($guardado['success'])) {
+            echo json_encode($guardado);
+            return;
+        }
+        $this->load->model('Ventas/CapturaPosModel');
+        $this->CapturaPosModel->asegurar_raiz('cotizacion', $cot->id, $cot->folio);
+        $num = $this->CapturaPosModel->registrar_version('cotizacion', $guardado['id'], $cot->id, $guardado['folio'], $nota);
+        $guardado['message'] = 'Versión ' . $num . ': ' . $guardado['folio'];
+        echo json_encode($guardado);
     }
 
     public function conceptos_ajax() {

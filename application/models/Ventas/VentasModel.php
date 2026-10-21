@@ -405,6 +405,15 @@ class VentasModel extends MY_Model {
                 $this->db->or_like('productos.codigo_barras', $token);
                 $this->db->or_like('productos.alias', $token);
                 $this->db->or_like('categorias_productos.nombre', $token);
+                if ($this->db->field_exists('sku', 'productos')) {
+                    $this->db->or_like('productos.sku', $token);
+                }
+                if ($this->db->field_exists('variante_valor', 'productos')) {
+                    $this->db->or_like('productos.variante_valor', $token);
+                }
+                if ($this->db->field_exists('presentacion_principal', 'productos')) {
+                    $this->db->or_like('productos.presentacion_principal', $token);
+                }
                 $this->db->group_end();
             }
         }

@@ -319,6 +319,13 @@ $stats = $response['stats'] ?? [];
         
         <!-- Tipo de Venta -->
         <div class="mb-3">
+          <label class="form-label">Obra (opcional)</label>
+          <select class="form-select" id="ticket_obra">
+            <option value="">Sin obra</option>
+          </select>
+          <small class="text-muted">Si eliges obra, puedes pasar estos productos a su cotización.</small>
+        </div>
+        <div class="mb-3">
           <label class="form-label">Tipo de Venta</label>
           <select class="form-select" id="ticket_tipo_venta" onchange="toggleDireccionEnvio()">
             <option value="Mostrador">Mostrador</option>
@@ -375,6 +382,11 @@ $stats = $response['stats'] ?? [];
           <div class="col-6">
             <button type="button" class="btn btn-success w-100" onclick="cobrarVenta()">
               <i class="fas fa-cash-register"></i> Cobrar
+            </button>
+          </div>
+          <div class="col-12 mt-2">
+            <button type="button" class="btn btn-outline-primary w-100" onclick="pasarAObra()">
+              <i class="fas fa-hard-hat"></i> Pasar a cotización de la obra
             </button>
           </div>
         </div>
@@ -854,9 +866,53 @@ let descuentoSeleccionado = null;
 function initPOS() {
   cargarClientes();
   cargarDescuentos();
+  cargarObras();
   inicializarBusqueda();
   cargarTopProductos();
-  // Init Select2 after loading clients in cargarClientes
+}
+
+function cargarObras() {
+  $.getJSON('<?=base_url();?>ventas/Pos/obras_ajax', function (res) {
+    const sel = $('#ticket_obra');
+    (res.obras || []).forEach(function (o) {
+      sel.append('<option value="'+o.id+'">'+escHtml(o.folio+' · '+o.nombre)+'</option>');
+    });
+  });
+}
+
+function verVariantes(id) {
+  $.getJSON('<?=base_url();?>ventas/Pos/variantes_ajax', { producto_id: id }, function (res) {
+    if (!res.productos || res.productos.length < 2) {
+      notifyShow('Este producto no tiene variantes', 'warning');
+      return;
+    }
+    renderProductos(res.productos);
+  });
+}
+
+function pasarAObra() {
+  const obra = $('#ticket_obra').val();
+  if (!obra) {
+    notifyShow('Selecciona la obra', 'warning');
+    return;
+  }
+  if (ticketItems.length === 0) {
+    notifyShow('Agrega productos al ticket', 'warning');
+    return;
+  }
+  const detalles = ticketItems.map(function (item) {
+    return { producto_id: item.id, cantidad: item.cantidad, precio_unitario: item.precio };
+  });
+  $.post('<?=base_url();?>ventas/Pos/pasar_obra_ajax', {
+    obra_id: obra,
+    detalles: JSON.stringify(detalles)
+  }, function (res) {
+    res = typeof res === 'string' ? JSON.parse(res) : res;
+    notifyShow(res.message || 'Listo', res.success ? 'success' : 'danger');
+    if (res.success && res.url) {
+      window.location = res.url;
+    }
+  });
 }
 
 function cargarTopProductos() {
@@ -875,9 +931,10 @@ function cargarTopProductos() {
           <div class="col-md-4 col-sm-6">
             <div class="card h-100 producto-card border-warning" onclick="agregarAlTicket(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.precio_venta}, ${stock})" style="cursor: pointer;">
               <div class="card-body p-2 text-center">
-                <h6 class="card-title text-truncate mb-1" style="font-size: 0.9rem;">${p.nombre}</h6>
+                <h6 class="card-title text-truncate mb-1" style="font-size: 0.9rem;">${escHtml(p.nombre)}</h6>
                 <p class="text-primary fw-bold mb-0">$${parseFloat(p.precio_venta).toFixed(2)}</p>
                 <small class="${stock <= 0 ? 'text-danger' : 'text-success'}"><i class="fas fa-${stock <= 0 ? 'times' : 'check'}"></i> Stock: ${stockTxt}</small>
+                <div><button type="button" class="btn btn-link btn-sm p-0" onclick="event.stopPropagation(); verVariantes(${p.id})">Variantes</button></div>
               </div>
             </div>
           </div>
@@ -1197,11 +1254,12 @@ function renderProductos(productos) {
             </div>
             <div class="col-8">
                 <div class="card-body p-2">
-                    <h6 class="card-title text-truncate mb-1" style="font-size: 0.95rem;" title="${p.nombre}">${p.nombre}</h6>
+                    <h6 class="card-title text-truncate mb-1" style="font-size: 0.95rem;" title="${escHtml(p.nombre)}">${escHtml(p.nombre)} ${(p.es_variante == 1 && p.variante_valor) ? `<span class="badge bg-info">${escHtml(p.variante_valor)}</span>` : ''}</h6>
                     <p class="card-text mb-1 text-truncate">
-                      <small class="text-muted fw-bold">${p.codigo || ''}</small>
-                      ${p.categoria_nombre ? `<small class="badge bg-light text-dark ms-1">${p.categoria_nombre}</small>` : ''}
+                      <small class="text-muted fw-bold">${escHtml(p.codigo || p.sku || '')}</small>
+                      ${p.categoria_nombre ? `<small class="badge bg-light text-dark ms-1">${escHtml(p.categoria_nombre)}</small>` : ''}
                     </p>
+                    <button type="button" class="btn btn-link btn-sm p-0" onclick="event.stopPropagation(); verVariantes(${p.id})">Variantes</button>
                     ${p.alias ? `<p class="card-text mb-1 text-truncate"><small class="text-muted">Alias: ${p.alias}</small></p>` : ''}
                     <p class="card-text mb-1 text-muted" style="font-size: 0.75rem; line-height: 1.2; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                       ${p.descripcion || 'Sin descripción'}

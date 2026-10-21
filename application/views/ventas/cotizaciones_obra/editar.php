@@ -27,6 +27,32 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
   <?php if ($c && !empty($c->es_consulta)): ?>
   <div class="alert alert-secondary">Consulta de archivo. Las partidas no se desglosaron; el Excel original está en el expediente de abajo.</div>
   <?php endif; ?>
+  <?php if ($c): ?>
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between">
+      <strong>Versiones</strong>
+      <?php if ($puede && !$bloqueada): ?>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="btnVersion">Nueva versión</button>
+      <?php endif; ?>
+    </div>
+    <div class="card-body">
+      <ul class="mb-2">
+        <?php foreach (($response['versiones'] ?? []) as $v): ?>
+        <li style="margin-left:<?= max(0, ((int)$v->numero - 1) * 16) ?>px">
+          <a href="<?=base_url('ventas/CotizacionesObra/editar/'.$v->documento_id)?>"><?=htmlspecialchars($v->folio ?: ('#'.$v->documento_id))?></a>
+          · v<?= (int) $v->numero ?>
+          <?php if ($v->nota): ?> · <?=htmlspecialchars($v->nota)?><?php endif; ?>
+        </li>
+        <?php endforeach; ?>
+        <?php if (empty($response['versiones'])): ?><li class="text-muted">Esta es la versión inicial. Al crear otra se conserva el árbol de cambios.</li><?php endif; ?>
+      </ul>
+      <?php if ($puede && !$bloqueada): ?>
+      <input class="form-control form-control-sm" id="notaVersion" placeholder="Qué cambió en esta versión">
+      <?php endif; ?>
+    </div>
+  </div>
+  <div id="panelCaptura" class="mb-3"></div>
+  <?php endif; ?>
 
   <div class="card mb-3">
     <div class="card-body">
@@ -242,6 +268,53 @@ document.getElementById('obra_id')?.addEventListener('change', function () {
   if (!opt || !opt.value) return;
   if (!document.getElementById('obra_nombre').value) document.getElementById('obra_nombre').value = opt.dataset.nombre || '';
   if (opt.dataset.cliente && !document.getElementById('cliente_id').value) document.getElementById('cliente_id').value = opt.dataset.cliente;
+  cargarCaptura();
+});
+function cargarCaptura() {
+  var obra = document.getElementById('obra_id')?.value;
+  var box = document.getElementById('panelCaptura');
+  if (!box) return;
+  if (!obra) { box.innerHTML = ''; return; }
+  $.getJSON('<?=base_url('ventas/Pos/captura_obra_ajax')?>', { obra_id: obra }, function (res) {
+    var lineas = res.lineas || [];
+    if (!lineas.length) { box.innerHTML = ''; return; }
+    var rows = lineas.map(function (l) {
+      return '<tr data-id="'+l.id+'"><td>'+esc(l.nombre)+'</td><td>'+l.cantidad+'</td><td>$'+Number(l.precio).toFixed(2)+'</td>'
+        + '<td><select class="form-select form-select-sm modo"><option value="producto">Producto real</option><option value="concepto">Concepto de aplicación</option></select></td></tr>';
+    }).join('');
+    box.innerHTML = '<div class="card"><div class="card-header"><strong>Productos llegados del POS</strong></div><div class="card-body">'
+      + '<p class="small text-muted">Elige si cada uno entra como producto de almacén o como concepto de suministro y aplicación, al estilo de los Excel.</p>'
+      + '<table class="table table-sm"><thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Cómo entra</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      + '<button type="button" class="btn btn-sm btn-primary" id="btnAplicarCaptura">Agregar a la cotización</button></div></div>';
+    document.getElementById('btnAplicarCaptura').addEventListener('click', function () {
+      var elecciones = [];
+      box.querySelectorAll('tbody tr').forEach(function (tr) {
+        elecciones.push({ id: tr.dataset.id, modo: tr.querySelector('.modo').value });
+      });
+      $.post('<?=base_url('ventas/Pos/aplicar_captura_ajax')?>', {
+        cotizacion_id: document.getElementById('cot_id').value,
+        elecciones: JSON.stringify(elecciones)
+      }, function (r) {
+        r = typeof r === 'string' ? JSON.parse(r) : r;
+        if (!r.success) { alert(r.message || 'Sin pendientes'); return; }
+        (r.lineas || []).forEach(function (l) { FILAS.push(l); });
+        pintar();
+        box.innerHTML = '';
+        alert(r.message);
+      });
+    });
+  });
+}
+cargarCaptura();
+document.getElementById('btnVersion')?.addEventListener('click', function () {
+  $.post('<?=base_url('ventas/CotizacionesObra/version_ajax')?>', {
+    id: document.getElementById('cot_id').value,
+    nota: document.getElementById('notaVersion')?.value || ''
+  }, function (res) {
+    res = typeof res === 'string' ? JSON.parse(res) : res;
+    alert(res.message || 'Listo');
+    if (res.success && res.id) location.href = '<?=base_url('ventas/CotizacionesObra/editar/')?>' + res.id;
+  });
 });
 document.getElementById('btnGuardar')?.addEventListener('click', function () {
   var btn = this;

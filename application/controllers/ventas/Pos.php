@@ -493,5 +493,145 @@ class Pos extends MY_Controller {
         }
         echo json_encode($res);
     }
-    
+
+    public function obras_ajax() {
+        $q = trim((string) $this->input->get('q'));
+        $this->db->select('id, folio, nombre, cliente_id');
+        $this->db->from('obras');
+        $this->db->where('activo', 1);
+        if ($q !== '') {
+            $this->db->group_start();
+            $this->db->like('folio', $q);
+            $this->db->or_like('nombre', $q);
+            $this->db->group_end();
+        }
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit(40);
+        echo json_encode(['success' => true, 'obras' => $this->db->get()->result()]);
+    }
+
+    public function variantes_ajax() {
+        $this->load->model('Ventas/CapturaPosModel');
+        $id = (int) ($this->input->get('producto_id') ?: $this->input->post('producto_id'));
+        echo json_encode(['success' => true, 'productos' => $this->CapturaPosModel->variantes($id)]);
+    }
+
+    public function captura_obra_ajax() {
+        $this->load->model('Ventas/CapturaPosModel');
+        $obra_id = (int) $this->input->get('obra_id');
+        echo json_encode(['success' => true, 'lineas' => $this->CapturaPosModel->pendientes($obra_id)]);
+    }
+
+    public function aplicar_captura_ajax() {
+        $this->load->model('Ventas/CapturaPosModel');
+        $elecciones = json_decode($this->input->post('elecciones') ?: '[]', true);
+        $lineas = $this->CapturaPosModel->aplicar(is_array($elecciones) ? $elecciones : [], (int) $this->input->post('cotizacion_id'));
+        echo json_encode([
+            'success' => count($lineas) > 0,
+            'message' => count($lineas) ? 'Conceptos listos en la tabla. Guarda la cotización.' : 'No había productos pendientes',
+            'lineas' => $lineas,
+        ]);
+    }
+
+    public function pasar_obra_ajax() {
+        $obra_id = (int) $this->input->post('obra_id');
+        $detalles = json_decode($this->input->post('detalles') ?: '[]', true);
+        if ($obra_id <= 0 || !is_array($detalles) || !$detalles) {
+            echo json_encode(['success' => false, 'message' => 'Elige la obra y agrega productos']);
+            return;
+        }
+        $obra = $this->db->where('id', $obra_id)->where('activo', 1)->get('obras')->row();
+        if (!$obra) {
+            echo json_encode(['success' => false, 'message' => 'Obra no encontrada']);
+            return;
+        }
+        $this->load->model('Ventas/CapturaPosModel');
+        $this->load->model('Ventas/CotizacionesObraModel');
+        $n = $this->CapturaPosModel->registrar_captura($obra_id, $detalles);
+        $cot = $this->db->where('obra_id', $obra_id)->where('estatus', 'Borrador')->where('es_consulta', 0)
+            ->order_by('id', 'DESC')->get('cotizaciones_comerciales')->row();
+        if (!$cot) {
+            $guardado = $this->CotizacionesObraModel->guardar([
+                'cliente_id' => $obra->cliente_id,
+                'obra_id' => $obra_id,
+                'obra_nombre' => $obra->nombre,
+                'ubicacion' => trim(($obra->direccion ?? '') . ' ' . ($obra->ciudad ?? '')),
+                'constructora' => $obra->nombre,
+                'introduccion' => 'Productos tomados del punto de venta para decidir si entran como producto o como aplicación.',
+            ], [], $this->session->userdata('id'));
+            $cot_id = (int) ($guardado['id'] ?? 0);
+            $folio = $guardado['folio'] ?? '';
+        } else {
+            $cot_id = (int) $cot->id;
+            $folio = $cot->folio;
+        }
+        echo json_encode([
+            'success' => $n > 0 && $cot_id > 0,
+            'message' => $n . ' producto(s) quedaron en ' . $folio . '. Ahí eliges si son producto o concepto de aplicación.',
+            'cotizacion_id' => $cot_id,
+            'url' => base_url('ventas/CotizacionesObra/editar/' . $cot_id),
+        ]);
+    }
+
+    public function version_orden_ajax() {
+        $id = (int) $this->input->post('id');
+        $orden = $this->VentasModel->get_orden_completa($id);
+        if (!$orden) {
+            echo json_encode(['success' => false, 'message' => 'Orden no encontrada']);
+            return;
+        }
+        if ($orden->estatus !== 'Cotización') {
+            echo json_encode(['success' => false, 'message' => 'Solo se versiona una orden que sigue en cotización']);
+            return;
+        }
+        $this->load->model('Ventas/CapturaPosModel');
+        $this->CapturaPosModel->asegurar();
+        $nota = trim((string) $this->input->post('nota'));
+        $nuevo = $this->VentasModel->crear_orden([
+            'cliente_id' => $orden->cliente_id,
+            'sucursal_id' => $orden->sucursal_id ?? null,
+            'obra_id' => $orden->obra_id ?? null,
+            'fecha_orden' => date('Y-m-d'),
+            'forma_pago' => $orden->forma_pago,
+            'estatus' => 'Cotización',
+            'tipo_venta' => $orden->tipo_venta,
+            'direccion_envio' => $orden->direccion_envio,
+            'costo_envio' => $orden->costo_envio,
+            'observaciones' => 'Versión de ' . $orden->folio . ($nota !== '' ? '. ' . $nota : ''),
+            'creado_por' => (int) ($this->session->userdata('id') ?: 0),
+        ]);
+        $lineas = [];
+        foreach ($orden->detalles as $d) {
+            $lineas[] = [
+                'producto_id' => $d->producto_id,
+                'cantidad' => $d->cantidad,
+                'precio_unitario' => $d->precio_unitario,
+                'descuento' => $d->descuento ?? 0,
+            ];
+        }
+        $this->VentasModel->agregar_detalle($nuevo, $lineas);
+        $creada = $this->VentasModel->get_orden_completa($nuevo);
+        $this->db->where('id', $nuevo)->update('ordenes_venta', [
+            'saldo_pendiente' => $creada->total,
+            'monto_pagado' => 0,
+            'estatus_pago' => 'Pendiente',
+        ]);
+        $this->CapturaPosModel->asegurar_raiz('orden', $orden->id, $orden->folio);
+        $num = $this->CapturaPosModel->registrar_version('orden', $nuevo, $orden->id, $creada->folio, $nota);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Versión ' . $num . ' creada: ' . $creada->folio,
+            'folio' => $creada->folio,
+            'id' => $nuevo,
+        ]);
+    }
+
+    public function versiones_ajax() {
+        $this->load->model('Ventas/CapturaPosModel');
+        $tipo = $this->input->get('tipo') === 'orden' ? 'orden' : 'cotizacion';
+        echo json_encode([
+            'success' => true,
+            'versiones' => $this->CapturaPosModel->arbol($tipo, (int) $this->input->get('id')),
+        ]);
+    }
 }

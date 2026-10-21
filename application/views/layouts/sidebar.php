@@ -136,6 +136,7 @@
         </a>
         <ul id="ventas" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Pos">Punto de Venta (POS)</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Consulta">Consulta</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Ordenes">Órdenes de Venta</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/ObrasVentas">Obras</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/CotizacionesObra">Cotizaciones de obra</a></li>
