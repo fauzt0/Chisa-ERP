@@ -85,8 +85,12 @@ $icono = $es_obra ? 'hard-hat' : 'file-invoice';
                     <span class="badge bg-<?=$badgeColor?>"><?=$registro->estatus?></span>
                 </p>
                 <p class="mb-2"><strong>Fecha de Creación:</strong> <?=date('d/m/Y H:i', strtotime($registro->fecha_creacion))?></p>
-                <?php if(isset($registro->fecha_entrega_estimada) && $registro->fecha_entrega_estimada): ?>
-                <p class="mb-0"><strong>Fecha Estimada de Entrega:</strong> <?=date('d/m/Y', strtotime($registro->fecha_entrega_estimada))?></p>
+                <?php
+                $entrega = (string) ($registro->fecha_entrega_estimada ?? '');
+                $entrega_ok = (bool) preg_match('/^(19|20)\d{2}-\d{2}-\d{2}/', $entrega);
+                ?>
+                <?php if($entrega_ok): ?>
+                <p class="mb-0"><strong>Fecha Estimada de Entrega:</strong> <?=date('d/m/Y', strtotime($entrega))?></p>
                 <?php endif; ?>
             </div>
         </div>

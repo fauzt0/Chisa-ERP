@@ -585,20 +585,23 @@ class VentasModel extends MY_Model {
         $this->db->select('id, producto_padre_id');
         $this->db->from('productos');
         $this->db->where('estatus', 'Activo');
+        $this->db->where('es_variante', 1);
+        $this->db->where("variante_valor IS NOT NULL AND variante_valor <> ''", null, false);
         $this->db->group_start();
         $this->db->where_in('id', $ids);
         $this->db->or_where_in('producto_padre_id', $ids);
         $this->db->group_end();
-        $family = [];
+        $es_variante = [];
+        $tiene_hijos = [];
         foreach ($this->db->get()->result() as $row) {
-            $own = (int) $row->id;
-            $padre = (int) ($row->producto_padre_id ?: $own);
-            $family[$padre][$own] = true;
-            $family[$own][$own] = true;
+            $es_variante[(int) $row->id] = true;
+            if (!empty($row->producto_padre_id)) {
+                $tiene_hijos[(int) $row->producto_padre_id] = true;
+            }
         }
         foreach ($productos as $p) {
-            $raiz = !empty($p->producto_padre_id) ? (int) $p->producto_padre_id : (int) $p->id;
-            $p->tiene_variantes = (isset($family[$raiz]) && count($family[$raiz]) > 1) ? 1 : 0;
+            $id = (int) $p->id;
+            $p->tiene_variantes = (!empty($es_variante[$id]) || !empty($tiene_hijos[$id])) ? 1 : 0;
         }
         return $productos;
     }

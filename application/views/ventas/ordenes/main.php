@@ -445,6 +445,14 @@ window.verOrden = function(id) {
   });
 };
 
+function fechaLista(valor) {
+  if (!valor) return '—';
+  const s = String(valor).substring(0, 10);
+  const m = s.match(/^(19|20)\d{2}-\d{2}-\d{2}$/);
+  if (!m) return '—';
+  return m[0].substring(8, 10) + '/' + m[0].substring(5, 7) + '/' + m[0].substring(0, 4);
+}
+
 function renderDetalleOrden(orden) {
   let html = `
     <div class="row mb-3">
@@ -452,7 +460,7 @@ function renderDetalleOrden(orden) {
         <h6><i class="fas fa-file-invoice"></i> Información de la Orden</h6>
         <table class="table table-sm">
           <tr><th width="40%">Folio:</th><td>${orden.folio} ${orden.estatus === 'Cotización' ? `<button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="nuevaVersionOrden(${orden.id})">Nueva versión</button>` : ''}</td></tr>
-          <tr><th>Fecha:</th><td>${new Date(orden.fecha_orden).toLocaleDateString('es-MX')}</td></tr>
+          <tr><th>Fecha:</th><td>${fechaLista(orden.fecha_orden)}</td></tr>
           <tr><th>Tipo:</th><td><span class="badge bg-${orden.tipo_venta == 'Mostrador' ? 'secondary' : 'primary'}">${orden.tipo_venta}</span></td></tr>
           <tr><th>Estatus:</th><td><span class="badge bg-info">${orden.estatus}</span></td></tr>
           <tr><th>Forma de Pago:</th><td>${orden.forma_pago}</td></tr>
@@ -494,7 +502,7 @@ function renderDetalleOrden(orden) {
     }
     
     if(orden.fecha_entrega_estimada) {
-      html += `<tr><th>Fecha Entrega Estimada:</th><td>${new Date(orden.fecha_entrega_estimada).toLocaleDateString('es-MX')}</td></tr>`;
+      html += `<tr><th>Fecha Entrega Estimada:</th><td>${fechaLista(orden.fecha_entrega_estimada)}</td></tr>`;
     }
     
     if(orden.costo_envio && parseFloat(orden.costo_envio) > 0) {
@@ -703,7 +711,7 @@ function cargarHistorialPagos(orden_id) {
         result.pagos.forEach(p => {
           html += `<tr>
             <td>${p.folio}</td>
-            <td>${new Date(p.fecha_pago).toLocaleDateString('es-MX')}</td>
+            <td>${fechaLista(p.fecha_pago)}</td>
             <td>$${parseFloat(p.monto).toFixed(2)}</td>
             <td>${p.metodo_pago}</td>
           </tr>`;
