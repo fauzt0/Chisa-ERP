@@ -124,6 +124,10 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
     <?php endforeach; ?>
   </datalist>
 
+  <?php if (!empty($response['seguimiento'])): ?>
+  <?php $this->load->view('ventas/seguimiento/panel', ['seguimiento' => $response['seguimiento']]); ?>
+  <?php endif; ?>
+
   <?php if ($puede && !$bloqueada): ?>
   <button type="button" class="btn btn-primary" id="btnGuardar">Guardar cotización</button>
   <?php endif; ?>

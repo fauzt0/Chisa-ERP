@@ -283,6 +283,13 @@ class Notifications extends MY_Controller {
     });
     $notifications = array_slice($notifications, 0, 18);
 
+    // Seguimiento comercial: cotización sin respuesta, fase vencida, obra sin cuadrilla.
+    $this->load->model('Ventas/SeguimientoModel');
+    foreach ($this->SeguimientoModel->alertas(8) as $alerta) {
+      $notifications[] = $alerta;
+      $total_count++;
+    }
+
     echo json_encode([
       'success' => true,
       'total_count' => $total_count,

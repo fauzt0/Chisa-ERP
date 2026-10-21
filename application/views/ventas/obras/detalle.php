@@ -57,6 +57,9 @@ $servicios = $response['servicios_obra'] ?? [];
   </div>
 </div>
 <?php endif; ?>
+<?php if (!empty($response['seguimiento'])): ?>
+<?php $this->load->view('ventas/seguimiento/panel', ['seguimiento' => $response['seguimiento']]); ?>
+<?php endif; ?>
 <!-- Encabezado -->
 <div class="row mb-4">
     <div class="col-md-8">

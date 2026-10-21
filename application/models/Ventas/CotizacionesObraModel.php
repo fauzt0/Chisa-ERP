@@ -86,6 +86,15 @@ class CotizacionesObraModel extends CI_Model {
             $this->db->query("ALTER TABLE cotizaciones_comerciales_detalle ADD COLUMN tipo ENUM('Producto','Aplicacion','Servicio') NOT NULL DEFAULT 'Servicio'");
             $this->db->query("ALTER TABLE cotizaciones_comerciales_detalle ADD COLUMN producto_id INT(11) NULL");
         }
+        if ($this->db->table_exists('cotizaciones_comerciales') && !$this->db->field_exists('parent_id', 'cotizaciones_comerciales')) {
+            $this->db->query("ALTER TABLE cotizaciones_comerciales ADD COLUMN parent_id INT(11) NULL");
+            $this->db->query("ALTER TABLE cotizaciones_comerciales ADD COLUMN es_consulta TINYINT(1) NOT NULL DEFAULT 0");
+            $this->db->query("ALTER TABLE cotizaciones_comerciales ADD COLUMN fecha_estatus DATETIME NULL");
+        }
+        $pref = $this->db->query("SHOW COLUMNS FROM cotizaciones_comerciales LIKE 'pres_ref'")->row();
+        if ($pref && stripos($pref->Type, 'varchar(80)') !== false) {
+            $this->db->query("ALTER TABLE cotizaciones_comerciales MODIFY pres_ref VARCHAR(180) NULL");
+        }
     }
 
     public function generar_folio() {
@@ -103,15 +112,37 @@ class CotizacionesObraModel extends CI_Model {
         return $prefijo . str_pad($numero, 4, '0', STR_PAD_LEFT);
     }
 
-    public function listar($limite = 80) {
+    public function listar($limite = 40, $q = '', $consulta = false) {
         $this->asegurar_infraestructura();
-        $this->db->select('c.*, clientes.razon_social, sucursales.nombre AS sucursal_nombre');
+        $this->db->select('c.*, clientes.razon_social, sucursales.nombre AS sucursal_nombre, p.folio AS padre_folio');
+        $this->db->select('(SELECT ROUND(SUM(importe),2) FROM cotizaciones_comerciales_detalle d WHERE d.cotizacion_id = c.id) AS total', false);
         $this->db->from('cotizaciones_comerciales c');
         $this->db->join('clientes', 'clientes.id = c.cliente_id', 'left');
         $this->db->join('sucursales', 'sucursales.id = c.sucursal_id', 'left');
+        $this->db->join('cotizaciones_comerciales p', 'p.id = c.parent_id', 'left');
+        $q = trim((string) $q);
+        if ($q !== '') {
+            $this->db->group_start();
+            $this->db->like('c.folio', $q);
+            $this->db->or_like('c.constructora', $q);
+            $this->db->or_like('c.obra_nombre', $q);
+            $this->db->or_like('c.pres_ref', $q);
+            $this->db->or_like('clientes.razon_social', $q);
+            $this->db->group_end();
+        } elseif ($consulta) {
+            $this->db->where('c.es_consulta', 1);
+        } else {
+            $this->db->where('c.es_consulta', 0);
+        }
         $this->db->order_by('c.id', 'DESC');
         $this->db->limit((int) $limite);
         return $this->db->get()->result();
+    }
+
+    public function contar_consulta() {
+        $this->asegurar_infraestructura();
+        $this->db->where('es_consulta', 1);
+        return (int) $this->db->count_all_results('cotizaciones_comerciales');
     }
 
     public function get($id) {
@@ -222,7 +253,10 @@ class CotizacionesObraModel extends CI_Model {
         if (!$cot) {
             return ['success' => false, 'message' => 'Cotización no encontrada'];
         }
-        $this->db->where('id', (int) $id)->update('cotizaciones_comerciales', ['estatus' => $estatus]);
+        $this->db->where('id', (int) $id)->update('cotizaciones_comerciales', [
+            'estatus' => $estatus,
+            'fecha_estatus' => date('Y-m-d H:i:s'),
+        ]);
         return ['success' => true, 'message' => 'Estatus actualizado a ' . $estatus, 'folio' => $cot->folio];
     }
 

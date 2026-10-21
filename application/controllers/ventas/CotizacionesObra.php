@@ -30,9 +30,14 @@ class CotizacionesObra extends MY_Controller {
         $this->viewData['pageTitle'] = 'Cotizaciones de obra';
         $this->viewData['headTitle'] = 'Cotizaciones comerciales de obra';
         $this->viewData['breadcrumb'] = 'Inicio > CRM Ventas > Cotizaciones de obra';
+        $q = trim((string) $this->input->get('q'));
+        $consulta = $this->input->get('consulta') === '1';
         $this->viewData['response'] = [
-            'cotizaciones' => $this->CotizacionesObraModel->listar(),
+            'cotizaciones' => $this->CotizacionesObraModel->listar($consulta ? 80 : 40, $q, $consulta),
             'puede_editar' => $this->puede_editar(),
+            'q' => $q,
+            'consulta' => $consulta,
+            'total_consulta' => $this->CotizacionesObraModel->contar_consulta(),
         ];
         $this->viewData['pageView'] = 'ventas/cotizaciones_obra/main';
         $this->load->view('layouts/general_template', $this->viewData);
@@ -54,6 +59,11 @@ class CotizacionesObra extends MY_Controller {
         $this->viewData['pageTitle'] = $cot ? $cot->folio : 'Nueva cotización de obra';
         $this->viewData['headTitle'] = $cot ? ('Editar ' . $cot->folio) : 'Nueva cotización de obra';
         $this->viewData['breadcrumb'] = 'Inicio > CRM Ventas > Cotizaciones de obra';
+        $seguimiento = null;
+        if ($cot) {
+            $this->load->model('Ventas/SeguimientoModel');
+            $seguimiento = $this->SeguimientoModel->paquete('cotizacion', $cot->id);
+        }
         $this->viewData['response'] = [
             'cotizacion' => $cot,
             'sucursales' => $this->SucursalesModel->listar_activas(),
@@ -61,6 +71,7 @@ class CotizacionesObra extends MY_Controller {
             'conceptos' => $this->CotizacionesObraModel->buscar_conceptos('', 120),
             'obras' => $obras,
             'puede_editar' => $this->puede_editar(),
+            'seguimiento' => $seguimiento,
         ];
         $this->viewData['pageView'] = 'ventas/cotizaciones_obra/editar';
         $this->load->view('layouts/general_template', $this->viewData);
@@ -77,6 +88,16 @@ class CotizacionesObra extends MY_Controller {
             is_array($lineas) ? $lineas : [],
             $this->session->userdata('id')
         );
+        if (!empty($result['success']) && !empty($result['id'])) {
+            $grupos = [];
+            foreach ((array) $lineas as $linea) {
+                if (!empty($linea['grupo'])) {
+                    $grupos[] = $linea['grupo'];
+                }
+            }
+            $this->load->model('Ventas/SeguimientoModel');
+            $this->SeguimientoModel->sincronizar_fases_desde_grupos($result['id'], $grupos);
+        }
         echo json_encode($result);
     }
 
@@ -85,10 +106,21 @@ class CotizacionesObra extends MY_Controller {
             echo json_encode(['success' => false, 'message' => 'No tienes permiso']);
             return;
         }
-        echo json_encode($this->CotizacionesObraModel->cambiar_estatus(
+        $res = $this->CotizacionesObraModel->cambiar_estatus(
             (int) $this->input->post('id'),
             (string) $this->input->post('estatus')
-        ));
+        );
+        if (!empty($res['success'])) {
+            $this->load->model('Ventas/SeguimientoModel');
+            $this->SeguimientoModel->evento(
+                'cotizacion',
+                (int) $this->input->post('id'),
+                'estatus',
+                'Estatus de cotización: ' . $this->input->post('estatus'),
+                $this->session->userdata('id')
+            );
+        }
+        echo json_encode($res);
     }
 
     public function conceptos_ajax() {
