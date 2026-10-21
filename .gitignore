@@ -24,7 +24,6 @@ uploads/tmp/*
 !.htaccess
 !database/.htaccess
 
-composer.lock
 tests/mocks/database/ci_test.sqlite
 
 user_guide_src/build/*
