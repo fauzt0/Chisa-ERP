@@ -287,12 +287,7 @@ class CotizacionesObraModel extends CI_Model {
                 $ref = $this->texto($file['nombre'], 80);
                 $existe = $this->db->where('pres_ref', $ref)->get('cotizaciones_comerciales')->row();
                 if ($existe) {
-                    if (empty($existe->cliente_id) && $cliente_id) {
-                        $this->db->where('id', $existe->id)->update('cotizaciones_comerciales', [
-                            'cliente_id' => $cliente_id,
-                            'constructora' => $existe->constructora ?: $nombre_cliente,
-                        ]);
-                    }
+                    $this->refrescar_cotizacion_ejemplo($existe, $leido, $cliente_id, $nombre_cliente);
                 } else {
                     $guardado = $this->guardar([
                         'cliente_id' => $cliente_id,
@@ -320,10 +315,54 @@ class CotizacionesObraModel extends CI_Model {
         return $resumen;
     }
 
+    private function refrescar_cotizacion_ejemplo($existe, array $leido, $cliente_id, $nombre_cliente) {
+        $cab = [];
+        if ($cliente_id && (empty($existe->cliente_id) || !empty($leido['constructora']))) {
+            $cab['cliente_id'] = $cliente_id;
+        }
+        if (!empty($leido['constructora']) && !$this->es_fecha_lugar($leido['constructora'])) {
+            $cab['constructora'] = $leido['constructora'];
+        } elseif (empty($existe->constructora) || $this->es_fecha_lugar($existe->constructora)) {
+            $cab['constructora'] = $nombre_cliente;
+        }
+        if (!empty($leido['atencion'])) {
+            $cab['atencion'] = $leido['atencion'];
+        }
+        if (!empty($leido['obra'])) {
+            $cab['obra_nombre'] = $leido['obra'];
+        }
+        if (!empty($leido['introduccion'])) {
+            $cab['introduccion'] = $this->texto($leido['introduccion'], 500);
+        }
+        if ($cab) {
+            $this->db->where('id', $existe->id)->update('cotizaciones_comerciales', $cab);
+        }
+        if (empty($leido['lineas'])) {
+            return;
+        }
+        $this->db->where('cotizacion_id', $existe->id)->delete('cotizaciones_comerciales_detalle');
+        $orden = 1;
+        foreach ($leido['lineas'] as $linea) {
+            $cantidad = (float) $linea['cantidad'];
+            $precio = (float) $linea['precio_unitario'];
+            $this->db->insert('cotizaciones_comerciales_detalle', [
+                'cotizacion_id' => $existe->id,
+                'orden' => $orden++,
+                'grupo' => null,
+                'concepto' => $linea['concepto'],
+                'unidad' => $linea['unidad'] ?: null,
+                'cantidad' => $cantidad,
+                'precio_unitario' => $precio,
+                'importe' => round($cantidad * $precio, 2),
+            ]);
+            $this->upsert_concepto($linea['concepto'], $linea['unidad'], $precio, $linea['modelo'] ?? '');
+        }
+    }
+
     private function leer_xlsx_ligero($path) {
         $wb = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
         $ws = $wb->getSheet(0);
-        $max = min(120, (int) $ws->getHighestRow());
+        $max = min(80, (int) $ws->getHighestRow());
         $out = [
             'constructora' => null,
             'atencion' => null,
@@ -336,20 +375,18 @@ class CotizacionesObraModel extends CI_Model {
         $colCantidad = null;
         $colPrecio = null;
         $colModelo = null;
+        $previo = '';
         for ($r = 1; $r <= $max; $r++) {
-            $vals = [];
-            foreach (range('A', 'L') as $col) {
-                $v = $ws->getCell($col . $r)->getValue();
-                if ($v === null || $v === '') {
-                    continue;
-                }
-                $vals[$col] = trim(preg_replace('/\s+/', ' ', (string) $v));
-            }
+            $vals = $this->fila_xlsx($ws, $r);
             if (!$vals) {
                 continue;
             }
             $texto = implode(' ', $vals);
             if ($colConcepto === null) {
+                if (preg_match('/P\s*R\s*E\s*S\s*E\s*N\s*T\s*E/i', $texto) && $previo !== '' && empty($out['constructora']) && !$this->es_fecha_lugar($previo)) {
+                    $out['constructora'] = $previo;
+                }
+                $previo = $texto;
                 if (stripos($texto, 'CONSTRUCTORA') !== false) {
                     $out['constructora'] = $this->despues_de($texto, 'CONSTRUCTORA');
                 } elseif (preg_match('/AT[´\'’]?N/iu', $texto)) {
@@ -360,54 +397,114 @@ class CotizacionesObraModel extends CI_Model {
                     $out['introduccion'] = $texto;
                 }
                 foreach ($vals as $col => $v) {
-                    if (mb_strtoupper($v) === 'CONCEPTO') {
+                    $u = mb_strtoupper($v);
+                    if ($u === 'CONCEPTO') {
                         $colConcepto = $col;
-                    } elseif (in_array(mb_strtoupper($v), ['UNIDAD', 'VOLUMEN'], true)) {
+                    } elseif (in_array($u, ['UNIDAD', 'VOLUMEN'], true)) {
                         $colUnidad = $col;
-                    } elseif (mb_strtoupper($v) === 'CANTIDAD') {
+                    } elseif ($u === 'CANTIDAD') {
                         $colCantidad = $col;
-                    } elseif (mb_strtoupper($v) === 'MODELO') {
+                    } elseif ($u === 'MODELO') {
                         $colModelo = $col;
-                    } elseif (preg_match('/PRECIO/i', $v)) {
+                    } elseif (strpos($u, 'PRECIO') !== false) {
                         $colPrecio = $col;
                     }
                 }
                 continue;
             }
-            $concepto = $vals[$colConcepto] ?? '';
-            if ($concepto === '' || mb_strtoupper($concepto) === 'CONCEPTO') {
+            $concepto = trim($vals[$colConcepto] ?? '');
+            if ($concepto === '' || $this->es_texto_legal($concepto)) {
+                if ($this->es_texto_legal($concepto)) {
+                    break;
+                }
                 continue;
             }
-            if (stripos($concepto, 'SUBTOTAL') !== false || stripos($concepto, 'TOTAL') === 0) {
-                continue;
-            }
-            $unidad = $colUnidad ? ($vals[$colUnidad] ?? '') : '';
-            $cantidad = $colCantidad ? $this->numero($vals[$colCantidad] ?? 0) : 0;
-            $precio = 0;
-            if ($colPrecio && isset($vals[$colPrecio]) && is_numeric($vals[$colPrecio])) {
-                $precio = (float) $vals[$colPrecio];
+            $unidad = $colUnidad ? trim($vals[$colUnidad] ?? '') : '';
+            $crudo_cant = $colCantidad ? trim($vals[$colCantidad] ?? '') : '';
+            $crudo_precio = $colPrecio ? trim($vals[$colPrecio] ?? '') : '';
+            $cantidad = 0;
+            $precio = $this->numero($crudo_precio);
+            if ($this->es_unidad($crudo_cant)) {
+                $unidad = $unidad ?: $crudo_cant;
+                $sig = $this->fila_xlsx($ws, $r + 1);
+                $cantidad = $this->numero($colCantidad ? ($sig[$colCantidad] ?? 0) : 0);
+                if ($precio <= 0) {
+                    $precio = $this->numero($colPrecio ? ($sig[$colPrecio] ?? 0) : 0);
+                }
+            } elseif ($crudo_cant !== '' && !is_numeric($crudo_cant)) {
+                $unidad = $unidad ?: mb_substr($crudo_cant, 0, 20);
+                $cantidad = $precio > 0 ? 1 : 0;
+            } else {
+                $cantidad = $this->numero($crudo_cant);
             }
             if ($precio <= 0) {
-                foreach ($vals as $v) {
-                    if (is_numeric($v) && (float) $v > 1 && (float) $v < 1000000 && (float) $v != $cantidad) {
-                        $precio = (float) $v;
+                $costo = 0;
+                $factor = 0;
+                foreach ($vals as $col => $v) {
+                    if (!is_numeric($v) || $col === $colCantidad) {
+                        continue;
+                    }
+                    $n = (float) $v;
+                    if ($n > 1 && $n < 1000000 && $n !== $cantidad && ($costo === 0 || $n < $costo)) {
+                        $costo = $n;
+                    } elseif ($n > 0 && $n < 1) {
+                        $factor = $n;
                     }
                 }
+                if ($costo > 0) {
+                    $precio = $factor > 0 ? round($costo * (1 + $factor), 2) : $costo;
+                }
+            }
+            if ($cantidad <= 0 && $precio <= 0) {
+                continue;
             }
             $out['lineas'][] = [
                 'concepto' => mb_substr($concepto, 0, 500),
-                'unidad' => mb_substr($unidad, 0, 20),
+                'unidad' => mb_substr(trim($unidad), 0, 20),
                 'cantidad' => $cantidad,
                 'precio_unitario' => $precio,
                 'modelo' => $colModelo ? mb_substr($vals[$colModelo] ?? '', 0, 80) : '',
                 'grupo' => '',
             ];
-            if (count($out['lineas']) >= 80) {
+            if (count($out['lineas']) >= 40) {
                 break;
             }
         }
         $wb->disconnectWorksheets();
         return $out;
+    }
+
+    private function fila_xlsx($ws, $r) {
+        $vals = [];
+        foreach (range('A', 'L') as $col) {
+            try {
+                $v = $ws->getCell($col . $r)->getCalculatedValue();
+            } catch (\Throwable $e) {
+                $v = $ws->getCell($col . $r)->getValue();
+            }
+            if ($v === null || $v === '') {
+                continue;
+            }
+            $vals[$col] = trim(preg_replace('/\s+/', ' ', (string) $v));
+        }
+        return $vals;
+    }
+
+    private function es_fecha_lugar($texto) {
+        return (bool) preg_match('/CIUDAD DE|DE [A-ZÁÉÍÓÚ]+ DEL \d{4}/u', mb_strtoupper((string) $texto));
+    }
+
+    private function es_unidad($valor) {
+        $v = mb_strtoupper(trim((string) $valor));
+        return (bool) preg_match('/^(M2|M3|ML|M|PZA|PZA\.|KG|LT|LOTE|SERVICIO|SERV|JGO|KIT)$/', $v);
+    }
+
+    private function es_texto_legal($concepto) {
+        $t = mb_strtoupper(trim((string) $concepto));
+        if ($t === '' || strpos($t, 'SUBTOTAL') !== false || strpos($t, 'IMPORTE') === 0) {
+            return $t !== '';
+        }
+        return (bool) preg_match('/^(FORMA DE PAGO|NOTAS|N\s*O\s*T\s*A|ACEPTO|EN CASO|TODO |EL |ESTE |CHISA RECUBRIMIENTOS|SIN MAS|ING\.|_{3})/', $t);
     }
 
     private function asegurar_cliente($razon) {
