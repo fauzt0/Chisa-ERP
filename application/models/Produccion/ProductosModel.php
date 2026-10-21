@@ -687,6 +687,124 @@ class ProductosModel extends MY_Model {
     }
 
     /**
+     * Listado de formulaciones para la pantalla HistorialFormulaciones (consulta global).
+     * No reemplaza get_historial_formulaciones, que exige producto_id.
+     *
+     * Filtros admitidos en $filtros:
+     *   - producto_id (int)
+     *   - cliente_id (int)
+     *   - texto_comentarios (string, LIKE en comentarios)
+     *   - solo_activas (bool) → es_activa = 1
+     *
+     * @param  array $filtros
+     * @return array stdClass[]
+     */
+    public function listar_historial_formulaciones_consulta(array $filtros = []) {
+        $this->db->select(
+            'formulaciones.id, formulaciones.producto_id, formulaciones.cliente_id, '
+            . 'formulaciones.version, formulaciones.es_activa, formulaciones.rendimiento_m2_por_kg, '
+            . 'formulaciones.comentarios, formulaciones.nombre_version, formulaciones.fecha_creacion, '
+            . 'productos.nombre AS producto_nombre, productos.codigo AS producto_codigo, '
+            . 'clientes.razon_social AS cliente_nombre'
+        );
+        $this->db->from('formulaciones');
+        $this->db->join('productos', 'productos.id = formulaciones.producto_id', 'left');
+        $this->db->join('clientes', 'clientes.id = formulaciones.cliente_id', 'left');
+
+        if (!empty($filtros['producto_id'])) {
+            $this->db->where('formulaciones.producto_id', (int) $filtros['producto_id']);
+        }
+        if (!empty($filtros['cliente_id'])) {
+            $this->db->where('formulaciones.cliente_id', (int) $filtros['cliente_id']);
+        }
+        if (!empty($filtros['texto_comentarios'])) {
+            $this->db->like('formulaciones.comentarios', $filtros['texto_comentarios']);
+        }
+        if (!empty($filtros['solo_activas'])) {
+            $this->db->where('formulaciones.es_activa', 1);
+        }
+
+        $this->db->order_by('productos.nombre', 'ASC');
+        $this->db->order_by('formulaciones.version', 'DESC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Asocia o quita el cliente de una versión existente.
+     * El UPDATE solo escribe cliente_id. Si la fórmula está activa y su costo_total
+     * no coincide con productos.costo_produccion, se rechaza: el trigger
+     * tr_actualizar_costo_producto copiaría NEW.costo_total al producto.
+     *
+     * @param  int      $formulacion_id
+     * @param  int|null $cliente_id  null quita la asociación
+     * @return array{success:bool,message:string}
+     */
+    public function asociar_cliente_formulacion($formulacion_id, $cliente_id) {
+        $formulacion_id = (int) $formulacion_id;
+        $this->db->select('f.es_activa, f.costo_total, p.costo_produccion');
+        $this->db->from('formulaciones f');
+        $this->db->join('productos p', 'p.id = f.producto_id', 'left');
+        $this->db->where('f.id', $formulacion_id);
+        $row = $this->db->get()->row();
+        if (!$row) {
+            return ['success' => false, 'message' => 'Formulación no encontrada'];
+        }
+
+        if ($cliente_id !== null) {
+            $cliente_id = (int) $cliente_id;
+            $this->db->where('id', $cliente_id);
+            if ($this->db->count_all_results('clientes') < 1) {
+                return ['success' => false, 'message' => 'El cliente no existe'];
+            }
+        }
+
+        if ((int) $row->es_activa === 1
+            && abs((float) $row->costo_total - (float) $row->costo_produccion) > 0.01) {
+            return [
+                'success' => false,
+                'message' => 'No se asoció el cliente: la fórmula activa tiene un costo distinto al costo de producción del producto.',
+            ];
+        }
+
+        $this->db->where('id', $formulacion_id);
+        $ok = $this->db->update('formulaciones', ['cliente_id' => $cliente_id]);
+        if (!$ok) {
+            return ['success' => false, 'message' => 'No se pudo guardar la asociación'];
+        }
+        return [
+            'success' => true,
+            'message' => $cliente_id === null ? 'Se quitó la asociación del cliente' : 'Cliente asociado a esta versión',
+        ];
+    }
+
+    /**
+     * Cabecera de una formulación para consulta (solo lectura).
+     */
+    public function get_formulacion_cabecera_consulta($formulacion_id) {
+        $this->db->select(
+            'formulaciones.*, productos.nombre AS producto_nombre, productos.codigo AS producto_codigo, '
+            . 'clientes.razon_social AS cliente_nombre, clientes.nombre_comercial AS cliente_nombre_comercial'
+        );
+        $this->db->from('formulaciones');
+        $this->db->join('productos', 'productos.id = formulaciones.producto_id', 'left');
+        $this->db->join('clientes', 'clientes.id = formulaciones.cliente_id', 'left');
+        $this->db->where('formulaciones.id', (int) $formulacion_id);
+        return $this->db->get()->row();
+    }
+
+    /**
+     * Productos fabricados activos para filtro de la consulta de historial.
+     */
+    public function get_productos_select_fabricados() {
+        $this->db->select('id, codigo, nombre');
+        $this->db->from('productos');
+        $this->db->where('tipo_producto', 'Fabricado');
+        $this->db->where('estatus', 'Activo');
+        $this->db->order_by('nombre', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
      * Actualiza solo notas de una versión (no toca BOM ni activa).
      */
     public function actualizar_nota_formulacion($formulacion_id, $comentarios, $referencia_cliente = null) {
