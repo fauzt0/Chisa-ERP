@@ -138,6 +138,8 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Pos">Punto de Venta (POS)</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Ordenes">Órdenes de Venta</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/ObrasVentas">Obras</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/CotizacionesObra">Cotizaciones de obra</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Sucursales">Sucursales</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Clientes">Clientes</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Descuentos">Descuentos</a></li>
         </ul>

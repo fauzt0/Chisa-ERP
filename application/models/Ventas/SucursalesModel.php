@@ -37,6 +37,19 @@ class SucursalesModel extends CI_Model {
             if (!$this->db->field_exists('texto_marca_agua', 'sucursales')) {
                 $this->db->query("ALTER TABLE sucursales ADD COLUMN texto_marca_agua VARCHAR(120) NULL");
             }
+            $columnas = [
+                'email' => "ALTER TABLE sucursales ADD COLUMN email VARCHAR(120) NULL",
+                'sitio_web' => "ALTER TABLE sucursales ADD COLUMN sitio_web VARCHAR(180) NULL",
+                'contacto' => "ALTER TABLE sucursales ADD COLUMN contacto VARCHAR(150) NULL",
+                'ciudad' => "ALTER TABLE sucursales ADD COLUMN ciudad VARCHAR(120) NULL",
+                'logo' => "ALTER TABLE sucursales ADD COLUMN logo VARCHAR(255) NULL",
+                'icono' => "ALTER TABLE sucursales ADD COLUMN icono VARCHAR(255) NULL",
+            ];
+            foreach ($columnas as $campo => $sql) {
+                if (!$this->db->field_exists($campo, 'sucursales')) {
+                    $this->db->query($sql);
+                }
+            }
         }
 
         $this->db->where('codigo', 'SUC-MATRIZ');
@@ -106,7 +119,10 @@ class SucursalesModel extends CI_Model {
             return ['success' => false, 'message' => 'Sucursal no encontrada'];
         }
 
-        $permitidas = ['nombre', 'direccion', 'telefono', 'estatus', 'texto_marca_agua', 'logo_marca_agua'];
+        $permitidas = [
+            'nombre', 'direccion', 'telefono', 'estatus', 'texto_marca_agua', 'logo_marca_agua',
+            'email', 'sitio_web', 'contacto', 'ciudad', 'logo', 'icono',
+        ];
         $update = [];
         foreach ($permitidas as $campo) {
             if (!array_key_exists($campo, $data)) {
@@ -166,10 +182,68 @@ class SucursalesModel extends CI_Model {
             $logo = $empresa->logo ?? null;
         }
 
+        $logo_doc = null;
+        $icono = null;
+        if ($sucursal) {
+            $logo_doc = $sucursal->logo ?? null;
+            $icono = $sucursal->icono ?? null;
+        }
+        if (empty($logo_doc)) {
+            $logo_doc = $logo;
+        }
+
         return [
             'logo' => $logo,
             'texto' => $texto ?: '',
+            'logo_documento' => $logo_doc,
+            'icono' => $icono,
+            'nombre' => $sucursal->nombre ?? '',
+            'direccion' => $sucursal->direccion ?? '',
+            'telefono' => $sucursal->telefono ?? '',
+            'email' => $sucursal->email ?? '',
+            'sitio_web' => $sucursal->sitio_web ?? '',
+            'ciudad' => $sucursal->ciudad ?? '',
+            'contacto' => $sucursal->contacto ?? '',
         ];
+    }
+
+    /**
+     * Guarda logo, icono o marca de agua de una sucursal.
+     * $slot: logo | icono | logo_marca_agua
+     */
+    public function guardar_archivo($id, $slot) {
+        $this->asegurar_infraestructura();
+        $slots = ['logo', 'icono', 'logo_marca_agua'];
+        if (!in_array($slot, $slots, true)) {
+            return ['success' => false, 'message' => 'Tipo de archivo no permitido'];
+        }
+        if (!$this->get($id)) {
+            return ['success' => false, 'message' => 'Sucursal no encontrada'];
+        }
+        if (empty($_FILES['archivo']['name'])) {
+            return ['success' => false, 'message' => 'Selecciona una imagen'];
+        }
+
+        $dir = FCPATH . 'uploads/sucursales/' . (int) $id . '/';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $CI =& get_instance();
+        $CI->load->library('upload');
+        $CI->upload->initialize([
+            'upload_path' => $dir,
+            'allowed_types' => 'gif|jpg|jpeg|png|webp',
+            'encrypt_name' => true,
+            'max_size' => 4096,
+        ]);
+        if (!$CI->upload->do_upload('archivo')) {
+            return ['success' => false, 'message' => strip_tags($CI->upload->display_errors('', ''))];
+        }
+        $info = $CI->upload->data();
+        $ruta = 'uploads/sucursales/' . (int) $id . '/' . $info['file_name'];
+        $this->db->where('id', (int) $id)->update('sucursales', [$slot => $ruta]);
+        return ['success' => true, 'message' => 'Imagen actualizada', 'ruta' => $ruta, 'sucursal' => $this->get($id)];
     }
 }
 
