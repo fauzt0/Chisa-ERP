@@ -43,17 +43,32 @@ class Inventario extends MY_Controller {
     
     /**
      * Ajusta stock de producto (AJAX)
+     *
+     * Movimiento manual de inventario (Entrada/Salida) desde Almacén > Inventario.
+     * Se valida en servidor el tipo permitido, la cantidad, el motivo obligatorio y el
+     * usuario de sesión (clave `id`, ver Auth::_create_user_session()).
      */
     public function ajustar_stock_ajax() {
-        $producto_id = $this->input->post('producto_id');
-        $tipo_movimiento = $this->input->post('tipo_movimiento');
+        $producto_id = (int) $this->input->post('producto_id');
+        $tipo_movimiento = (string) $this->input->post('tipo_movimiento');
         $cantidad = $this->input->post('cantidad');
-        $motivo = $this->input->post('motivo');
-        $observaciones = $this->input->post('observaciones');
+        $motivo = trim((string) $this->input->post('motivo'));
+        $observaciones = trim((string) $this->input->post('observaciones'));
+        $usuario_id = (int) $this->session->userdata('id');
         
         // Validar
-        if(empty($producto_id) || empty($cantidad) || $cantidad <= 0) {
+        if(empty($producto_id) || !is_numeric($cantidad) || (float) $cantidad <= 0) {
             echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+            return;
+        }
+        
+        if(!in_array($tipo_movimiento, ['Entrada', 'Salida'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Tipo de movimiento no válido']);
+            return;
+        }
+        
+        if($motivo === '') {
+            echo json_encode(['success' => false, 'message' => 'El motivo del ajuste es obligatorio']);
             return;
         }
         
@@ -61,13 +76,22 @@ class Inventario extends MY_Controller {
         $data = [
             'producto_id' => $producto_id,
             'tipo_movimiento' => $tipo_movimiento,
-            'cantidad' => $cantidad,
-            'motivo' => $motivo . ($observaciones ? ': ' . $observaciones : ''),
-            'usuario_id' => $this->session->userdata('user_id')
+            'cantidad' => (float) $cantidad,
+            'motivo' => $motivo . ($observaciones !== '' ? ': ' . $observaciones : ''),
+            'usuario_id' => $usuario_id ?: null
         ];
         
         // Registrar movimiento
         $result = $this->ProductosModel->registrar_movimiento($data);
+        
+        // Informar el stock resultante para que el operador verifique la coherencia
+        if(!empty($result['success'])) {
+            $producto = $this->db->select('stock_actual')->where('id', $producto_id)->get('productos')->row();
+            if($producto) {
+                $result['stock_actual'] = (float) $producto->stock_actual;
+                $result['message'] = 'Movimiento registrado. Stock nuevo: ' . number_format((float) $producto->stock_actual, 2);
+            }
+        }
         
         echo json_encode($result);
     }

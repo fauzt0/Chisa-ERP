@@ -85,8 +85,12 @@ $icono = $es_obra ? 'hard-hat' : 'file-invoice';
                     <span class="badge bg-<?=$badgeColor?>"><?=$registro->estatus?></span>
                 </p>
                 <p class="mb-2"><strong>Fecha de Creación:</strong> <?=date('d/m/Y H:i', strtotime($registro->fecha_creacion))?></p>
-                <?php if(isset($registro->fecha_entrega_estimada) && $registro->fecha_entrega_estimada): ?>
-                <p class="mb-0"><strong>Fecha Estimada de Entrega:</strong> <?=date('d/m/Y', strtotime($registro->fecha_entrega_estimada))?></p>
+                <?php
+                $entrega = (string) ($registro->fecha_entrega_estimada ?? '');
+                $entrega_ok = (bool) preg_match('/^(19|20)\d{2}-\d{2}-\d{2}/', $entrega);
+                ?>
+                <?php if($entrega_ok): ?>
+                <p class="mb-0"><strong>Fecha Estimada de Entrega:</strong> <?=date('d/m/Y', strtotime($entrega))?></p>
                 <?php endif; ?>
             </div>
         </div>
@@ -139,10 +143,15 @@ $icono = $es_obra ? 'hard-hat' : 'file-invoice';
                         <label class="form-label h5">Seleccionar Nuevo Estatus:</label>
                         <select id="nuevo_estatus" class="form-select form-select-lg">
                             <option value="">-- Seleccionar --</option>
-                            <option value="Confirmada" <?=$registro->estatus == 'Confirmada' ? 'selected' : ''?>>Confirmada</option>
-                            <option value="En Proceso" <?=$registro->estatus == 'En Proceso' ? 'selected' : ''?>>En Proceso</option>
-                            <option value="Completada" <?=$registro->estatus == 'Completada' ? 'selected' : ''?>>Completada</option>
-                            <option value="Entregada" <?=$registro->estatus == 'Entregada' ? 'selected' : ''?>>Entregada</option>
+                            <?php if ($es_obra): ?>
+                                <?php foreach (['Planificación','En Cotización','Aprobada','En Ejecución','Pausada','Completada'] as $opcion): ?>
+                                    <option value="<?=$opcion?>" <?=$registro->estatus == $opcion ? 'selected' : ''?>><?=$opcion?></option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach (['Cotización','Confirmada','En Preparación','Completada','Entregada'] as $opcion): ?>
+                                    <option value="<?=$opcion?>" <?=$registro->estatus == $opcion ? 'selected' : ''?>><?=$opcion?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                     <div class="col-md-6 text-end">
@@ -252,11 +261,14 @@ $icono = $es_obra ? 'hard-hat' : 'file-invoice';
         <div class="card">
             <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
                 <h5 class="mb-0">
-                    <i class="fas fa-weight"></i> Pesaje de Insumos (Teórico vs Real)
+                    <i class="fas fa-weight"></i> Pesaje de Insumos (BOM vs inventario)
                 </h5>
-                <button class="btn btn-sm btn-light" onclick="cargarInsumosRequeridos()" title="Actualizar">
+                <div class="d-flex align-items-center gap-2">
+                  <small class="text-white-50 d-none d-md-inline" id="lbl_insumos_refresh">Stock leído al abrir; use Actualizar o espere el refresco automático.</small>
+                  <button class="btn btn-sm btn-light" onclick="cargarInsumosRequeridos()" title="Actualizar stock">
                     <i class="fas fa-sync-alt"></i>
-                </button>
+                  </button>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div id="tabla_insumos_container">
@@ -502,6 +514,13 @@ function initDashboardDetalle() {
     $(document).ready(function() {
         cargarInsumosRequeridos();
         cargarLotesOrden();
+        if (!window._erpPesajePoll) {
+            window._erpPesajePoll = setInterval(function() {
+                if (!insumosData || !insumosData.consumido) {
+                    cargarInsumosRequeridos();
+                }
+            }, 20000);
+        }
         
         $('#busquedaHistorialDashboard').on('keyup', function(e) {
             if(e.key === 'Enter') cargarHistorialDashboard();
@@ -860,6 +879,7 @@ function renderizarTablaInsumos(res) {
             <td>
               <strong>${escHtml(insumo.insumo_nombre)}</strong><br>
               <small class="text-muted">${escHtml(insumo.insumo_codigo)}</small>
+              ${insumo.proveedor_nombre ? '<br><small class="text-info"><i class="fas fa-truck"></i> ' + escHtml(insumo.proveedor_nombre) + '</small>' : ''}
             </td>
             <td class="text-center"><strong>${teorico.toFixed(3)}</strong> ${unidad}</td>
             <td class="text-center">${stock.toFixed(3)} ${unidad}</td>
@@ -930,6 +950,12 @@ function confirmarPesaje() {
     $.post('<?=base_url()?>produccion/Dashboard/confirmar_pesaje_ajax', postData, function(res) {
         if (res.success) {
             let msg = res.message;
+            if (res.detalles && res.detalles.length) {
+                const lineas = res.detalles.map(function(d) {
+                    return (d.insumo_codigo || '') + ' → stock ' + parseFloat(d.stock_restante).toFixed(3) + ' ' + (d.unidad || '');
+                }).join('; ');
+                msg += ' Inventario actualizado: ' + lineas + '.';
+            }
             if (res.preordenes && res.preordenes.creadas && res.preordenes.creadas.length > 0) {
                 const folios = res.preordenes.creadas.map(p => p.folio || p.id).join(', ');
                 msg += ' Pre-órdenes por stock bajo mínimo: ' + folios;

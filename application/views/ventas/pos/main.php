@@ -20,8 +20,24 @@ $stats = $response['stats'] ?? [];
 
 <!-- Título -->
 <div class="row mb-3">
-  <div class="col-md-12">
-    <h2><i class="fas fa-cash-register"></i> Punto de Venta (POS)</h2>
+  <div class="col-md-6">
+    <h2><i class="fas fa-cash-register"></i> Punto de Venta (POS) <button type="button" class="erp-btn-ayuda" data-erp-ayuda="pos" title="Funciones del POS">?</button></h2>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label mb-1">Sucursal / caja</label>
+    <div class="input-group">
+      <select id="pos_sucursal" class="form-select" onchange="cambiarSucursal()">
+        <?php foreach (($sucursales ?? []) as $suc): ?>
+          <option value="<?= (int)$suc->id ?>" <?= ((int)($sucursal_id ?? 0) === (int)$suc->id) ? 'selected' : '' ?>>
+            <?= htmlspecialchars($suc->codigo . ' — ' . $suc->nombre, ENT_QUOTES, 'UTF-8') ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+      <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalSucursal" title="Nueva sucursal">
+        <i class="fas fa-store"></i>
+      </button>
+    </div>
+    <small class="text-muted">Cada ticket queda ligado a esta sucursal. El stock de producto terminado sigue siendo global.</small>
   </div>
 </div>
 
@@ -151,7 +167,7 @@ $stats = $response['stats'] ?? [];
           <div class="col-md-12">
             <div class="input-group">
               <span class="input-group-text"><i class="fas fa-search"></i></span>
-              <input type="text" class="form-control" id="buscar_producto" placeholder="Buscar por nombre, código o código de barras...">
+              <input type="text" class="form-control" id="buscar_producto" placeholder="Nombre, código, alias o categoría (varias palabras)">
               <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
                 <i class="fas fa-times"></i>
               </button>
@@ -225,15 +241,25 @@ $stats = $response['stats'] ?? [];
             <div class="row">
                 <div class="col-md-12">
                     <strong><i class="fas fa-user"></i> <span id="lbl_cli_razon"></span></strong>
+                    <a href="#" id="lnk_cli_crm" class="small ms-2" style="display:none;">Abrir en CRM</a>
                 </div>
                 <div class="col-md-6 mt-1">
-                    <i class="fas fa-id-card"></i> <span id="lbl_cli_rfc"></span>
+                    <i class="fas fa-id-card"></i> RFC <span id="lbl_cli_rfc"></span>
                 </div>
                 <div class="col-md-6 mt-1">
                     <i class="fas fa-envelope"></i> <span id="lbl_cli_email"></span>
                 </div>
+                <div class="col-md-6 mt-1">
+                    <i class="fas fa-file-alt"></i> Régimen <span id="lbl_cli_regimen"></span> · CFDI <span id="lbl_cli_cfdi"></span>
+                </div>
+                <div class="col-md-6 mt-1">
+                    <i class="fas fa-map-marker-alt"></i> CP <span id="lbl_cli_cp"></span>
+                </div>
                 <div class="col-md-12 mt-1">
                      <i class="fas fa-dollar-sign"></i> Crédito: <span id="lbl_cli_credito"></span> | Días: <span id="lbl_cli_dias"></span>
+                </div>
+                <div class="col-md-12 mt-1" id="wrap_cli_saldo" style="display:none;">
+                    <span class="badge bg-danger" id="lbl_cli_saldo"></span>
                 </div>
             </div>
           </div>
@@ -293,6 +319,13 @@ $stats = $response['stats'] ?? [];
         
         <!-- Tipo de Venta -->
         <div class="mb-3">
+          <label class="form-label">Obra (opcional)</label>
+          <select class="form-select" id="ticket_obra">
+            <option value="">Sin obra</option>
+          </select>
+          <small class="text-muted">Si eliges obra, puedes pasar estos productos a su cotización.</small>
+        </div>
+        <div class="mb-3">
           <label class="form-label">Tipo de Venta</label>
           <select class="form-select" id="ticket_tipo_venta" onchange="toggleDireccionEnvio()">
             <option value="Mostrador">Mostrador</option>
@@ -349,6 +382,11 @@ $stats = $response['stats'] ?? [];
           <div class="col-6">
             <button type="button" class="btn btn-success w-100" onclick="cobrarVenta()">
               <i class="fas fa-cash-register"></i> Cobrar
+            </button>
+          </div>
+          <div class="col-12 mt-2">
+            <button type="button" class="btn btn-outline-primary w-100" onclick="pasarAObra()">
+              <i class="fas fa-hard-hat"></i> Pasar a cotización de la obra
             </button>
           </div>
         </div>
@@ -828,9 +866,53 @@ let descuentoSeleccionado = null;
 function initPOS() {
   cargarClientes();
   cargarDescuentos();
+  cargarObras();
   inicializarBusqueda();
   cargarTopProductos();
-  // Init Select2 after loading clients in cargarClientes
+}
+
+function cargarObras() {
+  $.getJSON('<?=base_url();?>ventas/Pos/obras_ajax', function (res) {
+    const sel = $('#ticket_obra');
+    (res.obras || []).forEach(function (o) {
+      sel.append('<option value="'+o.id+'">'+escHtml(o.folio+' · '+o.nombre)+'</option>');
+    });
+  });
+}
+
+function verVariantes(id) {
+  $.getJSON('<?=base_url();?>ventas/Pos/variantes_ajax', { producto_id: id }, function (res) {
+    if (!res.productos || res.productos.length < 2) {
+      notifyShow('Este producto no tiene variantes', 'warning');
+      return;
+    }
+    renderProductos(res.productos);
+  });
+}
+
+function pasarAObra() {
+  const obra = $('#ticket_obra').val();
+  if (!obra) {
+    notifyShow('Selecciona la obra', 'warning');
+    return;
+  }
+  if (ticketItems.length === 0) {
+    notifyShow('Agrega productos al ticket', 'warning');
+    return;
+  }
+  const detalles = ticketItems.map(function (item) {
+    return { producto_id: item.id, cantidad: item.cantidad, precio_unitario: item.precio };
+  });
+  $.post('<?=base_url();?>ventas/Pos/pasar_obra_ajax', {
+    obra_id: obra,
+    detalles: JSON.stringify(detalles)
+  }, function (res) {
+    res = typeof res === 'string' ? JSON.parse(res) : res;
+    notifyShow(res.message || 'Listo', res.success ? 'success' : 'danger');
+    if (res.success && res.url) {
+      window.location = res.url;
+    }
+  });
 }
 
 function cargarTopProductos() {
@@ -844,13 +926,15 @@ function cargarTopProductos() {
       let html = '';
       result.productos.forEach(p => {
         const stock = parseFloat(p.stock_actual);
+        const stockTxt = isNaN(stock) ? '—' : (stock < 0 ? '0 (ajuste)' : String(stock));
         html += `
           <div class="col-md-4 col-sm-6">
             <div class="card h-100 producto-card border-warning" onclick="agregarAlTicket(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.precio_venta}, ${stock})" style="cursor: pointer;">
               <div class="card-body p-2 text-center">
-                <h6 class="card-title text-truncate mb-1" style="font-size: 0.9rem;">${p.nombre}</h6>
+                <h6 class="card-title text-truncate mb-1" style="font-size: 0.9rem;">${escHtml(p.nombre)}</h6>
                 <p class="text-primary fw-bold mb-0">$${parseFloat(p.precio_venta).toFixed(2)}</p>
-                <small class="text-success"><i class="fas fa-check"></i> Stock: ${stock}</small>
+                <small class="${stock <= 0 ? 'text-danger' : 'text-success'}"><i class="fas fa-${stock <= 0 ? 'times' : 'check'}"></i> Stock: ${stockTxt}</small>
+                ${parseInt(p.tiene_variantes, 10) === 1 ? `<div><button type="button" class="btn btn-link btn-sm p-0" onclick="event.stopPropagation(); verVariantes(${p.id})">Variantes</button></div>` : ''}
               </div>
             </div>
           </div>
@@ -869,13 +953,13 @@ function buscarProductos() {
     $('#grid_productos').html(`
       <div class="col-12 text-center text-muted py-5">
         <i class="fas fa-search fa-3x mb-3"></i>
-        <p>Busca un producto para comenzar</p>
+        <p>Busca por nombre, código, alias o categoría (puedes usar varias palabras)</p>
       </div>
     `);
     return;
   }
   
-  $('#contenedor_top_productos').hide(); // Ocultar top productos al buscar
+  $('#contenedor_top_productos').hide();
   
   $.post('<?=base_url();?>ventas/Pos/get_productos_ajax', {
     'busqueda': busqueda,
@@ -909,12 +993,26 @@ function verificarCliente() {
       $('#lbl_cli_razon').text(cliente.razon_social);
       $('#lbl_cli_rfc').text(cliente.rfc || 'Sin RFC');
       $('#lbl_cli_email').text(cliente.email_facturacion || cliente.email || 'Sin Email');
-      
+      $('#lbl_cli_regimen').text(cliente.regimen_fiscal || '—');
+      $('#lbl_cli_cfdi').text(cliente.uso_cfdi || '—');
+      $('#lbl_cli_cp').text(cliente.codigo_postal || '—');
+      $('#lnk_cli_crm').attr('href', '<?=base_url();?>ventas/Clientes').show();
+
       const credito = parseFloat(cliente.limite_credito || 0).toLocaleString('es-MX', {style: 'currency', currency: 'MXN'});
       const dias = cliente.dias_credito || 0;
       
       $('#lbl_cli_credito').text(credito);
       $('#lbl_cli_dias').text(dias);
+
+      const saldoCli = parseFloat(cliente.saldo_pendiente || 0);
+      if (saldoCli > 0) {
+        $('#lbl_cli_saldo').text('Saldo por cobrar: $' + saldoCli.toLocaleString('es-MX', {minimumFractionDigits: 2}));
+        $('#wrap_cli_saldo').show();
+        $('#info_cliente_seleccionado').removeClass('alert-info').addClass('alert-warning');
+      } else {
+        $('#wrap_cli_saldo').hide();
+        $('#info_cliente_seleccionado').removeClass('alert-warning').addClass('alert-info');
+      }
       
       // Mostrar contenedor
       $('#info_cliente_seleccionado').slideDown();
@@ -1110,31 +1208,6 @@ function inicializarBusqueda() {
   });
 }
 
-function buscarProductos() {
-  const busqueda = $('#buscar_producto').val();
-  
-  if(!busqueda || busqueda.length < 2) {
-    $('#grid_productos').html(`
-      <div class="col-12 text-center text-muted py-5">
-        <i class="fas fa-search fa-3x mb-3"></i>
-        <p>Busca un producto para comenzar</p>
-      </div>
-    `);
-    return;
-  }
-  
-  $.post('<?=base_url();?>ventas/Pos/get_productos_ajax', {
-    'busqueda': busqueda,
-    'peticion': 'ajax',
-    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
-  }, function(result) {
-    result = JSON.parse(result);
-    if(result.success) {
-      renderProductos(result.productos);
-    }
-  });
-}
-
 function renderProductos(productos) {
   if(productos.length === 0) {
     $('#grid_productos').html(`
@@ -1149,6 +1222,7 @@ function renderProductos(productos) {
   let html = '';
   productos.forEach(p => {
     const stock = parseFloat(p.stock_actual);
+    const stockMostrar = (isNaN(stock) || stock < 0) ? 0 : stock;
     let stockClass = 'success';
     let stockIcon = 'check-circle';
     
@@ -1169,32 +1243,37 @@ function renderProductos(productos) {
         imagenHtml = `<i class="fas fa-image fa-3x text-muted opacity-25"></i>`;
     }
     
+    const precio = parseFloat(p.precio_venta) || 0;
+    const sinPrecio = precio <= 0;
     html += `
       <div class="col-md-6 mb-3">
-        <div class="card h-100 producto-card border-0 shadow-sm" onclick="agregarAlTicket(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.precio_venta}, ${stock})" style="cursor: pointer; overflow: hidden;">
+        <div class="card h-100 producto-card border-0 shadow-sm ${sinPrecio ? 'opacity-75' : ''}" onclick="agregarAlTicket(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${precio}, ${stock})" style="cursor: pointer; overflow: hidden;">
           <div class="row g-0 h-100">
             <div class="col-4 d-flex align-items-center justify-content-center bg-light">
                 ${imagenHtml}
             </div>
             <div class="col-8">
                 <div class="card-body p-2">
-                    <h6 class="card-title text-truncate mb-1" style="font-size: 0.95rem;" title="${p.nombre}">${p.nombre}</h6>
+                    <h6 class="card-title text-truncate mb-1" style="font-size: 0.95rem;" title="${escHtml(p.nombre)}">${escHtml(p.nombre)} ${(p.es_variante == 1 && p.variante_valor) ? `<span class="badge bg-info">${escHtml(p.variante_valor)}</span>` : ''}</h6>
                     <p class="card-text mb-1 text-truncate">
-                      <small class="text-muted fw-bold">${p.codigo}</small>
+                      <small class="text-muted fw-bold">${escHtml(p.codigo || p.sku || '')}</small>
+                      ${p.categoria_nombre ? `<small class="badge bg-light text-dark ms-1">${escHtml(p.categoria_nombre)}</small>` : ''}
                     </p>
+                    ${parseInt(p.tiene_variantes, 10) === 1 ? `<button type="button" class="btn btn-link btn-sm p-0" onclick="event.stopPropagation(); verVariantes(${p.id})">Variantes</button>` : ''}
+                    ${p.alias ? `<p class="card-text mb-1 text-truncate"><small class="text-muted">Alias: ${p.alias}</small></p>` : ''}
                     <p class="card-text mb-1 text-muted" style="font-size: 0.75rem; line-height: 1.2; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                       ${p.descripcion || 'Sin descripción'}
                     </p>
                     <div class="d-flex justify-content-between align-items-center mt-2">
-                      <h5 class="text-primary mb-0">$${parseFloat(p.precio_venta).toFixed(2)}</h5>
+                      <h5 class="text-primary mb-0">$${precio.toFixed(2)}${sinPrecio ? ' <span class="badge bg-danger">Sin precio</span>' : ''}</h5>
                       <div>
                         ${p.tipo_producto === 'Fabricado' ? 
-                          `<button class="btn btn-xs btn-outline-info me-1" onclick="verFormulacion(${p.id}, '${p.nombre.replace(/'/g, "\\'")}')" title="Ver Formulación" style="font-size: 0.7rem; padding: 0.1rem 0.3rem;">
+                          `<button type="button" class="btn btn-xs btn-outline-info me-1" onclick="event.stopPropagation(); verFormulacion(${p.id}, '${p.nombre.replace(/'/g, "\\'")}')" title="Ver Formulación" style="font-size: 0.7rem; padding: 0.1rem 0.3rem;">
                              <i class="fas fa-flask"></i>
                            </button>` : ''
                         }
                         <span class="badge bg-${stockClass}">
-                          <i class="fas fa-${stockIcon}"></i> ${stock}
+                          <i class="fas fa-${stockIcon}"></i> ${stockMostrar}
                         </span>
                       </div>
                     </div>
@@ -1210,6 +1289,10 @@ function renderProductos(productos) {
 }
 
 function agregarAlTicket(id, nombre, precio, stock) {
+  if (parseFloat(precio) <= 0) {
+    notifyShow('No se puede agregar: el producto no tiene precio de lista. Captúrelo en catálogo.', 'warning');
+    return;
+  }
   // Verificar si ya existe en el ticket
   const existe = ticketItems.find(item => item.id === id);
   
@@ -1473,6 +1556,7 @@ function procesarVenta(estatus) {
   
   const data = {
     cliente_id: cliente_id,
+    sucursal_id: $('#pos_sucursal').val(),
     tipo_venta: tipo_venta,
     direccion_envio: direccion_envio || null,
     costo_envio: parseFloat($('#ticket_costo_envio').val()) || 0,
@@ -1507,16 +1591,16 @@ function procesarVenta(estatus) {
         insumosHtml = `<p class="mb-2 small"><i class="fas fa-${insIcon} me-1"></i>${escHtml(result.insumos.mensaje_resumen)}</p>`;
       }
       
-      // Mostrar selector de template de recibo
+      const esCotiz = estatus === 'Cotización';
       Swal.fire({
-        title: '¡Venta registrada!',
+        title: esCotiz ? '¡Cotización guardada!' : '¡Venta registrada!',
         html: `<p class="mb-2">Folio: <strong>${escHtml(result.folio)}</strong></p>
                ${insumosHtml}
-               <p class="mb-3 text-muted">Selecciona el diseño del recibo:</p>
+               <p class="mb-3 text-muted">${esCotiz ? 'Abre el PDF o elige el diseño:' : 'Selecciona el diseño del recibo:'}</p>
                <div class="d-flex justify-content-center gap-2">
                  <a href="<?=base_url()?>ventas/Pos/imprimir_recibo_template/${result.orden_id}/1" target="_blank"
                     class="btn btn-outline-dark btn-sm swal2-styled" style="background:none; color:#333; border:1px solid #333; padding:6px 12px;">
-                   <i class="fas fa-file-invoice me-1"></i>Factura
+                   <i class="fas fa-file-invoice me-1"></i>${esCotiz ? 'PDF Cotización' : 'Factura'}
                  </a>
                  <a href="<?=base_url()?>ventas/Pos/imprimir_recibo_template/${result.orden_id}/2" target="_blank"
                     class="btn btn-outline-primary btn-sm swal2-styled" style="background:none; color:#1a237e; border:1px solid #1a237e; padding:6px 12px;">
@@ -1577,6 +1661,34 @@ function cancelarTicket() {
   actualizarTotales(); // Recalcular totales
 }
 
+function cambiarSucursal() {
+  const id = $('#pos_sucursal').val();
+  $.post('<?=base_url();?>ventas/Pos/seleccionar_sucursal_ajax', {
+    sucursal_id: id,
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function (raw) {
+    const r = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (r.success) location.reload();
+    else notifyShow(r.message || 'No se pudo cambiar sucursal', 'danger');
+  });
+}
+
+function guardarSucursalNueva() {
+  $.post('<?=base_url();?>ventas/Pos/crear_sucursal_ajax', {
+    codigo: $('#suc_codigo').val(),
+    nombre: $('#suc_nombre').val(),
+    direccion: $('#suc_direccion').val(),
+    telefono: $('#suc_telefono').val(),
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function (raw) {
+    const r = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    notifyShow(r.message || (r.success ? 'Sucursal creada' : 'Error'), r.success ? 'success' : 'danger');
+    if (r.success) location.reload();
+  });
+}
+
 // Inicializar cuando jQuery esté disponible
 if (typeof jQuery !== 'undefined') {
   $(document).ready(initPOS);
@@ -1588,6 +1700,27 @@ if (typeof jQuery !== 'undefined') {
   });
 }
 </script>
+
+<div class="modal fade" id="modalSucursal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nueva sucursal POS</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Código</label><input id="suc_codigo" class="form-control" maxlength="20" placeholder="SUC-NORTE"></div>
+        <div class="mb-2"><label class="form-label">Nombre</label><input id="suc_nombre" class="form-control" maxlength="120" placeholder="Mostrador Norte"></div>
+        <div class="mb-2"><label class="form-label">Dirección</label><input id="suc_direccion" class="form-control" maxlength="255"></div>
+        <div class="mb-2"><label class="form-label">Teléfono</label><input id="suc_telefono" class="form-control" maxlength="50"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarSucursalNueva()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <style>
 .producto-card:hover {

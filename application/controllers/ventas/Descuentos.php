@@ -104,10 +104,10 @@ class Descuentos extends MY_Controller {
             'tipo_descuento' => $this->input->post('tipo_descuento'),
             'valor' => $this->input->post('valor'),
             'cliente_id' => $this->input->post('cliente_id') ?: null,
-            'estatus' => $this->input->post('estatus')
+            'estatus' => $this->input->post('estatus') ?: 'Activo'
         ];
         
-        $result = $this->DescuentosModel->insert($data);
+        $result = $this->DescuentosModel->crear($data);
         
         if($result) {
             echo json_encode(['success' => true, 'message' => 'Descuento creado correctamente']);
@@ -128,10 +128,10 @@ class Descuentos extends MY_Controller {
             'tipo_descuento' => $this->input->post('tipo_descuento'),
             'valor' => $this->input->post('valor'),
             'cliente_id' => $this->input->post('cliente_id') ?: null,
-            'estatus' => $this->input->post('estatus')
+            'estatus' => $this->input->post('estatus') ?: 'Activo'
         ];
         
-        $result = $this->DescuentosModel->update($id, $data);
+        $result = $this->DescuentosModel->actualizar($id, $data);
         
         if($result) {
             echo json_encode(['success' => true, 'message' => 'Descuento actualizado correctamente']);
@@ -151,7 +151,7 @@ class Descuentos extends MY_Controller {
             return;
         }
         
-        $result = $this->DescuentosModel->delete($id);
+        $result = $this->DescuentosModel->eliminar($id);
         
         if($result) {
             echo json_encode(['success' => true, 'message' => 'Descuento eliminado correctamente']);

@@ -16,6 +16,8 @@ class Pos extends MY_Controller {
         $this->load->model('Ventas/ClientesModel');
         $this->load->model('Produccion/ProductosModel');
         $this->load->model('Ventas/DescuentosModel');
+        $this->load->model('Ventas/SucursalesModel');
+        $this->SucursalesModel->asegurar_infraestructura();
     }
     
     /**
@@ -26,8 +28,16 @@ class Pos extends MY_Controller {
         $this->viewData['headTitle'] = 'Point of Sale (POS)';
         $this->viewData['breadcrumb'] = 'Inicio > CRM Ventas > POS';
         
-        // Obtener estadísticas
-        $stats = $this->VentasModel->get_estadisticas();
+        $sucursales = $this->SucursalesModel->listar_activas();
+        $sucursal_id = (int) $this->session->userdata('pos_sucursal_id');
+        if ($sucursal_id <= 0 && !empty($sucursales)) {
+            $sucursal_id = (int) $sucursales[0]->id;
+            $this->session->set_userdata('pos_sucursal_id', $sucursal_id);
+        }
+        $this->viewData['sucursales'] = $sucursales;
+        $this->viewData['sucursal_id'] = $sucursal_id;
+        
+        $stats = $this->VentasModel->get_estadisticas($sucursal_id ?: null);
         $this->viewData['response'] = ['stats' => $stats];
         
         $this->viewData['validate'] = '';
@@ -83,39 +93,54 @@ class Pos extends MY_Controller {
         $estatus = $this->input->post('estatus'); // Cotización o Entregada
         $observaciones = $this->input->post('observaciones');
         $detalles = json_decode($this->input->post('detalles'), true);
-        
-        // Descuento
-        $descuento_id = $this->input->post('descuento_id');
-        $descuento_nombre = $this->input->post('descuento_nombre');
-        $descuento_tipo = $this->input->post('descuento_tipo');
-        $descuento_valor = $this->input->post('descuento_valor');
+        $sucursal_id = (int) ($this->input->post('sucursal_id') ?: $this->session->userdata('pos_sucursal_id'));
         
         if(!$cliente_id || !$detalles || count($detalles) == 0) {
             echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
             return;
         }
-        
-        // Determinar estatus correcto según tipo de venta
-        $estatus_solicitado = $this->input->post('estatus'); // Cotización o Entregada
-        
-        // Lógica de estatus:
-        // - Cotización: siempre queda como Cotización
-        // - Mostrador + Cobrar: Entregada (se entrega inmediatamente)
-        // - Pedido + Cobrar: Confirmada (requiere preparación/envío)
-        if($estatus_solicitado == 'Cotización') {
-            $estatus_final = 'Cotización';
+
+        $sucursal = $this->SucursalesModel->get($sucursal_id);
+        if (!$sucursal || $sucursal->estatus !== 'Activa') {
+            echo json_encode(['success' => false, 'message' => 'Seleccione una sucursal activa']);
+            return;
+        }
+
+        $err_precio = $this->VentasModel->validar_precios_pos($detalles);
+        if ($err_precio) {
+            echo json_encode(['success' => false, 'message' => $err_precio]);
+            return;
+        }
+        $detalles = $this->VentasModel->aplicar_precios_catalogo($detalles);
+
+        // Determinar estatus (antes de crear OV) para validar stock PT en mostrador
+        $estatus_solicitado = $this->input->post('estatus');
+        if ($estatus_solicitado == 'Cotización') {
+            $estatus_preview = 'Cotización';
+        } elseif ($tipo_venta == 'Mostrador') {
+            $estatus_preview = 'Entregada';
         } else {
-            // Si se está cobrando (no es cotización)
-            if($tipo_venta == 'Mostrador') {
-                $estatus_final = 'Entregada'; // Mostrador se entrega inmediato
-            } else {
-                $estatus_final = 'Confirmada'; // Pedido requiere preparación
+            $estatus_preview = 'Confirmada';
+        }
+        if ($estatus_preview === 'Entregada') {
+            $chk_stock = $this->VentasModel->validar_stock_pt_lineas($detalles);
+            if (!$chk_stock['ok']) {
+                echo json_encode(['success' => false, 'message' => $chk_stock['message']]);
+                return;
             }
         }
+
+        $descuento_id = $this->input->post('descuento_id');
+        $descuento_nombre = $this->input->post('descuento_nombre');
+        $descuento_tipo = $this->input->post('descuento_tipo');
+        $descuento_valor = $this->input->post('descuento_valor');
+        
+        $estatus_final = $estatus_preview;
         
         // Crear orden
         $data_orden = [
             'cliente_id' => $cliente_id,
+            'sucursal_id' => $sucursal_id,
             'fecha_orden' => date('Y-m-d'),
             'fecha_entrega_estimada' => $this->input->post('fecha_entrega_estimada'),
             'forma_pago' => $forma_pago,
@@ -128,7 +153,7 @@ class Pos extends MY_Controller {
             'descuento_nombre' => $descuento_nombre ?: null,
             'descuento_tipo' => $descuento_tipo ?: null,
             'descuento_valor' => $descuento_valor ?: 0,
-            'creado_por' => (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 0),
+            'creado_por' => (int) ($this->session->userdata('id') ?: 0),
         ];
         
         $orden_id = $this->VentasModel->crear_orden($data_orden);
@@ -142,7 +167,7 @@ class Pos extends MY_Controller {
         $this->VentasModel->agregar_detalle($orden_id, $detalles);
         
         // Verificar insumos: solo consulta en cotización; pre-órdenes al comprometer venta
-        $usuario_id = (int) ($this->session->userdata('id') ?: $this->session->userdata('user_id') ?: 0);
+        $usuario_id = (int) ($this->session->userdata('id') ?: 0);
         $insumos_result = null;
         if ($usuario_id > 0) {
             $es_compromiso = in_array($estatus_final, ['Confirmada', 'En Preparación', 'Entregada'], true);
@@ -164,10 +189,20 @@ class Pos extends MY_Controller {
             'estatus_pago' => 'Pendiente'
         ]);
         
-        // Si es venta de Mostrador y Entregada, descontar stock
-        if($estatus_final == 'Entregada') {
-            $this->VentasModel->entregar_orden($orden_id);
-            
+        // Si es venta de Mostrador y Entregada, descontar stock PT (con validación)
+        if ($estatus_final == 'Entregada') {
+            $entrega = $this->VentasModel->entregar_orden($orden_id);
+            if (empty($entrega['success'])) {
+                $this->db->where('id', $orden_id);
+                $this->db->update('ordenes_venta', ['estatus' => 'En Preparación']);
+                echo json_encode([
+                    'success' => false,
+                    'message' => $entrega['message'] ?? 'No se pudo entregar la orden.',
+                    'orden_id' => $orden_id,
+                ]);
+                return;
+            }
+
             // Si NO es crédito, registrar el pago automáticamente
             if($forma_pago != 'Crédito') {
                 // Generar folio de pago
@@ -190,12 +225,9 @@ class Pos extends MY_Controller {
         }
         
         // --- Generar Factura Simulada (Snapshot) ---
-        // Obtener datos fiscales del cliente
+        // Cotización no es compromiso: no emitir factura.
         $cliente = $this->ClientesModel->get_cliente($cliente_id);
-        
-        // Solo facturar si tiene RFC válido (no genérico XAXX...) o si es Mostrador pero se piden datos
-        // Simplificación: Generamos factura para todos los clientes registrados que tengan RFC/Razón Social
-        if($cliente && $cliente->rfc && $cliente->razon_social) {
+        if($estatus_final !== 'Cotización' && $cliente && $cliente->rfc && $cliente->razon_social) {
             $orden_creada = $this->VentasModel->get_orden_completa($orden_id);
             
             // Generar UUID simulado
@@ -426,5 +458,180 @@ class Pos extends MY_Controller {
             echo json_encode(['success' => false, 'message' => 'Formulación no encontrada']);
         }
     }
-    
+
+    public function cli_bootstrap() {
+        if (!is_cli()) {
+            show_error('Solo CLI', 403);
+            return;
+        }
+        $this->SucursalesModel->asegurar_infraestructura();
+        $n = $this->db->count_all('sucursales');
+        $col = $this->db->field_exists('sucursal_id', 'ordenes_venta') ? 'si' : 'no';
+        echo json_encode(['sucursales' => $n, 'ov_sucursal_id' => $col], JSON_UNESCAPED_UNICODE) . PHP_EOL;
+    }
+
+    public function seleccionar_sucursal_ajax() {
+        $id = (int) $this->input->post('sucursal_id');
+        $s = $this->SucursalesModel->get($id);
+        if (!$s || $s->estatus !== 'Activa') {
+            echo json_encode(['success' => false, 'message' => 'Sucursal no válida']);
+            return;
+        }
+        $this->session->set_userdata('pos_sucursal_id', $id);
+        echo json_encode(['success' => true, 'sucursal' => $s]);
+    }
+
+    public function crear_sucursal_ajax() {
+        $res = $this->SucursalesModel->crear([
+            'codigo' => $this->input->post('codigo'),
+            'nombre' => $this->input->post('nombre'),
+            'direccion' => $this->input->post('direccion'),
+            'telefono' => $this->input->post('telefono'),
+        ]);
+        if (!empty($res['success'])) {
+            $this->session->set_userdata('pos_sucursal_id', $res['id']);
+        }
+        echo json_encode($res);
+    }
+
+    public function obras_ajax() {
+        $q = trim((string) $this->input->get('q'));
+        $this->db->select('id, folio, nombre, cliente_id');
+        $this->db->from('obras');
+        $this->db->where('activo', 1);
+        if ($q !== '') {
+            $this->db->group_start();
+            $this->db->like('folio', $q);
+            $this->db->or_like('nombre', $q);
+            $this->db->group_end();
+        }
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit(40);
+        echo json_encode(['success' => true, 'obras' => $this->db->get()->result()]);
+    }
+
+    public function variantes_ajax() {
+        $this->load->model('Ventas/CapturaPosModel');
+        $id = (int) ($this->input->get('producto_id') ?: $this->input->post('producto_id'));
+        echo json_encode(['success' => true, 'productos' => $this->CapturaPosModel->variantes($id)]);
+    }
+
+    public function captura_obra_ajax() {
+        $this->load->model('Ventas/CapturaPosModel');
+        $obra_id = (int) $this->input->get('obra_id');
+        echo json_encode(['success' => true, 'lineas' => $this->CapturaPosModel->pendientes($obra_id)]);
+    }
+
+    public function aplicar_captura_ajax() {
+        $this->load->model('Ventas/CapturaPosModel');
+        $elecciones = json_decode($this->input->post('elecciones') ?: '[]', true);
+        $lineas = $this->CapturaPosModel->aplicar(is_array($elecciones) ? $elecciones : [], (int) $this->input->post('cotizacion_id'));
+        echo json_encode([
+            'success' => count($lineas) > 0,
+            'message' => count($lineas) ? 'Conceptos listos en la tabla. Guarda la cotización.' : 'No había productos pendientes',
+            'lineas' => $lineas,
+        ]);
+    }
+
+    public function pasar_obra_ajax() {
+        $obra_id = (int) $this->input->post('obra_id');
+        $detalles = json_decode($this->input->post('detalles') ?: '[]', true);
+        if ($obra_id <= 0 || !is_array($detalles) || !$detalles) {
+            echo json_encode(['success' => false, 'message' => 'Elige la obra y agrega productos']);
+            return;
+        }
+        $obra = $this->db->where('id', $obra_id)->where('activo', 1)->get('obras')->row();
+        if (!$obra) {
+            echo json_encode(['success' => false, 'message' => 'Obra no encontrada']);
+            return;
+        }
+        $this->load->model('Ventas/CapturaPosModel');
+        $this->load->model('Ventas/CotizacionesObraModel');
+        $n = $this->CapturaPosModel->registrar_captura($obra_id, $detalles);
+        $cot = $this->db->where('obra_id', $obra_id)->where('estatus', 'Borrador')->where('es_consulta', 0)
+            ->order_by('id', 'DESC')->get('cotizaciones_comerciales')->row();
+        if (!$cot) {
+            $guardado = $this->CotizacionesObraModel->guardar([
+                'cliente_id' => $obra->cliente_id,
+                'obra_id' => $obra_id,
+                'obra_nombre' => $obra->nombre,
+                'ubicacion' => trim(($obra->direccion ?? '') . ' ' . ($obra->ciudad ?? '')),
+                'constructora' => $obra->nombre,
+                'introduccion' => 'Productos tomados del punto de venta para decidir si entran como producto o como aplicación.',
+            ], [], $this->session->userdata('id'));
+            $cot_id = (int) ($guardado['id'] ?? 0);
+            $folio = $guardado['folio'] ?? '';
+        } else {
+            $cot_id = (int) $cot->id;
+            $folio = $cot->folio;
+        }
+        echo json_encode([
+            'success' => $n > 0 && $cot_id > 0,
+            'message' => $n . ' producto(s) quedaron en ' . $folio . '. Ahí eliges si son producto o concepto de aplicación.',
+            'cotizacion_id' => $cot_id,
+            'url' => base_url('ventas/CotizacionesObra/editar/' . $cot_id),
+        ]);
+    }
+
+    public function version_orden_ajax() {
+        $id = (int) $this->input->post('id');
+        $orden = $this->VentasModel->get_orden_completa($id);
+        if (!$orden) {
+            echo json_encode(['success' => false, 'message' => 'Orden no encontrada']);
+            return;
+        }
+        if ($orden->estatus !== 'Cotización') {
+            echo json_encode(['success' => false, 'message' => 'Solo se versiona una orden que sigue en cotización']);
+            return;
+        }
+        $this->load->model('Ventas/CapturaPosModel');
+        $this->CapturaPosModel->asegurar();
+        $nota = trim((string) $this->input->post('nota'));
+        $nuevo = $this->VentasModel->crear_orden([
+            'cliente_id' => $orden->cliente_id,
+            'sucursal_id' => $orden->sucursal_id ?? null,
+            'obra_id' => $orden->obra_id ?? null,
+            'fecha_orden' => date('Y-m-d'),
+            'forma_pago' => $orden->forma_pago,
+            'estatus' => 'Cotización',
+            'tipo_venta' => $orden->tipo_venta,
+            'direccion_envio' => $orden->direccion_envio,
+            'costo_envio' => $orden->costo_envio,
+            'observaciones' => 'Versión de ' . $orden->folio . ($nota !== '' ? '. ' . $nota : ''),
+            'creado_por' => (int) ($this->session->userdata('id') ?: 0),
+        ]);
+        $lineas = [];
+        foreach ($orden->detalles as $d) {
+            $lineas[] = [
+                'producto_id' => $d->producto_id,
+                'cantidad' => $d->cantidad,
+                'precio_unitario' => $d->precio_unitario,
+                'descuento' => $d->descuento ?? 0,
+            ];
+        }
+        $this->VentasModel->agregar_detalle($nuevo, $lineas);
+        $creada = $this->VentasModel->get_orden_completa($nuevo);
+        $this->db->where('id', $nuevo)->update('ordenes_venta', [
+            'saldo_pendiente' => $creada->total,
+            'monto_pagado' => 0,
+            'estatus_pago' => 'Pendiente',
+        ]);
+        $this->CapturaPosModel->asegurar_raiz('orden', $orden->id, $orden->folio);
+        $num = $this->CapturaPosModel->registrar_version('orden', $nuevo, $orden->id, $creada->folio, $nota);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Versión ' . $num . ' creada: ' . $creada->folio,
+            'folio' => $creada->folio,
+            'id' => $nuevo,
+        ]);
+    }
+
+    public function versiones_ajax() {
+        $this->load->model('Ventas/CapturaPosModel');
+        $tipo = $this->input->get('tipo') === 'orden' ? 'orden' : 'cotizacion';
+        echo json_encode([
+            'success' => true,
+            'versiones' => $this->CapturaPosModel->arbol($tipo, (int) $this->input->get('id')),
+        ]);
+    }
 }

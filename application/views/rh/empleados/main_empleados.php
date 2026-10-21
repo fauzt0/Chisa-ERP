@@ -29,7 +29,7 @@
   <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
    
   <!-- Titulo de la pagina -->
-  <h1 class="h3 mb-3"><?php echo $headTitle;?></h1>
+  <h1 class="h3 mb-3"><?php echo $headTitle;?> <button type="button" class="erp-btn-ayuda" data-erp-ayuda="rh" title="Funciones de RH">?</button></h1>
 
   <?php if (empty($response['vinculo_usuarios_habilitado'])): ?>
   <div class="alert alert-secondary border mb-3 py-2 small">

@@ -174,7 +174,7 @@ class ProveedoresModel extends MY_Model {
      * Obtiene insumos de un proveedor
      */
     public function get_insumos_proveedor($proveedor_id) {
-        $this->db->select('proveedor_insumo.*, insumos.codigo, insumos.nombre_tecnico, insumos.unidad_medida');
+        $this->db->select('proveedor_insumo.*, insumos.codigo, insumos.nombre_tecnico, insumos.unidad_medida, insumos.stock_actual');
         $this->db->from('proveedor_insumo');
         $this->db->join('insumos', 'insumos.id = proveedor_insumo.insumo_id');
         $this->db->where('proveedor_insumo.proveedor_id', $proveedor_id);
@@ -184,6 +184,52 @@ class ProveedoresModel extends MY_Model {
     }
     
     /**
+     * Proveedores de varios insumos en una sola consulta (bulk).
+     * Devuelve map: insumo_id => array de stdObjects con datos de proveedor_insumo + proveedor.
+     *
+     * @param  array<int> $insumo_ids
+     * @return array<int, stdClass[]>
+     */
+    public function get_proveedores_insumos_bulk(array $insumo_ids) {
+        $map = [];
+        if (empty($insumo_ids)) return $map;
+        $this->db->select('pi.*, p.razon_social, p.nombre_comercial, p.codigo as prov_codigo');
+        $this->db->from('proveedor_insumo pi');
+        $this->db->join('proveedores p', 'p.id = pi.proveedor_id');
+        $this->db->where_in('pi.insumo_id', array_map('intval', $insumo_ids));
+        $this->db->where('pi.estatus', 'Activo');
+        $this->db->where('p.estatus', 'Activo');
+        $this->db->order_by('pi.insumo_id, pi.es_proveedor_principal DESC, pi.precio_compra ASC');
+        foreach ($this->db->get()->result() as $row) {
+            $iid = (int) $row->insumo_id;
+            if (!isset($map[$iid])) $map[$iid] = [];
+            $map[$iid][] = $row;
+        }
+        return $map;
+    }
+
+    /**
+     * Agrega o actualiza el precio de un proveedor para un insumo.
+     * Si la relación ya existe la actualiza; si no, la crea.
+     *
+     * @param  int   $proveedor_id
+     * @param  int   $insumo_id
+     * @param  float $precio_compra
+     * @return array {success, message}
+     */
+    public function upsert_precio_insumo($proveedor_id, $insumo_id, $precio_compra) {
+        $this->db->where('proveedor_id', (int) $proveedor_id);
+        $this->db->where('insumo_id',   (int) $insumo_id);
+        $existe = $this->db->count_all_results('proveedor_insumo') > 0;
+        if ($existe) {
+            return $this->actualizar_precio_insumo(
+                $proveedor_id, $insumo_id, ['precio_compra' => $precio_compra]
+            );
+        }
+        return $this->agregar_insumo($proveedor_id, $insumo_id, ['precio_compra' => $precio_compra]);
+    }
+
+    /**
      * Obtiene proveedores de un insumo
      */
     public function get_proveedores_insumo($insumo_id) {
@@ -191,6 +237,7 @@ class ProveedoresModel extends MY_Model {
         $this->db->from('proveedor_insumo');
         $this->db->join('proveedores', 'proveedores.id = proveedor_insumo.proveedor_id');
         $this->db->where('proveedor_insumo.insumo_id', $insumo_id);
+        $this->db->where('proveedor_insumo.estatus', 'Activo');
         $this->db->where('proveedores.estatus', 'Activo');
         $this->db->order_by('proveedor_insumo.precio_compra', 'ASC');
         return $this->db->get()->result();

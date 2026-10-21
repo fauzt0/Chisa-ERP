@@ -1,7 +1,7 @@
 <nav id="sidebar" class="sidebar">
   <?php $this->load->helper('permissions'); ?>
   <div class="sidebar-content js-simplebar">
-    <a class="sidebar-brand" id="sidebar-brand" href="https://aapcoy.org.mx/dashboard" style="background-color: rgba(255, 255, 255, 1); padding: 0rem; padding-top:10px">
+    <a class="sidebar-brand" id="sidebar-brand" href="<?php echo base_url();?>dashboard" style="background-color: rgba(255, 255, 255, 1); padding: 0rem; padding-top:10px">
       <img class="align-middle img-fluid logotype" id="logo" src="<?php echo base_url();?>assets/dist/img/brands/chisa_recubrimientos_logo.jpg" alt="CHISA Logo" width="180px" />
     </a>
 
@@ -111,6 +111,7 @@
         <ul id="proveedores" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Categorias">Categorías</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Insumos">Insumos</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/EntrenamientoMateriales">Entrenamiento de materiales</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Proveedores">Proveedores</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/OrdenesCompra">Órdenes de Compra</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Cotizaciones">Cotizaciones</a></li>
@@ -125,6 +126,7 @@
         <ul id="produccion" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Dashboard">Fabricación Dashboard</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Productos">Productos y Fórmulas</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/HistorialFormulaciones">Historial de formulaciones</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Lotes">Control de Lotes</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Lotes/consultar">Consultar Lote</a></li>
         </ul>
@@ -136,8 +138,11 @@
         </a>
         <ul id="ventas" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Pos">Punto de Venta (POS)</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Consulta">Consulta</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Ordenes">Órdenes de Venta</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/ObrasVentas">Obras</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/CotizacionesObra">Cotizaciones de obra</a></li>
+          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Sucursales">Sucursales</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Clientes">Clientes</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Descuentos">Descuentos</a></li>
         </ul>
@@ -179,6 +184,9 @@
                 </a></li>
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Polizas">
                     Pólizas Contables
+                </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Origenes">
+                    Orígenes operativos
                 </a></li>
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Bancos">
                     Bancos

@@ -169,3 +169,19 @@ body,
 .table {
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
+
+/* -----------------------------------------------------------------------------
+   DataTables — control "Mostrar X registros": evitar que el número se encime
+   con la flecha del <select>. DataTables 2.x usa .dt-length y clase
+   .form-select.form-select-sm (con flecha SVG). Se incluye el selector legacy
+   .dataTables_length por compatibilidad. Ver doc/PLAN_FIX_DATATABLES_LENGTH_SELECT.md.
+   --------------------------------------------------------------------------- */
+div.dt-length select,
+div.dataTables_length select,
+div.dt-container .dt-length select.form-select,
+div.dt-container .dataTables_length select.form-select {
+  padding-right: 2.25rem !important;
+  background-position: right 0.7rem center !important;
+  min-width: 5.25rem;
+  width: auto;
+}

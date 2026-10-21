@@ -38,6 +38,8 @@ class MainDashboard extends MY_Controller {
       'proveedores_top_chart'=> array('perm' => 'proveedores_consult',    'title' => 'Top Proveedores',             'group' => 'Proveedores'),
       'proveedores_tipo_chart'=>array('perm' => 'proveedores_consult',    'title' => 'Proveedores por Tipo',        'group' => 'Proveedores'),
       'ultimas_ordenes'      => array('perm' => 'ventas_ordenes_consult', 'title' => 'Últimas Órdenes de Venta',    'group' => 'Ventas'),
+      'cartera_cobros'       => array('perm' => 'ventas_ordenes_consult', 'title' => 'Cartera por cobrar',          'group' => 'Ventas'),
+      'obras_parcialidades'  => array('perm' => 'ventas_ordenes_consult', 'title' => 'Parcialidades de obras',      'group' => 'Ventas'),
     );
   }
 
@@ -103,6 +105,16 @@ class MainDashboard extends MY_Controller {
     if (isset($authorized['empleados_resumen'])) {
       $this->load->model('RH/EmpleadoModel');
       $data['empleados_stats'] = $this->EmpleadoModel->get_estadisticas_rh();
+    }
+    if (isset($authorized['cartera_cobros']) || isset($authorized['obras_parcialidades'])) {
+      $this->load->model('Ventas/CarteraModel');
+      if (isset($authorized['cartera_cobros'])) {
+        $data['cartera'] = $this->CarteraModel->get_pendientes(8);
+        $data['cartera_resumen'] = $this->CarteraModel->get_resumen();
+      }
+      if (isset($authorized['obras_parcialidades'])) {
+        $data['parcialidades_alerta'] = $this->CarteraModel->get_parcialidades_alerta(8);
+      }
     }
     if (isset($authorized['clientes_chart'])) {
       $this->load->model('Ventas/ClientesModel');

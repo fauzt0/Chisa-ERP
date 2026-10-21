@@ -23,9 +23,12 @@ class Obras extends MY_Controller {
         
         // Obtener estadísticas
         $stats = $this->ObrasModel->get_estadisticas();
+        $this->load->model('Ventas/CarteraModel');
         
         $this->viewData['response'] = [
-            'stats' => $stats
+            'stats' => $stats,
+            'cartera' => $this->CarteraModel->get_pendientes(12),
+            'cartera_resumen' => $this->CarteraModel->get_resumen(),
         ];
         $this->viewData['validate'] = '';
         $this->viewData['pageView'] = 'obras/index';
@@ -73,6 +76,8 @@ class Obras extends MY_Controller {
                 'estado' => $obra->estado ?: '-',
                 'estatus' => $obra->estatus,
                 'porcentaje_avance' => $obra->porcentaje_avance,
+                'saldo_pendiente' => $obra->saldo_pendiente ?? 0,
+                'estatus_pago' => $obra->estatus_pago ?? 'Pendiente',
                 'fecha_creacion' => $obra->fecha_creacion,
                 'acciones' => ''
             ];
@@ -102,8 +107,12 @@ class Obras extends MY_Controller {
         $this->viewData['headTitle'] = 'Detalle de Obra';
         $this->viewData['breadcrumb'] = 'Inicio > Obras > Detalle';
         
+        $this->load->model('Obras/PresupuestosObraModel');
         $this->viewData['response'] = [
-            'obra' => $obra
+            'obra' => $obra,
+            // Presupuestos activos de la obra: alimentan el menú de exportación
+            // PDF/Excel con marca de agua (ver vistas/obras/detalle.php).
+            'presupuestos' => $this->PresupuestosObraModel->listar(['obra_id' => (int) $obra_id]),
         ];
         $this->viewData['validate'] = '';
         $this->viewData['pageView'] = 'obras/detalle';
@@ -116,10 +125,26 @@ class Obras extends MY_Controller {
      * Guarda una nueva obra (AJAX)
      */
     public function guardar_ajax() {
+        $nombre = trim((string) $this->input->post('nombre'));
+        if ($nombre === '') {
+            echo json_encode(['success' => false, 'message' => 'El nombre de la obra es obligatorio']);
+            return;
+        }
+        $cliente_id = (int) $this->input->post('cliente_id');
+        if ($cliente_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Debe seleccionar un cliente']);
+            return;
+        }
+        $direccion = trim((string) $this->input->post('direccion'));
+        if ($direccion === '') {
+            echo json_encode(['success' => false, 'message' => 'La dirección es obligatoria']);
+            return;
+        }
+
         $data = [
-            'nombre' => $this->input->post('nombre'),
-            'cliente_id' => $this->input->post('cliente_id'),
-            'direccion' => $this->input->post('direccion'),
+            'nombre' => $nombre,
+            'cliente_id' => $cliente_id,
+            'direccion' => $direccion,
             'ciudad' => $this->input->post('ciudad'),
             'estado' => $this->input->post('estado'),
             'codigo_postal' => $this->input->post('codigo_postal'),
@@ -142,7 +167,7 @@ class Obras extends MY_Controller {
             'anticipo_porcentaje' => $this->input->post('anticipo_porcentaje') ?: 0,
             'condiciones_pago' => $this->input->post('condiciones_pago'),
             'tiempo_entrega' => $this->input->post('tiempo_entrega'),
-            'creado_por' => $this->session->userdata('user_id') ?: 1
+            'creado_por' => $this->session->userdata('id') ?: 1
         ];
         
         $obra_id = $this->ObrasModel->crear_obra($data);
@@ -169,58 +194,27 @@ class Obras extends MY_Controller {
      */
     public function actualizar_ajax() {
         $obra_id = $this->input->post('obra_id');
+        $usuario_id = (int) ($this->session->userdata('id') ?: 1);
 
-        $this->db->select('estatus');
-        $this->db->where('id', $obra_id);
-        $obra_anterior = $this->db->get('obras')->row();
-        
-        $data = [
-            'nombre' => $this->input->post('nombre'),
-            'estatus' => $this->input->post('estatus'),
-            'porcentaje_avance' => $this->input->post('porcentaje_avance'),
-            'costo_real' => $this->input->post('costo_real'),
-            'condiciones_ambientales' => $this->input->post('condiciones_ambientales'),
-            'especificaciones_tecnicas' => $this->input->post('especificaciones_tecnicas'),
-            'descuento_porcentaje' => $this->input->post('descuento_porcentaje'),
-            'iva_porcentaje' => $this->input->post('iva_porcentaje'),
-            'anticipo_porcentaje' => $this->input->post('anticipo_porcentaje'),
-            'modificado_por' => $this->session->userdata('user_id') ?: 1
-        ];
-        
-        $result = $this->ObrasModel->actualizar_obra($obra_id, $data);
-        
-        if($result) {
-            // Recalcular totales
-            $this->ObrasModel->calcular_totales_obra($obra_id);
+        $result = $this->ObrasModel->actualizar_obra_desde_post($obra_id, $this->input->post(), $usuario_id);
 
-            $insumos_result = null;
-            $nuevo_estatus = $this->input->post('estatus');
-            if ($obra_anterior && $obra_anterior->estatus !== 'Aprobada' && $nuevo_estatus === 'Aprobada') {
-                $obra_actual = $this->ObrasModel->get_obra_detalle($obra_id);
-                if (empty($obra_actual->orden_venta_id)) {
-                    $this->ObrasModel->crear_solicitudes_produccion_desde_obra($obra_id);
-                }
-                $usuario_id = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 0);
-                if ($usuario_id > 0) {
-                    $insumos_result = $this->ObrasModel->verificar_insumos_y_preordenes_obra($obra_id, $usuario_id);
-                }
-            }
-            
+        if (!empty($result['success'])) {
             $respuesta = [
                 'success' => true,
-                'message' => 'Obra actualizada correctamente'
+                'message' => $result['message'],
             ];
-            if (!empty($insumos_result)) {
+            if (!empty($result['insumos_result'])) {
                 $this->load->model('Ventas/VentasModel');
-                $respuesta['insumos'] = $this->VentasModel->formatear_insumos_respuesta_json($insumos_result);
+                $respuesta['insumos'] = $this->VentasModel->formatear_insumos_respuesta_json($result['insumos_result']);
             }
             echo json_encode($respuesta);
-        } else {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Error al actualizar la obra'
-            ]);
+            return;
         }
+
+        echo json_encode([
+            'success' => false,
+            'message' => $result['message'] ?? 'Error al actualizar la obra',
+        ]);
     }
     
     /**
@@ -228,7 +222,7 @@ class Obras extends MY_Controller {
      */
     public function eliminar_ajax() {
         $obra_id = $this->input->post('obra_id');
-        $usuario_id = $this->session->userdata('user_id');
+        $usuario_id = $this->session->userdata('id');
         
         $result = $this->ObrasModel->eliminar_obra($obra_id, $usuario_id);
         
@@ -270,7 +264,7 @@ class Obras extends MY_Controller {
 
         $data = array_merge($preparado['data'], [
             'obra_id' => $obra_id,
-            'agregado_por' => $this->session->userdata('user_id') ?: 1,
+            'agregado_por' => $this->session->userdata('id') ?: 1,
         ]);
 
         $id = $this->ObrasModel->agregar_producto($data);
@@ -278,7 +272,7 @@ class Obras extends MY_Controller {
         if ($id) {
             $this->ObrasModel->calcular_totales_obra($obra_id);
 
-            $usuario_id = (int) ($this->session->userdata('user_id') ?: $this->session->userdata('id') ?: 0);
+            $usuario_id = (int) ($this->session->userdata('id') ?: 0);
             $insumos_result = ($usuario_id > 0)
                 ? $this->ObrasModel->consultar_insumos_obra($obra_id)
                 : null;
@@ -363,7 +357,7 @@ class Obras extends MY_Controller {
             'obra_id' => $this->input->post('obra_id'),
             'comentario' => $this->input->post('comentario'),
             'tipo' => $this->input->post('tipo') ?: 'General',
-            'usuario_id' => $this->session->userdata('user_id') ?: 1
+            'usuario_id' => $this->session->userdata('id') ?: 1
         ];
         
         $id = $this->ObrasModel->agregar_comentario($data);
@@ -414,14 +408,14 @@ class Obras extends MY_Controller {
                 'obra_id' => $obra_id,
                 'nombre_original' => $upload_data['orig_name'],
                 'nombre_archivo' => $upload_data['file_name'],
-                'ruta_archivo' => $upload_data['full_path'],
+                'ruta_archivo' => 'uploads/obras/' . $obra_id . '/' . $upload_data['file_name'],
                 'tipo_archivo' => $upload_data['file_type'],
                 'extension' => $upload_data['file_ext'],
                 'tamano' => $upload_data['file_size'] * 1024, // Convertir a bytes
                 'categoria' => $this->input->post('categoria') ?: 'Otro',
                 'descripcion' => $this->input->post('descripcion'),
                 'etiquetas' => $this->input->post('etiquetas'),
-                'subido_por' => $this->session->userdata('user_id') ?: 1
+                'subido_por' => $this->session->userdata('id') ?: 1
             ];
             
             $id = $this->ObrasModel->guardar_archivo($data);
@@ -487,17 +481,31 @@ class Obras extends MY_Controller {
      * Obtiene lista de productos para el selector (AJAX)
      */
     public function get_productos_ajax() {
-        $this->db->select('id, nombre, codigo, unidad_venta, precio_venta');
-        $this->db->from('productos');
-        $this->db->where('estatus', 'Activo');
-        $this->db->order_by('nombre', 'ASC');
-        
-        $productos = $this->db->get()->result();
-        
-        echo json_encode([
-            'success' => true,
-            'productos' => $productos
-        ]);
+        $busqueda = trim((string) ($this->input->get('q') ?: $this->input->post('q')));
+        $this->load->model('Ventas/VentasModel');
+        if ($busqueda !== '') {
+            $productos = $this->VentasModel->get_productos_pos($busqueda, null);
+        } else {
+            $this->db->select('productos.id, productos.nombre, productos.codigo, productos.alias, productos.unidad_venta, productos.precio_venta, categorias_productos.nombre as categoria_nombre');
+            $this->db->from('productos');
+            $this->db->join('categorias_productos', 'categorias_productos.id = productos.categoria_id', 'left');
+            $this->db->where('productos.estatus', 'Activo');
+            $this->db->order_by('productos.nombre', 'ASC');
+            $productos = $this->db->get()->result();
+        }
+        $out = [];
+        foreach ($productos as $p) {
+            $out[] = [
+                'id' => $p->id,
+                'nombre' => $p->nombre,
+                'codigo' => $p->codigo,
+                'alias' => $p->alias ?? '',
+                'unidad_venta' => $p->unidad_venta,
+                'precio_venta' => $p->precio_venta,
+                'categoria_nombre' => $p->categoria_nombre ?? '',
+            ];
+        }
+        echo json_encode(['success' => true, 'productos' => $out]);
     }
     
     /**
@@ -512,7 +520,7 @@ class Obras extends MY_Controller {
             'referencia' => $this->input->post('referencia'),
             'concepto' => $this->input->post('concepto'),
             'notas' => $this->input->post('notas'),
-            'recibido_por' => $this->session->userdata('user_id') ?: 1
+            'recibido_por' => $this->session->userdata('id') ?: 1
         ];
         
         $pago_id = $this->ObrasModel->registrar_pago($data);
@@ -529,6 +537,23 @@ class Obras extends MY_Controller {
                 'message' => 'Error al registrar el pago'
             ]);
         }
+    }
+
+    public function guardar_parcialidad_ajax() {
+        $id = $this->ObrasModel->guardar_parcialidad([
+            'obra_id' => $this->input->post('obra_id'),
+            'fecha_programada' => $this->input->post('fecha_programada'),
+            'monto' => $this->input->post('monto'),
+            'notas' => $this->input->post('notas'),
+        ]);
+        echo json_encode($id
+            ? ['success' => true, 'message' => 'Parcialidad programada', 'id' => $id]
+            : ['success' => false, 'message' => 'No se pudo guardar la parcialidad']);
+    }
+
+    public function eliminar_parcialidad_ajax() {
+        $ok = $this->ObrasModel->eliminar_parcialidad((int) $this->input->post('id'));
+        echo json_encode(['success' => (bool) $ok, 'message' => $ok ? 'Parcialidad eliminada' : 'No se pudo eliminar']);
     }
     
     /**
@@ -576,8 +601,10 @@ class Obras extends MY_Controller {
             return;
         }
         
-        $response['pago'] = $pago;
-        $this->load->view('obras/recibo', $response);
+        $this->viewData['pageTitle'] = 'Recibo de Pago';
+        $this->viewData['pageView']  = 'obras/recibo';
+        $this->viewData['pago']      = $pago;
+        $this->load->view('layouts/general_template', $this->viewData);
     }
     
     /**
@@ -664,6 +691,42 @@ class Obras extends MY_Controller {
         $this->load->view('obras/pdf_resumen', $data);
     }
 
+    /* ─── Fase 5 · Vistas de impresión y exportación de presupuestos ── */
+
+    /**
+     * Renderiza una vista de impresión C1..C8 (HTML + html2pdf.js, soporta ?auto=1).
+     */
+    public function imprimir_presupuesto($tipo, $presupuesto_id) {
+        $this->load->model('Obras/ExportacionObraModel');
+        $data = $this->ExportacionObraModel->preparar_datos($tipo, (int) $presupuesto_id);
+        if (!$data) {
+            show_404();
+            return;
+        }
+        $vista = $this->ExportacionObraModel->nombre_vista($tipo);
+        $this->load->view('obras/' . $vista, $data);
+    }
+
+    /**
+     * Exporta a PDF el presupuesto (Dompdf si está disponible; si no, HTML + html2pdf.js).
+     */
+    public function exportar_pdf_presupuesto($presupuesto_id, $tipo = 'presupuesto') {
+        $this->load->model('Obras/ExportacionObraModel');
+        $this->ExportacionObraModel->exportar_pdf($tipo, (int) $presupuesto_id);
+    }
+
+    /**
+     * Exporta a Excel el presupuesto (hojas[] = vistas solicitadas).
+     */
+    public function exportar_excel($presupuesto_id, $tipo = 'presupuesto') {
+        $this->load->model('Obras/ExportacionObraModel');
+        $hojas = $this->input->get('hojas') ?: null;
+        if (is_string($hojas)) {
+            $hojas = array_filter(array_map('trim', explode(',', $hojas)));
+        }
+        $this->ExportacionObraModel->exportar_excel($tipo, (int) $presupuesto_id, $hojas);
+    }
+
     /**
      * Órdenes de venta del cliente disponibles para vincular (AJAX)
      */
@@ -706,9 +769,22 @@ class Obras extends MY_Controller {
             return;
         }
 
-        $usuario_id = $this->session->userdata('user_id') ?: 1;
+        $usuario_id = $this->session->userdata('id') ?: 1;
         $result = $this->ObrasModel->generar_orden_venta_desde_obra($obra_id, $usuario_id);
         echo json_encode($result);
+    }
+
+    /**
+     * Obtiene el resumen de entregas de productos de una obra (AJAX)
+     */
+    public function get_entregas_obra_ajax() {
+        $obra_id = (int) $this->input->get('obra_id');
+        if (!$obra_id) {
+            echo json_encode(['success' => false, 'message' => 'ID de obra requerido']);
+            return;
+        }
+        $entregas = $this->ObrasModel->get_entregas_obra($obra_id);
+        echo json_encode(['success' => true, 'entregas' => $entregas]);
     }
 
     /**

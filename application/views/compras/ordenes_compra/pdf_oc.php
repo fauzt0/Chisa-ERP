@@ -35,8 +35,13 @@ $direccionCliente = trim(implode(', ', array_filter([
     $estadoCliente,
     $cpCliente,
 ])));
-$tieneDireccionReal = ($calleCliente !== '' || $coloniaCliente !== '' || $ciudadCliente !== '');
-if (!$tieneDireccionReal && preg_match('/^M[eé]xico$/ui', $direccionCliente)) {
+$esSoloPais = static function ($s) {
+    return $s !== '' && preg_match('/^M[eé]xico$/ui', $s);
+};
+$tieneDireccionReal = ($calleCliente !== '' || $coloniaCliente !== '' || $cpCliente !== ''
+    || ($ciudadCliente !== '' && !$esSoloPais($ciudadCliente))
+    || ($estadoCliente !== '' && !$esSoloPais($estadoCliente)));
+if (!$tieneDireccionReal) {
     $direccionCliente = '';
 }
 

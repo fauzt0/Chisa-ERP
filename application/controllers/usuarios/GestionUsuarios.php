@@ -97,8 +97,16 @@ class GestionUsuarios extends MY_Controller {
       //$row[] = $no;
       $row['DT_RowId'] = "row_".$admins->id;
       $row[] = $admins->id;
-      $row[] = $admins->nombre;
-      $row[] = $admins->apellidos;
+      $nombre = texto_sin_mojibake($admins->nombre);
+      $apellidos = texto_sin_mojibake($admins->apellidos);
+      if ($nombre !== $admins->nombre || $apellidos !== $admins->apellidos) {
+        $this->db->where('id', $admins->id)->update('administradores', [
+          'nombre' => $nombre,
+          'apellidos' => $apellidos,
+        ]);
+      }
+      $row[] = $nombre;
+      $row[] = $apellidos;
       $row[] = $admins->username;
       $row[] = $tmp_estatus;
       $row[] = $tmp_acciones;
@@ -130,10 +138,10 @@ class GestionUsuarios extends MY_Controller {
         $tmp_estatus = '<span class="badge bg-success">Activo</span>';
       }
       $data['detail'] = '<tr>
-                          <th>Nombre</th> <td>'.$row->nombre.'</td>
+                          <th>Nombre</th> <td>'.htmlspecialchars(texto_sin_mojibake($row->nombre), ENT_QUOTES, 'UTF-8').'</td>
                         </tr>
                         <tr>
-                          <th>Apellidos</th> <td>'.$row->apellidos.'</td>
+                          <th>Apellidos</th> <td>'.htmlspecialchars(texto_sin_mojibake($row->apellidos), ENT_QUOTES, 'UTF-8').'</td>
                         </tr>
                         <tr>
                           <th>Email</th> <td style="word-break: break-all; max-width: 200px;">'.$row->username.'</td>
@@ -720,8 +728,11 @@ class GestionUsuarios extends MY_Controller {
     $this->viewData['pageTitle'] = 'Datos de la Empresa';
     $this->viewData['headTitle'] = 'Datos de la Empresa';
     $this->viewData['breadcrumb'] = 'Inicio > Administradores > Datos de la Empresa';
+    $this->load->model('Ventas/SucursalesModel');
     $this->viewData['response'] = [
       'empresa' => $this->EmpresaModel->get_config(),
+      // Marca de agua por sucursal para exportaciones de obras (PDF/Excel)
+      'sucursales' => $this->SucursalesModel->listar_todas(),
     ];
     $this->viewData['pageView'] = 'usuarios/empresa/main';
     $this->load->view('layouts/general_template', $this->viewData);

@@ -2,7 +2,8 @@
 
 > **Propósito:** Guía de reglas estrictas y estándares técnicos que todo agente de IA debe seguir al desarrollar, modificar o extender este sistema ERP.
 >
-> **Versión:** 1.0 | **Última actualización:** 2026-06-19
+> **Versión:** 1.1 | **Última actualización:** 2026-10-06  
+> **Tramo vivo (2026-10-20):** no está en este archivo. Léelo en `TODO.md` § Handoff (validar cotizaciones CRM + proveedores). Estas reglas siguen vigentes; no reimplementar Producción ni Obras.
 
 ---
 
@@ -83,6 +84,19 @@ project_root/
       return;
   }
   ```
+- **Claves de sesión (fuente de verdad: `Auth::_create_user_session()`):** la sesión guarda **`id`**, `role`, `name`,
+  `email`, `departamento` (`Perfil` solo actualiza `name`/`email`). **`user_id` NO existe nunca**: cualquier
+  `userdata('user_id')` devuelve `NULL` o cae al fallback (`?: 1` → atribuye todo al usuario 1; `?: 0` → 0).
+  **Regla:** usar `(int) $this->session->userdata('id')`, dejando los fallbacks (`?: 1` / `?: 0`) solo para
+  contextos CLI/cron sin sesión.
+  - Corregido el 28-sep-2026: **55 usos** de `userdata('user_id')` en 19 archivos (Almacén, Ventas, Producción,
+    Obras, Contabilidad, RH) → `userdata('id')`. Auditoría histórica ya dañada: `empleados.usuario_alta_id` 18/18 NULL,
+    `cuentas_contables.usuario_creacion` 16/16 NULL, `movimientos_inventario.usuario_id` 17/27 NULL,
+    `obras_productos.agregado_por` 6/6 = usuario 1.
+  - **Residual cosmético (28-sep-2026):** quedan **3** lecturas de `userdata('username')`
+    (`produccion/Productos.php`, `produccion/Dashboard.php`, `MY_Controller.php`) como fallback de
+    `userdata('email') ?: userdata('username')`. La sesión **nunca** escribe `username`, así que siempre resuelven
+    por `email`; **no** usar `username` en código nuevo y no añadir más usos.
 
 ### 2.2 API Token
 
@@ -504,6 +518,59 @@ Fechas:           fecha_alta, fecha_edicion, fecha_baja (DATE o DATETIME)
 - Sincronización bidireccional: validar estatus local vs API, importar facturas faltantes.
 - Envío de factura (PDF + XML) por correo electrónico.
 
+### 9.5 Compras / Proveedores
+
+**Unidades en órdenes de compra (regla clave):**
+- Toda cantidad en `detalle_orden_compra.cantidad_solicitada` (y `cantidad_recibida`) está expresada
+  SIEMPRE en `insumos.unidad_medida`. La línea de OC **no** almacena unidad propia.
+- La conversión desde la unidad de la pre-orden (`preordenes.unidad`) se hace en
+  `PreordenesModel::aprobar()` con `convertir_unidad_insumo()` (helper `unidades_helper.php`).
+  Si la conversión no es segura (ej. `Cubeta` ↔ `Kg`), se **aborta con mensaje** y no se crea la OC.
+- `recibir_mercancia()` valida en dos pasadas antes de escribir: estatus de la OC
+  (`Enviada`, `Confirmada`, `En Tránsito`, `Recibida Parcial`), pertenencia de la línea a la orden,
+  cantidad > 0 y no exceder el pendiente. Nunca recibir sobre OC `Borrador`/`Cancelada`/`Recibida`.
+- El stock de insumos lo mueve el trigger `trg_stock_insumos_movimiento` (AFTER INSERT en
+  `movimientos_inventario`) en `Entrada`/`Salida`. Con `tipo_movimiento = 'Ajuste'` **no** mueve stock.
+- Las OC mueven únicamente insumos (`insumo_id`); la recepción de producto terminado de reventa
+  no está soportada por esquema (`insumo_id` es `NOT NULL` + FK). Si se requiere, usar el patrón
+  `insumos.producto_id` (ver `database/enlazar_semielaborados.sql`).
+
+---
+
+### 9.6 Ventas / POS (entrega de PT y kardex)
+
+**Dos caminos de entrega, dos tablas de kardex (no mezclar):**
+
+| Origen | Cuándo | Método | Tabla kardex | Stock PT |
+|--------|--------|--------|--------------|----------|
+| POS mostrador | `tipo_venta = Mostrador` → la OV nace `Entregada` | `VentasModel::entregar_orden()` | `movimientos_inventario` (sin `stock_anterior/nuevo`) | `productos.stock_actual` se actualiza directo |
+| Almacén | OV `Confirmada` / `En Preparación` | `AlmacenModel::registrar_entrega()` → `ProductosModel::registrar_movimiento()` | `movimientos_productos` | trigger `tr_actualizar_stock_producto` (`stock_actual = stock_nuevo`) |
+
+- **Mostrador:** `Pos::crear_orden_ajax()` valida con `VentasModel::validar_stock_pt_lineas()`
+  **antes** de crear la OV; consolida cantidades por `producto_id` (2 líneas de 1 pza con stock 1 → rechazo).
+  Si el PT no alcanza, la OV queda `En Preparación` y **no** se descuenta stock.
+- **Insumos:** vender PT con stock disponible **no** mueve stock de insumos; solo la verificación
+  (`verificar_insumos_y_preordenes_venta()`) puede crear preórdenes cuando hay faltantes.
+- **Idempotencia:** `entregar_orden()` no vuelve a descontar si la OV ya tiene `fecha_entrega_real`
+  o ya existe el kardex `Venta - Orden {id}`, y rechaza OVs `Cancelada`. En mostrador la OV nace
+  `Entregada`, por eso el candado **no** puede ser el estatus.
+- **Precio $0:** `validar_precios_pos()` bloquea SKUs con `precio_venta = 0` (BUG-DATA-01) antes del ticket y del POST.
+- **Cancelación:** `cancelar_orden()` devuelve PT con `Entrada` en `movimientos_inventario` solo si estaba `Entregada`.
+- **Almacén (resuelto 2026-09-28):** `AlmacenModel::registrar_entrega()` valida **antes** de escribir: estatus del
+  origen (`Confirmada`/`En Preparación` para OV; `Aprobada`/`En Ejecución` para obra), que la partida pertenezca al
+  origen y coincida con el producto, que no se exceda el pendiente (`cantidad − cantidad_entregada`, con
+  `cantidad_ajustada ?? cantidad_calculada` en obras) y que exista stock PT suficiente (consolidado por producto).
+  Al entregar, `tr_actualizar_entrega_almacen` cierra `cantidad_entregada` y pasa la OV a `Entregada` o la obra a `Completada`.
+- **Ajustes manuales (Almacén > Inventario, 2026-09-28):** `Inventario::ajustar_stock_ajax()` valida en servidor
+  `tipo_movimiento ∈ {Entrada, Salida}`, cantidad numérica > 0 y `motivo` obligatorio; el usuario de auditoría se lee
+  de la clave de sesión **`id`** (la que escribe `Auth::_create_user_session()`), **no** `user_id`. El mismo defecto
+  (`userdata('user_id')` → `usuario_id` NULL en `movimientos_productos`) se corrigió en `produccion/Productos::ajustar_stock_ajax()`.
+  - **Decisión:** una `Salida` mayor al stock **se permite** (sirve para corregir sobre-conteos y mermas ya ocurridas);
+    el endpoint responde `stock_actual` y el mensaje muestra el stock resultante (puede quedar negativo). El camino de
+    **entrega** (POS/Almacén) sí bloquea stock insuficiente: ahí no se entrega mercancía inexistente.
+  - `application/controllers/produccion/ajustar_stock_method.php` (snippet huérfano con la versión antigua del endpoint)
+    fue **eliminado** el 28-sep-2026.
+
 ---
 
 ## 10. Reglas de Deployment
@@ -548,10 +615,10 @@ Fechas:           fecha_alta, fecha_edicion, fecha_baja (DATE o DATETIME)
 | Reloj | `RelojModel`, `RelojSyncRhModel` |
 | Producción | `ProductosModel` |
 | Compras | `ProveedoresModel`, `InsumosModel`, `OrdenesCompraModel`, `CategoriasModel` |
-| Ventas | `ClientesModel`, `OrdenesModel`, `DescuentosModel` |
+| Ventas | `ClientesModel`, `VentasModel`, `DescuentosModel`, `SucursalesModel` (POS I4) |
 | Obras | `ObrasModel` |
 | Facturación | `FacturasModel` |
-| Contabilidad | `NominaModel`, `BancosModel`, `PolizasModel`, `CuentasContablesModel` |
+| Contabilidad | `ContabilidadModel`, `OrigenesModel` (I4: lee facturas/OC/nóminas → pólizas; no escribe en origen) |
 | Usuarios | `UserModel` |
 | Almacén | `InventarioModel`, `EntregasModel` |
 
@@ -578,4 +645,67 @@ Antes de dar por terminado cualquier cambio, el agente IA debe verificar:
 
 > **ERP Chisa Recubrimientos** — Departamento de Ingeniería de Software
 >
+
+---
+
+## 13. Fase 5 · Obras y Presupuestos — FÓRMULA DEL APU (vinculante)
+
+**Fuente de verdad:** archivos de `doc/entrenamiento_4/` (PRECIO_ACT / UNITARIO).
+
+### 13.1 Fórmula del APU (parametrizada en `parametros_apu`)
+
+```
+subtotal_material = Σ ( material.cantidad × material.costo_unitario )
+subtotal_mo        = Σ ( (salario_semanal / 7) / rendimiento_jor × cant_cuadrilla )
+
+imss        = subtotal_mo × (imss / 100)             -- 32.792 %
+rcyv        = subtotal_mo × (rcyv / 100)             -- 27.208 %
+isn         = subtotal_mo × (isn / 100)              --  3.000 %  (se muestra, NO suma)
+herramienta = subtotal_mo × (herramienta / 100)      --  9.000 %  (proyecto ZOCLOS)
+
+costo_directo  = subtotal_material + subtotal_mo + imss + rcyv + herramienta
+indirecto      = costo_directo × (indirecto_utilidad / 100)   -- 24.000 % (proyecto ZOCLOS)
+P.UNITARIO     = costo_directo + indirecto
+```
+
+> ⚠️ **ISN no suma al costo directo** (igual que los archivos fuente IMSS y ZOCLOS).
+> El P.U. SIEMPRE se calcula; nunca se captura a mano en el presupuesto.
+
+### 13.2 Valores de control (smoke obligatorio)
+- Z-01C → P.UNITARIO = **306.66018163809525** (material 54.39511, MO 114.1488095, herramienta 9%, indirecto 24%).
+  Material exacto: 0.13×381.60 (49.608) + 0.55×7.9802 (4.38911) + 0.01×39.80 (0.398) = 54.39511.
+  ⚠️ Precisión: `costo_unitario/importe` en `DECIMAL(12,4)` (antes 12,2 truncaba 7.9802→7.98 y daba
+  306.66004523809522, diff 0.0001364). Upgrade idempotente en `ApuModel::asegurar_infraestructura()`.
+- Z-02 → 357.99442634920638 · Z-03 → 332.4143764.
+- IMSS R1A (con parámetros 5%/34%) → P.U. 304.90.
+- 16550 → 8,400.00 × 239.90 = 2,015,160.00 · IVA 322,425.60 · TOTAL 2,337,585.60.
+
+### 13.3 Unidades y parámetros
+- Unidades de concepto: `M2`, `ML`, `M3`, `PZA`, `LOTE`, `SERVICIO` (enum `conceptos_obra.unidad`).
+- Cuadrillas de los archivos:
+  - 1 OFICIAL ALBAÑIL + MANDOS MEDIOS = 8,500.00 /sem · 1 AYUDANTE TBR. = 6,700.00 /sem.
+  - CUADRILLA No.2 (1 OFICIAL COLOCADOR) = 8,000.00 /sem · 1 AYUDANTE = 6,382.75 /sem.
+- `parametros_apu` (activo vigente): imss 32.792, rcyv 27.208, isn 3.000, herramienta 9.000, indirecto 24.000.
+- Generador: `area = largo × alto × pzas`; `descuento` por simbología resta del área; `total = Σ(area−descuento) + acumulado_anterior`.
+- Simbología: P=PUERTA · C.V.=CUADRO DE VÁLVULAS · H.M.=HUECO EN MURO · BOQ.H/V=BOCA DE HUEVO ·
+  C.=CANCEL · V=VENTANA · G.E.=GABINETE ELÉCTRICO · V.A.=VANO DE ACCESO · O=OTRO.
+
+### 13.5 PDF de presupuestos (mPDF, revisión 2026-09-29)
+- Motor preferido: **mPDF 8.x** (`composer require mpdf/mpdf:^8.2`, sin advisories PKSA; Dompdf
+  NO instalable por advisories). Fallback: HTML imprimible + html2pdf.js en el navegador.
+- `ExportacionObraModel::exportar_pdf($tipo, $id, $devolver_string=false)`: carta, UTF-8, marca de
+  agua de sucursal nativa en TODAS las páginas, imágenes por ruta local (`_preparar_html_para_mpdf`).
+- 5.ª pestaña **Documentos** en Ventas: `ObrasVentas::documentos_ajax/subir_documento_ajax/
+  eliminar_documento_ajax` (misma regla de subida que `obras/Obras::subir_archivo_ajax`).
+- Carga de proveedores químicos: `Proveedores::importar_excel_ajax()` detecta el layout de
+  `LISTA DE PRODUCTOS QUIMICOS PROVEEDORES ERP.xlsx` (C=proveedor, G=RFC; producto/presentación
+  A/B → `observaciones`, tipo `Materia Prima`); plantilla A–O intacta; idempotente por RFC.
+
+### 13.4 Reglas de negocio nuevas
+- `presupuestos_obra` es entidad nueva (NO usar `cotizaciones`/`cotizaciones_detalle`, son de COMPRAS).
+- Folio presupuesto: `PRES-#####` con `MAX(CAST(SUBSTRING(folio,6) AS UNSIGNED))`.
+- Resolución de sucursal: `presupuesto.sucursal_id → obra.sucursal_id → usuario sesión → primera activa`.
+- Totales: `subtotal = Σ importe; descuento_monto = subtotal × desc% /100; base = subtotal − descuento;
+  iva = base × iva% /100; total = base + iva`.
+
 > *Este documento es vinculante para cualquier agente de IA que trabaje en este proyecto.*

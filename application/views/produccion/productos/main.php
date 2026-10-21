@@ -34,7 +34,7 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
 <!-- Encabezado -->
 <div class="page-hero d-flex flex-wrap justify-content-between align-items-center gap-3">
   <div>
-    <h2><i class="fas fa-industry me-2"></i>Productos y Formulaciones</h2>
+    <h2><i class="fas fa-industry me-2"></i>Productos y Formulaciones <button type="button" class="erp-btn-ayuda" data-erp-ayuda="productos" title="Funciones de productos">?</button></h2>
     <p class="lead mb-0">Catálogo, simulador de lotes y gestión de BOM (árbol de materiales)</p>
   </div>
   <div>
@@ -157,11 +157,11 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
           <div class="input-group input-group-buscar">
             <span class="input-group-text" aria-hidden="true"><i class="fas fa-search"></i></span>
             <input type="text" class="form-control" id="buscarProductos"
-                   placeholder="Ej: BASE ORGANICA BLANCA, TINTA NEGRA, CHISA GLASS..." autocomplete="off">
+                   placeholder="Ej: chisa glass micro hospital 2023 — producto, cliente, comentario o año" autocomplete="off">
           </div>
           <div class="chips-sugerencias d-flex flex-wrap align-items-center gap-2 mt-2">
             <span class="chips-label text-muted small">Sugerencias:</span>
-            <?php foreach (['BASE ORGANICA BLANCA','TINTA NEGRA','SOLUCION FASE ACUOSA','CHISA GLASS'] as $chip): ?>
+            <?php foreach (['CHISA GLASS MICRO','CHISA GLASS 2023','Hospital','BASE ORGANICA'] as $chip): ?>
             <button type="button" class="btn btn-sm btn-outline-primary btn-chip-buscar" data-term="<?= htmlspecialchars($chip) ?>"><?= htmlspecialchars($chip) ?></button>
             <?php endforeach; ?>
           </div>
@@ -197,6 +197,38 @@ const CSRF_HASH = '<?= $this->security->get_csrf_hash() ?>';
               <option value="ok">Stock OK</option>
             </select>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-3" id="panelBuscarRecetas">
+  <div class="col-12">
+    <div class="card border-primary">
+      <div class="card-header bg-primary text-white">
+        <i class="fas fa-flask me-1"></i> Buscar receta por producto, cliente, año o comentario
+      </div>
+      <div class="card-body">
+        <div class="input-group mb-2">
+          <input type="text" class="form-control" id="buscarRecetasGlobales" placeholder="Ej: CHISA GLASS MICRO Hospital 2024">
+          <button type="button" class="btn btn-primary" id="btnBuscarRecetasGlobales"><i class="fas fa-search"></i> Buscar recetas</button>
+        </div>
+        <small class="text-muted">Los comentarios se guardan en cada versión (campo «Comentarios / Notas»). Aquí se buscan sin abrir el producto.</small>
+        <div class="table-responsive mt-2" id="wrapResultadosRecetas" style="display:none;">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Versión</th>
+                <th>Cliente / ref.</th>
+                <th>Año</th>
+                <th>Comentario</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyResultadosRecetas"></tbody>
+          </table>
         </div>
       </div>
     </div>

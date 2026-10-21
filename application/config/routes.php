@@ -49,7 +49,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | Examples:	my-controller/index	-> my_controller/index
 |		my-controller/my-method	-> my_controller/my_method
 */
-$route['default_controller'] = 'welcome';
+$route['default_controller'] = 'auth';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
 
@@ -98,6 +98,14 @@ $route['rh/RelojChecador/preview_sync_empleados_rh'] = 'rh/RelojChecador/preview
 $route['rh/RelojChecador/ejecutar_sync_empleados_rh'] = 'rh/RelojChecador/ejecutar_sync_empleados_rh';
 $route['rh/RelojChecador/vaciar_cola_sync_empleados_rh'] = 'rh/RelojChecador/vaciar_cola_sync_empleados_rh';
 $route['rh/RelojChecador/reencolar_cola_sync_empleados_rh'] = 'rh/RelojChecador/reencolar_cola_sync_empleados_rh';
+
+// Obras
+$route['obras/Obras'] = 'obras/Obras/index';
+$route['obras/Obras/(:any)'] = 'obras/Obras/$1';
+
+// Almacén — Entregas
+$route['almacen/Entregas'] = 'almacen/Entregas/index';
+$route['almacen/Entregas/(:any)'] = 'almacen/Entregas/$1';
 
 //Errors
 $route['deny'] = 'Errors/deny';

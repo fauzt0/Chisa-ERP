@@ -37,9 +37,11 @@ class Auth extends CI_Controller {
   }
 
   public function index() {
-    //cargamos los datos de la vista
+    if ($this->session->userdata('id')) {
+      redirect('dashboard');
+      return;
+    }
     $this->viewData['pageTitle'] = 'ERP/CHISA - Login';    
-    //cargamos la vista principal
     $this->load->view('auth/login', $this->viewData);
   }
 

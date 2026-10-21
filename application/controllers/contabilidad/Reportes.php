@@ -8,6 +8,8 @@ class Reportes extends MY_Controller {
     public function __construct() {
         parent::__construct();
         $this->load->model('Contabilidad/ContabilidadModel');
+        $this->load->model('Contabilidad/OrigenesModel');
+        $this->OrigenesModel->asegurar_infraestructura();
         
         // El controlador base ya maneja la sesión y los permisos del módulo
     }
@@ -163,6 +165,28 @@ class Reportes extends MY_Controller {
             'saldo_acreedor_total' => $saldo_acreedor_total
         ];
         
+        echo json_encode(['success' => true, 'data' => $data]);
+    }
+
+    public function libro_diario_ajax() {
+        $fecha_inicio = $this->input->post('fecha_inicio');
+        $fecha_fin = $this->input->post('fecha_fin') ?: date('Y-m-d');
+        $rows = $this->ContabilidadModel->get_libro_diario($fecha_inicio, $fecha_fin);
+        echo json_encode(['success' => true, 'data' => ['fecha_inicio' => $fecha_inicio, 'fecha_fin' => $fecha_fin, 'lineas' => $rows]]);
+    }
+
+    public function libro_mayor_ajax() {
+        $fecha_inicio = $this->input->post('fecha_inicio');
+        $fecha_fin = $this->input->post('fecha_fin') ?: date('Y-m-d');
+        $rows = $this->ContabilidadModel->get_libro_mayor($fecha_inicio, $fecha_fin);
+        echo json_encode(['success' => true, 'data' => ['fecha_inicio' => $fecha_inicio, 'fecha_fin' => $fecha_fin, 'cuentas' => $rows]]);
+    }
+
+    public function iva_ajax() {
+        $this->load->model('Contabilidad/OrigenesModel');
+        $fecha_inicio = $this->input->post('fecha_inicio');
+        $fecha_fin = $this->input->post('fecha_fin') ?: date('Y-m-d');
+        $data = $this->OrigenesModel->resumen_iva($fecha_inicio, $fecha_fin);
         echo json_encode(['success' => true, 'data' => $data]);
     }
     

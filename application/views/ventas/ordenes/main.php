@@ -24,7 +24,7 @@ $stats = $response['stats'] ?? [];
 <!-- Título -->
 <div class="row mb-3">
   <div class="col-md-6">
-    <h2><i class="fas fa-file-invoice"></i> Gestión de Órdenes de Venta</h2>
+    <h2><i class="fas fa-file-invoice"></i> Gestión de Órdenes de Venta <button type="button" class="erp-btn-ayuda" data-erp-ayuda="ordenes" title="Funciones de órdenes">?</button></h2>
   </div>
   <div class="col-md-6 text-end">
     <a href="<?=base_url();?>ventas/Pos" class="btn btn-primary">
@@ -32,6 +32,8 @@ $stats = $response['stats'] ?? [];
     </a>
   </div>
 </div>
+
+<?php $this->load->view('ventas/cartera/_panel', ['response' => $response]); ?>
 
 <!-- Estadísticas -->
 <!-- Estadísticas -->
@@ -162,6 +164,16 @@ $stats = $response['stats'] ?? [];
           <option value="En Preparación">En Preparación</option>
           <option value="Entregada">Entregada</option>
           <option value="Cancelada">Cancelada</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Cobro</label>
+        <select class="form-select" id="filtro_pago">
+          <option value="">Todos</option>
+          <option value="por_cobrar">Por cobrar</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="Parcial">Parcial</option>
+          <option value="Pagado">Pagado</option>
         </select>
       </div>
       <div class="col-md-2">
@@ -318,11 +330,6 @@ $stats = $response['stats'] ?? [];
   </div>
 </div>
 
-<script>
-let tabla;
-
-// DataTables Buttons JS
-</script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -366,6 +373,7 @@ function inicializarDataTable() {
         d.peticion = 'ajax';
         d.filtro_estatus = $('#filtro_estatus').val();
         d.filtro_tipo = $('#filtro_tipo').val();
+        d.filtro_pago = $('#filtro_pago').val();
         d.filtro_fecha_desde = $('#filtro_fecha_desde').val();
         d.filtro_fecha_hasta = $('#filtro_fecha_hasta').val();
         d['<?php echo $this->security->get_csrf_token_name();?>'] = '<?php echo $this->security->get_csrf_hash();?>';
@@ -385,12 +393,18 @@ function inicializarDataTable() {
     language: {
       url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
     },
-    order: [[0, 'desc']]
+    order: [[0, 'desc']],
+    initComplete: function() {
+      var m = String(window.location.search || '').match(/[?&]abrir=(\d+)/);
+      if (m && typeof window.verOrden === 'function') {
+        window.verOrden(m[1]);
+      }
+    }
   });
 }
 
 function inicializarFiltros() {
-  $('#filtro_estatus, #filtro_tipo, #filtro_fecha_desde, #filtro_fecha_hasta').on('change', function() {
+  $('#filtro_estatus, #filtro_tipo, #filtro_pago, #filtro_fecha_desde, #filtro_fecha_hasta').on('change', function() {
     tabla.ajax.reload();
   });
 }
@@ -398,6 +412,7 @@ function inicializarFiltros() {
 function limpiarFiltros() {
   $('#filtro_estatus').val('');
   $('#filtro_tipo').val('');
+  $('#filtro_pago').val('');
   $('#filtro_fecha_desde').val('');
   $('#filtro_fecha_hasta').val('');
   tabla.ajax.reload();
@@ -430,14 +445,22 @@ window.verOrden = function(id) {
   });
 };
 
+function fechaLista(valor) {
+  if (!valor) return '—';
+  const s = String(valor).substring(0, 10);
+  const m = s.match(/^(19|20)\d{2}-\d{2}-\d{2}$/);
+  if (!m) return '—';
+  return m[0].substring(8, 10) + '/' + m[0].substring(5, 7) + '/' + m[0].substring(0, 4);
+}
+
 function renderDetalleOrden(orden) {
   let html = `
     <div class="row mb-3">
       <div class="col-md-6">
         <h6><i class="fas fa-file-invoice"></i> Información de la Orden</h6>
         <table class="table table-sm">
-          <tr><th width="40%">Folio:</th><td>${orden.folio}</td></tr>
-          <tr><th>Fecha:</th><td>${new Date(orden.fecha_orden).toLocaleDateString('es-MX')}</td></tr>
+          <tr><th width="40%">Folio:</th><td>${orden.folio} ${orden.estatus === 'Cotización' ? `<button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="nuevaVersionOrden(${orden.id})">Nueva versión</button>` : ''}</td></tr>
+          <tr><th>Fecha:</th><td>${fechaLista(orden.fecha_orden)}</td></tr>
           <tr><th>Tipo:</th><td><span class="badge bg-${orden.tipo_venta == 'Mostrador' ? 'secondary' : 'primary'}">${orden.tipo_venta}</span></td></tr>
           <tr><th>Estatus:</th><td><span class="badge bg-info">${orden.estatus}</span></td></tr>
           <tr><th>Forma de Pago:</th><td>${orden.forma_pago}</td></tr>
@@ -479,7 +502,7 @@ function renderDetalleOrden(orden) {
     }
     
     if(orden.fecha_entrega_estimada) {
-      html += `<tr><th>Fecha Entrega Estimada:</th><td>${new Date(orden.fecha_entrega_estimada).toLocaleDateString('es-MX')}</td></tr>`;
+      html += `<tr><th>Fecha Entrega Estimada:</th><td>${fechaLista(orden.fecha_entrega_estimada)}</td></tr>`;
     }
     
     if(orden.costo_envio && parseFloat(orden.costo_envio) > 0) {
@@ -688,7 +711,7 @@ function cargarHistorialPagos(orden_id) {
         result.pagos.forEach(p => {
           html += `<tr>
             <td>${p.folio}</td>
-            <td>${new Date(p.fecha_pago).toLocaleDateString('es-MX')}</td>
+            <td>${fechaLista(p.fecha_pago)}</td>
             <td>$${parseFloat(p.monto).toFixed(2)}</td>
             <td>${p.metodo_pago}</td>
           </tr>`;
@@ -732,9 +755,20 @@ function guardarPago() {
   });
 }
 
+function nuevaVersionOrden(id) {
+  var nota = prompt('Qué cambió en esta versión?', '') || '';
+  $.post('<?=base_url();?>ventas/Pos/version_orden_ajax', { id: id, nota: nota }, function (res) {
+    res = typeof res === 'string' ? JSON.parse(res) : res;
+    notifyShow(res.message || 'Listo', res.success ? 'success' : 'danger');
+    if (res.success && typeof tabla !== 'undefined') tabla.ajax.reload();
+  });
+}
+
 // Inicializar
 if (typeof jQuery !== 'undefined') {
-  $(document).ready(initOrdenes);
+  $(document).ready(function() {
+    initOrdenes();
+  });
 } else {
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof jQuery !== 'undefined') {

@@ -2,6 +2,14 @@
 
 Este documento sirve como guía arquitectónica, estándar de desarrollo y estado de avance para que cualquier desarrollador o agente de IA pueda retomar este proyecto de forma fluida y sin fricciones.
 
+**Fuente canónica:** este archivo (`public_html/DOCUMENTACION_TECNICA.md`). El duplicado `doc/DOCUMENTACION_TECNICA.md` quedó reducido a un puntero el 2026-09-28 (había divergido y había perdido la sección 2.1 de `$this->viewData`).
+
+**Nota I4 (2026-09-28, rama `iteracion-4`):** overhaul P1–P9 cerrado. Avance: catálogo fotos; contabilidad lectura (`contabilidad/Origenes`); POS sucursales; entregas en `ventas/obras/detalle`; Facture App vía `config/factureapp.php` + `cli_probe`; cierre técnico de Compras (conversión de unidades preorden→OC y validaciones de recepción). Detalle: `doc/TODO.md` y `doc/MODULOS_ESTADO_CHECKLIST.md`. Rama `iteracion-3` retirada.
+
+**Cierre I4 (2026-10-06, rama `iteracion-5`):** Iteración 4 cerrada; su contenido está íntegro en `iteracion-5` (`c44a2cd` es ancestro) y la rama `iteracion-4` se retiró (local y remoto). Fase 5 (Obras y presupuestos V1) quedó implementada sobre `iteracion-5`: 6 modelos nuevos, 8 vistas de impresión y exportación Excel/PDF con marca de agua. Re-smoke UI de Producción (D5–D6) queda heredado.
+
+**Tramo 2026-10-20:** validar cotizaciones de CRM Ventas y de proveedores. Instrucción para el agente: `doc/TODO.md` § Handoff 2026-10-20. No reimplementar este módulo de producción.
+
 ---
 
 ## Índice

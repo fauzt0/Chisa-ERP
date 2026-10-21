@@ -28,6 +28,21 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         <i class="fas fa-table"></i> Balanza de Comprobación
       </button>
     </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="diario-tab" data-bs-toggle="tab" data-bs-target="#diario" type="button">
+        Libro diario
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="mayor-tab" data-bs-toggle="tab" data-bs-target="#mayor" type="button">
+        Libro mayor
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="iva-tab" data-bs-toggle="tab" data-bs-target="#iva" type="button">
+        IVA (CFDI / OC)
+      </button>
+    </li>
   </ul>
 
   <div class="tab-content" id="reportesTabContent">
@@ -118,6 +133,72 @@ defined('BASEPATH') OR exit('No direct script access allowed');
       </div>
     </div>
 
+    <div class="tab-pane fade" id="diario" role="tabpanel">
+      <div class="card">
+        <div class="card-header">
+          <div class="row">
+            <div class="col-md-3">
+              <label>Fecha Inicio</label>
+              <input type="date" id="diario_inicio" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label>Fecha Fin</label>
+              <input type="date" id="diario_fin" class="form-control" value="<?= date('Y-m-d') ?>">
+            </div>
+            <div class="col-md-3">
+              <label>&nbsp;</label><br>
+              <button type="button" class="btn btn-primary" onclick="generarLibroDiario()">Generar</button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body" id="diarioContent"><p class="text-muted">Pólizas (borrador y autorizadas) en el rango.</p></div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="mayor" role="tabpanel">
+      <div class="card">
+        <div class="card-header">
+          <div class="row">
+            <div class="col-md-3">
+              <label>Fecha Inicio</label>
+              <input type="date" id="mayor_inicio" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label>Fecha Fin</label>
+              <input type="date" id="mayor_fin" class="form-control" value="<?= date('Y-m-d') ?>">
+            </div>
+            <div class="col-md-3">
+              <label>&nbsp;</label><br>
+              <button type="button" class="btn btn-primary" onclick="generarLibroMayor()">Generar</button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body" id="mayorContent"><p class="text-muted">Saldos por cuenta en el rango.</p></div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="iva" role="tabpanel">
+      <div class="card">
+        <div class="card-header">
+          <div class="row">
+            <div class="col-md-3">
+              <label>Fecha Inicio</label>
+              <input type="date" id="iva_inicio" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label>Fecha Fin</label>
+              <input type="date" id="iva_fin" class="form-control" value="<?= date('Y-m-d') ?>">
+            </div>
+            <div class="col-md-3">
+              <label>&nbsp;</label><br>
+              <button type="button" class="btn btn-primary" onclick="generarIva()">Generar</button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body" id="ivaContent"><p class="text-muted">IVA trasladado (CFDI emitidos) vs acreditable (OC recibidas). No altera facturación.</p></div>
+      </div>
+    </div>
+
   </div>
 
 </div>
@@ -139,6 +220,9 @@ function initReportes() {
   <?php if($ejercicio_actual): ?>
   $('#resultados_inicio').val('<?= $ejercicio_actual->fecha_inicio ?>');
   $('#balanza_inicio').val('<?= $ejercicio_actual->fecha_inicio ?>');
+  $('#diario_inicio').val('<?= $ejercicio_actual->fecha_inicio ?>');
+  $('#mayor_inicio').val('<?= $ejercicio_actual->fecha_inicio ?>');
+  $('#iva_inicio').val('<?= $ejercicio_actual->fecha_inicio ?>');
   <?php endif; ?>
 }
 
@@ -409,6 +493,64 @@ function mostrarBalanzaComprobacion(data) {
   `;
   
   $('#balanzaContent').html(html);
+}
+
+function generarLibroDiario() {
+  $.post('<?=base_url()?>contabilidad/Reportes/libro_diario_ajax', {
+    fecha_inicio: $('#diario_inicio').val(),
+    fecha_fin: $('#diario_fin').val(),
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(result) {
+    result = JSON.parse(result);
+    if (!result.success) return;
+    let html = '<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Fecha</th><th>Folio</th><th>Cuenta</th><th>Concepto</th><th class="text-end">Debe</th><th class="text-end">Haber</th></tr></thead><tbody>';
+    (result.data.lineas || []).forEach(function (l) {
+      html += '<tr><td>' + formatDate(l.fecha) + '</td><td>' + (l.folio || '') + '</td><td>' + (l.cuenta_codigo || '') + ' ' + (l.cuenta_nombre || '') + '</td><td>' + (l.linea_concepto || l.concepto || '') + '</td><td class="text-end">$' + formatNumber(l.debe) + '</td><td class="text-end">$' + formatNumber(l.haber) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    $('#diarioContent').html(html);
+  });
+}
+
+function generarLibroMayor() {
+  $.post('<?=base_url()?>contabilidad/Reportes/libro_mayor_ajax', {
+    fecha_inicio: $('#mayor_inicio').val(),
+    fecha_fin: $('#mayor_fin').val(),
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(result) {
+    result = JSON.parse(result);
+    if (!result.success) return;
+    let html = '<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Código</th><th>Cuenta</th><th class="text-end">Debe</th><th class="text-end">Haber</th><th class="text-end">Saldo</th></tr></thead><tbody>';
+    (result.data.cuentas || []).forEach(function (c) {
+      html += '<tr><td>' + c.codigo + '</td><td>' + c.nombre + '</td><td class="text-end">$' + formatNumber(c.total_debe) + '</td><td class="text-end">$' + formatNumber(c.total_haber) + '</td><td class="text-end">$' + formatNumber(c.saldo) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    $('#mayorContent').html(html);
+  });
+}
+
+function generarIva() {
+  $.post('<?=base_url()?>contabilidad/Reportes/iva_ajax', {
+    fecha_inicio: $('#iva_inicio').val(),
+    fecha_fin: $('#iva_fin').val(),
+    peticion: 'ajax',
+    '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'
+  }, function(result) {
+    result = JSON.parse(result);
+    if (!result.success) return;
+    const d = result.data;
+    $('#ivaContent').html(
+      '<table class="table"><tbody>' +
+      '<tr><td>Base ingresos (CFDI emitidos)</td><td class="text-end">$' + formatNumber(d.base_ingresos) + '</td></tr>' +
+      '<tr><td>IVA trasladado 16%</td><td class="text-end">$' + formatNumber(d.iva_trasladado) + '</td></tr>' +
+      '<tr><td>Base compras (OC recibidas)</td><td class="text-end">$' + formatNumber(d.base_compras) + '</td></tr>' +
+      '<tr><td>IVA acreditable 16%</td><td class="text-end">$' + formatNumber(d.iva_acreditable) + '</td></tr>' +
+      '<tr class="fw-bold"><td>IVA a cargo (trasladado − acreditable)</td><td class="text-end">$' + formatNumber(d.iva_a_cargo) + '</td></tr>' +
+      '</tbody></table>'
+    );
+  });
 }
 
 function formatNumber(num) {

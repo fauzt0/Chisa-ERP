@@ -15,6 +15,9 @@ $insumos_stats     = $response['insumos_stats']    ?? [];
 $empleados_stats   = $response['empleados_stats']  ?? [];
 $ultimas_ordenes   = $response['ultimas_ordenes']  ?? [];
 $alertas_stock     = $response['alertas_stock']    ?? [];
+$cartera           = $response['cartera']          ?? [];
+$cartera_resumen   = $response['cartera_resumen']  ?? ['documentos' => 0, 'saldo' => 0, 'criticos' => 0];
+$parcialidades_alerta = $response['parcialidades_alerta'] ?? [];
 
 // Column size per widget (kept on the element so reordering preserves layout).
 $widget_sizes = [
@@ -33,6 +36,8 @@ $widget_sizes = [
   'proveedores_top_chart' => 'col-12 col-lg-6',
   'proveedores_tipo_chart'=> 'col-12 col-lg-4',
   'ultimas_ordenes'     => 'col-12',
+  'cartera_cobros'      => 'col-12 col-lg-7',
+  'obras_parcialidades' => 'col-12 col-lg-5',
 ];
 ?>
 
@@ -65,7 +70,7 @@ $widget_sizes = [
   <div class="row mb-2 mb-xl-3">
     <div class="col-auto d-none d-sm-block">
       <h3 class="mb-0">Inicio ERP</h3>
-      <p class="text-muted mb-0 small">Tablero personalizable — solo se muestran los módulos autorizados para tu usuario.</p>
+      <p class="text-muted mb-0 small">Tablero personalizable — solo se muestran los módulos autorizados para tu usuario. La campana (arriba a la derecha) avisa cobros, stock y producción.</p>
     </div>
     <div class="col-auto ms-auto text-end mt-n1 dash-toolbar">
       <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#dashboardConfigModal">
@@ -144,8 +149,10 @@ $widget_sizes = [
             <div class="d-flex align-items-start">
               <div class="flex-grow-1">
                 <h3 class="mb-2"><?= (int)($produccion_stats['en_proceso'] ?? 0) ?></h3>
-                <p class="mb-2">Órdenes en Producción</p>
-                <span class="text-warning small"><i class="fas fa-cogs"></i> En proceso</span>
+                <p class="mb-2">Pedidos en fabricación</p>
+                <span class="text-warning small"><i class="fas fa-cogs"></i>
+                  <?= (int)($produccion_stats['solicitudes_pendientes'] ?? 0) ?> solicitud<?= ((int)($produccion_stats['solicitudes_pendientes'] ?? 0) !== 1) ? 'es' : '' ?> pendiente<?= ((int)($produccion_stats['solicitudes_pendientes'] ?? 0) !== 1) ? 's' : '' ?>
+                </span>
               </div>
               <div class="dash-stat-icon bg-warning-subtle text-warning ms-3"><i class="fas fa-industry"></i></div>
             </div>
@@ -330,12 +337,77 @@ $widget_sizes = [
                   <td class="d-none d-xl-table-cell"><?= date('d/m/Y', strtotime($orden->fecha_creacion)) ?></td>
                   <td><span class="badge bg-<?= $badgeColor ?>"><?= $orden->estatus ?></span></td>
                   <td class="text-end">$<?= number_format($orden->total, 2) ?></td>
-                  <td class="text-end"><a href="<?= base_url() ?>produccion/Dashboard/detalle/<?= $orden->id ?>" class="btn btn-sm btn-light">Ver</a></td>
+                  <td class="text-end"><a href="<?= base_url() ?>produccion/Dashboard/detalle/orden_venta/<?= (int)$orden->id ?>" class="btn btn-sm btn-light">Ver</a></td>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($ultimas_ordenes)): ?>
                 <tr><td colspan="6" class="text-center text-muted">No hay órdenes recientes</td></tr>
                 <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <?php break;
+
+        case 'cartera_cobros': ?>
+        <div class="card flex-fill border-danger">
+          <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-hand-holding-usd me-1"></i>Clientes con falta de pago
+              <button type="button" class="erp-btn-ayuda ms-1" data-erp-ayuda="cartera" title="Qué muestra esta tarjeta">?</button>
+            </h5>
+            <span class="small">
+              <?= (int)($cartera_resumen['documentos'] ?? 0) ?> docs
+              · $<?= number_format((float)($cartera_resumen['saldo'] ?? 0), 2) ?>
+            </span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light"><tr><th>Cliente</th><th>Folio</th><th class="text-end">Saldo</th><th></th></tr></thead>
+              <tbody>
+              <?php if (empty($cartera)): ?>
+                <tr><td colspan="4" class="text-muted text-center">Sin saldos pendientes</td></tr>
+              <?php else: foreach ($cartera as $cx): ?>
+                <tr class="<?= $cx->severidad === 'danger' ? 'table-danger' : '' ?>">
+                  <td>
+                    <?= htmlspecialchars($cx->cliente, ENT_QUOTES, 'UTF-8') ?>
+                    <?php if (!empty($cx->rfc)): ?><br><small class="text-muted"><?= htmlspecialchars($cx->rfc, ENT_QUOTES, 'UTF-8') ?></small><?php endif; ?>
+                  </td>
+                  <td><?= htmlspecialchars($cx->folio, ENT_QUOTES, 'UTF-8') ?><br><small><?= $cx->tipo === 'obra' ? 'Obra' : 'Venta' ?> · <?= (int)$cx->dias ?> d</small></td>
+                  <td class="text-end text-danger fw-bold">$<?= number_format((float)$cx->saldo, 2) ?></td>
+                  <td><a class="btn btn-sm btn-outline-primary" href="<?= htmlspecialchars($cx->link, ENT_QUOTES, 'UTF-8') ?>">Cobrar</a></td>
+                </tr>
+              <?php endforeach; endif; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <?php break;
+
+        case 'obras_parcialidades': ?>
+        <div class="card flex-fill border-warning">
+          <div class="card-header bg-warning">
+            <h5 class="mb-0"><i class="fas fa-calendar-alt me-1"></i>Parcialidades de obra (7 días / vencidas)
+              <button type="button" class="erp-btn-ayuda ms-1" data-erp-ayuda="parcialidades" title="Qué muestra esta tarjeta">?</button>
+            </h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light"><tr><th>Obra / cliente</th><th>Fecha</th><th class="text-end">Monto</th></tr></thead>
+              <tbody>
+              <?php if (empty($parcialidades_alerta)): ?>
+                <tr><td colspan="3" class="text-muted text-center">Sin cobros programados próximos</td></tr>
+              <?php else: foreach ($parcialidades_alerta as $par): ?>
+                <tr class="<?= $par->estatus === 'Vencida' ? 'table-danger' : '' ?>">
+                  <td>
+                    <a href="<?= htmlspecialchars($par->link, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($par->folio, ENT_QUOTES, 'UTF-8') ?></a>
+                    <br><small><?= htmlspecialchars($par->cliente ?: '', ENT_QUOTES, 'UTF-8') ?></small>
+                  </td>
+                  <td><?= htmlspecialchars(date('d/m/Y', strtotime($par->fecha_programada)), ENT_QUOTES, 'UTF-8') ?>
+                    <br><span class="badge bg-<?= $par->estatus === 'Vencida' ? 'danger' : 'warning' ?>"><?= htmlspecialchars($par->estatus, ENT_QUOTES, 'UTF-8') ?></span>
+                  </td>
+                  <td class="text-end">$<?= number_format((float)$par->monto, 2) ?></td>
+                </tr>
+              <?php endforeach; endif; ?>
               </tbody>
             </table>
           </div>

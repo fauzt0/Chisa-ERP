@@ -28,9 +28,13 @@
                                 <div class="text-muted">Folio de Venta</div>
                                 <strong><?=$orden->folio?></strong>
                             </div>
-                            <div class="col-md-6 text-md-end">
+                            <div class="col-md-6">
                                 <div class="text-muted">Fecha de Venta</div>
                                 <strong><?=date('d/m/Y - h:i a', strtotime($orden->fecha_creacion))?></strong>
+                                <?php if (!empty($orden->sucursal_nombre)): ?>
+                                <div class="text-muted mt-2">Sucursal</div>
+                                <strong><?=htmlspecialchars($orden->sucursal_nombre, ENT_QUOTES, 'UTF-8')?></strong>
+                                <?php endif; ?>
                             </div>
                         </div>
 

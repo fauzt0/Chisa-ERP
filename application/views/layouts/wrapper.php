@@ -813,16 +813,16 @@
 						<div class="col-6 text-start">
 							<ul class="list-inline">
 								<li class="list-inline-item">
-									<a class="text-muted" href="#">Support</a>
+									<a class="text-muted" href="#">Soporte</a>
 								</li>
 								<li class="list-inline-item">
-									<a class="text-muted" href="#">Help Center</a>
+									<a class="text-muted" href="#">Ayuda</a>
 								</li>
 								<li class="list-inline-item">
-									<a class="text-muted" href="#">Privacy</a>
+									<a class="text-muted" href="#">Privacidad</a>
 								</li>
 								<li class="list-inline-item">
-									<a class="text-muted" href="#">Terms of Service</a>
+									<a class="text-muted" href="#">Términos</a>
 								</li>
 							</ul>
 						</div>

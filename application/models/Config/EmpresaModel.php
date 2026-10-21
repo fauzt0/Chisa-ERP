@@ -28,6 +28,20 @@ class EmpresaModel extends CI_Model {
                 'logo' => 'assets/dist/img/brands/chisa_recubrimientos_logo.jpg',
             ];
         }
+        $cambios = [];
+        foreach (['razon_social', 'nombre_comercial', 'calle', 'colonia', 'ciudad', 'estado'] as $campo) {
+            if (!isset($row->$campo)) {
+                continue;
+            }
+            $limpio = texto_sin_mojibake($row->$campo);
+            if ($limpio !== $row->$campo) {
+                $row->$campo = $limpio;
+                $cambios[$campo] = $limpio;
+            }
+        }
+        if ($cambios) {
+            $this->db->where('id', $this->id)->update($this->table, $cambios);
+        }
         return $row;
     }
 

@@ -1068,7 +1068,7 @@ class NominaRhModel extends CI_Model {
         }
 
         $ahora = date('Y-m-d H:i:s');
-        $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
+        $usuario_id = $this->session->userdata('id');
         $lineas_poliza = [];
         $procesados = 0;
         $neto_lote = 0;
@@ -1349,7 +1349,7 @@ class NominaRhModel extends CI_Model {
             }
         }
 
-        $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
+        $usuario_id = $this->session->userdata('id');
         $folio_poliza = 'NOM-' . $nomina->folio . '-' . date('His');
 
         $data_poliza = [
@@ -1426,7 +1426,7 @@ class NominaRhModel extends CI_Model {
         }
 
         $deducciones = $this->get_totales_deducciones_por_concepto($nomina->id);
-        $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
+        $usuario_id = $this->session->userdata('id');
 
         $data_poliza = [
             'folio'                => 'NOM-' . $nomina->folio,
@@ -1683,7 +1683,7 @@ class NominaRhModel extends CI_Model {
     }
 
     private function registrar_cancelacion($nomina_id, $motivo, $detalle_id = null) {
-        $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
+        $usuario_id = $this->session->userdata('id');
         $row = [
             'nomina_id'  => (int)$nomina_id,
             'motivo'     => substr(trim((string)$motivo), 0, 500),
@@ -1772,7 +1772,7 @@ class NominaRhModel extends CI_Model {
     }
 
     public function agregar_nota_nomina($nomina_id, $data) {
-        $usuario_id = $this->session->userdata('id') ?: $this->session->userdata('user_id');
+        $usuario_id = $this->session->userdata('id');
         $this->db->insert('nominas_notas', [
             'nomina_id' => (int)$nomina_id,
             'tipo' => in_array($data['tipo'] ?? '', ['Ajuste','Corrección','Reclasificación']) ? $data['tipo'] : 'Ajuste',

@@ -263,6 +263,30 @@ class PreordenesModel extends MY_Model {
             ? (float) $cantidad_aprobada
             : (float) $preorden->cantidad_solicitada;
 
+        // La cantidad de la pre-orden puede venir en una unidad distinta a la del stock del
+        // insumo (`insumos.unidad_medida`). Se convierte AQUÍ, antes de crear la OC, para que
+        // `detalle_orden_compra.cantidad_solicitada` quede SIEMPRE en la unidad del insumo.
+        // Si la conversión no es segura (ej. 'Cubeta' vs 'Kg'), se aborta con mensaje claro en
+        // lugar de contaminar el inventario con una cantidad ambigua.
+        $this->load->helper('unidades');
+        $unidad_origen = $preorden->unidad ?: $preorden->insumo_unidad_medida;
+        $unidad_insumo = $preorden->insumo_unidad_medida;
+
+        if ($unidad_origen && $unidad_insumo && $unidad_origen !== $unidad_insumo) {
+            $conversion = convertir_unidad_insumo($cantidad_final, $unidad_origen, $unidad_insumo);
+
+            if (empty($conversion['success'])) {
+                return [
+                    'success' => false,
+                    'message' => 'No se puede convertir ' . $cantidad_final . ' ' . $unidad_origen
+                        . ' a la unidad de stock del insumo (' . $unidad_insumo . '): '
+                        . ($conversion['motivo'] ?? 'unidades incompatibles'),
+                ];
+            }
+
+            $cantidad_final = round((float) $conversion['cantidad_convertida'], 3);
+        }
+
         // Precio: el pactado con ese proveedor si existe, si no el precio promedio del insumo
         $precio_unitario = $preorden->insumo_precio_promedio ?: 0;
         $this->db->where('insumo_id', $preorden->insumo_id);

@@ -9,6 +9,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * 2. Verificación de permisos por módulo.
  * 3. Logging de accesos.
  */
+#[AllowDynamicProperties]
 class MY_Controller extends CI_Controller {
 
     public $viewData = [];

@@ -5,27 +5,36 @@ class FactureApp {
 
     protected $CI;
     protected $redirect_uri;
-    /* Datos para produccion*/
-    /*
-    protected $client_id = 'mv6uSwgKrt4h7M4c7l0B';
-    protected $client_secret = 'u6pHF5ftuOVIQzCh309fdVD6Vn2xpNv4';    
-    protected $auth_url = 'https://app.micontador.mx/ws/login.jsp';
-    protected $token_url = 'https://app.micontador.mx/api/authorize';
-    protected $timbrado_url = 'https://app.micontador.mx/api/timbrado/json';
-    */
-    /* Datos para pruebas */
-    protected $client_id = 'UrBzgu6LQzOEsX0ddS1r';
-    protected $client_secret = 'VBW726kPiPx4TsEGeYJ4SCFsSVQfwtlK';    
-    protected $auth_url = 'https://app.facture.com.mx/ws/login.jsp';
-    protected $token_url = 'https://app.facture.com.mx/api/authorize';
-    protected $timbrado_url = 'https://app.facture.com.mx/api/timbrado/json';
-    
+    protected $client_id;
+    protected $client_secret;
+    protected $auth_url;
+    protected $token_url;
+    protected $timbrado_url;
+    protected $api_base;
 
     public function __construct() {
         $this->CI =& get_instance();
         $this->CI->load->model('Facturacion/FacturaApiTokenModel', 'token_model');
-        // Ajustar redirect_uri a la ruta del controlador callback
+        $this->CI->config->load('factureapp', true);
+        $ambiente = $this->CI->config->item('factureapp_ambiente', 'factureapp') ?: 'sandbox';
+        $ambientes = $this->CI->config->item('factureapp_ambientes', 'factureapp');
+        if (!is_array($ambientes) || empty($ambientes[$ambiente])) {
+            log_message('error', 'FactureApp: ambiente inválido en config/factureapp.php: ' . $ambiente);
+            $ambiente = 'sandbox';
+        }
+        $cfg = $ambientes[$ambiente];
+        $base = rtrim($cfg['api_base'], '/');
+        $this->api_base = $base;
+        $this->client_id = $cfg['client_id'];
+        $this->client_secret = $cfg['client_secret'];
+        $this->auth_url = $base . '/ws/login.jsp';
+        $this->token_url = $base . '/api/authorize';
+        $this->timbrado_url = $base . '/api/timbrado/json';
         $this->redirect_uri = base_url('facturacion/Facturas/callback');
+    }
+
+    protected function api_url($path) {
+        return $this->api_base . '/' . ltrim($path, '/');
     }
 
     /**
@@ -67,8 +76,7 @@ class FactureApp {
         ];
         
         // URL con parámetros de paginación según documentación
-        //$url = 'https://app.micontador.mx/api/sucursal/find?offset=' . $offset . '&size=' . $size; // Produccion
-        $url = 'https://app.facture.com.mx/api/sucursal/find?offset=' . $offset . '&size=' . $size; // Pruebas
+        $url = $this->api_url('api/sucursal/find?offset=' . $offset . '&size=' . $size);
         
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -99,7 +107,7 @@ class FactureApp {
         ];
         
         // Probamos endpoint estándar de perfil
-        $url = 'https://app.facture.com.mx/api/usuario/perfil'; // Pruebas
+        $url = $this->api_url('api/usuario/perfil');
         
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -201,7 +209,7 @@ class FactureApp {
         // Endpoint: api/facturacion/recuperar
         // URL de producción: https://app.micontador.mx/api/facturacion/recuperar
         // URL de pruebas: https://app.facture.com.mx/api/facturacion/recuperar
-        $url = 'https://app.facture.com.mx/api/facturacion/recuperar'; 
+        $url = $this->api_url('api/facturacion/recuperar');
         
         $response = $this->_request('POST', $url, $payload, false, $headers);
 
@@ -248,7 +256,7 @@ class FactureApp {
             ]
         ];
         
-        $url = 'https://app.facture.com.mx/api/facturacion/recuperar'; 
+        $url = $this->api_url('api/facturacion/recuperar');
         
         return $this->_request('POST', $url, $payload, false, $headers);
     }
@@ -263,7 +271,7 @@ class FactureApp {
         ];
         
         // URL base
-        $url = 'https://app.facture.com.mx/api/facturacion/find?offset=' . $offset . '&size=' . $size;
+        $url = $this->api_url('api/facturacion/find?offset=' . $offset . '&size=' . $size);
         
         // Agregar filtro si existe (ej: "cancelada:eq!true" para solo activas)
         if ($filter) {

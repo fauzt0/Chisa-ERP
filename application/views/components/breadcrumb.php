@@ -54,12 +54,14 @@ $breadcrumb_urls = [
     'Compras' => base_url('compras/Categorias'),
     'Categorías' => base_url('compras/Categorias'),
     'Insumos' => base_url('compras/Insumos'),
+    'Entrenamiento de materiales' => base_url('compras/EntrenamientoMateriales'),
     'Proveedores' => base_url('compras/Proveedores'),
     'Órdenes de Compra' => base_url('compras/OrdenesCompra'),
 
     // Producción
     'Producción' => base_url('produccion/Dashboard'),
     'Control de Lotes' => base_url('produccion/Lotes'),
+    'Historial de formulaciones' => base_url('produccion/HistorialFormulaciones'),
     'Historial de Ventas' => base_url('produccion/HistorialVentas'),
     'Alta de productos' => base_url('produccion/Productos/alta'),
 

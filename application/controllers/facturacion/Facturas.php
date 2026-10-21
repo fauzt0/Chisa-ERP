@@ -727,8 +727,29 @@ class Facturas extends MY_Controller {
         ]);
     }
 
-
-
-
-
+    /**
+     * CLI: php index.php facturacion/Facturas/cli_probe
+     * Verifica token en BD y GET api/sucursal/find (sin timbrar).
+     */
+    public function cli_probe() {
+        if (!is_cli()) {
+            show_error('Solo CLI', 403);
+            return;
+        }
+        $this->config->load('factureapp', true);
+        $amb = $this->config->item('factureapp_ambiente', 'factureapp');
+        $token = $this->token_model->get_token();
+        if (!$token || empty($token->access_token)) {
+            echo json_encode(['ok' => false, 'ambiente' => $amb, 'message' => 'Sin access_token en api_tokens'], JSON_UNESCAPED_UNICODE) . PHP_EOL;
+            return;
+        }
+        $res = $this->factureapp->get_sucursales($token->access_token, 0, 1);
+        $ok = is_array($res) && !empty($res['succeed']);
+        echo json_encode([
+            'ok' => $ok,
+            'ambiente' => $amb,
+            'token_updated_at' => $token->updated_at ?? null,
+            'api_message' => $res['message'] ?? ($res['error'] ?? null),
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . PHP_EOL;
+    }
 }

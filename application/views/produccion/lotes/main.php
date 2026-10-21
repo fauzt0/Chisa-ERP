@@ -29,6 +29,7 @@
                                     <th>Código de Barras</th>
                                     <th>Producto</th>
                                     <th>Cantidad</th>
+                                    <th>Origen</th>
                                     <th>Fecha Fabricación</th>
                                     <th>Estatus</th>
                                     <th>Acciones</th>

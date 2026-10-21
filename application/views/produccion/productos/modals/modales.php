@@ -633,6 +633,9 @@
       </div>
       <div class="modal-body">
         <!-- Filtros de Historial -->
+        <p class="text-muted small mb-2">
+          Tabla de versiones: activa vs histórica. Busca por cliente, año (2023), comentario o referencia (como en el Excel de planta).
+        </p>
         <div class="card bg-light mb-3">
           <div class="card-body py-2">
             <div class="row align-items-end">
@@ -640,20 +643,19 @@
                 <label class="form-label mb-1">Cliente</label>
                 <select class="form-select form-select-sm" id="historial_cliente_id">
                   <option value="">Todos los clientes</option>
-                  <!-- Se llena via JS si es necesario -->
                 </select>
               </div>
-              <div class="col-md-3">
-                <label class="form-label mb-1">Fecha Desde</label>
+              <div class="col-md-2">
+                <label class="form-label mb-1">Desde</label>
                 <input type="date" class="form-control form-control-sm" id="historial_fecha_inicio">
               </div>
-              <div class="col-md-3">
-                <label class="form-label mb-1">Fecha Hasta</label>
+              <div class="col-md-2">
+                <label class="form-label mb-1">Hasta</label>
                 <input type="date" class="form-control form-control-sm" id="historial_fecha_fin">
               </div>
-              <div class="col-md-3">
-                <label class="form-label mb-1">Buscar (Versión, Comentarios)</label>
-                <input type="text" class="form-control form-control-sm" id="busquedaHistorial" placeholder="Buscar...">
+              <div class="col-md-5">
+                <label class="form-label mb-1">Buscar (versión, comentarios, cliente, año)</label>
+                <input type="text" class="form-control form-control-sm" id="busquedaHistorial" placeholder="Ej: Hospital 2023 / receta especial">
               </div>
             </div>
           </div>
@@ -666,6 +668,33 @@
             <p class="mt-3">Cargando historial...</p>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nota de formulación (comentario / referencia, sin cambiar BOM) -->
+<div class="modal fade" id="modalNotaFormulacion" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-comment"></i> Nota de esta versión</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="nota_formulacion_id">
+        <div class="mb-3">
+          <label class="form-label">Comentarios (cliente, año, receta especial)</label>
+          <textarea class="form-control" id="nota_formulacion_comentarios" rows="4" placeholder="Ej: Receta Hospital Regional 2023 — CHISA GLASS MICRO más espeso"></textarea>
+        </div>
+        <div class="mb-0">
+          <label class="form-label">Referencia del cliente</label>
+          <input type="text" class="form-control" id="nota_formulacion_referencia" placeholder="Cómo lo pide el cliente">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarNotaFormulacion()">Guardar nota</button>
       </div>
     </div>
   </div>

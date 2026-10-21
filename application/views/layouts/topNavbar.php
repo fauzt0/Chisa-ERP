@@ -98,6 +98,13 @@
         </div>
       </li>
       
+      <li class="nav-item">
+        <a class="nav-icon erp-ayuda-nav" href="#" id="erpAyudaNavBtn" role="button" title="Ayuda de esta pantalla" aria-label="Ayuda de esta pantalla">
+          <div class="position-relative">
+            <i class="align-middle fas fa-question-circle text-body"></i>
+          </div>
+        </a>
+      </li>
       <li class="nav-item nav-theme-toggle">
         <a class="nav-icon erp-theme-toggle" href="#" role="button" title="Cambiar tema" aria-label="Cambiar tema">
           <div class="position-relative">

@@ -152,6 +152,13 @@ $e = $response['empresa'] ?? (object)[];
           <?php endforeach; ?>
         </div>
       </div>
+      <div class="card mt-3">
+        <div class="card-body">
+          <h5 class="card-title">Sucursales</h5>
+          <p class="small text-muted">Logo, icono, marca de agua, dirección y contacto de cada sucursal se usan en la cotización comercial de obra.</p>
+          <a class="btn btn-outline-primary btn-sm" href="<?=base_url('ventas/Sucursales')?>">Abrir sucursales</a>
+        </div>
+      </div>
       <?php if(!empty($e->fecha_actualizacion)): ?>
       <p class="text-muted small mt-2">Última actualización: <?=date('d/m/Y H:i', strtotime($e->fecha_actualizacion))?></p>
       <?php endif; ?>

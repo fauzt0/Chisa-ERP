@@ -1,0 +1,4 @@
+# Binarios de entrenamiento: NO versionar (pesan ~60 MB)
+*.xlsx
+*.pdf
+*.xls

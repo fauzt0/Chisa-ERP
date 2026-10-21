@@ -106,7 +106,7 @@ class AlmacenModel extends CI_Model {
                 WHEN i.stock_maximo IS NOT NULL AND i.stock_actual >= i.stock_maximo THEN "exceso"
                 ELSE "normal"
             END as nivel_stock
-        ');
+        ', FALSE);
         $this->db->from('insumos i');
         $this->db->join('categorias_insumos ci', 'ci.id = i.categoria_id', 'left');
         $this->db->where('i.estatus', 'Activo');
@@ -145,7 +145,7 @@ class AlmacenModel extends CI_Model {
                 WHEN p.stock_maximo IS NOT NULL AND p.stock_actual >= p.stock_maximo THEN "exceso"
                 ELSE "normal"
             END as nivel_stock
-        ');
+        ', FALSE);
         $this->db->from('productos p');
         $this->db->join('categorias_productos cp', 'cp.id = p.categoria_id', 'left');
         $this->db->where('p.estatus', 'Activo');
@@ -222,7 +222,7 @@ class AlmacenModel extends CI_Model {
             p.nombre as producto_nombre,
             p.stock_actual,
             p.unidad_venta,
-            (dov.cantidad - dov.cantidad_entregada) as pendiente_entregar
+            (dov.cantidad - COALESCE(dov.cantidad_entregada, 0)) as pendiente_entregar
         ');
         $this->db->from('detalle_orden_venta dov');
         $this->db->join('productos p', 'p.id = dov.producto_id');
@@ -244,13 +244,15 @@ class AlmacenModel extends CI_Model {
             o.*,
             c.razon_social as cliente_nombre,
             COUNT(op.id) as total_productos,
-            SUM(op.cantidad_ajustada) as cantidad_total,
+            SUM(COALESCE(op.cantidad_ajustada, op.cantidad_calculada, 0)) as cantidad_total,
             SUM(COALESCE(op.cantidad_entregada, 0)) as cantidad_entregada_total
         ');
         $this->db->from('obras o');
         $this->db->join('clientes c', 'c.id = o.cliente_id');
         $this->db->join('obras_productos op', 'op.obra_id = o.id');
-        $this->db->where_in('o.estatus', ['Confirmada', 'En Proceso']);
+        // FIX BUG (2026-09-07): 'Confirmada'/'En Proceso' no existen en el ENUM de obras.estatus
+        // Valores correctos: 'Aprobada' y 'En Ejecución'
+        $this->db->where_in('o.estatus', ['Aprobada', 'En Ejecución']);
         $this->db->group_by('o.id');
         $this->db->order_by('o.fecha_creacion', 'DESC');
         
@@ -273,15 +275,17 @@ class AlmacenModel extends CI_Model {
         }
         
         // Productos de la obra
+        // FIX (2026-09-10, hallazgo F): cantidad_ajustada es NULL cuando la línea nunca se ajustó
+        // manualmente; sin COALESCE el modal de entrega mostraba "null"/0 y no permitía entregar.
         $this->db->select('
             op.*,
-            op.cantidad_ajustada as cantidad,
+            COALESCE(op.cantidad_ajustada, op.cantidad_calculada, 0) as cantidad,
             COALESCE(op.cantidad_entregada, 0) as cantidad_entregada,
             p.codigo as producto_codigo,
             p.nombre as producto_nombre,
             p.stock_actual,
             p.unidad_venta,
-            (op.cantidad_ajustada - COALESCE(op.cantidad_entregada, 0)) as pendiente_entregar
+            (COALESCE(op.cantidad_ajustada, op.cantidad_calculada, 0) - COALESCE(op.cantidad_entregada, 0)) as pendiente_entregar
         ');
         $this->db->from('obras_productos op');
         $this->db->join('productos p', 'p.id = op.producto_id');
@@ -299,6 +303,24 @@ class AlmacenModel extends CI_Model {
      * Registra una entrega (orden o obra)
      */
     public function registrar_entrega($data) {
+        $tipo_origen = $data['tipo_origen'] ?? '';
+        if (!in_array($tipo_origen, ['Orden Venta', 'Obra'], true)) {
+            return ['success' => false, 'message' => 'Tipo de entrega no válido.'];
+        }
+        if (empty($data['productos']) || !is_array($data['productos'])) {
+            return ['success' => false, 'message' => 'Debe seleccionar al menos un producto.'];
+        }
+
+        // Validaciones previas (sin escribir nada): estatus del origen, pertenencia de la partida,
+        // pendiente por entregar y stock PT disponible (agregado por producto).
+        $validacion = $tipo_origen === 'Orden Venta'
+            ? $this->validar_entrega_orden_venta($data)
+            : $this->validar_entrega_obra($data);
+
+        if (!empty($validacion['error'])) {
+            return ['success' => false, 'message' => $validacion['error']];
+        }
+
         $this->db->trans_start();
         
         try {
@@ -329,12 +351,11 @@ class AlmacenModel extends CI_Model {
                     'producto_id' => $producto['producto_id'],
                     'tipo_movimiento' => 'Salida',
                     'cantidad' => $producto['cantidad_entregar'],
-                    'motivo' => $data['tipo_origen'] == 'Orden Venta' ? 
-                        'Entrega de orden ' . $folio : 
+                    'motivo' => $data['tipo_origen'] == 'Orden Venta' ?
+                        'Entrega de orden ' . $folio :
                         'Entrega de obra ' . $folio,
                     'usuario_id' => $data['usuario_id'],
-                    'referencia_tipo' => 'Entrega',
-                    'referencia_id' => $entrega_id
+                    // FIX: referencia_tipo/referencia_id no existen en movimientos_productos
                 ];
                 
                 // El modelo de productos maneja el registro
@@ -376,6 +397,153 @@ class AlmacenModel extends CI_Model {
         }
     }
     
+    /**
+     * Valida una entrega de orden de venta antes de escribir.
+     *
+     * @return array{error:?string}
+     */
+    protected function validar_entrega_orden_venta($data) {
+        $orden_id = (int) ($data['orden_venta_id'] ?? 0);
+        $orden = $this->db->select('id, folio, estatus')->where('id', $orden_id)->get('ordenes_venta')->row();
+
+        if (!$orden) {
+            return ['error' => 'Orden de venta no encontrada (ID ' . $orden_id . ').'];
+        }
+        if (!in_array($orden->estatus, ['Confirmada', 'En Preparación'], true)) {
+            return ['error' => 'La orden ' . $orden->folio . ' está en estatus «' . $orden->estatus
+                . '»: no admite entregas (solo Confirmada o En Preparación).'];
+        }
+
+        $lineas = [];
+        foreach ($data['productos'] as $producto) {
+            $cantidad = (float) ($producto['cantidad_entregar'] ?? 0);
+            if ($cantidad <= 0) {
+                continue;
+            }
+
+            $detalle_id = (int) ($producto['detalle_orden_id'] ?? 0);
+            $detalle = $this->db->select('id, producto_id, cantidad, cantidad_entregada')
+                ->where('id', $detalle_id)
+                ->where('orden_venta_id', $orden_id)
+                ->get('detalle_orden_venta')
+                ->row();
+
+            if (!$detalle) {
+                return ['error' => 'La partida ' . $detalle_id . ' no pertenece a la orden ' . $orden->folio . '.'];
+            }
+            if ((int) ($producto['producto_id'] ?? 0) !== (int) $detalle->producto_id) {
+                return ['error' => 'La partida ' . $detalle_id . ' no corresponde al producto enviado.'];
+            }
+
+            $pendiente = (float) $detalle->cantidad - (float) $detalle->cantidad_entregada;
+            if ($cantidad > $pendiente + 0.0001) {
+                return ['error' => 'No se puede entregar ' . number_format($cantidad, 2) . ' de la partida '
+                    . $detalle_id . ': pendiente por entregar ' . number_format($pendiente, 2) . '.'];
+            }
+
+            $lineas[] = ['producto_id' => (int) $detalle->producto_id, 'cantidad_entregar' => $cantidad];
+        }
+
+        if (empty($lineas)) {
+            return ['error' => 'Debe ingresar cantidades a entregar mayores a cero.'];
+        }
+
+        return $this->validar_stock_entrega($lineas);
+    }
+
+    /**
+     * Valida una entrega de obra antes de escribir.
+     *
+     * @return array{error:?string}
+     */
+    protected function validar_entrega_obra($data) {
+        $obra_id = (int) ($data['obra_id'] ?? 0);
+        $obra = $this->db->select('id, folio, estatus')->where('id', $obra_id)->get('obras')->row();
+
+        if (!$obra) {
+            return ['error' => 'Obra no encontrada (ID ' . $obra_id . ').'];
+        }
+        if (!in_array($obra->estatus, ['Aprobada', 'En Ejecución'], true)) {
+            return ['error' => 'La obra ' . $obra->folio . ' está en estatus «' . $obra->estatus
+                . '»: no admite entregas (solo Aprobada o En Ejecución).'];
+        }
+
+        $lineas = [];
+        foreach ($data['productos'] as $producto) {
+            $cantidad = (float) ($producto['cantidad_entregar'] ?? 0);
+            if ($cantidad <= 0) {
+                continue;
+            }
+
+            $op_id = (int) ($producto['obra_producto_id'] ?? 0);
+            $linea = $this->db->select('id, producto_id, cantidad_calculada, cantidad_ajustada, cantidad_entregada')
+                ->where('id', $op_id)
+                ->where('obra_id', $obra_id)
+                ->get('obras_productos')
+                ->row();
+
+            if (!$linea) {
+                return ['error' => 'La partida ' . $op_id . ' no pertenece a la obra ' . $obra->folio . '.'];
+            }
+            if ((int) ($producto['producto_id'] ?? 0) !== (int) $linea->producto_id) {
+                return ['error' => 'La partida ' . $op_id . ' no corresponde al producto enviado.'];
+            }
+
+            $solicitado = $linea->cantidad_ajustada !== null
+                ? (float) $linea->cantidad_ajustada
+                : (float) $linea->cantidad_calculada;
+            $pendiente = $solicitado - (float) ($linea->cantidad_entregada ?? 0);
+            if ($cantidad > $pendiente + 0.0001) {
+                return ['error' => 'No se puede entregar ' . number_format($cantidad, 2) . ' de la partida '
+                    . $op_id . ': pendiente por entregar ' . number_format($pendiente, 2) . '.'];
+            }
+
+            $lineas[] = ['producto_id' => (int) $linea->producto_id, 'cantidad_entregar' => $cantidad];
+        }
+
+        if (empty($lineas)) {
+            return ['error' => 'Debe ingresar cantidades a entregar mayores a cero.'];
+        }
+
+        return $this->validar_stock_entrega($lineas);
+    }
+
+    /**
+     * Verifica stock PT disponible consolidando por producto las líneas de la entrega.
+     *
+     * @return array{error:?string}
+     */
+    protected function validar_stock_entrega($lineas) {
+        $requerido = [];
+        foreach ($lineas as $linea) {
+            $producto_id = (int) $linea['producto_id'];
+            if (!isset($requerido[$producto_id])) {
+                $requerido[$producto_id] = 0.0;
+            }
+            $requerido[$producto_id] += (float) $linea['cantidad_entregar'];
+        }
+
+        foreach ($requerido as $producto_id => $cantidad) {
+            $producto = $this->db->select('codigo, nombre, stock_actual')
+                ->where('id', $producto_id)
+                ->get('productos')
+                ->row();
+
+            if (!$producto) {
+                return ['error' => 'Producto no encontrado (ID ' . $producto_id . ').'];
+            }
+
+            $stock = (float) $producto->stock_actual;
+            if ($stock < $cantidad) {
+                return ['error' => 'Stock insuficiente de «' . $producto->nombre . '» (' . $producto->codigo
+                    . '): disponible ' . number_format($stock, 2) . ', requiere ' . number_format($cantidad, 2)
+                    . '. Surtá PT (producción o ajuste) antes de registrar la entrega.'];
+            }
+        }
+
+        return ['error' => null];
+    }
+
     /**
      * Obtiene historial de entregas
      */

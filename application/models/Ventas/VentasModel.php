@@ -110,9 +110,14 @@ class VentasModel extends MY_Model {
      * Obtiene una orden con su detalle
      */
     public function get_orden_completa($id) {
-        $this->db->select('ordenes_venta.*, clientes.razon_social, clientes.rfc');
+        $sel = 'ordenes_venta.*, clientes.razon_social, clientes.rfc';
         $this->db->from('ordenes_venta');
         $this->db->join('clientes', 'clientes.id = ordenes_venta.cliente_id');
+        if ($this->db->table_exists('sucursales') && $this->db->field_exists('sucursal_id', 'ordenes_venta')) {
+            $sel .= ', sucursales.nombre as sucursal_nombre, sucursales.codigo as sucursal_codigo, sucursales.direccion as sucursal_direccion, sucursales.telefono as sucursal_telefono';
+            $this->db->join('sucursales', 'sucursales.id = ordenes_venta.sucursal_id', 'left');
+        }
+        $this->db->select($sel);
         $this->db->where('ordenes_venta.id', $id);
         $orden = $this->db->get()->row();
         
@@ -203,7 +208,7 @@ class VentasModel extends MY_Model {
 
         $insumos_result = null;
         $CI =& get_instance();
-        $usuario_id = (int) ($CI->session->userdata('id') ?: $CI->session->userdata('user_id') ?: 0);
+        $usuario_id = (int) ($CI->session->userdata('id') ?: 0);
         if ($usuario_id > 0) {
             $insumos_result = $this->verificar_insumos_y_preordenes_venta($id, $usuario_id);
         }
@@ -249,38 +254,132 @@ class VentasModel extends MY_Model {
     }
     
     /**
-     * Entrega una orden (descuenta stock)
+     * Valida stock de producto terminado para entrega inmediata (POS mostrador).
+     *
+     * @param array<int, array{producto_id?:mixed,cantidad?:mixed}> $lineas
+     * @return array{ok:bool,message:string}
+     */
+    public function validar_stock_pt_lineas(array $lineas) {
+        // Consolidar por producto: el mismo PT puede venir repetido en varias líneas del ticket
+        $requerido = [];
+        foreach ($lineas as $detalle) {
+            $producto_id = (int) ($detalle['producto_id'] ?? 0);
+            $cantidad = (float) ($detalle['cantidad'] ?? 0);
+            if ($producto_id <= 0 || $cantidad <= 0) {
+                continue;
+            }
+            if (!isset($requerido[$producto_id])) {
+                $requerido[$producto_id] = 0.0;
+            }
+            $requerido[$producto_id] += $cantidad;
+        }
+
+        foreach ($requerido as $producto_id => $cantidad) {
+            $producto = $this->db->select('codigo, nombre, stock_actual')
+                ->where('id', $producto_id)
+                ->get('productos')
+                ->row();
+            if (!$producto) {
+                return ['ok' => false, 'message' => 'Producto no encontrado (ID ' . $producto_id . ').'];
+            }
+            $stock = (float) $producto->stock_actual;
+            if ($stock < $cantidad) {
+                return [
+                    'ok' => false,
+                    'message' => 'Stock insuficiente de producto terminado para «' . $producto->nombre . '» ('
+                        . $producto->codigo . '): disponible ' . number_format($stock, 2)
+                        . ', requiere ' . number_format($cantidad, 2) . '. Use pedido con preparación o surta PT antes de cobrar en mostrador.',
+                ];
+            }
+        }
+        return ['ok' => true, 'message' => ''];
+    }
+
+    /**
+     * Entrega una orden (descuenta stock PT). No permite dejar stock negativo.
+     *
+     * @return array{success:bool,message:string}
      */
     public function entregar_orden($id) {
-        // Obtener detalles
+        $id = (int) $id;
+
+        $orden = $this->db->select('folio, estatus, fecha_entrega_real')
+            ->where('id', $id)
+            ->get('ordenes_venta')
+            ->row();
+
+        if (!$orden) {
+            return ['success' => false, 'message' => 'Orden de venta no encontrada (ID ' . $id . ').'];
+        }
+        if ($orden->estatus === 'Cancelada') {
+            return ['success' => false, 'message' => 'La orden ' . $orden->folio . ' está cancelada: no se puede entregar.'];
+        }
+
+        // Idempotencia: en mostrador la OV ya nace como 'Entregada', por eso el candado es
+        // fecha_entrega_real + el kardex de la propia orden, no el estatus.
+        $ya_descontada = !empty($orden->fecha_entrega_real);
+        if (!$ya_descontada) {
+            $ya_descontada = (int) $this->db
+                ->where('motivo', 'Venta - Orden ' . $id)
+                ->count_all_results('movimientos_inventario') > 0;
+        }
+        if ($ya_descontada) {
+            return [
+                'success' => false,
+                'message' => 'La orden ' . $orden->folio . ' ya había sido entregada'
+                    . (!empty($orden->fecha_entrega_real) ? ' (' . $orden->fecha_entrega_real . ')' : '')
+                    . ': no se vuelve a descontar stock.',
+            ];
+        }
+
         $this->db->where('orden_venta_id', $id);
         $detalles = $this->db->get('detalle_orden_venta')->result();
-        
-        foreach($detalles as $detalle) {
-            // Descontar stock
-            $this->db->set('stock_actual', 'stock_actual - ' . $detalle->cantidad, FALSE);
-            $this->db->where('id', $detalle->producto_id);
+
+        if (empty($detalles)) {
+            return ['success' => false, 'message' => 'La orden no tiene líneas de producto.'];
+        }
+
+        $lineas = [];
+        foreach ($detalles as $detalle) {
+            $lineas[] = [
+                'producto_id' => $detalle->producto_id,
+                'cantidad' => $detalle->cantidad,
+            ];
+        }
+        $chk = $this->validar_stock_pt_lineas($lineas);
+        if (!$chk['ok']) {
+            return ['success' => false, 'message' => $chk['message']];
+        }
+
+        $this->db->trans_start();
+
+        foreach ($detalles as $detalle) {
+            $this->db->set('stock_actual', 'stock_actual - ' . (float) $detalle->cantidad, false);
+            $this->db->where('id', (int) $detalle->producto_id);
             $this->db->update('productos');
-            
-            // Registrar movimiento de inventario
-            $movimiento = [
+
+            $this->db->insert('movimientos_inventario', [
                 'producto_id' => $detalle->producto_id,
                 'tipo_movimiento' => 'Salida',
                 'cantidad' => $detalle->cantidad,
                 'motivo' => 'Venta - Orden ' . $id,
-                'fecha_movimiento' => date('Y-m-d H:i:s')
-            ];
-            $this->db->insert('movimientos_inventario', $movimiento);
+                'fecha_movimiento' => date('Y-m-d H:i:s'),
+            ]);
         }
-        
-        // Actualizar orden
-        $data = [
-            'estatus' => 'Entregada',
-            'fecha_entrega_real' => date('Y-m-d')
-        ];
-        
+
         $this->db->where('id', $id);
-        return $this->db->update('ordenes_venta', $data);
+        $this->db->update('ordenes_venta', [
+            'estatus' => 'Entregada',
+            'fecha_entrega_real' => date('Y-m-d'),
+        ]);
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            return ['success' => false, 'message' => 'Error al registrar la entrega y el movimiento de inventario.'];
+        }
+
+        return ['success' => true, 'message' => 'Orden entregada correctamente.'];
     }
     
     /**
@@ -292,13 +391,31 @@ class VentasModel extends MY_Model {
         $this->db->join('categorias_productos', 'categorias_productos.id = productos.categoria_id', 'left');
         $this->db->where('productos.estatus', 'Activo');
         
-        if($busqueda) {
-            $this->db->group_start();
-            $this->db->like('productos.nombre', $busqueda);
-            $this->db->or_like('productos.codigo', $busqueda);
-            $this->db->or_like('productos.codigo_barras', $busqueda);
-            $this->db->or_like('productos.alias', $busqueda);
-            $this->db->group_end();
+        $busqueda = trim((string) $busqueda);
+        if ($busqueda !== '') {
+            $tokens = preg_split('/\s+/', $busqueda);
+            foreach ($tokens as $token) {
+                $token = trim($token);
+                if ($token === '') {
+                    continue;
+                }
+                $this->db->group_start();
+                $this->db->like('productos.nombre', $token);
+                $this->db->or_like('productos.codigo', $token);
+                $this->db->or_like('productos.codigo_barras', $token);
+                $this->db->or_like('productos.alias', $token);
+                $this->db->or_like('categorias_productos.nombre', $token);
+                if ($this->db->field_exists('sku', 'productos')) {
+                    $this->db->or_like('productos.sku', $token);
+                }
+                if ($this->db->field_exists('variante_valor', 'productos')) {
+                    $this->db->or_like('productos.variante_valor', $token);
+                }
+                if ($this->db->field_exists('presentacion_principal', 'productos')) {
+                    $this->db->or_like('productos.presentacion_principal', $token);
+                }
+                $this->db->group_end();
+            }
         }
         
         if($categoria_id) {
@@ -308,19 +425,62 @@ class VentasModel extends MY_Model {
         $this->db->order_by('productos.nombre', 'ASC');
         $this->db->limit(50);
         
-        return $this->db->get()->result();
+        return $this->_marcar_variantes_pos($this->db->get()->result());
     }
     
     /**
      * Obtiene estadísticas de ventas
      */
-    public function get_estadisticas() {
+    /**
+     * Valida líneas POS contra precio de catálogo (no confiar en el POST).
+     * @return string|null mensaje de error
+     */
+    public function validar_precios_pos($detalles) {
+        if (empty($detalles) || !is_array($detalles)) {
+            return 'Sin partidas';
+        }
+        foreach ($detalles as $d) {
+            $pid = (int) ($d['producto_id'] ?? 0);
+            if ($pid <= 0) {
+                return 'Producto inválido en el ticket';
+            }
+            $this->db->select('id, nombre, precio_venta, estatus');
+            $this->db->where('id', $pid);
+            $p = $this->db->get('productos')->row();
+            if (!$p || $p->estatus !== 'Activo') {
+                return 'Producto no disponible';
+            }
+            if ((float) $p->precio_venta <= 0) {
+                return 'No se puede vender «' . $p->nombre . '»: precio de lista es $0. Capture el precio en catálogo (BUG-DATA-01).';
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Sustituye precio_unitario del ticket por el de catálogo.
+     */
+    public function aplicar_precios_catalogo($detalles) {
+        foreach ($detalles as &$d) {
+            $this->db->select('precio_venta');
+            $this->db->where('id', (int) $d['producto_id']);
+            $p = $this->db->get('productos')->row();
+            if ($p) {
+                $d['precio_unitario'] = (float) $p->precio_venta;
+            }
+        }
+        unset($d);
+        return $detalles;
+    }
+
+    public function get_estadisticas($sucursal_id = null) {
         $stats = [];
+        $sid = ($sucursal_id && $this->db->field_exists('sucursal_id', 'ordenes_venta')) ? (int) $sucursal_id : null;
         
-        // Ventas del día
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('DATE(fecha_orden)', date('Y-m-d'));
-        $this->db->where('estatus !=', 'Cancelada');
+        $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $hoy = $this->db->get('ordenes_venta')->row();
         $stats['ventas_hoy'] = $hoy->total ?? 0;
         $stats['monto_hoy'] = $hoy->monto ?? 0;
@@ -328,7 +488,8 @@ class VentasModel extends MY_Model {
         // Ventas dia anterior (para progreso)
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('DATE(fecha_orden)', date('Y-m-d', strtotime('-1 day')));
-        $this->db->where('estatus !=', 'Cancelada');
+        $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $ayer = $this->db->get('ordenes_venta')->row();
         $stats['ventas_ayer'] = $ayer->total ?? 0;
         $stats['monto_ayer'] = $ayer->monto ?? 0;
@@ -342,7 +503,8 @@ class VentasModel extends MY_Model {
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('MONTH(fecha_orden)', date('m'));
         $this->db->where('YEAR(fecha_orden)', date('Y'));
-        $this->db->where('estatus !=', 'Cancelada');
+        $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $mes = $this->db->get('ordenes_venta')->row();
         $stats['ventas_mes'] = $mes->total ?? 0;
         $stats['monto_mes'] = $mes->monto ?? 0;
@@ -351,7 +513,8 @@ class VentasModel extends MY_Model {
         $this->db->select('COUNT(*) as total, SUM(total) as monto');
         $this->db->where('MONTH(fecha_orden)', date('m', strtotime('first day of last month')));
         $this->db->where('YEAR(fecha_orden)', date('Y', strtotime('first day of last month')));
-        $this->db->where('estatus !=', 'Cancelada');
+        $this->db->where_not_in('estatus', ['Cancelada', 'Cotización']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $mes_ant = $this->db->get('ordenes_venta')->row();
         $stats['monto_mes_anterior'] = $mes_ant->monto ?? 0;
 
@@ -363,10 +526,11 @@ class VentasModel extends MY_Model {
         
         // Cotizaciones pendientes
         $this->db->where('estatus', 'Cotización');
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $stats['cotizaciones_pendientes'] = $this->db->count_all_results('ordenes_venta');
 
-        // Total Ordenes Activas (para % de cotizaciones vs total)
         $this->db->where_in('estatus', ['Cotización', 'Confirmada', 'En Preparación']);
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $total_activas = $this->db->count_all_results('ordenes_venta');
         
         $stats['porcentaje_cotizaciones'] = ($total_activas > 0) 
@@ -375,6 +539,7 @@ class VentasModel extends MY_Model {
         
         // Órdenes en preparación
         $this->db->where('estatus', 'En Preparación');
+        if ($sid) { $this->db->where('sucursal_id', $sid); }
         $stats['ordenes_preparacion'] = $this->db->count_all_results('ordenes_venta');
 
         $stats['porcentaje_preparacion'] = ($total_activas > 0) 
@@ -388,14 +553,57 @@ class VentasModel extends MY_Model {
      * Obtiene los productos más vendidos
      */
     public function get_top_productos($limit = 3) {
-        $this->db->select('p.id, p.nombre, p.codigo, p.precio_venta, p.stock_actual, p.codigo_barras, COUNT(dov.id) as ventas');
+        $this->db->select('p.id, p.nombre, p.codigo, p.precio_venta, p.stock_actual, p.codigo_barras, p.es_variante, p.producto_padre_id, COUNT(dov.id) as ventas');
         $this->db->from('productos p');
         $this->db->join('detalle_orden_venta dov', 'dov.producto_id = p.id', 'left');
         $this->db->where('p.estatus', 'Activo');
         $this->db->group_by('p.id');
         $this->db->order_by('ventas', 'DESC');
         $this->db->limit($limit);
-        return $this->db->get()->result();
+        return $this->_marcar_variantes_pos($this->db->get()->result());
+    }
+
+    /**
+     * Marca productos que tienen familia de variantes (padre o hijos activos).
+     */
+    private function _marcar_variantes_pos($productos) {
+        if (empty($productos) || !$this->db->field_exists('producto_padre_id', 'productos')) {
+            return $productos;
+        }
+        $ids = [];
+        foreach ($productos as $p) {
+            $ids[] = (int) $p->id;
+            if (!empty($p->producto_padre_id)) {
+                $ids[] = (int) $p->producto_padre_id;
+            }
+            $p->tiene_variantes = 0;
+        }
+        $ids = array_values(array_unique(array_filter($ids)));
+        if (!$ids) {
+            return $productos;
+        }
+        $this->db->select('id, producto_padre_id');
+        $this->db->from('productos');
+        $this->db->where('estatus', 'Activo');
+        $this->db->where('es_variante', 1);
+        $this->db->where("variante_valor IS NOT NULL AND variante_valor <> ''", null, false);
+        $this->db->group_start();
+        $this->db->where_in('id', $ids);
+        $this->db->or_where_in('producto_padre_id', $ids);
+        $this->db->group_end();
+        $es_variante = [];
+        $tiene_hijos = [];
+        foreach ($this->db->get()->result() as $row) {
+            $es_variante[(int) $row->id] = true;
+            if (!empty($row->producto_padre_id)) {
+                $tiene_hijos[(int) $row->producto_padre_id] = true;
+            }
+        }
+        foreach ($productos as $p) {
+            $id = (int) $p->id;
+            $p->tiene_variantes = (!empty($es_variante[$id]) || !empty($tiene_hijos[$id])) ? 1 : 0;
+        }
+        return $productos;
     }
 
     /**

@@ -68,7 +68,7 @@ class InsumosModel extends MY_Model {
             $this->db->where('insumos.estatus', $_POST['filtro_estatus']);
         }
         if (!empty($_POST['filtro_stock_bajo']) && $_POST['filtro_stock_bajo'] === '1') {
-            $this->db->where('insumos.stock_minimo >', 0);
+            $this->db->where('insumos.estatus', 'Activo');
             $this->db->where('insumos.stock_actual <= insumos.stock_minimo', null, false);
         }
     }
@@ -335,6 +335,127 @@ class InsumosModel extends MY_Model {
         $like = '%' . $termino . '%';
         return $this->db->query($sql, [$like, $like, $like, $like])->result();
     }
+
+    // =============================================
+    // MÉTODOS BULK PARA EntrenamientoMateriales
+    // =============================================
+
+    /**
+     * Aliases de varios insumos en una sola consulta.
+     * Devuelve map: insumo_id => array de stdObjects {id, alias, tipo, proveedor_id}
+     *
+     * @param  array<int> $insumo_ids
+     * @return array<int, stdClass[]>
+     */
+    public function get_aliases_bulk(array $insumo_ids) {
+        $map = [];
+        if (empty($insumo_ids)) {
+            return $map;
+        }
+        $this->db->select('ia.id, ia.insumo_id, ia.alias, ia.tipo, ia.proveedor_id');
+        $this->db->from('insumos_alias ia');
+        $this->db->where_in('ia.insumo_id', array_map('intval', $insumo_ids));
+        $this->db->where('ia.estatus', 'Activo');
+        $this->db->order_by('ia.tipo, ia.alias', 'ASC');
+        foreach ($this->db->get()->result() as $row) {
+            $iid = (int) $row->insumo_id;
+            if (!isset($map[$iid])) $map[$iid] = [];
+            $map[$iid][] = $row;
+        }
+        return $map;
+    }
+
+    /**
+     * Último registro de precios_insumo_historial por cada insumo (una query).
+     * Si la tabla no existe o está vacía, devuelve [].
+     *
+     * @param  array<int> $insumo_ids
+     * @return array<int, object>  map insumo_id => row {precio, fecha, origen}
+     */
+    public function get_ultimo_historial_bulk(array $insumo_ids) {
+        $map = [];
+        if (empty($insumo_ids) || !$this->db->table_exists('precios_insumo_historial')) {
+            return $map;
+        }
+        $ids = array_map('intval', $insumo_ids);
+        $ph  = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT insumo_id, precio, fecha, origen, notas
+                FROM (
+                    SELECT insumo_id, precio, fecha, origen, notas,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY insumo_id ORDER BY fecha DESC, id DESC
+                           ) AS rn
+                    FROM precios_insumo_historial
+                    WHERE insumo_id IN ($ph)
+                ) t WHERE rn = 1";
+        foreach ($this->db->query($sql, $ids)->result() as $row) {
+            $map[(int) $row->insumo_id] = $row;
+        }
+        return $map;
+    }
+
+    /**
+     * Datos de productos enlazados por producto_id (para col Producto).
+     *
+     * @param  array<int> $producto_ids
+     * @return array<int, object>  map producto_id => row
+     */
+    public function get_productos_enlazados(array $producto_ids) {
+        $map = [];
+        $ids = array_values(array_unique(array_filter(array_map('intval', $producto_ids))));
+        if (empty($ids)) return $map;
+        $this->db->select('id, unidad_venta, presentacion_principal, contenido_neto, rendimiento, precio_venta');
+        $this->db->from('productos');
+        $this->db->where_in('id', $ids);
+        foreach ($this->db->get()->result() as $row) {
+            $map[(int) $row->id] = $row;
+        }
+        return $map;
+    }
+
+    /**
+     * Guarda únicamente los campos que EntrenamientoMateriales tiene autorizado editar:
+     *   estatus (Activo/Inactivo), alias (nombre interno), clase_uso, actualizado_por.
+     * No toca tipo, precio_promedio, stock, ni precio_venta.
+     *
+     * @param  int   $id
+     * @param  array $data  claves válidas: estatus, alias, clase_uso, actualizado_por
+     * @return bool
+     */
+    public function guardar_entrenamiento($id, array $data) {
+        $allowed = ['estatus', 'alias', 'clase_uso', 'actualizado_por'];
+        $update  = array_intersect_key($data, array_flip($allowed));
+        if (empty($update)) {
+            return false;
+        }
+        $this->db->where('id', (int) $id);
+        if (array_key_exists('clase_uso', $update) && $update['clase_uso'] === null) {
+            $this->db->set('clase_uso', null);
+            unset($update['clase_uso']);
+        }
+        if (!empty($update)) {
+            $this->db->set($update);
+        }
+        return $this->db->update($this->tableName);
+    }
+
+    /**
+     * Actualiza sólo los campos de producto terminado enlazado.
+     * Nunca toca precio_promedio ni insumos.
+     *
+     * @param  int   $producto_id
+     * @param  array $data  claves: unidad_venta, presentacion_principal, contenido_neto, rendimiento, precio_venta
+     * @return bool
+     */
+    public function actualizar_producto_enlazado($producto_id, array $data) {
+        $allowed = ['unidad_venta', 'presentacion_principal', 'contenido_neto', 'rendimiento', 'precio_venta'];
+        $update  = array_intersect_key($data, array_flip($allowed));
+        if (empty($update)) return false;
+        $this->db->where('id', (int) $producto_id);
+        return $this->db->update('productos', $update);
+    }
+
+    // =============================================
 
     /**
      * Obtiene los proveedores asociados a un insumo, ordenados por proveedor

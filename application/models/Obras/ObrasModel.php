@@ -2,27 +2,104 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 class ObrasModel extends CI_Model {
+
+    /** Estatus válidos del ENUM `obras.estatus` (evita truncar a '' con stricton=false). */
+    public const ESTATUS_OBRA_VALIDOS = [
+        'Planificación',
+        'En Cotización',
+        'Aprobada',
+        'En Ejecución',
+        'Pausada',
+        'Completada',
+        'Cancelada',
+    ];
+
+    public function estatus_obra_valido($estatus) {
+        return in_array((string) $estatus, self::ESTATUS_OBRA_VALIDOS, true);
+    }
+
+    /**
+     * Actualización AJAX de obra: valida estatus, persiste y dispara flujo al pasar a Aprobada.
+     *
+     * @return array{success:bool,message:string,insumos_result?:array}
+     */
+    public function actualizar_obra_desde_post($obra_id, array $post, $modificado_por) {
+        $obra_id = (int) $obra_id;
+        if ($obra_id <= 0) {
+            return ['success' => false, 'message' => 'Obra inválida'];
+        }
+
+        $this->db->select('estatus');
+        $this->db->where('id', $obra_id);
+        $obra_anterior = $this->db->get('obras')->row();
+        if (!$obra_anterior) {
+            return ['success' => false, 'message' => 'Obra no encontrada'];
+        }
+
+        $nuevo_estatus = isset($post['estatus']) ? (string) $post['estatus'] : '';
+        if ($nuevo_estatus !== '' && !$this->estatus_obra_valido($nuevo_estatus)) {
+            return [
+                'success' => false,
+                'message' => 'Estatus de obra no válido. Use uno de: ' . implode(', ', self::ESTATUS_OBRA_VALIDOS),
+            ];
+        }
+
+        $data = [
+            'nombre' => $post['nombre'] ?? null,
+            'estatus' => $nuevo_estatus !== '' ? $nuevo_estatus : $obra_anterior->estatus,
+            'porcentaje_avance' => $post['porcentaje_avance'] ?? null,
+            'costo_real' => $post['costo_real'] ?? null,
+            'condiciones_ambientales' => $post['condiciones_ambientales'] ?? null,
+            'especificaciones_tecnicas' => $post['especificaciones_tecnicas'] ?? null,
+            'descuento_porcentaje' => $post['descuento_porcentaje'] ?? null,
+            'iva_porcentaje' => $post['iva_porcentaje'] ?? null,
+            'anticipo_porcentaje' => $post['anticipo_porcentaje'] ?? null,
+            'modificado_por' => $modificado_por ?: 1,
+        ];
+
+        if (!$this->actualizar_obra($obra_id, $data)) {
+            return ['success' => false, 'message' => 'Error al actualizar la obra'];
+        }
+
+        $this->calcular_totales_obra($obra_id);
+
+        $insumos_result = null;
+        if ($obra_anterior->estatus !== 'Aprobada' && $data['estatus'] === 'Aprobada') {
+            $obra_actual = $this->get_obra_detalle($obra_id);
+            if (empty($obra_actual->orden_venta_id)) {
+                $this->crear_solicitudes_produccion_desde_obra($obra_id);
+            }
+            $usuario_id = (int) $modificado_por;
+            if ($usuario_id > 0) {
+                $insumos_result = $this->verificar_insumos_y_preordenes_obra($obra_id, $usuario_id);
+            }
+        }
+
+        $out = ['success' => true, 'message' => 'Obra actualizada correctamente'];
+        if (!empty($insumos_result)) {
+            $out['insumos_result'] = $insumos_result;
+        }
+        return $out;
+    }
     
     /**
-     * Genera el siguiente folio de obra (OB-00001, OB-00002, etc.)
+     * Genera el siguiente folio de obra (OB-00001, OB-00002, …)
+     *
+     * FIX BUG-1 (2026-09-07): la versión anterior usaba ORDER BY id DESC LIMIT 1
+     * con intval(), lo que devolvía 0 para folios no numéricos (p. ej. OB-TEST-002)
+     * y colisionaba con OB-00001 (UNIQUE). Ahora se calcula el MAX numérico sobre
+     * TODAS las filas (activas e inactivas) porque el índice UNIQUE incluye ambas.
+     * Folios no numéricos castean a 0 y nunca distorsionan el MAX.
      */
     public function generar_folio() {
-        $this->db->select('folio');
-        $this->db->from('obras');
-        $this->db->like('folio', 'OB-', 'after');
-        $this->db->order_by('id', 'DESC');
-        $this->db->limit(1);
-        
-        $result = $this->db->get()->row();
-        
-        if($result) {
-            // Extraer el número del último folio
-            $ultimo_numero = intval(substr($result->folio, 3));
-            $nuevo_numero = $ultimo_numero + 1;
-        } else {
-            $nuevo_numero = 1;
-        }
-        
+        $row = $this->db
+            ->select('MAX(CAST(SUBSTRING(folio, 4) AS UNSIGNED)) AS max_folio', false)
+            ->from('obras')
+            ->like('folio', 'OB-', 'after')
+            ->get()->row();
+
+        $nuevo_numero = ($row && $row->max_folio !== null) ? (int) $row->max_folio + 1 : 1;
+
         return 'OB-' . str_pad($nuevo_numero, 5, '0', STR_PAD_LEFT);
     }
     
@@ -42,6 +119,8 @@ class ObrasModel extends CI_Model {
             o.estado,
             o.estatus,
             o.porcentaje_avance,
+            o.saldo_pendiente,
+            o.estatus_pago,
             o.fecha_inicio_estimada,
             o.fecha_fin_estimada,
             o.fecha_creacion,
@@ -108,6 +187,8 @@ class ObrasModel extends CI_Model {
             
             // Obtener comentarios
             $obra->comentarios = $this->get_comentarios_obra($obra_id);
+            $obra->pagos = $this->get_pagos_obra($obra_id);
+            $obra->parcialidades = $this->get_parcialidades($obra_id);
         }
         
         return $obra;
@@ -256,8 +337,14 @@ class ObrasModel extends CI_Model {
         $this->db->where('id', $archivo_id);
         $archivo = $this->db->get('obras_archivos')->row();
         
-        if($archivo && file_exists($archivo->ruta_archivo)) {
-            unlink($archivo->ruta_archivo);
+        if ($archivo) {
+            $ruta = $archivo->ruta_archivo;
+            if (strpos($ruta, '/') !== 0) {
+                $ruta = FCPATH . ltrim($ruta, '/');
+            }
+            if (file_exists($ruta)) {
+                unlink($ruta);
+            }
         }
         
         $this->db->where('id', $archivo_id);
@@ -388,21 +475,14 @@ class ObrasModel extends CI_Model {
      * Genera el siguiente folio de recibo (REC-00001, REC-00002, etc.)
      */
     public function generar_folio_recibo() {
-        $this->db->select('folio_recibo');
-        $this->db->from('obras_pagos');
-        $this->db->like('folio_recibo', 'REC-', 'after');
-        $this->db->order_by('id', 'DESC');
-        $this->db->limit(1);
-        
-        $result = $this->db->get()->row();
-        
-        if($result) {
-            $ultimo_numero = intval(substr($result->folio_recibo, 4));
-            $nuevo_numero = $ultimo_numero + 1;
-        } else {
-            $nuevo_numero = 1;
-        }
-        
+        $row = $this->db
+            ->select('MAX(CAST(SUBSTRING(folio_recibo, 5) AS UNSIGNED)) AS max_folio', false)
+            ->from('obras_pagos')
+            ->like('folio_recibo', 'REC-', 'after')
+            ->get()->row();
+
+        $nuevo_numero = ($row && $row->max_folio !== null) ? (int) $row->max_folio + 1 : 1;
+
         return 'REC-' . str_pad($nuevo_numero, 5, '0', STR_PAD_LEFT);
     }
     
@@ -418,8 +498,9 @@ class ObrasModel extends CI_Model {
         $pago_id = $this->db->insert_id();
         
         if($pago_id) {
-            // Actualizar totales de la obra
             $this->actualizar_totales_pago($data['obra_id']);
+            $this->aplicar_pago_a_parcialidad((int) $data['obra_id'], (int) $pago_id, (float) $data['monto']);
+            $this->_sync_saldo_cliente_obra((int) $data['obra_id']);
         }
         
         return $pago_id;
@@ -713,7 +794,7 @@ class ObrasModel extends CI_Model {
         }
 
         $CI =& get_instance();
-        $usuario_id = $CI->session->userdata('user_id') ?: 1;
+        $usuario_id = $CI->session->userdata('id') ?: 1;
 
         foreach ($obra->productos as $producto) {
             $cantidad = $producto->cantidad_ajustada ?: $producto->cantidad_calculada;
@@ -1027,6 +1108,53 @@ class ObrasModel extends CI_Model {
         ];
     }
 
+    /**
+     * Obtiene resumen de entregas de productos de una obra
+     * Devuelve cada obra_producto con cantidad calculada, ajustada, entregada y pendiente.
+     */
+    public function get_entregas_obra($obra_id) {
+        $this->db->select('
+            op.id as obra_producto_id,
+            p.nombre as producto_nombre,
+            p.codigo as producto_codigo,
+            op.seccion_obra,
+            op.unidad,
+            op.cantidad_calculada,
+            op.cantidad_ajustada,
+            COALESCE(op.cantidad_entregada, 0) as cantidad_entregada,
+            (COALESCE(op.cantidad_ajustada, op.cantidad_calculada) - COALESCE(op.cantidad_entregada, 0)) as cantidad_pendiente,
+            op.precio_unitario
+        ');
+        $this->db->from('obras_productos op');
+        $this->db->join('productos p', 'p.id = op.producto_id');
+        $this->db->where('op.obra_id', (int) $obra_id);
+        $this->db->order_by('op.fecha_agregado', 'ASC');
+
+        $productos = $this->db->get()->result();
+
+        // Historial de entregas para esta obra
+        $this->db->select('
+            ea.folio,
+            ea.fecha_entrega,
+            ea.estatus,
+            dea.obra_producto_id,
+            dea.cantidad_entregada,
+            p.nombre as producto_nombre
+        ');
+        $this->db->from('entregas_almacen ea');
+        $this->db->join('detalle_entregas_almacen dea', 'dea.entrega_id = ea.id');
+        $this->db->join('productos p', 'p.id = dea.producto_id');
+        $this->db->where('ea.obra_id', (int) $obra_id);
+        $this->db->where('ea.estatus', 'Activa');
+        $this->db->order_by('ea.fecha_entrega', 'DESC');
+        $historial = $this->db->get()->result();
+
+        return [
+            'productos' => $productos,
+            'historial' => $historial,
+        ];
+    }
+
     private function _unidad_cubeta_formulacion($formulacion) {
         $u = strtolower(trim((string) ($formulacion->unidad_produccion ?? '')));
         if (in_array($u, ['pza', 'pz', 'pieza', 'cubeta', 'caja'], true)) {
@@ -1055,5 +1183,102 @@ class ObrasModel extends CI_Model {
         }
         usort($lista, fn($a, $b) => $b['cantidad'] <=> $a['cantidad']);
         return array_slice($lista, 0, (int) $limite);
+    }
+
+    public function asegurar_tabla_parcialidades() {
+        if ($this->db->table_exists('obras_parcialidades')) {
+            return;
+        }
+        $this->db->query("CREATE TABLE IF NOT EXISTS `obras_parcialidades` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `obra_id` INT NOT NULL,
+            `numero` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+            `fecha_programada` DATE NOT NULL,
+            `monto` DECIMAL(12,2) NOT NULL DEFAULT 0,
+            `estatus` VARCHAR(20) NOT NULL DEFAULT 'Pendiente',
+            `pago_id` INT NULL,
+            `notas` VARCHAR(255) NULL,
+            `activo` TINYINT(1) NOT NULL DEFAULT 1,
+            `fecha_creacion` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_obra` (`obra_id`,`activo`),
+            KEY `idx_fecha` (`fecha_programada`,`estatus`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+    }
+
+    public function marcar_parcialidades_vencidas() {
+        $this->asegurar_tabla_parcialidades();
+        $this->db->where('activo', 1);
+        $this->db->where('estatus', 'Pendiente');
+        $this->db->where('fecha_programada <', date('Y-m-d'));
+        $this->db->update('obras_parcialidades', ['estatus' => 'Vencida']);
+    }
+
+    public function get_parcialidades($obra_id) {
+        $this->asegurar_tabla_parcialidades();
+        $this->marcar_parcialidades_vencidas();
+        $this->db->from('obras_parcialidades');
+        $this->db->where('obra_id', (int) $obra_id);
+        $this->db->where('activo', 1);
+        $this->db->order_by('fecha_programada', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function guardar_parcialidad($data) {
+        $this->asegurar_tabla_parcialidades();
+        $obra_id = (int) ($data['obra_id'] ?? 0);
+        if ($obra_id <= 0) {
+            return false;
+        }
+        $n = $this->db->where('obra_id', $obra_id)->where('activo', 1)->count_all_results('obras_parcialidades');
+        $row = [
+            'obra_id' => $obra_id,
+            'numero' => $n + 1,
+            'fecha_programada' => $data['fecha_programada'],
+            'monto' => (float) $data['monto'],
+            'estatus' => 'Pendiente',
+            'notas' => $data['notas'] ?? null,
+            'activo' => 1,
+        ];
+        if (strtotime($row['fecha_programada']) < strtotime(date('Y-m-d'))) {
+            $row['estatus'] = 'Vencida';
+        }
+        $this->db->insert('obras_parcialidades', $row);
+        return $this->db->insert_id();
+    }
+
+    public function eliminar_parcialidad($id) {
+        $this->db->where('id', (int) $id);
+        return $this->db->update('obras_parcialidades', ['activo' => 0]);
+    }
+
+    public function aplicar_pago_a_parcialidad($obra_id, $pago_id, $monto) {
+        $this->asegurar_tabla_parcialidades();
+        $this->db->from('obras_parcialidades');
+        $this->db->where('obra_id', (int) $obra_id);
+        $this->db->where('activo', 1);
+        $this->db->where_in('estatus', ['Pendiente', 'Vencida']);
+        $this->db->order_by('fecha_programada', 'ASC');
+        $this->db->limit(1);
+        $p = $this->db->get()->row();
+        if (!$p) {
+            return;
+        }
+        $this->db->where('id', $p->id);
+        $this->db->update('obras_parcialidades', [
+            'estatus' => 'Pagada',
+            'pago_id' => (int) $pago_id,
+        ]);
+    }
+
+    private function _sync_saldo_cliente_obra($obra_id) {
+        $this->db->select('cliente_id');
+        $this->db->where('id', (int) $obra_id);
+        $obra = $this->db->get('obras')->row();
+        if (!$obra || empty($obra->cliente_id)) {
+            return;
+        }
+        $this->load->model('Ventas/CarteraModel');
+        $this->CarteraModel->recalcular_saldo_cliente((int) $obra->cliente_id);
     }
 }

@@ -208,6 +208,13 @@
 var ordenActual = null;
 var obraActual = null;
 
+// FIX (2026-09-10, hallazgo F): formato seguro de cantidades en los modales
+// (evita que se muestre "null"/"NaN" cuando la BD devuelve NULL).
+function fmtCantidad(v) {
+  var n = parseFloat(v);
+  return (isNaN(n) ? 0 : n).toFixed(2);
+}
+
 // Función de inicialización con corrección de jQuery
 function initEntregas() {
   // Inicializar DataTables solo si hay filas de datos
@@ -292,7 +299,12 @@ function mostrarDetalleOrden(orden) {
     '<tbody>';
   
   orden.productos.forEach(function(prod, index) {
-    var stock_ok = prod.stock_actual >= prod.pendiente_entregar;
+    var pedido = parseFloat(prod.cantidad) || 0;
+    var entregado = parseFloat(prod.cantidad_entregada) || 0;
+    var pendiente = Math.max(pedido - entregado, 0);
+    var stock = parseFloat(prod.stock_actual) || 0;
+    var maxEntrega = Math.max(Math.min(pendiente, stock), 0);
+    var stock_ok = stock >= pendiente;
     var badge_stock = stock_ok ? 'bg-success' : 'bg-danger';
     
     html += '<tr>' +
@@ -300,17 +312,17 @@ function mostrarDetalleOrden(orden) {
       '<strong>' + prod.producto_codigo + '</strong><br>' +
       '<small class="text-muted">' + prod.producto_nombre + '</small>' +
       '</td>' +
-      '<td>' + prod.cantidad + '</td>' +
-      '<td>' + prod.cantidad_entregada + '</td>' +
-      '<td><strong>' + prod.pendiente_entregar + '</strong></td>' +
-      '<td><span class="badge ' + badge_stock + '">' + prod.stock_actual + ' ' + prod.unidad_venta + '</span></td>' +
+      '<td>' + fmtCantidad(pedido) + '</td>' +
+      '<td>' + fmtCantidad(entregado) + '</td>' +
+      '<td><strong>' + fmtCantidad(pendiente) + '</strong></td>' +
+      '<td><span class="badge ' + badge_stock + '">' + fmtCantidad(stock) + ' ' + prod.unidad_venta + '</span></td>' +
       '<td>' +
       '<input type="number" class="form-control form-control-sm" ' +
       'id="cantidad_orden_' + index + '" ' +
       'data-detalle-id="' + prod.id + '" ' +
       'data-producto-id="' + prod.producto_id + '" ' +
-      'min="0" max="' + Math.min(prod.pendiente_entregar, prod.stock_actual) + '" ' +
-      'value="' + Math.min(prod.pendiente_entregar, prod.stock_actual) + '" ' +
+      'min="0" max="' + maxEntrega + '" ' +
+      'value="' + maxEntrega + '" ' +
       'style="width: 100px;">' +
       '</td>' +
       '</tr>';
@@ -406,7 +418,12 @@ function mostrarDetalleObra(obra) {
     '<tbody>';
   
   obra.productos.forEach(function(prod, index) {
-    var stock_ok = prod.stock_actual >= prod.pendiente_entregar;
+    var pedido = parseFloat(prod.cantidad) || 0;
+    var entregado = parseFloat(prod.cantidad_entregada) || 0;
+    var pendiente = Math.max(pedido - entregado, 0);
+    var stock = parseFloat(prod.stock_actual) || 0;
+    var maxEntrega = Math.max(Math.min(pendiente, stock), 0);
+    var stock_ok = stock >= pendiente;
     var badge_stock = stock_ok ? 'bg-success' : 'bg-danger';
     
     html += '<tr>' +
@@ -414,17 +431,17 @@ function mostrarDetalleObra(obra) {
       '<strong>' + prod.producto_codigo + '</strong><br>' +
       '<small class="text-muted">' + prod.producto_nombre + '</small>' +
       '</td>' +
-      '<td>' + prod.cantidad + '</td>' +
-      '<td>' + prod.cantidad_entregada + '</td>' +
-      '<td><strong>' + prod.pendiente_entregar + '</strong></td>' +
-      '<td><span class="badge ' + badge_stock + '">' + prod.stock_actual + ' ' + prod.unidad_venta + '</span></td>' +
+      '<td>' + fmtCantidad(pedido) + '</td>' +
+      '<td>' + fmtCantidad(entregado) + '</td>' +
+      '<td><strong>' + fmtCantidad(pendiente) + '</strong></td>' +
+      '<td><span class="badge ' + badge_stock + '">' + fmtCantidad(stock) + ' ' + prod.unidad_venta + '</span></td>' +
       '<td>' +
       '<input type="number" class="form-control form-control-sm" ' +
       'id="cantidad_obra_' + index + '" ' +
       'data-obra-producto-id="' + prod.id + '" ' +
       'data-producto-id="' + prod.producto_id + '" ' +
-      'min="0" max="' + Math.min(prod.pendiente_entregar, prod.stock_actual) + '" ' +
-      'value="' + Math.min(prod.pendiente_entregar, prod.stock_actual) + '" ' +
+      'min="0" max="' + maxEntrega + '" ' +
+      'value="' + maxEntrega + '" ' +
       'style="width: 100px;">' +
       '</td>' +
       '</tr>';

@@ -16,6 +16,10 @@ $badgeColors = [
     'Cancelada' => 'danger'
 ];
 $badgeColor = $badgeColors[$obra->estatus] ?? 'secondary';
+
+// Presupuestos de la obra para el menú de exportación PDF/Excel (marca de agua).
+$presupuestos_export = $response['presupuestos'] ?? [];
+$hojas_export = 'presupuesto,resumen,catalogo,unitario,generador,precios_actuales,revision_cuantificacion,datos_obra';
 ?>
 
 <!-- Breadcrumb -->
@@ -34,10 +38,26 @@ $badgeColor = $badgeColors[$obra->estatus] ?? 'secondary';
 <!-- Encabezado de la Obra -->
 <div class="row mb-4">
     <div class="col-md-6">
-        <h1><i class="fas fa-hard-hat"></i> <?=$obra->folio?></h1>
+        <h1><i class="fas fa-hard-hat"></i> <?=htmlspecialchars($obra->folio, ENT_QUOTES, 'UTF-8')?> <button type="button" class="erp-btn-ayuda" data-erp-ayuda="obras_detalle" title="Funciones de la obra">?</button></h1>
         <h3 class="text-muted"><?=$obra->nombre?></h3>
     </div>
     <div class="col-md-6 text-end">
+        <?php if (!empty($presupuestos_export)): ?>
+        <div class="btn-group btn-group-lg mb-2 me-1">
+            <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-file-pdf"></i> Exportar presupuesto
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <?php foreach ($presupuestos_export as $pres): ?>
+                <li><h6 class="dropdown-header"><?=htmlspecialchars($pres->folio, ENT_QUOTES, 'UTF-8')?> · <?=htmlspecialchars($pres->tipo ?? 'Presupuesto', ENT_QUOTES, 'UTF-8')?></h6></li>
+                <li><a class="dropdown-item" target="_blank" href="<?=base_url()?>obras/Obras/exportar_pdf_presupuesto/<?= (int) $pres->id?>/presupuesto"><i class="fas fa-file-pdf text-danger"></i> PDF con marca de agua (C1 Presupuesto)</a></li>
+                <li><a class="dropdown-item" target="_blank" href="<?=base_url()?>obras/Obras/exportar_pdf_presupuesto/<?= (int) $pres->id?>/datos_obra"><i class="fas fa-file-pdf text-danger"></i> PDF Datos de Obra Contratada (C8)</a></li>
+                <li><a class="dropdown-item" href="<?=base_url()?>obras/Obras/exportar_excel/<?= (int) $pres->id?>/presupuesto?hojas=<?=$hojas_export?><i class="fas fa-file-excel text-success"></i> Excel con las 8 hojas</a></li>
+                <li><a class="dropdown-item" target="_blank" href="<?=base_url()?>obras/Obras/imprimir_presupuesto/presupuesto/<?= (int) $pres->id ?>"><i class="fas fa-print text-secondary"></i> Vista para imprimir</a></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
         <button class="btn btn-warning btn-lg mb-2" data-bs-toggle="modal" data-bs-target="#modalEditarObra">
             <i class="fas fa-edit"></i> Editar Obra
         </button>
@@ -134,8 +154,12 @@ $this->load->view('obras/partials/vinculo_venta', [
                 <p><strong>Costo Estimado:</strong> $<?=number_format($obra->costo_estimado ?? 0, 2)?></p>
                 <p><strong>Costo Real:</strong> $<?=number_format($obra->costo_real ?? 0, 2)?></p>
                 <hr>
+                <?php if ((float)($obra->costo_real ?? 0) > 0): ?>
                 <p><strong>Utilidad Neta:</strong> <span class="text-success">$<?=number_format($obra->utilidad_neta ?? 0, 2)?></span></p>
                 <p><strong>Margen de Utilidad:</strong> <span class="badge bg-<?=($obra->margen_utilidad ?? 0) > 20 ? 'success' : 'warning'?>" style="font-size: 1.2rem;"><?=number_format($obra->margen_utilidad ?? 0, 2)?>%</span></p>
+                <?php else: ?>
+                <p class="text-muted small mb-0">Sin costo real capturado: el margen no se calcula todavía (evita mostrar 100&nbsp;% ficticio).</p>
+                <?php endif; ?>
                 <hr>
                 <p><strong>Anticipo (<?=$obra->anticipo_porcentaje ?? 0?>%):</strong> $<?=number_format($obra->anticipo_monto ?? 0, 2)?></p>
                 <p><strong>Condiciones de Pago:</strong> <?=$obra->condiciones_pago ?: 'No especificadas'?></p>
@@ -179,6 +203,11 @@ $this->load->view('obras/partials/vinculo_venta', [
                     <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="tab" href="#tabPagos">
                             <i class="fas fa-money-bill-wave"></i> Pagos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tabEntregas" id="linkTabEntregas">
+                            <i class="fas fa-truck"></i> Entregas
                         </a>
                     </li>
                 </ul>
@@ -304,7 +333,13 @@ $this->load->view('obras/partials/vinculo_venta', [
                                     <div class="card">
                                         <div class="card-body text-center">
                                             <?php if(in_array($archivo->extension, ['.jpg', '.jpeg', '.png', '.gif'])): ?>
-                                                <img src="<?=base_url().$archivo->ruta_archivo?>" class="img-fluid mb-2" alt="<?=$archivo->nombre_original?>">
+                                                <?php
+                                                $ruta = $archivo->ruta_archivo;
+                                                if (strpos($ruta, '/') === 0 && strpos($ruta, FCPATH) === 0) {
+                                                    $ruta = substr($ruta, strlen(FCPATH));
+                                                }
+                                                ?>
+                                                <img src="<?=base_url().$ruta?>" class="img-fluid mb-2" alt="<?=$archivo->nombre_original?>">
                                             <?php else: ?>
                                                 <i class="fas fa-file fa-4x mb-2 text-secondary"></i>
                                             <?php endif; ?>
@@ -477,6 +512,56 @@ $this->load->view('obras/partials/vinculo_venta', [
                                 </div>
                             </div>
                         </div>
+
+                        <?php $parcialidades = $obra->parcialidades ?? []; ?>
+                        <h5 class="mb-3 mt-2"><i class="fas fa-calendar-alt"></i> Calendario de cobros (parcialidades)</h5>
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <form id="formParcialidadObra" class="row g-2 align-items-end mb-3">
+                                    <input type="hidden" name="obra_id" value="<?= (int) $obra->id ?>">
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Fecha de cobro</label>
+                                        <input type="date" class="form-control form-control-sm" name="fecha_programada" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Monto</label>
+                                        <input type="number" step="0.01" min="0.01" class="form-control form-control-sm" name="monto" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Nota</label>
+                                        <input type="text" class="form-control form-control-sm" name="notas" placeholder="Ej. 2ª exhibición">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-sm btn-primary w-100">Programar</button>
+                                    </div>
+                                </form>
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead><tr><th>#</th><th>Fecha</th><th class="text-end">Monto</th><th>Estatus</th><th>Nota</th><th></th></tr></thead>
+                                        <tbody>
+                                        <?php if (empty($parcialidades)): ?>
+                                            <tr><td colspan="6" class="text-muted">Sin fechas programadas. Agrega parcialidades para alertas de cobro.</td></tr>
+                                        <?php else: foreach ($parcialidades as $par):
+                                            $badge = $par->estatus === 'Pagada' ? 'success' : ($par->estatus === 'Vencida' ? 'danger' : 'warning');
+                                        ?>
+                                            <tr>
+                                                <td><?= (int) $par->numero ?></td>
+                                                <td><?= htmlspecialchars(date('d/m/Y', strtotime($par->fecha_programada)), ENT_QUOTES, 'UTF-8') ?></td>
+                                                <td class="text-end">$<?= number_format((float) $par->monto, 2) ?></td>
+                                                <td><span class="badge bg-<?= $badge ?>"><?= htmlspecialchars($par->estatus, ENT_QUOTES, 'UTF-8') ?></span></td>
+                                                <td><?= htmlspecialchars($par->notas ?: '—', ENT_QUOTES, 'UTF-8') ?></td>
+                                                <td>
+                                                    <?php if ($par->estatus !== 'Pagada'): ?>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarParcialidadObra(<?= (int) $par->id ?>)">Quitar</button>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                         
                         <!-- Historial de Pagos -->
                         <h5 class="mb-3"><i class="fas fa-history"></i> Historial de Pagos</h5>
@@ -500,6 +585,24 @@ $this->load->view('obras/partials/vinculo_venta', [
                         </div>
                     </div>
 
+
+                    <!-- Tab Entregas -->
+                    <div class="tab-pane fade" id="tabEntregas">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1"><i class="fas fa-truck"></i> Seguimiento de Entregas</h5>
+                                <small class="text-muted">Estado de entrega por producto. Actualizado desde Almacén.</small>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="cargarEntregasObra()">
+                                <i class="fas fa-sync-alt"></i> Actualizar
+                            </button>
+                        </div>
+                        <div id="entregas_loading" class="text-center py-4 text-muted d-none">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Cargando...</p>
+                        </div>
+                        <div id="entregas_productos" class="table-responsive mb-4"></div>
+                        <div id="entregas_historial"></div>
+                    </div><!-- /tabEntregas -->
 
                 </div>
             </div>
@@ -543,6 +646,8 @@ $this->load->view('obras/partials/vinculo_venta', [
                     <input type="hidden" name="obra_id" value="<?=$obra->id?>">
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <label class="form-label">Buscar producto</label>
+                            <input type="text" class="form-control mb-2" id="filtroProductoObra" placeholder="Nombre, código, alias o categoría">
                             <label class="form-label">Producto <span class="text-danger">*</span></label>
                             <select class="form-select" name="producto_id" required>
                                 <option value="">-- Seleccionar Producto --</option>
@@ -935,11 +1040,23 @@ $this->load->view('obras/partials/vinculo_venta', [
 <script>
     // Cargar productos cuando se abre el modal
     document.getElementById('modalAgregarProducto').addEventListener('show.bs.modal', function() {
+        const filtro = document.getElementById('filtroProductoObra');
+        if (filtro) { filtro.value = ''; }
         cargarProductos();
     });
+    let _tProdObra = null;
+    const filtroProd = document.getElementById('filtroProductoObra');
+    if (filtroProd) {
+        filtroProd.addEventListener('keyup', function() {
+            clearTimeout(_tProdObra);
+            const v = this.value;
+            _tProdObra = setTimeout(function() { cargarProductos(v); }, 280);
+        });
+    }
 
-    function cargarProductos() {
-        fetch('<?=base_url()?>obras/Obras/get_productos_ajax')
+    function cargarProductos(q) {
+        const qs = q ? ('?q=' + encodeURIComponent(q)) : '';
+        fetch('<?=base_url()?>obras/Obras/get_productos_ajax' + qs)
         .then(response => response.json())
         .then(data => {
             if(data.success) {
@@ -949,7 +1066,7 @@ $this->load->view('obras/partials/vinculo_venta', [
                 data.productos.forEach(producto => {
                     const option = document.createElement('option');
                     option.value = producto.id;
-                    option.textContent = `${producto.nombre} (${producto.codigo})`;
+                    option.textContent = `${producto.nombre} (${producto.codigo})${producto.alias ? ' · ' + producto.alias : ''}`;
                     option.dataset.unidad = producto.unidad_venta;
                     option.dataset.precio = producto.precio_venta;
                     selectProducto.appendChild(option);
@@ -1158,16 +1275,19 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Éxito', message: data.message });
+                else alert(data.message);
                 $('#modalEditarObra').modal('hide');
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al actualizar la obra');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al actualizar la obra' });
+            else alert('Error al actualizar la obra');
         });
     }
 
@@ -1184,26 +1304,29 @@ $this->load->view('obras/partials/vinculo_venta', [
             if(data.success) {
                 let msg = data.message;
                 if (data.calculo) {
-                    msg += '\n\nm²→kg: ' + parseFloat(data.calculo.m2_efectivo).toFixed(2) + ' m² → ' +
+                    msg += ' | m²→kg: ' + parseFloat(data.calculo.m2_efectivo).toFixed(2) + ' m² → ' +
                         parseFloat(data.calculo.kg_necesarios).toFixed(2) + ' kg → ' + data.calculo.cubetas + ' cubetas';
                 }
                 if (data.insumos && data.insumos.mensaje_resumen) {
-                    msg += '\n\n' + data.insumos.mensaje_resumen;
+                    msg += ' | ' + data.insumos.mensaje_resumen;
                 }
-                alert(msg);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Producto agregado', message: msg });
+                else alert(msg);
                 $('#modalAgregarProducto').modal('hide');
                 location.reload();
             } else {
                 let err = data.message || 'Error al agregar';
                 if (data.requiere_rendimiento) {
-                    err += '\n\nCapture el rendimiento m²/kg en la línea o en Producción > Formulaciones.';
+                    err += ' — Capture el rendimiento m²/kg en la línea o en Producción > Formulaciones.';
                 }
-                alert(err);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: err });
+                else alert(err);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al agregar el producto');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al agregar el producto' });
+            else alert('Error al agregar el producto');
         });
     }
 
@@ -1222,15 +1345,16 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Eliminado', message: data.message });
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al eliminar el producto');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al eliminar el producto' });
         });
     }
 
@@ -1244,16 +1368,17 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Archivo subido', message: data.message });
                 $('#modalSubirArchivo').modal('hide');
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al subir el archivo');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al subir el archivo' });
         });
     }
 
@@ -1272,15 +1397,16 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Eliminado', message: data.message });
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al eliminar el archivo');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al eliminar el archivo' });
         });
     }
 
@@ -1294,16 +1420,17 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Comentario agregado', message: data.message });
                 document.getElementById('formComentario').reset();
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al agregar el comentario');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al agregar el comentario' });
         });
     }
 
@@ -1355,12 +1482,14 @@ $this->load->view('obras/partials/vinculo_venta', [
         const saldoPendiente = <?=$obra->saldo_pendiente ?? 0?>;
         
         if(monto > saldoPendiente) {
-            alert('El monto no puede ser mayor al saldo pendiente');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'warning', module: 'Obras', title: 'Atención', message: 'El monto no puede ser mayor al saldo pendiente' });
+            else alert('El monto no puede ser mayor al saldo pendiente');
             return;
         }
         
         if(monto <= 0) {
-            alert('El monto debe ser mayor a 0');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'warning', module: 'Obras', title: 'Atención', message: 'El monto debe ser mayor a 0' });
+            else alert('El monto debe ser mayor a 0');
             return;
         }
         
@@ -1371,17 +1500,38 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Pago registrado', message: data.message });
                 $('#modalRegistrarPago').modal('hide');
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al registrar el pago');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al registrar el pago' });
         });
+    }
+
+    document.getElementById('formParcialidadObra')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        fd.append('peticion', 'ajax');
+        fetch('<?=base_url()?>obras/Obras/guardar_parcialidad_ajax', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) location.reload();
+                else if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: d.message });
+            });
+    });
+    function eliminarParcialidadObra(id) {
+        const fd = new FormData();
+        fd.append('id', id);
+        fd.append('peticion', 'ajax');
+        fetch('<?=base_url()?>obras/Obras/eliminar_parcialidad_ajax', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => { if (d.success) location.reload(); });
     }
     function verRecibo(pagoId) {
         // Cargar datos del recibo
@@ -1458,15 +1608,16 @@ $this->load->view('obras/partials/vinculo_venta', [
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert(data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Pago cancelado', message: data.message });
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                else alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al cancelar el pago');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al cancelar el pago' });
         });
     }
 
@@ -1510,7 +1661,8 @@ $this->load->view('obras/partials/vinculo_venta', [
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al cargar formulación');
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al cargar formulación' });
+                else alert('Error al cargar formulación');
             });
     }
     function renderFormulacionObra(f) {
@@ -1584,7 +1736,8 @@ $this->load->view('obras/partials/vinculo_venta', [
     }
     function seleccionarFormulacionObra(id_formulacion, version) {
         if (!currentProductoObraId) {
-            alert('Primero agrega el producto a la obra');
+            if (typeof showErpToast === 'function') showErpToast({ type: 'warning', module: 'Obras', title: 'Atención', message: 'Primero agrega el producto a la obra' });
+            else alert('Primero agrega el producto a la obra');
             $('#modalFormulacionObra').modal('hide');
             return;
         }
@@ -1599,16 +1752,19 @@ $this->load->view('obras/partials/vinculo_venta', [
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Formulación V' + version + ' asignada correctamente');
+                    if (typeof showErpToast === 'function') showErpToast({ type: 'success', module: 'Obras', title: 'Formulación asignada', message: 'Formulación V' + version + ' asignada correctamente' });
+                    else alert('Formulación V' + version + ' asignada correctamente');
                     $('#modalFormulacionObra').modal('hide');
                     location.reload();
                 } else {
-                    alert('Error: ' + data.message);
+                    if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: data.message });
+                    else alert('Error: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al actualizar formulación');
+                if (typeof showErpToast === 'function') showErpToast({ type: 'danger', module: 'Obras', title: 'Error', message: 'Error al actualizar formulación' });
+                else alert('Error al actualizar formulación');
             });
     }
     function usarFormulacionActualObra() {
@@ -1616,5 +1772,85 @@ $this->load->view('obras/partials/vinculo_venta', [
             const version = $('#lbl_form_version_obra').text().replace('V', '').split(' ')[0];
             seleccionarFormulacionObra(currentFormulacionActivaIdObra, version);
         }
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Tab Entregas — Seguimiento de entregas por producto
+    // ──────────────────────────────────────────────────────
+    document.getElementById('linkTabEntregas').addEventListener('shown.bs.tab', function() {
+        cargarEntregasObra();
+    });
+
+    function cargarEntregasObra() {
+        const loading = document.getElementById('entregas_loading');
+        loading.classList.remove('d-none');
+        document.getElementById('entregas_productos').innerHTML = '';
+        document.getElementById('entregas_historial').innerHTML = '';
+
+        fetch('<?=base_url()?>obras/Obras/get_entregas_obra_ajax?obra_id=<?=(int)$obra->id?>')
+            .then(r => r.json())
+            .then(res => {
+                loading.classList.add('d-none');
+                if (!res.success) {
+                    document.getElementById('entregas_productos').innerHTML =
+                        '<div class="alert alert-warning">' + escHtmlObra(res.message) + '</div>';
+                    return;
+                }
+
+                const prods = res.entregas.productos || [];
+                if (prods.length === 0) {
+                    document.getElementById('entregas_productos').innerHTML =
+                        '<p class="text-muted text-center py-3">Sin productos en esta obra.</p>';
+                } else {
+                    let html = '<h6 class="mb-2">Estado por producto</h6><table class="table table-sm table-hover table-bordered">';
+                    html += '<thead class="table-dark"><tr><th>Producto</th><th>Sección</th><th>Solicitado</th><th>Entregado</th><th>Pendiente</th><th>Unidad</th><th>% Avance</th></tr></thead><tbody>';
+                    prods.forEach(p => {
+                        const solicitado = parseFloat(p.cantidad_ajustada || p.cantidad_calculada || 0);
+                        const entregado = parseFloat(p.cantidad_entregada || 0);
+                        const pendiente = Math.max(solicitado - entregado, 0);
+                        const pct = solicitado > 0 ? Math.min((entregado / solicitado) * 100, 100) : 0;
+                        const color = pct >= 100 ? 'success' : (pct > 0 ? 'warning' : 'danger');
+                        html += `<tr>
+                            <td><strong>${escHtmlObra(p.producto_nombre)}</strong><br><small class="text-muted">${escHtmlObra(p.producto_codigo)}</small></td>
+                            <td>${escHtmlObra(p.seccion_obra || '—')}</td>
+                            <td class="text-center">${parseFloat(solicitado).toFixed(2)}</td>
+                            <td class="text-center text-success fw-bold">${parseFloat(entregado).toFixed(2)}</td>
+                            <td class="text-center ${pendiente > 0 ? 'text-danger' : 'text-success'}">${parseFloat(pendiente).toFixed(2)}</td>
+                            <td class="text-center">${escHtmlObra(p.unidad)}</td>
+                            <td style="min-width:100px">
+                                <div class="progress" style="height:18px;">
+                                    <div class="progress-bar bg-${color}" role="progressbar" style="width:${pct.toFixed(0)}%">${pct.toFixed(0)}%</div>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    document.getElementById('entregas_productos').innerHTML = html;
+                }
+
+                const hist = res.entregas.historial || [];
+                if (hist.length > 0) {
+                    let hhtml = '<h6 class="mt-3 mb-2">Historial de entregas</h6><table class="table table-sm table-striped">';
+                    hhtml += '<thead class="table-light"><tr><th>Folio</th><th>Fecha</th><th>Producto</th><th>Cantidad</th></tr></thead><tbody>';
+                    hist.forEach(h => {
+                        hhtml += `<tr>
+                            <td><strong>${escHtmlObra(h.folio)}</strong></td>
+                            <td>${new Date(h.fecha_entrega).toLocaleDateString('es-MX')}</td>
+                            <td>${escHtmlObra(h.producto_nombre)}</td>
+                            <td class="text-end">${parseFloat(h.cantidad_entregada).toFixed(2)}</td>
+                        </tr>`;
+                    });
+                    hhtml += '</tbody></table>';
+                    document.getElementById('entregas_historial').innerHTML = hhtml;
+                } else {
+                    document.getElementById('entregas_historial').innerHTML =
+                        '<p class="text-muted small mt-2"><i class="fas fa-info-circle"></i> Aún no hay entregas registradas para esta obra. Las entregas se gestionan desde el módulo <a href="<?=base_url('almacen/Entregas')?>">Almacén &gt; Entregas</a>.</p>';
+                }
+            })
+            .catch(() => {
+                loading.classList.add('d-none');
+                document.getElementById('entregas_productos').innerHTML =
+                    '<div class="alert alert-danger">Error al cargar entregas.</div>';
+            });
     }
 </script>

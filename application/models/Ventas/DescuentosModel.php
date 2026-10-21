@@ -7,6 +7,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class DescuentosModel extends MY_Model {
     
     protected $tableName = 'descuentos';
+
+    // La tabla usa fecha_creacion/fecha_modificacion (no los defaults fecha_alta/fecha_edicion de MY_Model)
+    protected $dateFields = [
+        'created' => 'fecha_creacion',
+        'updated' => 'fecha_modificacion',
+    ];
     
     protected $datatableConfig = [
         'column_order' => ['id', 'nombre', 'tipo_descuento', 'valor', 'estatus'],
@@ -16,6 +22,19 @@ class DescuentosModel extends MY_Model {
     
     public function __construct() {
         parent::__construct();
+    }
+
+    public function crear($data) {
+        return $this->insert($data);
+    }
+
+    public function actualizar($id, $data) {
+        return $this->update($id, $data);
+    }
+
+    public function eliminar($id) {
+        $this->db->where($this->primaryKey, (int) $id);
+        return $this->db->delete($this->tableName);
     }
     
     /**

@@ -1,10 +1,30 @@
 # Guía de Demostración — 10 Jul 2026
 
-> **Verificada en vivo:** 10 Jul 2026 ~08:00 — todas las rutas y AJAX de esta guía responden OK.
+> **Verificada en vivo:** 10 Jul 2026 ~08:00 — todas las rutas y AJAX de esta guía responden OK.  
+> **Última revisión del documento:** 2026-10-06 (evidencia de exportaciones y permisos del 2026-09-29; ver `doc/TODO.md` § SEGUIMIENTO).
 >
 > **Login:** `presentacion@chisa.mx` / `Demo2026!`
 >
 > **URL base:** https://erp.chisarecubrimientos.com.mx
+>
+> ⚠️ **Permisos del login demo (verificado 29-Sep-2026):** `presentacion@chisa.mx` es `admin.id = 9` y
+> tiene 31 permisos activos (Compras, RH, Administradores, simulador) pero **cero privilegios
+> `obras_*`** en la tabla `privilege`. Por eso `/ventas/ObrasVentas`, `/obras/Obras`,
+> `/obras/Obras/detalle/{id}` y los endpoints `exportar_*` responden `307 → /deny` (“Acceso
+> Denegado”), aunque el menú **CRM Ventas → Obras** sí se muestra (`views/layouts/sidebar.php`
+> línea 140 no filtra por permiso). El paso **9** de esta guía requiere un usuario con Obras:
+>
+> | Usuario | Obras | `compras_autorizar_preordenes` · `compras_pagos` · `compras_servicios_recurrentes` | Simulador |
+> |---------|-------|----------------------------------------------------------------------------------|-----------|
+> | `soporte2@especialistasweb.com.mx` (id 1) | ✅ 5/5 | ✅ | ✅ |
+> | `ggeneral@chisarecubrimientos.com.mx` (id 6) | ✅ 5/5 | ❌ (sólo `compras_ordenes_*` + `compras_recepcion`) | ❌ |
+> | `facturacion@chisarecubrimientos.com.mx` (id 7) | ✅ 5/5 | ❌ (idem) | ❌ |
+> | `presentacion@chisa.mx` (id 9) | ❌ 0/5 | ✅ | ✅ |
+>
+> → Para recorrer **toda** la guía en una sola sesión, entra con el **id 1**. Si se prefiere seguir
+> con el login de siempre, falta dar de alta los permisos `obras_*` del id 9 en `privilege`
+> (matriz de permisos / `UserModel`; basta `obras_consult` porque ni `ventas/ObrasVentas` ni
+> `obras/Obras` usan `requiere_permiso()`, sólo validan acceso al módulo `Obras`).
 
 ---
 
@@ -126,6 +146,24 @@
 
 ---
 
+### 9. Obras desde Ventas — exportación con marca de agua (5 min)
+- ⚠️ **Requiere usuario con permisos de Obras** (ver aviso al inicio): con `presentacion@chisa.mx`
+  esta ruta cae en “Acceso Denegado”.
+- **Ruta:** `/ventas/ObrasVentas` → detalle de obra (p. ej. OB-00001) → bloque de pestañas
+- **Qué mostrar:**
+  1. Pestañas **Partidas · Unitarios (APU) · Generadores · Revisión · Documentos** (5.ª pestaña nueva).
+  2. Barra **"Exportar con marca de agua"** (aparece al haber presupuesto): menú **PDF** C1–C8,
+     menú **Excel** C1–C8 + **"Libro con las 8 hojas"**, y **"Vista para imprimir"**.
+  3. El PDF sale **carta, server-side con mPDF**, con la sucursal en diagonal en TODAS las páginas
+     (si `sucursales.texto_marca_agua` está vacío se usa `Sucursal: <nombre>`).
+  4. En Excel la marca va en el **encabezado de página** (`oddHeader`) y el libro de 8 hojas trae
+     una hoja por reporte (C1..C8).
+- **Alternativa módulo Obras:** `/obras/Obras/detalle/{id}` → botón rojo **Exportar presupuesto**.
+- **Verificado:** 8/8 PDF (`%PDF`, 2 págs, ExtGState `/CA 0.08` = watermark) y 8/8 XLSX (`PK`,
+  `oddHeader = Sucursal: Matriz CDMX`) ✅ · libro de 8 hojas = 18.8 KB ✅
+
+---
+
 ## Recordatorios técnicos
 
 | Regla | Detalle |
@@ -139,15 +177,24 @@
 ## Checklist pre-presentación (2 min)
 
 - [ ] Login con `presentacion@chisa.mx`
+- [ ] Login **con permisos de Obras** si vas a mostrar el paso 9 (`soporte2@…` id 1; con `presentacion@chisa.mx` sale “Acceso Denegado”)
 - [ ] Campana sin alertas simuladas viejas (limpiar en simulador)
 - [ ] `PRE-2026-0001` visible como Pendiente
 - [ ] Basura jul-2026 Pendiente (para pago en vivo)
 - [ ] Opcional: ejecutar seeds si quieres OC DEMO1 con adeudo $1,160 completo
+- [ ] Obra con presupuesto activo (hoy `PRES-00001`, obra OB-00001) para la demo de exportación PDF/Excel
+- [ ] Marca de agua: `sucursales.texto_marca_agua` está `NULL` (única sucursal activa = Matriz CDMX) →
+      el PDF sale con el fallback `Sucursal: Matriz CDMX`. **No hay UI para fijar el texto por sucursal**
+      (ver `doc/TODO.md` → seguimiento 29-Sep); si el cliente pregunta, la marca es por sucursal pero
+      hoy se captura directo en BD.
 
 ---
 
 ## Documentación de respaldo
 
-- `AUDITORIA_PRESENTACION_10JUL2026.md` — scorecard técnico
-- `HANDOFF_COMPRAS_PRESENTACION.md` — detalle módulo Compras
-- `PLAN_PRESENTACION_MANANA.md` — plan general actualizado
+> Los antiguos `AUDITORIA_PRESENTACION_10JUL2026.md`, `HANDOFF_COMPRAS_PRESENTACION.md` y
+> `PLAN_PRESENTACION_MANANA.md` **no existen en el repo** (eran referencias muertas). Documentación vigente:
+
+- `doc/MODULOS_ESTADO_CHECKLIST.md` — estado por módulo y cierre
+- `doc/TODO.md` — pendientes, auditoría diagrama y seguimiento
+- `doc/CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` — smoke manual (columna **Aud. P0**)
