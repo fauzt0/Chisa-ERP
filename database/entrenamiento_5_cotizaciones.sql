@@ -1,5 +1,6 @@
 -- Datos de doc/entrenamiento_5 cargados en la base local.
 -- No borra nada. Si el folio ya existe, no lo duplica. No incluye CCO-2026-0416 ni ordenes de venta.
+-- Si la cotizacion ya tiene unas partidas, inserta solo las que falten (por numero de orden).
 -- En el VPS, despues de git pull:
 -- mysql -u USUARIO -p NOMBRE_BD < database/entrenamiento_5_cotizaciones.sql
 SET NAMES utf8mb4;
@@ -1356,322 +1357,322 @@ WHERE NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales WHERE folio='CCO-2026-0
 UPDATE cotizaciones_comerciales h JOIN cotizaciones_comerciales p ON p.folio='CCO-2026-0003' SET h.parent_id=p.id WHERE h.folio='CCO-2026-0415' AND (h.parent_id IS NULL OR h.parent_id=0);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,'PLANTA BAJA','Suministro y aplicación de recubrimiento de prueba','M2',10.00,125.50,1255.00,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0006' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0006' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,'PLANTA BAJA','Zoclo de prueba','ML',4.00,80.00,320.00,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0006' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0006' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.- MORTERO PLASTICO MALLA 350-400 (REND. 16-18M2)',NULL,1.00,1205.56,1205.56,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'2.- ARENA SILICA (REND. 22-25M2)',NULL,1.00,1188.64,1188.64,'Producto',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,3,NULL,'3.- SELLADOR INICIAL (REND. 90M2)',NULL,1.00,907.37,907.37,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=3);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,4,NULL,'4.- PRAIMER GLASS REF. S.M.A (REND. 85M2)',NULL,1.00,1028.18,1028.18,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=4);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,5,NULL,'5.- CHISA GLASS REF. S.M.A (REND. 55-60M2)',NULL,2.00,4797.13,9594.26,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=5);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,6,NULL,'6.- VITROGLASS REF. S.M.A (REND. 180-190M2)',NULL,1.00,5023.57,5023.57,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=6);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,7,NULL,'7.- RODILLO DE FELPA (REND 250M2)',NULL,1.00,76.40,76.40,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=7);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,8,NULL,'8.- BROCHA PARA APLICACIÓN (REND. 350M2)',NULL,1.00,64.20,64.20,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=8);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,9,NULL,'9.- LIJA MEDIANA No. 80 (REND. 20M2)',NULL,10.00,19.30,193.00,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=9);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,10,NULL,'10.- PAPEL PARA PROTECCIÓN (REND. 250M2)',NULL,1.00,740.33,740.33,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=10);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,11,NULL,'11.- MASKING TAPE PARA PROTECCIÓN (REND. 12.5M2)',NULL,4.00,18.20,72.80,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=11);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,12,NULL,'1.- MORTERO PLASTICO MALLA 350-400 (REND. 16-18M2)',NULL,1.00,1205.56,1205.56,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=12);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,13,NULL,'2.- ARENA SILICA (REND. 22-25M2)',NULL,1.00,1188.64,1188.64,'Producto',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=13);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,14,NULL,'3.- SELLADOR INICIAL (REND. 90M2)',NULL,3.00,907.37,2722.11,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=14);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,15,NULL,'4.- PRAIMER GLASS REF. S.M.A (REND. 85M2)',NULL,3.00,1028.18,3084.54,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=15);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,16,NULL,'5.- CHISA GLASS REF. S.M.A (REND. 55-60M2)',NULL,5.00,4797.13,23985.65,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=16);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,17,NULL,'6.- VITROGLASS REF. S.M.A (REND. 180-190M2)',NULL,2.00,5023.57,10047.14,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=17);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,18,NULL,'7.- RODILLO DE FELPA (REND 250M2)',NULL,1.00,76.40,76.40,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=18);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,19,NULL,'8.- BROCHA PARA APLICACIÓN (REND. 350M2)',NULL,2.00,64.20,128.40,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=19);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,20,NULL,'9.- LIJA MEDIANA No. 80 (REND. 20M2)',NULL,23.00,19.30,443.90,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=20);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,21,NULL,'10.- PAPEL PARA PROTECCIÓN (REND. 250M2)',NULL,1.00,740.33,740.33,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=21);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,22,NULL,'11.- MASKING TAPE PARA PROTECCIÓN (REND. 12.5M2)',NULL,20.00,18.20,364.00,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=22);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,23,NULL,'1.- MORTERO PLASTICO MALLA 350-400 (REND. 16-18M2)',NULL,1.00,1205.56,1205.56,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=23);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,24,NULL,'2.- ARENA SILICA (REND. 22-25M2)',NULL,1.00,1188.64,1188.64,'Producto',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=24);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,25,NULL,'3.- SELLADOR INICIAL (REND. 90M2)',NULL,6.00,907.37,5444.22,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=25);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,26,NULL,'4.- PRAIMER GLASS REF. S.M.A (REND. 85M2)',NULL,6.00,1028.18,6169.08,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=26);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,27,NULL,'5.- CHISA GLASS REF. S.M.A (REND. 55-60M2)',NULL,9.00,4797.13,43174.17,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=27);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,28,NULL,'6.- VITROGLASS REF. S.M.A (REND. 180-190M2)',NULL,3.00,5023.57,15070.71,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=28);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,29,NULL,'7.- RODILLO DE FELPA (REND 250M2)',NULL,2.00,76.40,152.80,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=29);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,30,NULL,'8.- BROCHA PARA APLICACIÓN (REND. 350M2)',NULL,2.00,64.20,128.40,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=30);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,31,NULL,'9.- LIJA MEDIANA No. 80 (REND. 20M2)',NULL,25.00,19.30,482.50,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=31);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,32,NULL,'10.- PAPEL PARA PROTECCIÓN (REND. 250M2)',NULL,2.00,740.33,1480.66,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=32);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,33,NULL,'11.- MASKING TAPE PARA PROTECCIÓN (REND. 12.5M2)',NULL,40.00,18.20,728.00,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=33);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,34,NULL,'1.- MORTERO PLASTICO MALLA 350-400 (REND. 16-18M2)',NULL,1.00,1205.56,1205.56,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=34);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,35,NULL,'2.- ARENA SILICA (REND. 22-25M2)',NULL,1.00,1188.64,1188.64,'Producto',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=35);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,36,NULL,'3.- SELLADOR INICIAL (REND. 90M2)',NULL,8.00,907.37,7258.96,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=36);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,37,NULL,'4.- PRAIMER GLASS REF. S.M.A (REND. 85M2)',NULL,9.00,1028.18,9253.62,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=37);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,38,NULL,'5.- CHISA GLASS REF. S.M.A (REND. 55-60M2)',NULL,14.00,4797.13,67159.82,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=38);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,39,NULL,'6.- VITROGLASS REF. S.M.A (REND. 180-190M2)',NULL,4.00,5023.57,20094.28,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=39);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,40,NULL,'7.- RODILLO DE FELPA (REND 250M2)',NULL,3.00,76.40,229.20,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0001' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=40);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'Flexómetro de 5 mts uso Rudo','Pza',14.00,107.33,1502.62,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'Porta herramienta de carnaza de 13 compartimientos','Pza',14.00,2.70,37.80,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,3,NULL,'Cutter profesional para navaja de 18 mm','Pza',14.00,4.05,56.70,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=3);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,4,NULL,'Pinza para Mecánico 10"','pza',14.00,5.40,75.60,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=4);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,5,NULL,'Cortador de vidrio profesional 6" con depósito para aceite','pza',6.00,6.75,40.50,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=5);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,6,NULL,'Destapacaños 15m tipo barreno con manivela','pza',3.00,8.10,24.30,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=6);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,7,NULL,'Cepillo para carpintero estriado 14"','pza',7.00,1280.75,8965.25,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=7);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,8,NULL,'Prensa con ajuste rápido 36"','pza',15.00,10.80,162.00,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=8);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,9,NULL,'Serrucho 24"','pza',6.00,12.15,72.90,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=9);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,10,NULL,'Flota de esponja 12" espesor 12" acabado áspero','pza',6.00,13.50,81.00,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=10);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,11,NULL,'Amarrador de varillas','pza',9.00,14.85,133.65,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=11);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,12,NULL,'Cortador de tubo de cobre 3/16" a 2" cuchilla 18 mm','pza',3.00,16.20,48.60,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=12);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,13,NULL,'Juego de avellanador','Lote',3.00,17.55,52.65,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=13);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,14,NULL,'Arco 12"','pza',6.00,18.90,113.40,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=14);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,15,NULL,'Caja de herramientas con llantas','pza',14.00,20.25,283.50,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=15);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,16,NULL,'Odómetro','pza',3.00,21.60,64.80,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=16);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,17,NULL,'Protector Facial','pza',3.00,22.95,68.85,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=17);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,18,NULL,'Kit Contra Cáidas','Lote',8.00,24.30,194.40,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=18);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,19,NULL,'Rodilleras para piso con Gel','Pza',6.00,25.65,153.90,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=19);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,20,NULL,'Taladro Rotomartillo','Pza',3.00,27.00,81.00,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=20);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,21,NULL,'Taladro Inalámbrico','Pza',3.00,28.35,85.05,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=21);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,22,NULL,'Sierra Circular 1800W','pza',3.00,29.70,89.10,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=22);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,23,NULL,'Sierra Caladora','pza',2.00,31.05,62.10,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=23);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,24,NULL,'Lijadora Orbital','pza',3.00,32.40,97.20,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=24);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,25,NULL,'Esmeril Angular','pza',6.00,33.75,202.50,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=25);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,26,NULL,'Esmeril de Banco','pza',1.00,35.10,35.10,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=26);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,27,NULL,'Juego de desatornilladores combinados','Lote',14.00,36.45,510.30,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=27);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,28,NULL,'Llave Inglesa Ajustable 12" (Perico)','pza',8.00,37.80,302.40,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=28);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,29,NULL,'Llave Inglesa Ajustable 15" (Perico)','pza',8.00,39.15,313.20,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=29);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,30,NULL,'Llave Steelson 14"','pza',6.00,40.50,243.00,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=30);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,31,NULL,'Llave Steelson 18"','pza',6.00,41.85,251.10,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=31);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,32,NULL,'Pinzas de presión de nariz 9"','pza',6.00,43.20,259.20,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=32);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,33,NULL,'Pinza de presión recta 10"','pza',6.00,44.55,267.30,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=33);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,34,NULL,'Juego de Dados y accesorios 3/4"','pza',3.00,45.90,137.70,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=34);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,35,NULL,'-','pza',6.00,47.25,283.50,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=35);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,36,NULL,'Juego de limas con mango bimaterial de 9 piezas','pza',6.00,48.60,291.60,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=36);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,37,NULL,'Escalera de Fibra de vidrio extensión a 6','Pza',3.00,49.95,149.85,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=37);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,38,NULL,'Escalera de Fibra de vidrio extensión a 24','Pza',3.00,51.30,153.90,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=38);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,39,NULL,'Escalera de Fibra de vidrio extensión a 28','Pza',3.00,52.65,157.95,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=39);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,40,NULL,'Escalera Plegable de 3 escalones','Pza',6.00,54.00,324.00,'Servicio',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0002' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=40);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',2603.60,113.95,296680.22,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0003' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0003' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'SUMINISTRO Y APLICACIÓN DE PINTURA ANTIBACTERIAL PROTECT PLUS REF-S.M.A EN MUROS CON APLANADO FINO DE MEZCLA Y/O SUPERFICIE LISA, INCLUYE: LIMPIEZA, LIJADO Y/O REBABEO DE MURO, SEGÚN SEA EL CASO; APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PINTURA ANTIBACTERIAL PROTECT PLUS REF- S.M.A., A MANO CON RODILLO DE FELPA Y/O LLANA METALICA, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, O POR ASPERSIÓN DE AIRE, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE','M2',148.23,155.90,23109.06,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0003' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0003' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON RECUBRIMIENTO EXISTENTE, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACION DE ARENA SILICA MALLA 250-300 A MANO CON LLANA METALICA, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','LOTE DE DETALLES HAS',1.00,27794.64,27794.64,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0004' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0004' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',320.00,189.90,60768.00,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0005' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0005' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'3.-SUMINISTRO Y APLICACIÓN DE ARENA SILICA MALLA 250-300 EN MUROS PREVIAMENTE PREPARADOS CON MORTERO PLASTICO, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE ARENA SILICA MALLA 250-300 APLICADA A MANO CON LLANA METÁLICA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA, NO INCLUYE ANDAMIAJE.','M2',320.00,95.69,30620.80,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0005' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0005' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON RECUBRIMIENTO EXISTENTE, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACION DE ARENA SILICA MALLA 250-300 A MANO CON LLANA METALICA, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','LOTE DE DETALLES HAS',1.00,27794.64,27794.64,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0007' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0007' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON RECUBRIMIENTO EXISTENTE, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACION DE ARENA SILICA MALLA 250-300 A MANO CON LLANA METALICA, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','LOTE DE DETALLES HAS',1.00,27794.64,27794.64,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0008' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0008' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',320.00,189.90,60768.00,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0009' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0009' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'3.-SUMINISTRO Y APLICACIÓN DE ARENA SILICA MALLA 250-300 EN MUROS PREVIAMENTE PREPARADOS CON MORTERO PLASTICO, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE ARENA SILICA MALLA 250-300 APLICADA A MANO CON LLANA METÁLICA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA, NO INCLUYE ANDAMIAJE.','M2',320.00,95.69,30620.80,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0009' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0009' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON RECUBRIMIENTO EXISTENTE, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACION DE ARENA SILICA MALLA 250-300 A MANO CON LLANA METALICA, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','LOTE DE DETALLES HAS',1.00,27794.64,27794.64,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0010' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0010' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',320.00,189.90,60768.00,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0011' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0011' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'3.-SUMINISTRO Y APLICACIÓN DE ARENA SILICA MALLA 250-300 EN MUROS PREVIAMENTE PREPARADOS CON MORTERO PLASTICO, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE ARENA SILICA MALLA 250-300 APLICADA A MANO CON LLANA METÁLICA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA, NO INCLUYE ANDAMIAJE.','M2',320.00,95.69,30620.80,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0011' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0011' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',320.00,189.90,60768.00,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0012' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0012' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'3.-SUMINISTRO Y APLICACIÓN DE ARENA SILICA MALLA 250-300 EN MUROS PREVIAMENTE PREPARADOS CON MORTERO PLASTICO, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE ARENA SILICA MALLA 250-300 APLICADA A MANO CON LLANA METÁLICA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA, NO INCLUYE ANDAMIAJE.','M2',320.00,95.69,30620.80,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0012' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0012' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',320.00,189.90,60768.00,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0013' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0013' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'3.-SUMINISTRO Y APLICACIÓN DE ARENA SILICA MALLA 250-300 EN MUROS PREVIAMENTE PREPARADOS CON MORTERO PLASTICO, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE ARENA SILICA MALLA 250-300 APLICADA A MANO CON LLANA METÁLICA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA, NO INCLUYE ANDAMIAJE.','M2',320.00,95.69,30620.80,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0013' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0013' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',320.00,189.90,60768.00,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0014' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0014' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'3.-SUMINISTRO Y APLICACIÓN DE ARENA SILICA MALLA 250-300 EN MUROS PREVIAMENTE PREPARADOS CON MORTERO PLASTICO, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE ARENA SILICA MALLA 250-300 APLICADA A MANO CON LLANA METÁLICA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA, NO INCLUYE ANDAMIAJE.','M2',320.00,95.69,30620.80,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0014' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0014' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',320.00,189.90,60768.00,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0015' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0015' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'3.-SUMINISTRO Y APLICACIÓN DE ARENA SILICA MALLA 250-300 EN MUROS PREVIAMENTE PREPARADOS CON MORTERO PLASTICO, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE ARENA SILICA MALLA 250-300 APLICADA A MANO CON LLANA METÁLICA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA, NO INCLUYE ANDAMIAJE.','M2',320.00,95.69,30620.80,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0015' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0015' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'1.-SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',320.00,189.90,60768.00,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0016' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0016' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'3.-SUMINISTRO Y APLICACIÓN DE ARENA SILICA MALLA 250-300 EN MUROS PREVIAMENTE PREPARADOS CON MORTERO PLASTICO, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE ARENA SILICA MALLA 250-300 APLICADA A MANO CON LLANA METÁLICA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA, NO INCLUYE ANDAMIAJE.','M2',320.00,95.69,30620.80,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0016' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0016' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,1,NULL,'SUMINISTRO Y APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. EN MUROS CON SUPERFICIE LISA, INCLUYE : LIMPIEZA Y LIJADO DE MURO, APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PRAIMER GLASS APLICADO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE RECUBRIMIENTO CHISA GLASS REF-S.M.A. CON EQUIPO NEUMÁTICO POR ASPERSIÓN DE AIRE, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE.','M2',2603.60,113.95,296680.22,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0417' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0417' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=1);
 INSERT INTO cotizaciones_comerciales_detalle (cotizacion_id,orden,grupo,concepto,unidad,cantidad,precio_unitario,importe,tipo,producto_id)
 SELECT c.id,2,NULL,'SUMINISTRO Y APLICACIÓN DE PINTURA ANTIBACTERIAL PROTECT PLUS REF-S.M.A EN MUROS CON APLANADO FINO DE MEZCLA Y/O SUPERFICIE LISA, INCLUYE: LIMPIEZA, LIJADO Y/O REBABEO DE MURO, SEGÚN SEA EL CASO; APLICACIÓN DE SELLADOR ACRÍLICO 4648 A MANO CON RODILLO DE FELPA Y BROCHA, APLICACIÓN DE PINTURA ANTIBACTERIAL PROTECT PLUS REF- S.M.A., A MANO CON RODILLO DE FELPA Y/O LLANA METALICA, APLICACIÓN DE VITROGLASS ECOLÓGICO CON RODILLO DE FELPA Y BROCHA, O POR ASPERSIÓN DE AIRE, PROTECCIÓN DE SUPERFICIES ADYACENTES CON PAPEL Y MASKING TAPE, LIMPIEZA Y RETIRO DE SOBRANTES PROPIOS HASTA EL LUGAR INDICADO DENTRO DE OBRA, FLETE, Y MANO DE OBRA ESPECIALIZADA, TODO LO ANTERIOR CONSIDERADO HASTA UNA ALTURA DE 2.70 MTS. Y DEMÁS DERIVADOS DEL USO DE HERRAMIENTA. NO INCLUYE ANDAMIAJE','M2',148.23,155.90,23109.06,'Aplicacion',NULL FROM cotizaciones_comerciales c
-WHERE c.folio='CCO-2026-0417' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id);
+WHERE c.folio='CCO-2026-0417' AND NOT EXISTS (SELECT 1 FROM cotizaciones_comerciales_detalle x WHERE x.cotizacion_id=c.id AND x.orden=2);
 INSERT IGNORE INTO conceptos_comerciales (concepto,unidad,precio_referencia,modelo,huella,activo,tipo,producto_id) VALUES ('1.- MORTERO PLASTICO MALLA 350-400 (REND. 16-18M2)',NULL,1205.56,NULL,'b0d9c2b726926625be993fee79b88e0bb10c0c29',1,'Servicio',NULL);
 INSERT IGNORE INTO conceptos_comerciales (concepto,unidad,precio_referencia,modelo,huella,activo,tipo,producto_id) VALUES ('2.- ARENA SILICA (REND. 22-25M2)',NULL,1188.64,NULL,'4b69888565efa3fb88a9b40233a3a953a15218ba',1,'Producto',NULL);
 INSERT IGNORE INTO conceptos_comerciales (concepto,unidad,precio_referencia,modelo,huella,activo,tipo,producto_id) VALUES ('3.- SELLADOR INICIAL (REND. 90M2)',NULL,907.37,NULL,'9f857b9aac378a3237207810345b9a09c4647253',1,'Servicio',NULL);
