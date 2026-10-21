@@ -121,9 +121,7 @@
 									<div class="mb-3">
 										<label class="form-label">Contraseña</label>
 										<input class="form-control form-control-lg" type="password" name="password" placeholder="Ingrese tu contraseña" />
-										<small>
-                      <a href="auth-reset-password-cover.html">Olvidé la contraseña</a>
-                    </small>
+										<small class="text-muted">Si olvidaste la contraseña, solicita el restablecimiento al administrador.</small>
 									</div>
 									<div>
 										<div class="form-check align-items-center">

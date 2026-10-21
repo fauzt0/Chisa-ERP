@@ -43,7 +43,7 @@ if (!$cabecera) {
         <div class="col-md-2">
           <small class="text-muted d-block">¿Activa?</small>
           <?php if (!empty($cabecera->es_activa)): ?>
-            <span class="badge bg-success">Sí (es_activa=1)</span>
+            <span class="badge bg-success">Sí</span>
           <?php else: ?>
             <span class="badge bg-secondary">No</span>
           <?php endif; ?>

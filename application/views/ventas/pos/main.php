@@ -934,7 +934,7 @@ function cargarTopProductos() {
                 <h6 class="card-title text-truncate mb-1" style="font-size: 0.9rem;">${escHtml(p.nombre)}</h6>
                 <p class="text-primary fw-bold mb-0">$${parseFloat(p.precio_venta).toFixed(2)}</p>
                 <small class="${stock <= 0 ? 'text-danger' : 'text-success'}"><i class="fas fa-${stock <= 0 ? 'times' : 'check'}"></i> Stock: ${stockTxt}</small>
-                <div><button type="button" class="btn btn-link btn-sm p-0" onclick="event.stopPropagation(); verVariantes(${p.id})">Variantes</button></div>
+                ${(parseInt(p.tiene_variantes, 10) === 1 || parseInt(p.es_variante, 10) === 1) ? `<div><button type="button" class="btn btn-link btn-sm p-0" onclick="event.stopPropagation(); verVariantes(${p.id})">Variantes</button></div>` : ''}
               </div>
             </div>
           </div>
@@ -1259,7 +1259,7 @@ function renderProductos(productos) {
                       <small class="text-muted fw-bold">${escHtml(p.codigo || p.sku || '')}</small>
                       ${p.categoria_nombre ? `<small class="badge bg-light text-dark ms-1">${escHtml(p.categoria_nombre)}</small>` : ''}
                     </p>
-                    <button type="button" class="btn btn-link btn-sm p-0" onclick="event.stopPropagation(); verVariantes(${p.id})">Variantes</button>
+                    ${(parseInt(p.tiene_variantes, 10) === 1 || parseInt(p.es_variante, 10) === 1) ? `<button type="button" class="btn btn-link btn-sm p-0" onclick="event.stopPropagation(); verVariantes(${p.id})">Variantes</button>` : ''}
                     ${p.alias ? `<p class="card-text mb-1 text-truncate"><small class="text-muted">Alias: ${p.alias}</small></p>` : ''}
                     <p class="card-text mb-1 text-muted" style="font-size: 0.75rem; line-height: 1.2; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                       ${p.descripcion || 'Sin descripción'}
@@ -1268,7 +1268,7 @@ function renderProductos(productos) {
                       <h5 class="text-primary mb-0">$${precio.toFixed(2)}${sinPrecio ? ' <span class="badge bg-danger">Sin precio</span>' : ''}</h5>
                       <div>
                         ${p.tipo_producto === 'Fabricado' ? 
-                          `<button class="btn btn-xs btn-outline-info me-1" onclick="verFormulacion(${p.id}, '${p.nombre.replace(/'/g, "\\'")}')" title="Ver Formulación" style="font-size: 0.7rem; padding: 0.1rem 0.3rem;">
+                          `<button type="button" class="btn btn-xs btn-outline-info me-1" onclick="event.stopPropagation(); verFormulacion(${p.id}, '${p.nombre.replace(/'/g, "\\'")}')" title="Ver Formulación" style="font-size: 0.7rem; padding: 0.1rem 0.3rem;">
                              <i class="fas fa-flask"></i>
                            </button>` : ''
                         }

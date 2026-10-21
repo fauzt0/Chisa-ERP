@@ -8,6 +8,7 @@ class Consulta extends MY_Controller {
     public function __construct() {
         parent::__construct();
         $this->load->model('Ventas/CapturaPosModel');
+        $this->load->model('Ventas/CotizacionesObraModel');
     }
 
     public function index() {

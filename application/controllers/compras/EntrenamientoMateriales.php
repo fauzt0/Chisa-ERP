@@ -228,6 +228,40 @@ class EntrenamientoMateriales extends MY_Controller {
         echo json_encode(['success' => (bool) $ok, 'message' => $ok ? 'Producto actualizado' : 'Sin cambios o error']);
     }
 
+    public function get_fila_ajax() {
+        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $id = (int) ($this->input->get('id') ?: $this->input->post('id'));
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+        $insumo = $this->InsumosModel->get_insumo($id);
+        if (!$insumo) {
+            echo json_encode(['success' => false, 'message' => 'Insumo no encontrado']);
+            return;
+        }
+        $filas = $this->_armar_filas([$insumo]);
+        $fila = $filas[0];
+        $fila['proveedores_raw'] = array_map(function ($p) {
+            return [
+                'proveedor_id'     => (int) $p->proveedor_id,
+                'precio_compra'    => (float) ($p->precio_compra ?? 0),
+                'razon_social'     => $p->razon_social ?? '',
+                'nombre_comercial' => $p->nombre_comercial ?? '',
+                'prov_codigo'      => $p->prov_codigo ?? '',
+            ];
+        }, $fila['proveedores_raw']);
+        $fila['aliases'] = array_map(function ($a) {
+            return [
+                'id'           => (int) $a->id,
+                'alias'        => $a->alias,
+                'tipo'         => $a->tipo,
+                'proveedor_id' => $a->proveedor_id,
+            ];
+        }, $fila['aliases']);
+        echo json_encode(['success' => true, 'fila' => $fila], JSON_UNESCAPED_UNICODE);
+    }
+
     // -----------------------------------------------------------------------
     // Privados
     // -----------------------------------------------------------------------

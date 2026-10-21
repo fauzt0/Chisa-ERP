@@ -1,7 +1,7 @@
 <nav id="sidebar" class="sidebar">
   <?php $this->load->helper('permissions'); ?>
   <div class="sidebar-content js-simplebar">
-    <a class="sidebar-brand" id="sidebar-brand" href="https://aapcoy.org.mx/dashboard" style="background-color: rgba(255, 255, 255, 1); padding: 0rem; padding-top:10px">
+    <a class="sidebar-brand" id="sidebar-brand" href="<?php echo base_url();?>dashboard" style="background-color: rgba(255, 255, 255, 1); padding: 0rem; padding-top:10px">
       <img class="align-middle img-fluid logotype" id="logo" src="<?php echo base_url();?>assets/dist/img/brands/chisa_recubrimientos_logo.jpg" alt="CHISA Logo" width="180px" />
     </a>
 

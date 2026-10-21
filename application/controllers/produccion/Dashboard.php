@@ -73,9 +73,21 @@ class Dashboard extends MY_Controller {
     /**
      * Vista detallada de una orden de venta o obra con productos y formulaciones
      */
-    public function detalle($tipo, $id) {
+    public function detalle($tipo = null, $id = null) {
         setViewSuccess('Detalle cargado correctamente');
-        
+
+        if ($id === null && $tipo !== null && ctype_digit((string) $tipo)) {
+            $id = $tipo;
+            $tipo = 'orden_venta';
+        }
+        if ($tipo === 'venta') {
+            $tipo = 'orden_venta';
+        }
+        if ($tipo === null || $id === null) {
+            show_404();
+            return;
+        }
+
         if($tipo === 'orden_venta' || $tipo === 'orden') {
             // Orden de venta
             $registro = $this->ProduccionModel->get_orden_venta_detalle($id);

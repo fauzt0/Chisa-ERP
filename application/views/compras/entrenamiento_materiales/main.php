@@ -65,22 +65,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
         <?php if (empty($filas)): ?>
           <tr><td colspan="12" class="text-muted py-3">Sin resultados.</td></tr>
         <?php else: ?>
-          <?php foreach ($filas as $f):
-            // JSON compacto para el modal; se escapa en el atributo HTML
-            $json_fila = htmlspecialchars(json_encode([
-              'id'             => $f['id'],
-              'nombre_tecnico' => $f['nombre_tecnico'],
-              'codigo'         => $f['codigo'],
-              'estatus'        => $f['estatus'],
-              'tipo'           => $f['tipo'],
-              'clase_uso'      => $f['clase_uso'],
-              'alias_interno'  => $f['alias_interno'],
-              'producto_id'    => $f['producto_id'],
-              'aliases'        => $f['aliases'],
-              'proveedores_raw'=> $f['proveedores_raw'],
-              'producto'       => $f['producto'],
-            ], JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
-          ?>
+          <?php foreach ($filas as $f): ?>
           <tr>
             <td><?= htmlspecialchars($f['codigo'], ENT_QUOTES, 'UTF-8') ?></td>
             <td><?= htmlspecialchars($f['nombre_tecnico'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -125,7 +110,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
             </td>
             <td>
               <button type="button" class="btn btn-sm btn-outline-primary btn-editar"
-                      data-fila="<?= $json_fila ?>"
+                      data-id="<?= (int)$f['id'] ?>"
                       title="Editar">
                 <i class="fas fa-pencil-alt"></i>
               </button>
@@ -186,7 +171,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
           </div>
         </div>
         <div class="mb-3">
-          <label class="form-label">Alias interno (insumos.alias)</label>
+          <label class="form-label">Alias interno</label>
           <input type="text" class="form-control form-control-sm" id="em_alias_interno"
                  placeholder="Nombre interno de referencia rápida">
         </div>
@@ -383,8 +368,24 @@ $csrf_hash         = $this->security->get_csrf_hash();
 
   /* ---- abrir modal ---- */
   $(document).on('click', '.btn-editar', function () {
-    filaActual = JSON.parse($(this).attr('data-fila'));
-    var f = filaActual;
+    var id = $(this).data('id');
+    if (!id) return;
+    var btn = $(this).prop('disabled', true);
+    $.getJSON(BASE + 'compras/EntrenamientoMateriales/get_fila_ajax', { id: id }, function (res) {
+      btn.prop('disabled', false);
+      if (!res || !res.success || !res.fila) {
+        window.alert(res && res.message ? res.message : 'No se pudo abrir el material');
+        return;
+      }
+      abrirModalFila(res.fila);
+    }).fail(function () {
+      btn.prop('disabled', false);
+      window.alert('No se pudo abrir el material');
+    });
+  });
+
+  function abrirModalFila(f) {
+    filaActual = f;
 
     $('#em_codigo').val(f.codigo);
     $('#em_nombre').val(f.nombre_tecnico);
@@ -426,7 +427,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
     $('#em_alerta').remove();
 
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEM')).show();
-  });
+  }
 
   /* ---- toggle proveedor en alias ---- */
   $('#em_alias_tipo').on('change', function () {

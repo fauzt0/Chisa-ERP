@@ -425,7 +425,7 @@ class VentasModel extends MY_Model {
         $this->db->order_by('productos.nombre', 'ASC');
         $this->db->limit(50);
         
-        return $this->db->get()->result();
+        return $this->_marcar_variantes_pos($this->db->get()->result());
     }
     
     /**
@@ -553,14 +553,54 @@ class VentasModel extends MY_Model {
      * Obtiene los productos más vendidos
      */
     public function get_top_productos($limit = 3) {
-        $this->db->select('p.id, p.nombre, p.codigo, p.precio_venta, p.stock_actual, p.codigo_barras, COUNT(dov.id) as ventas');
+        $this->db->select('p.id, p.nombre, p.codigo, p.precio_venta, p.stock_actual, p.codigo_barras, p.es_variante, p.producto_padre_id, COUNT(dov.id) as ventas');
         $this->db->from('productos p');
         $this->db->join('detalle_orden_venta dov', 'dov.producto_id = p.id', 'left');
         $this->db->where('p.estatus', 'Activo');
         $this->db->group_by('p.id');
         $this->db->order_by('ventas', 'DESC');
         $this->db->limit($limit);
-        return $this->db->get()->result();
+        return $this->_marcar_variantes_pos($this->db->get()->result());
+    }
+
+    /**
+     * Marca productos que tienen familia de variantes (padre o hijos activos).
+     */
+    private function _marcar_variantes_pos($productos) {
+        if (empty($productos) || !$this->db->field_exists('producto_padre_id', 'productos')) {
+            return $productos;
+        }
+        $ids = [];
+        foreach ($productos as $p) {
+            $ids[] = (int) $p->id;
+            if (!empty($p->producto_padre_id)) {
+                $ids[] = (int) $p->producto_padre_id;
+            }
+            $p->tiene_variantes = 0;
+        }
+        $ids = array_values(array_unique(array_filter($ids)));
+        if (!$ids) {
+            return $productos;
+        }
+        $this->db->select('id, producto_padre_id');
+        $this->db->from('productos');
+        $this->db->where('estatus', 'Activo');
+        $this->db->group_start();
+        $this->db->where_in('id', $ids);
+        $this->db->or_where_in('producto_padre_id', $ids);
+        $this->db->group_end();
+        $family = [];
+        foreach ($this->db->get()->result() as $row) {
+            $own = (int) $row->id;
+            $padre = (int) ($row->producto_padre_id ?: $own);
+            $family[$padre][$own] = true;
+            $family[$own][$own] = true;
+        }
+        foreach ($productos as $p) {
+            $raiz = !empty($p->producto_padre_id) ? (int) $p->producto_padre_id : (int) $p->id;
+            $p->tiene_variantes = (isset($family[$raiz]) && count($family[$raiz]) > 1) ? 1 : 0;
+        }
+        return $productos;
     }
 
     /**

@@ -337,7 +337,7 @@ $widget_sizes = [
                   <td class="d-none d-xl-table-cell"><?= date('d/m/Y', strtotime($orden->fecha_creacion)) ?></td>
                   <td><span class="badge bg-<?= $badgeColor ?>"><?= $orden->estatus ?></span></td>
                   <td class="text-end">$<?= number_format($orden->total, 2) ?></td>
-                  <td class="text-end"><a href="<?= base_url() ?>produccion/Dashboard/detalle/<?= $orden->id ?>" class="btn btn-sm btn-light">Ver</a></td>
+                  <td class="text-end"><a href="<?= base_url() ?>produccion/Dashboard/detalle/orden_venta/<?= (int)$orden->id ?>" class="btn btn-sm btn-light">Ver</a></td>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($ultimas_ordenes)): ?>
