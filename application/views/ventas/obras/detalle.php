@@ -23,6 +23,7 @@ switch($obra->estatus) {
         $badgeColor = 'danger';
         break;
 }
+$servicios = $response['servicios_obra'] ?? [];
 ?>
 <!-- Breadcrumb -->
 <div class="row">
@@ -36,6 +37,26 @@ switch($obra->estatus) {
         </nav>
     </div>
 </div>
+<?php if ($servicios): ?>
+<div class="card mb-3">
+  <div class="card-header"><strong>Aplicaciones y servicios de obra</strong> <span class="text-muted small">No son productos de almacén. Salen del catálogo de cotizaciones comerciales.</span></div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Código</th><th>Tipo</th><th>Concepto</th><th>Unidad</th></tr></thead>
+      <tbody>
+      <?php foreach ($servicios as $s): ?>
+        <tr>
+          <td><?=htmlspecialchars($s->codigo)?></td>
+          <td><?=htmlspecialchars($s->seccion ?: $s->tipo)?></td>
+          <td><?=htmlspecialchars(mb_strimwidth($s->descripcion, 0, 140, '…'))?></td>
+          <td><?=htmlspecialchars($s->unidad)?></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+<?php endif; ?>
 <!-- Encabezado -->
 <div class="row mb-4">
     <div class="col-md-8">

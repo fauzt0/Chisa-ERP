@@ -62,6 +62,30 @@ class CotizacionesObraModel extends CI_Model {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             COMMENT='Catálogo editable de conceptos para cotizaciones comerciales de obra'");
         }
+        if ($this->db->table_exists('conceptos_comerciales') && !$this->db->field_exists('tipo', 'conceptos_comerciales')) {
+            $this->db->query("ALTER TABLE conceptos_comerciales ADD COLUMN tipo ENUM('Producto','Aplicacion','Servicio') NOT NULL DEFAULT 'Servicio'");
+            $this->db->query("ALTER TABLE conceptos_comerciales ADD COLUMN producto_id INT(11) NULL");
+        }
+        if ($this->db->table_exists('conceptos_comerciales')) {
+            $col = $this->db->query("SHOW COLUMNS FROM conceptos_comerciales LIKE 'concepto'")->row();
+            if ($col && stripos($col->Type, 'varchar') !== false) {
+                $this->db->query("ALTER TABLE conceptos_comerciales MODIFY concepto TEXT NOT NULL");
+            }
+            $uni = $this->db->query("SHOW COLUMNS FROM conceptos_comerciales LIKE 'unidad'")->row();
+            if ($uni && stripos($uni->Type, 'varchar(20)') !== false) {
+                $this->db->query("ALTER TABLE conceptos_comerciales MODIFY unidad VARCHAR(40) NULL");
+            }
+        }
+        if ($this->db->table_exists('cotizaciones_comerciales_detalle')) {
+            $uni = $this->db->query("SHOW COLUMNS FROM cotizaciones_comerciales_detalle LIKE 'unidad'")->row();
+            if ($uni && stripos($uni->Type, 'varchar(20)') !== false) {
+                $this->db->query("ALTER TABLE cotizaciones_comerciales_detalle MODIFY unidad VARCHAR(40) NULL");
+            }
+        }
+        if ($this->db->table_exists('cotizaciones_comerciales_detalle') && !$this->db->field_exists('tipo', 'cotizaciones_comerciales_detalle')) {
+            $this->db->query("ALTER TABLE cotizaciones_comerciales_detalle ADD COLUMN tipo ENUM('Producto','Aplicacion','Servicio') NOT NULL DEFAULT 'Servicio'");
+            $this->db->query("ALTER TABLE cotizaciones_comerciales_detalle ADD COLUMN producto_id INT(11) NULL");
+        }
     }
 
     public function generar_folio() {
@@ -156,17 +180,30 @@ class CotizacionesObraModel extends CI_Model {
             }
             $cantidad = (float) ($linea['cantidad'] ?? 0);
             $precio = (float) ($linea['precio_unitario'] ?? 0);
+            $tipo = $this->tipo_valido($linea['tipo'] ?? $this->tipo_por_texto($concepto));
+            $producto_id = (int) ($linea['producto_id'] ?? 0) ?: null;
+            if ($tipo !== 'Producto') {
+                $producto_id = null;
+            }
             $this->db->insert('cotizaciones_comerciales_detalle', [
                 'cotizacion_id' => $id,
                 'orden' => $orden++,
                 'grupo' => $this->texto($linea['grupo'] ?? '', 160),
                 'concepto' => $concepto,
-                'unidad' => $this->texto($linea['unidad'] ?? '', 20),
+                'unidad' => $this->texto($linea['unidad'] ?? '', 40),
                 'cantidad' => $cantidad,
                 'precio_unitario' => $precio,
                 'importe' => round($cantidad * $precio, 2),
+                'tipo' => $tipo,
+                'producto_id' => $producto_id,
             ]);
-            $this->upsert_concepto($concepto, $linea['unidad'] ?? '', $precio);
+            $concepto_id = $this->upsert_concepto($concepto, $linea['unidad'] ?? '', $precio, '', $tipo, $producto_id);
+            if ($tipo !== 'Producto' && $concepto_id) {
+                $fila = $this->db->where('id', $concepto_id)->get('conceptos_comerciales')->row();
+                if ($fila) {
+                    $this->publicar_en_obras($fila, $tipo);
+                }
+            }
         }
         $this->db->trans_complete();
         if ($this->db->trans_status() === false) {
@@ -310,9 +347,69 @@ class CotizacionesObraModel extends CI_Model {
                 $resumen['cotizaciones'][] = $cot_id;
             }
         }
+        $vinculo = $this->clasificar_y_vincular_obras();
         $resumen['success'] = true;
+        $resumen['vinculo_obras'] = $vinculo;
         $resumen['message'] = 'Ejemplos leídos: ' . count($files) . ' archivos ligeros';
         return $resumen;
+    }
+
+    /**
+     * Separa productos del catálogo, aplicaciones y servicios externos,
+     * y copia estos dos últimos a conceptos_obra (CRM / obras).
+     */
+    public function clasificar_y_vincular_obras() {
+        $this->asegurar_infraestructura();
+        $this->load->model('Obras/ConceptosObraModel');
+        $this->ConceptosObraModel->asegurar_infraestructura();
+        $productos = $this->db->select('id, nombre')->get('productos')->result();
+        $filas = $this->db->where('activo', 1)->get('conceptos_comerciales')->result();
+        $conteo = ['Producto' => 0, 'Aplicacion' => 0, 'Servicio' => 0, 'en_obras' => 0, 'descartados' => 0];
+        foreach ($filas as $fila) {
+            if ($this->es_texto_legal($fila->concepto)) {
+                $this->db->where('id', $fila->id)->update('conceptos_comerciales', ['activo' => 0]);
+                $codigo = 'CCO' . strtoupper(substr((string) $fila->huella, 0, 8));
+                $this->db->where('codigo', $codigo)->update('conceptos_obra', ['activo' => 0]);
+                $conteo['descartados']++;
+                continue;
+            }
+            $match = $this->producto_coincidente($fila->concepto, $productos);
+            if ($this->es_aplicacion_obra($fila->concepto)) {
+                $tipo = 'Aplicacion';
+                $producto_id = null;
+            } elseif ($match) {
+                $tipo = 'Producto';
+                $producto_id = (int) $match->id;
+            } else {
+                $tipo = 'Servicio';
+                $producto_id = null;
+            }
+            $this->db->where('id', $fila->id)->update('conceptos_comerciales', [
+                'tipo' => $tipo,
+                'producto_id' => $producto_id,
+            ]);
+            $this->db->where('concepto', $fila->concepto)->update('cotizaciones_comerciales_detalle', [
+                'tipo' => $tipo,
+                'producto_id' => $producto_id,
+            ]);
+            $conteo[$tipo]++;
+            if ($tipo !== 'Producto') {
+                $this->publicar_en_obras($fila, $tipo);
+                $conteo['en_obras']++;
+            }
+        }
+        return $conteo;
+    }
+
+    public function listar_servicios_obra($limite = 15) {
+        $this->load->model('Obras/ConceptosObraModel');
+        $this->ConceptosObraModel->asegurar_infraestructura();
+        $this->db->where('activo', 1);
+        $this->db->where_in('tipo', ['Aplicacion', 'Otro']);
+        $this->db->like('codigo', 'CCO', 'after');
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit((int) $limite);
+        return $this->db->get('conceptos_obra')->result();
     }
 
     private function refrescar_cotizacion_ejemplo($existe, array $leido, $cliente_id, $nombre_cliente) {
@@ -354,6 +451,8 @@ class CotizacionesObraModel extends CI_Model {
                 'cantidad' => $cantidad,
                 'precio_unitario' => $precio,
                 'importe' => round($cantidad * $precio, 2),
+                'tipo' => $this->tipo_por_texto($linea['concepto']),
+                'producto_id' => null,
             ]);
             $this->upsert_concepto($linea['concepto'], $linea['unidad'], $precio, $linea['modelo'] ?? '');
         }
@@ -459,8 +558,8 @@ class CotizacionesObraModel extends CI_Model {
                 continue;
             }
             $out['lineas'][] = [
-                'concepto' => mb_substr($concepto, 0, 500),
-                'unidad' => mb_substr(trim($unidad), 0, 20),
+                'concepto' => mb_substr($concepto, 0, 4000),
+                'unidad' => mb_substr(trim($unidad), 0, 40),
                 'cantidad' => $cantidad,
                 'precio_unitario' => $precio,
                 'modelo' => $colModelo ? mb_substr($vals[$colModelo] ?? '', 0, 80) : '',
@@ -531,17 +630,92 @@ class CotizacionesObraModel extends CI_Model {
         return $base !== '' ? $base : $nombre;
     }
 
-    private function upsert_concepto($concepto, $unidad, $precio, $modelo = '') {
+    private function tipo_valido($tipo) {
+        return in_array($tipo, ['Producto', 'Aplicacion', 'Servicio'], true) ? $tipo : 'Servicio';
+    }
+
+    private function es_aplicacion_obra($concepto) {
+        $t = mb_strtoupper((string) $concepto);
+        return (bool) preg_match('/SUMINISTRO\s+Y\s+APLIC|APLICACI[OÓ]N\s+DE|APLICACION\s+DE/u', $t);
+    }
+
+    private function tipo_por_texto($concepto) {
+        return $this->es_aplicacion_obra($concepto) ? 'Aplicacion' : 'Servicio';
+    }
+
+    private function producto_coincidente($concepto, array $productos) {
+        $hay = mb_strtoupper((string) $concepto);
+        $mejor = null;
+        $largo = 0;
+        foreach ($productos as $p) {
+            $nombre = trim((string) $p->nombre);
+            if (mb_strlen($nombre) < 8) {
+                continue;
+            }
+            if (mb_strpos($hay, mb_strtoupper($nombre)) !== false && mb_strlen($nombre) > $largo) {
+                $mejor = $p;
+                $largo = mb_strlen($nombre);
+            }
+        }
+        return $mejor;
+    }
+
+    private function publicar_en_obras($fila, $tipo) {
+        $this->load->model('Obras/ConceptosObraModel');
+        $this->ConceptosObraModel->asegurar_infraestructura();
+        $codigo = 'CCO' . strtoupper(substr((string) $fila->huella, 0, 8));
+        $unidad = mb_strtoupper(trim((string) $fila->unidad));
+        $map = ['M2' => 'M2', 'ML' => 'ML', 'M3' => 'M3', 'PZA' => 'PZA', 'LOTE' => 'LOTE'];
+        $unidad_obra = $map[$unidad] ?? (strpos($unidad, 'LOTE') === 0 ? 'LOTE' : 'SERVICIO');
+        $tipo_obra = $tipo === 'Aplicacion' ? 'Aplicacion' : 'Otro';
+        $seccion = $tipo === 'Aplicacion' ? 'Aplicación' : 'Servicio externo';
+        $existe = $this->ConceptosObraModel->get_por_codigo($codigo);
+        if ($existe) {
+            $this->ConceptosObraModel->actualizar($existe->id, [
+                'descripcion' => $fila->concepto,
+                'unidad' => $unidad_obra,
+                'tipo' => $tipo_obra,
+                'seccion' => $seccion,
+            ]);
+            $this->db->where('id', $existe->id)->update('conceptos_obra', ['activo' => 1]);
+            return false;
+        }
+        $this->ConceptosObraModel->crear([
+            'codigo' => $codigo,
+            'descripcion' => $fila->concepto,
+            'unidad' => $unidad_obra,
+            'tipo' => $tipo_obra,
+            'seccion' => $seccion,
+            'creado_por' => 1,
+        ]);
+        return true;
+    }
+
+    private function upsert_concepto($concepto, $unidad, $precio, $modelo = '', $tipo = null, $producto_id = null) {
         $concepto = trim((string) $concepto);
         $huella = $this->huella($concepto);
         $row = $this->db->where('huella', $huella)->get('conceptos_comerciales')->row();
+        if (!$row && mb_strlen($concepto) > 480) {
+            $viejos = $this->db->like('concepto', mb_substr($concepto, 0, 60), 'after')
+                ->where('activo', 1)->get('conceptos_comerciales')->result();
+            foreach ($viejos as $viejo) {
+                if (mb_strlen($viejo->concepto) >= 480 && mb_strpos($concepto, $viejo->concepto) === 0) {
+                    $row = $viejo;
+                    break;
+                }
+            }
+        }
         $data = [
-            'concepto' => mb_substr($concepto, 0, 500),
-            'unidad' => $this->texto($unidad, 20),
+            'concepto' => mb_substr($concepto, 0, 4000),
+            'unidad' => $this->texto($unidad, 40),
             'precio_referencia' => (float) $precio,
             'modelo' => $this->texto($modelo, 80),
             'activo' => 1,
+            'tipo' => $tipo ? $this->tipo_valido($tipo) : $this->tipo_por_texto($concepto),
         ];
+        if ($producto_id) {
+            $data['producto_id'] = (int) $producto_id;
+        }
         if ($row) {
             if ((float) $precio > 0) {
                 $this->db->where('id', $row->id)->update('conceptos_comerciales', $data);

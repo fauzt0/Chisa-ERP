@@ -160,7 +160,11 @@ class ObrasVentas extends MY_Controller {
         $data['headTitle'] = 'Detalle de Obra';
         $data['breadcrumb'] = 'Inicio > CRM Ventas > Obras > Detalle';
         
-        $data['response'] = ['obra' => $obra];
+        $this->load->model('Ventas/CotizacionesObraModel');
+        $data['response'] = [
+            'obra' => $obra,
+            'servicios_obra' => $this->CotizacionesObraModel->listar_servicios_obra(12),
+        ];
         $data['validate'] = '';
         $data['pageView'] = 'ventas/obras/detalle';
         

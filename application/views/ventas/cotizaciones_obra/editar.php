@@ -96,8 +96,9 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
       <table class="table table-sm mb-0" id="tablaConceptos">
         <thead>
           <tr>
+            <th style="min-width:120px">Tipo</th>
             <th style="min-width:140px">Fase / zona</th>
-            <th style="min-width:280px">Concepto</th>
+            <th style="min-width:280px">Concepto precargado o nuevo</th>
             <th>Unidad</th>
             <th>Cantidad</th>
             <th>Precio U.</th>
@@ -108,7 +109,7 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
         <tbody></tbody>
         <tfoot>
           <tr>
-            <th colspan="5" class="text-end">Total</th>
+            <th colspan="6" class="text-end">Total</th>
             <th id="totalCot">$0.00</th>
             <th></th>
           </tr>
@@ -119,7 +120,7 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
 
   <datalist id="listaConceptos">
     <?php foreach ($conceptos as $con): ?>
-    <option value="<?=htmlspecialchars($con->concepto, ENT_QUOTES)?>" data-unidad="<?=htmlspecialchars($con->unidad ?? '', ENT_QUOTES)?>" data-precio="<?=htmlspecialchars($con->precio_referencia)?>"></option>
+    <option value="<?=htmlspecialchars($con->concepto, ENT_QUOTES)?>" data-unidad="<?=htmlspecialchars($con->unidad ?? '', ENT_QUOTES)?>" data-precio="<?=htmlspecialchars($con->precio_referencia)?>" data-tipo="<?=htmlspecialchars($con->tipo ?? 'Servicio', ENT_QUOTES)?>" data-producto="<?= (int) ($con->producto_id ?? 0) ?>"></option>
     <?php endforeach; ?>
   </datalist>
 
@@ -137,6 +138,8 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
 <script>
 var FILAS = <?= json_encode(array_map(function ($d) {
     return [
+        'tipo' => $d->tipo ?? 'Servicio',
+        'producto_id' => (int) ($d->producto_id ?? 0),
         'grupo' => $d->grupo,
         'concepto' => $d->concepto,
         'unidad' => $d->unidad,
@@ -152,7 +155,12 @@ function money(n) {
 function filaHtml(f) {
   f = f || {};
   var dis = BLOQUEADA ? 'disabled' : '';
-  return '<tr>'
+  var tipos = ['Producto','Aplicacion','Servicio'];
+  var opts = tipos.map(function (t) {
+    return '<option'+(f.tipo===t?' selected':'')+'>'+t+'</option>';
+  }).join('');
+  return '<tr data-producto="'+(f.producto_id||'')+'">'
+    + '<td><select class="form-select form-select-sm t" '+dis+'>'+opts+'</select></td>'
     + '<td><input class="form-control form-control-sm g" '+dis+' value="'+esc(f.grupo||'')+'"></td>'
     + '<td><input class="form-control form-control-sm c" list="listaConceptos" '+dis+' value="'+esc(f.concepto||'')+'"></td>'
     + '<td><input class="form-control form-control-sm u" '+dis+' value="'+esc(f.unidad||'')+'"></td>'
@@ -186,6 +194,8 @@ function lineas() {
   var out = [];
   document.querySelectorAll('#tablaConceptos tbody tr').forEach(function (tr) {
     out.push({
+      tipo: tr.querySelector('.t').value,
+      producto_id: tr.dataset.producto || '',
       grupo: tr.querySelector('.g').value,
       concepto: tr.querySelector('.c').value,
       unidad: tr.querySelector('.u').value,
@@ -202,6 +212,8 @@ document.querySelector('#tablaConceptos').addEventListener('input', function (ev
       var tr = ev.target.closest('tr');
       if (!tr.querySelector('.u').value) tr.querySelector('.u').value = opt.dataset.unidad || '';
       if (!(parseFloat(tr.querySelector('.p').value) > 0)) tr.querySelector('.p').value = opt.dataset.precio || 0;
+      if (opt.dataset.tipo) tr.querySelector('.t').value = opt.dataset.tipo;
+      tr.dataset.producto = opt.dataset.producto || '';
     }
   }
   recalcular();

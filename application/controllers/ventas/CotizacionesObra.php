@@ -58,7 +58,7 @@ class CotizacionesObra extends MY_Controller {
             'cotizacion' => $cot,
             'sucursales' => $this->SucursalesModel->listar_activas(),
             'clientes' => $this->CotizacionesObraModel->buscar_clientes(''),
-            'conceptos' => $this->CotizacionesObraModel->buscar_conceptos('', 40),
+            'conceptos' => $this->CotizacionesObraModel->buscar_conceptos('', 120),
             'obras' => $obras,
             'puede_editar' => $this->puede_editar(),
         ];
@@ -119,7 +119,7 @@ class CotizacionesObra extends MY_Controller {
             return;
         }
         $dir = FCPATH . 'doc/entrenamiento_5/COTIZACIONES 2026';
-        echo json_encode($this->CotizacionesObraModel->sembrar_ejemplos($dir, 5, 200000));
+        echo json_encode($this->CotizacionesObraModel->sembrar_ejemplos($dir, 15, 80000));
     }
 
     public function imprimir($id = 0) {
@@ -166,8 +166,10 @@ class CotizacionesObra extends MY_Controller {
             'tempDir' => $tempDir,
         ]);
         $texto = trim((string) ($marca['texto'] ?? ''));
-        if ($texto !== '') {
-            $mpdf->SetWatermarkText($texto, 0.08);
+        $agua = trim((string) ($marca['logo'] ?? ''));
+        $aguaAbs = $agua !== '' ? FCPATH . ltrim($agua, '/') : '';
+        if ($texto !== '' && !is_file($aguaAbs)) {
+            $mpdf->SetWatermarkText($texto, 0.06);
             $mpdf->showWatermarkText = true;
         }
         $mpdf->WriteHTML($html);
