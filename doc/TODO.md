@@ -1,12 +1,61 @@
 # TODO - Sistema ERP CHISA
 
-**Última actualización:** 2026-10-06  
+**Última actualización:** 2026-10-20  
 **Desarrollador:** Fausto Solano - CHISA Recubrimientos  
-**Rama activa:** `iteracion-5` (base `iteracion-4` `c44a2cd`). **Iteración 4 cerrada 2026-10-06:** su contenido
-está íntegro en `iteracion-5` (`c44a2cd` es ancestro) y la rama `iteracion-4` se retiró (no existía en remoto).
-Commits locales sin push obligatorio.
+**Rama activa:** `iteracion-5` (sincronizada con `origin/iteracion-5`). **Iteración 4 cerrada 2026-10-06**
+(`c44a2cd` es ancestro; rama `iteracion-4` retirada). Tags de archivo: `entrenamiento-3-hist` (`5bd5965`),
+`facturacion-contabilidad-i4` (`45a3374`).
 
-**Handoff:** `ENVIRONMENT=development`. Rama `iteracion-3` **eliminada** (local + `origin`) el 2026-09-24 — seguir solo en `iteracion-5` / `main` (rama `iteracion-4` eliminada el 2026-10-06). No timbrar/cobrar real, no autorizar `PRE-2026-0001`, no tocar `OV-2026-0009`. **Smoke:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (columna **Aud. P0**). **Cumplimiento oferta:** § Auditoría diagrama abajo (reloj/Bixpe excluido).
+**Handoff (leer primero):** tramo actual = **CRM Ventas + Proveedores**. Tarea inmediata: **validar cotizaciones**
+(§ siguiente). No re-ejecutar smokes P0 cerrados. No iniciar reloj checador. No reimplementar Obras/Producción.
+`ENVIRONMENT=development`. No timbrar/cobrar real, no autorizar `PRE-2026-0001`, no tocar `OV-2026-0009`,
+no enviar correo ni WhatsApp real. Smoke histórico: `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md`.
+
+---
+
+## Handoff 2026-10-20 — validar cotizaciones (CRM Ventas + Proveedores)
+
+Solo validar. Sin features nuevas. Prefijo `TEST-QA-`. Cancelar lo creado al terminar. Hay **tres** cosas que no se mezclan:
+
+| Entidad | Dónde vive | Este tramo |
+|---------|------------|------------|
+| Cotización de **venta** | `ordenes_venta.estatus = 'Cotización'` | **Validar** |
+| Cotización de **proveedor** | tablas `cotizaciones` / `cotizaciones_detalle` | **Validar** |
+| Presupuesto de **obra** | `presupuestos_obra` (folio `PRES-`) | Ya cerrado en Fase 5. No reabrir |
+
+### Ya cerrado (no repetir)
+
+- POS **B4–B5** (24-sep-2026): cotización TEST sin preorden; al confirmar, preorden solo si hay faltantes (`OV-2026-0010`, `PRE-2026-0007`).
+- Compras **E1–E8** y tasklist **T1–T7** (28-sep-2026). El flujo OC/recepción no es este tramo.
+- P0 **#1, #2 y #4** cerrados. **#3** Producción tiene evidencia D5–D6; el re-smoke **UI** queda heredado y **fuera** de este tramo.
+- `doc/SMOKE_P0_AGENTE_EJECUTOR.md` está cerrado. No volver a ejecutarlo.
+
+### Pendiente — validar ahora
+
+**A. CRM Ventas** (`/ventas/Clientes`, `/ventas/Ordenes`, `/ventas/Pos`)
+
+- [ ] **A6** del checklist (fila vacía): convertir cotización → venta solo TEST. Camino: `Clientes::convertir_cotizacion_ajax` → `VentasModel::confirmar_orden`. Debe rechazar si el estatus no es `Cotización`.
+- [ ] Pestaña Cotizaciones del cliente: `Clientes::get_historial_cotizaciones_ajax` lista y pagina.
+- [ ] Reenvío `Ordenes::reenviar_cotizacion_ajax`: solo si `estatus = Cotización`; sin email del cliente debe fallar. El método llama `$this->email->send()` — **no** dispararlo contra un cliente real. Anotar si SMTP está configurado o solo queda el link (`Pos/imprimir_recibo_template/{id}/1`). Gap ya marcado ⚠️ en la auditoría.
+- [ ] Anotar folios TEST y cancelarlos (motivo ≥ 10 caracteres).
+
+**B. Proveedores** (`/compras/Cotizaciones`)
+
+El ✅ histórico de “cotizaciones y comparación” **no** tiene smoke fechado: el bloque E del checklist no cubre este módulo.
+
+- [ ] Listado: `Cotizaciones::index` / `lista_ajax`.
+- [ ] `crear_solicitud_ajax`: al menos un proveedor y un insumo con cantidad → grupo (`CotizacionesModel::crear_solicitud`).
+- [ ] `comparar` / `comparar_ajax` de ese grupo.
+- [ ] `marcar_recibida_ajax` con precio de prueba.
+- [ ] `aprobar_ajax`: una sola OC en **Borrador** (`origen_tipo = cotizacion`), la cotización pasa a `Aprobada` y las hermanas del mismo `grupo_folio` en `Pendiente`/`Recibida` pasan a `Rechazada`. Aprobar otra vez la misma debe fallar (“ya fue aprobada”).
+- [ ] `rechazar_ajax` sobre una TEST distinta (no la ya aprobada).
+- [ ] Cancelar la OC TEST generada. No autorizar `PRE-2026-0001`.
+
+**Al cerrar:** marcar estas casillas, la fila A6 del checklist y una nota corta en `MODULOS_ESTADO_CHECKLIST.md` §4 y §6. No crear `.md` nuevos.
+
+### Fuera de este tramo
+
+Reloj checador, Tres Guerras, pasarela, autofactura, UI de marca de agua por sucursal, re-smoke UI de Producción, go-live de Facture.
 
 ---
 
@@ -87,7 +136,7 @@ transacción revertida (§4.4); queda pendiente **solo el re-smoke en UI**.
 - [X] Desarrollo
 - [X] Iteración 3 — cerrada y mergeada a `main` (2026-09-18, `7778571`); rama `iteracion-3` retirada 2026-09-24
 - [X] Iteración 4 — **cerrada 2026-10-06**: 4.0 catálogo, 4.1 Compras ✅ (2026-09-28), 4.2 POS, 4.3 obras (entregas CRM + estatus), 4.8 contabilidad, 4.9 Facture sandbox. Contenido íntegro en `iteracion-5` (`c44a2cd`); rama `iteracion-4` retirada 2026-10-06 (sin rama remota). **Pendiente heredado único:** re-smoke **UI** de Producción (D5–D6), ver §4.4.
-- [ ] Iteración 5 — **activa**: Fase 5 Obras/Presupuestos (V1) sobre `iteracion-5` (ver §Fase 5). Reloj checador (función nueva + auditoría de punches) sigue **no iniciado**.
+- [ ] Iteración 5 — **activa**. Fase 5 Obras/Presupuestos (V1) ya implementada (ver §Fase 5). **Tramo en curso (2026-10-20): validar cotizaciones de CRM Ventas y de proveedores** (handoff arriba). Reloj checador sigue **no iniciado** y no es este tramo.
 - [ ] Despliegue — en producción: `https://erp.chisarecubrimientos.com.mx`
 
 ---
@@ -109,7 +158,9 @@ transacción revertida (§4.4); queda pendiente **solo el re-smoke en UI**.
 
 ---
 
-## 🟢 Iteración 4 — misma área, más detalle (ACTIVA)
+## 🟢 Iteración 4 — misma área, más detalle (CERRADA 2026-10-06)
+
+> Histórico. No reabrir. El trabajo vivo está en el handoff 2026-10-20.
 
 No es un entrenamiento masivo nuevo: **no hay Excel adicional en el repo** y PASO 3 (contenido neto de envases) sigue bloqueado por negocio. I4 afina flujos ya existentes. Prefijo TEST-QA-. No cobrar/timbrar real, no autorizar `PRE-2026-0001`, no tocar OV-2026-0009 (Completada).
 
@@ -312,7 +363,7 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 
 ---
 
-## 🔵 Iteración 5 — Reloj checador (NO ejecutar aún)
+## 🔵 Reloj checador (NO ejecutar; no es el tramo actual)
 
 - [ ] **Nueva función** del reloj (definir alcance con negocio al abrir I5).
 - [ ] **Auditoría solamente** (sin cambiar código ni config): comprobar que el ERP **está recibiendo** checadas reales (`api/ApiReloj`, `rh/RelojChecador`, proxy `doc/iclock/`). Tablas/logs de punches, última sync, dispositivos activos. Documentar hallazgo; no “arreglar” en I4.
@@ -348,9 +399,9 @@ Fuente: [categorías Chisa](https://www.chisarecubrimientos.com.mx/categorias) (
 | `GUIA_PRODUCCION_POST_IMPORTACION.md` | Operación post-import |
 | `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño paquetería |
 | `diagrama_general.png` | Mapa funcional vs oferta |
-| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Smoke manual + columna **Aud. P0** |
-| `SMOKE_P0_AGENTE_EJECUTOR.md` | Instrucciones agente smoke P0 |
-| `MODULOS_ESTADO_CHECKLIST.md` | Estado por módulo + tasklist cierre (prioridad: Compras) |
+| `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` | Smoke histórico I3/I4 (no re-ejecutar bloques ✅) |
+| `SMOKE_P0_AGENTE_EJECUTOR.md` | **Cerrado.** No re-ejecutar |
+| `MODULOS_ESTADO_CHECKLIST.md` | Estado por módulo. Tasklist de Compras **cerrada** |
 | `entrenamiento_4/` | Plantillas de negocio para Obras/Fase 5 (dossier activo; binarios fuera de git) |
 
 Los prompts/checklists operativos y los dossiers de training de I1–I3 (`doc/entrenamiento/`, `doc/entrenamiento_2/`, `doc/entrenamiento_3/`) se retiraron el 2026-10-06 (material histórico ya procesado; recuperable desde git). No re-crearlos.
@@ -568,11 +619,19 @@ entrada) ✔ · R6 `ProduccionModel` intacto ✔ · R7 **git limpio de verdad** 
   (v1.1), `DOCUMENTACION_TECNICA.md` y `demo.md`.
 - **Pendiente heredado de I4 (único):** re-smoke **UI** de Producción D5–D6 (§4.4). El resto de P0 (POS B6,
   Compras, Facture) quedó cerrado con evidencia al 2026-09-28.
-- **En curso:** Fase 5 Obras/Presupuestos (V1) sobre `iteracion-5`. Reloj checador (Iteración 5 funcional)
-  **no iniciado**.
+- **En curso al 2026-10-06:** Fase 5 Obras/Presupuestos (V1). Reloj checador no iniciado.
+  Supersedido el 2026-10-20: el tramo vivo es validar cotizaciones (handoff al inicio).
 
 ### Reglas de repo (entrada 2026-10-06)
 R1 branch `iteracion-5` ✔ · R2 español ✔ · R3 commit por cambio (3 commits) ✔ · R4 sin `Cli_*` ✔ ·
 R5 docs actualizados ✔ · R6 `ProduccionModel` intacto ✔ · R7 **git limpio verificado** ✔ · R8 rama `iteracion-4`
 retirada tras confirmar 0 pendientes locales/remotos ✔.
+
+---
+
+### SEGUIMIENTO 2026-10-20 — tramo CRM Ventas + Proveedores
+
+- Depuración documental de I1–I3 ya en `abff203` (149 archivos, −35 217 líneas). `origin/iteracion-5` = ese commit antes de este handoff. Tags `entrenamiento-3-hist` y `facturacion-contabilidad-i4` en origin.
+- Docs vigentes revisados: ninguno sobraba (reglas, cotización contractual, producción, guías operativas, reloj, alertas y diseño diferido de Tres Guerras siguen en uso). Se corrigieron instrucciones que mandaban al agente a re-ejecutar P0, a cerrar Compras otra vez o a importar dossiers ya borrados.
+- **Siguiente desarrollo:** validar cotizaciones (handoff al inicio de este archivo). Sin código nuevo hasta tener esa evidencia.
 

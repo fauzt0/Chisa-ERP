@@ -1,5 +1,7 @@
 # Checklist manual — módulos iterados (I3/I4)
 
+> **2026-10-20:** registro histórico. No re-ejecutar filas ya en ✅. El tramo vivo de `iteracion-5` es **validar cotizaciones** (CRM A6 + reenvío, y `/compras/Cotizaciones`). Instrucción: `doc/TODO.md` § Handoff 2026-10-20. Los dossiers citados abajo como “basado en” y los de §H **ya no están en disco**.
+
 **Fecha:** 25 ago 2026 · **addendum I4:** 18 sep 2026 · **auditoría diagrama:** 24 sep 2026 · **cierre I4 (smoke UI + PDF OC):** 28 sep 2026 · **cierre I4 confirmado:** 2026-10-06  
 **URL:** `https://erp.chisarecubrimientos.com.mx/`  
 **Login sugerido:** el de presentación vigente (el de QA `soporte2@…` puede estar desactualizado).  
@@ -144,7 +146,9 @@ Detalle largo: `PRUEBAS_MANUALES_RH_2026-08-10.md`.
 > material histórico de iteración 3 ya procesado. Las tablas de abajo se conservan como referencia histórica;
 > los comandos que apuntaban a esos archivos ya no aplican. Recuperable desde git.
 
-### Archivos presentes
+### Archivos (retirados del disco el 2026-10-06; no importar)
+
+> La tabla conserva el inventario que se verificó el 25-ago-2026. Esos xlsx **no están** en `doc/`. Recuperables solo desde git (`entrenamiento-3-hist`). No lanzar `IMPORT_FILE` contra esas rutas.
 
 | Archivo | Tipo | Notas |
 |---------|------|-------|
@@ -170,9 +174,9 @@ Vista actual: `application/views/compras/ordenes_compra/pdf_oc.php` (`/compras/O
 
 **Addendum 28-sep-2026 (agente con shell — evidencia E4 del smoke UI):** las filas anteriores de
 importe con letra, bloque Cliente y attn/correo **ya no son gaps**; el PDF los trae. Lo que queda vivo para
-una iteración de plantilla es: (1) **PDF binario** — `generar_pdf` devuelve HTML imprimible y **no hay librería
-PDF instalada** (`vendor/` sin dompdf/mpdf/tcpdf; `composer.lock` solo las menciona como sugerencias de
-PhpSpreadsheet); (2) cuenta bancaria del proveedor; (3) roles de firma al estilo Excel; (4) opcionalmente
+una iteración de plantilla (fuera del tramo de cotizaciones) es: (1) **PDF binario de la OC** — `OrdenesCompra::generar_pdf`
+sigue devolviendo HTML imprimible. mPDF 8.x **sí está** instalado, pero lo usa la exportación de presupuestos de obra,
+no esta vista; (2) cuenta bancaria del proveedor; (3) roles de firma al estilo Excel; (4) opcionalmente
 columnas sin “código”. No confundir con el flujo operativo, que está cerrado.
 
 **Conclusión OC:** el flujo crear OC → PDF **ya existe** y cubre lo operativo, incluido el importe con letra.

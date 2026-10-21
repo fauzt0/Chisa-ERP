@@ -2,7 +2,8 @@
 
 > **Propósito:** Guía de reglas estrictas y estándares técnicos que todo agente de IA debe seguir al desarrollar, modificar o extender este sistema ERP.
 >
-> **Versión:** 1.1 | **Última actualización:** 2026-10-06
+> **Versión:** 1.1 | **Última actualización:** 2026-10-06  
+> **Tramo vivo (2026-10-20):** no está en este archivo. Léelo en `TODO.md` § Handoff (validar cotizaciones CRM + proveedores). Estas reglas siguen vigentes; no reimplementar Producción ni Obras.
 
 ---
 

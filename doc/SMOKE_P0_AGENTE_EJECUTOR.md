@@ -1,6 +1,9 @@
 # Smoke manual ERP CHISA — P0 auditoría diagrama (agente ejecutor)
 
-**Uso:** abrir este archivo en Cursor Agent (modelo recomendado: **Grok 4.7 High**) y pedir: *“Ejecuta al pie de la letra `doc/SMOKE_P0_AGENTE_EJECUTOR.md`”*.
+> **NO EJECUTAR (2026-10-20).** Ciclo P0 cerrado. Un agente nuevo no debe correr este guion.
+> El trabajo vivo está en `doc/TODO.md` § Handoff 2026-10-20 (validar cotizaciones de CRM Ventas y de proveedores).
+
+**Uso histórico:** este archivo se usó para el smoke P0 de sep-2026. Se conserva como evidencia del procedimiento, no como orden vigente.
 
 **Auditoría posterior:** otro agente/humano contrasta el entregable con código y checklist; no re-ejecutar UI completa salvo dudas puntuales.
 

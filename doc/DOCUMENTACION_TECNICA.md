@@ -10,5 +10,5 @@ existentes.
 |------|-----------|
 | Arquitectura, clases base, patrones y estándares | `../DOCUMENTACION_TECNICA.md` |
 | Reglas estrictas para agentes IA | `REGLAS_TECNICAS.md` |
-| Estado, pendientes y auditoría por módulo | `TODO.md`, `MODULOS_ESTADO_CHECKLIST.md` |
+| Estado, pendientes y auditoría por módulo | `TODO.md` (handoff 2026-10-20: validar cotizaciones), `MODULOS_ESTADO_CHECKLIST.md` |
 | Requerimientos originales | `cotizacion.md` |

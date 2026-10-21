@@ -1,7 +1,8 @@
-# PLAN — Integración API Paquetería Tres Guerras (Iteración 4)
+# PLAN — Integración API Paquetería Tres Guerras (diferido)
 
 > **Fecha de diseño:** 2026-09-07  
-> **Estado:** Diseño aprobado — Implementación pendiente (Iteración 4)  
+> **Estado (2026-10-20):** diseño conservado. **No implementar** en el tramo actual de `iteracion-5`
+> (ese tramo es validar cotizaciones de CRM Ventas y proveedores). No formó parte del cierre de I4.  
 > **Autor:** Agente IA Iteración 3
 
 ---
@@ -124,7 +125,7 @@ Obra/OV → Producción → Almacén > Entregas
 
 ---
 
-## 5. Nuevos componentes a crear en Iteración 4
+## 5. Componentes previstos (diferidos; no crearlos en el tramo de cotizaciones)
 
 | Componente | Tipo | Descripción |
 |------------|------|-------------|
@@ -137,7 +138,7 @@ Obra/OV → Producción → Almacén > Entregas
 
 ---
 
-## 6. Requisitos previos para Iteración 4
+## 6. Requisitos previos (siguen abiertos; no bloquean cotizaciones)
 
 - [ ] Convenio o plan tarifario activo con Tres Guerras
 - [ ] Credenciales API (token) proporcionadas por Tres Guerras

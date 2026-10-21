@@ -1,13 +1,13 @@
 # Checklist de módulos ERP CHISA — estado y cierre
 
-**Fecha:** 2026-10-06 · **Rama:** `iteracion-5`  
-**Leyenda:** ✅ Operativo / verificado · ⚠️ Parcial o falta smoke · ❌ No implementado · ⏸ Fuera de alcance operativo (contrato o I5+) · 🔒 Bloqueado por negocio/datos
+**Fecha:** 2026-10-20 · **Rama:** `iteracion-5`  
+**Leyenda:** ✅ Operativo / verificado · ⚠️ Parcial o falta smoke · ❌ No implementado · ⏸ Fuera de alcance operativo (contrato o posterior) · 🔒 Bloqueado por negocio/datos
 
 **Fuentes:** menú `sidebar.php`, auditoría diagrama 2026-09-24, smoke P0, `doc/TODO.md`.  
-**Smoke detallado:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md`.  
-**Última validación técnica:** 2026-09-28 (agente con shell + BD) — smoke **CLI** (conversión de unidades y validaciones de recepción) y smoke **UI real** con sesión autenticada (E1–E5, E7, E8, T2, T5). Evidencia en §4 y en la tasklist al final.
+**Smoke detallado:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (histórico; no re-ejecutar bloques ✅).  
+**Última validación técnica de Compras:** 2026-09-28. Evidencia en §4 y en la tasklist (cerrada).
 
-**Estado de iteración:** Iteración 4 **cerrada** el 2026-10-06 (contenido íntegro en `iteracion-5`; rama `iteracion-4` retirada). Pendiente heredado único: re-smoke **UI** de Producción (D5–D6).
+**Estado de iteración:** Iteración 4 **cerrada** el 2026-10-06. **Tramo vivo:** validar cotizaciones de CRM Ventas y de proveedores (`doc/TODO.md` § Handoff 2026-10-20). Re-smoke UI de Producción (D5–D6) queda heredado y fuera de este tramo. La tasklist de Compras de abajo está **cerrada**; no copiarla a un agente nuevo.
 
 ---
 
@@ -15,7 +15,7 @@
 
 | Prioridad | Módulo | % operativo* | Por qué |
 |-----------|--------|--------------|---------|
-| **1 (recomendado)** | **Proveedores / Compras** | ~100 % | Cierre técnico **+ smoke UI real** 2026-09-28: conversión de unidades preorden→OC (2000 g → 2 Kg en UI), validaciones de recepción, idempotencia y T5 sin proveedor. Reventa N/A documentado. |
+| **1 (tramo 2026-10-20)** | **Cotizaciones CRM + proveedor** | falta smoke | OC/recepción de Compras ya está en ~100 % (28-sep). Lo que falta validar: convertir/reenviar cotización de venta (A6) y el módulo `/compras/Cotizaciones` (sin smoke fechado). |
 | 2 | **Almacén** | ~92 % | 28-sep-2026: guardas de entrega (stock, pendiente, partida, idempotencia) + smoke A1–A3 en transacción revertida. Faltan QR y Tres Guerras (⏸ diseño). |
 | 3 | **Administración usuarios** | ~92 % | Casi completo; 2FA listo pero ⏸ hasta `ENVIRONMENT=production`. |
 | 4 | **CRM Ventas** (sin contrato) | ~80 % | POS/cotizaciones fuertes; 28-sep: **B6 + B10 re-smoke ✅** (stock PT, insumos intactos, tx revertida) + guardas de idempotencia y consolidación de líneas. ⏸ pasarela, autofactura, calendario CRM. |
@@ -29,7 +29,7 @@ Las filas **⚠️** que siguen en §4 Compras (**enlace OC ↔ factura de compr
 diferidos de alcance, no bloqueos del flujo diario: por eso la fila se cuenta como ~100 % y el criterio del cierre
 es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 
-**Decisión:** usar la **tasklist § Proveedores/Compras** al final de este archivo para el próximo agente.
+**Decisión (2026-10-20):** el próximo agente valida cotizaciones (CRM + proveedores), no reabre esta tasklist. Ver `doc/TODO.md` § Handoff 2026-10-20.
 
 ---
 
@@ -85,7 +85,7 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Insumos CRUD + stock | ✅ | |
 | Proveedores CRUD, documentos | ✅ | |
 | OC crear, PDF, estatus | ✅ | |
-| Cotizaciones proveedor + comparar + tipo cambio | ✅ | |
+| Cotizaciones proveedor + comparar + tipo cambio | ⚠️ | Código existe (`compras/Cotizaciones`, `aprobar()` → OC Borrador). **Sin smoke fechado.** Validar en el tramo 2026-10-20 (`TODO.md` handoff §B). No confundir con `presupuestos_obra` |
 | Preorden → autorizar → OC | ✅ | E5 ✅; sin proveedor → mensaje claro (T5); cantidad convertida a unidad del insumo |
 | Recepción OC → stock insumo | ✅ | Smoke E6 OC-2026-0001 (entrada real 24-sep: BLANCO 0→1 Kg) + smoke CLI 2026-09-28 en **transacción revertida** con las guardas nuevas |
 | Comprobantes pago email/WhatsApp | ✅ | Preview en TEST |
@@ -124,9 +124,9 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Seguimientos (lista) | ✅ | |
 | Descuentos por cliente | ✅ | |
 | Historial ventas/cotizaciones | ✅ | |
-| Convertir cotización → OV | ✅ | |
+| Convertir cotización → OV | ⚠️ | Código: `Clientes::convertir_cotizacion_ajax`. Fila **A6** del checklist vacía. Validar en tramo 2026-10-20 |
 | Órdenes listado, pagos, PDF cotización | ✅ | |
-| Reenvío cotización email | ⚠️ | Link + SMTP a validar |
+| Reenvío cotización email | ⚠️ | `Ordenes::reenviar_cotizacion_ajax` llama `email->send()`. Validar sin SMTP a cliente real |
 | POS sucursales, guard $0, recibo | ✅ | |
 | Cotización sin preorden / confirmar con preorden | ✅ | Smoke B4–B5 |
 | Cobro mostrador sin PT negativo | ✅ | Fix 2026-09-24; **re-smoke B6 ✅ 2026-09-28** (CLI+BD, transacción revertida). Guardas nuevas: idempotencia de entrega + líneas consolidadas por producto |
@@ -215,7 +215,9 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 
 ## Tasklist agente — cerrar **Proveedores/Compras** al 100 % operativo
 
-Copiar este bloque a un chat Agent. Prefijo **TEST-QA-**. No autorizar `PRE-2026-0001`. No enviar correos reales.
+> **Cerrada 2026-09-28. No copiar este bloque a un agente nuevo.** El tramo 2026-10-20 es validar cotizaciones (`TODO.md` handoff), no repetir T1–T7.
+
+Prefijo histórico **TEST-QA-**. No autorizar `PRE-2026-0001`. No enviar correos reales.
 
 ### Objetivo
 Dejar compras listo para operación diaria: preorden → OC → recepción (insumo y reventa si aplica) → stock correcto → checklist E en ✅.
