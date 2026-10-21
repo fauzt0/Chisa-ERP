@@ -4,20 +4,30 @@ Trabajas solo en el navegador, como un administrador. No tienes código ni base 
 
 Copia esta bitácora y anota cada vez que pulses Guardar. Antes de terminar, cada fila debe decir revertido = sí.
 
-| ID | Pantalla | Qué cambiaste | Cómo estaba | Cómo quedó | ¿Revertido? |
-|----|----------|---------------|-------------|------------|-------------|
+
+| ID  | Pantalla | Qué cambiaste | Cómo estaba | Cómo quedó | ¿Revertido? |
+| --- | -------- | ------------- | ----------- | ---------- | ----------- |
+
 
 ## Accesos
 
-| Dato | Valor |
-|------|--------|
-| Dirección | https://erp.chisarecubrimientos.com.mx/ |
-| Usuario | soporte2@especialistasweb.com.mx |
-| Contraseña | Prueba123@ |
 
-Entra por el menú Inicio si la raíz muestra “Welcome to CodeIgniter”. Eso ya se sabe y no es falla de esta ronda.
+| Dato       | Valor                                                                              |
+| ---------- | ---------------------------------------------------------------------------------- |
+| Dirección  | [https://erp.chisarecubrimientos.com.mx/](https://erp.chisarecubrimientos.com.mx/) |
+| Usuario    | [soporte2@especialistasweb.com.mx](mailto:soporte2@especialistasweb.com.mx)        |
+| Contraseña | La vigente en el VPS (Fausto la comparte; puede no ser `Prueba123@`)               |
+
+
+La raíz `/` ya muestra el login del ERP. Si ves “Welcome to CodeIgniter”, el despliegue está desactualizado.
+
+**Descarga del checklist:** en GitHub abre  
+[raw — PRUEBAS_GROKBOT_PRESENTACION.md](https://raw.githubusercontent.com/fauzt0/Chisa-ERP/iteracion-5/doc/PRUEBAS_GROKBOT_PRESENTACION.md)  
+→ clic derecho → Guardar enlace como… (o `Ctrl+S`). En el chat del agente también hay copia en **Artifacts** (`.txt` y `.md`).
 
 ---
+
+
 
 ## 1. Administración
 
@@ -27,11 +37,15 @@ Menú Administradores.
 - Roles: abre y cierra sin guardar.
 - Datos de la empresa: anota si ves letras rotas (por ejemplo “MÃ©xico”). No guardes.
 
+
+
 ## 2. Recursos humanos
 
 - Empleados: abre una ficha y ciérrala sin guardar.
 - Departamentos y nómina: deben abrir.
 - Reloj checador: puedes ver dispositivos o un reporte. No sincronices ni mandes comandos.
+
+
 
 ## 3. Proveedores
 
@@ -42,12 +56,16 @@ Menú Administradores.
   - Guarda. Vuelve a abrir y confirma el cambio.
   - Revierte de inmediato a como estaba (clase “Sin clasificar” si antes estaba vacía, y el alias original). Guarda otra vez.
 
+
+
 ## 4. Obras
 
 - En CRM Ventas → Obras abre `OB-00001` y `OB-00002`.
 - Si el avance no coincide entre el listado de obras y el detalle, anótalo. No lo “corrijas”.
 - `OB-00002` en ejecución sin cuadrilla es una alerta real. No asignes personal.
 - No subas archivos.
+
+
 
 ## 5. CRM
 
@@ -61,12 +79,16 @@ Menú Administradores.
   - Consulta: folio vacío, cliente `ROMACO`, documento cotizaciones de obra, solo aplicaciones. Si pide “escribe un cliente” sin buscar, es falla. Si dice sin resultados, es dato que no está en este servidor.
   - Si existe `CCO-2026-0003`, ábrela: ROMACO, hospital C.H. 57, total $319,789.28. No guardes ni crees versión.
 
+
+
 ## 6. Producción
 
 - Inicio → Ver de una orden reciente: debe abrir el detalle sin error PHP ni rutas del servidor.
 - Fabricación, Productos y fórmulas: abre el listado y cierra. No edites una receta.
 - Historial de formulaciones: debe existir la columna Cliente. Filtra texto `xlsx` si hay filas. Abre BASE-ORGANICA-NARANJA v2 (id 957): Activa = No y Sin cliente. Los kilos no se editan. Si tuviera cliente, quita la asociación y anótalo.
 - Lotes: entra a consultar. No registres consumo.
+
+
 
 ## 7. Campana
 
@@ -82,12 +104,16 @@ Debe cargar. No la vacíes.
 - “Solo stock bajo” vacío cuando el conteo es mayor a cero.
 - Consulta con cliente no llega a buscar.
 
+
+
 ## Antes de salir
 
 1. `RES-002` quedó como al empezar.
 2. La fórmula 957 sigue sin cliente e inactiva.
 3. El ticket del POS está en $0.
 4. No hay archivos subidos por ti.
+
+
 
 ## Reporte
 
