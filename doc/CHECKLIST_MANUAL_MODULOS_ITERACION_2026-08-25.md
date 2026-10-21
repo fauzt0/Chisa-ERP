@@ -40,7 +40,7 @@ Luego en paralelo: **C** (obras), **E1–E4**, **F–G**, **I2–I4**. P0 #5 aut
 | A3 | Exportar Excel / Imprimir | Descarga / vista print | |
 | A4 | Nuevo / editar / offcanvas (Info, Ventas, Cotizaciones) | CRUD OK | |
 | A5 | Plantilla Excel + carga masiva (archivo TEST pequeño) | Inserta/omite duplicados RFC | |
-| A6 | Convertir cotización → venta (solo TEST) | Cambia a confirmada | |
+| A6 | Convertir cotización → venta (solo TEST) | Cambia a confirmada | ✅ 2026-10-21 HTTP: `OV-2026-0006` → `Confirmada` vía `Clientes::convertir_cotizacion_ajax`. Segunda llamada rechazada. Luego cancelada (motivo TEST-QA). |
 
 ---
 

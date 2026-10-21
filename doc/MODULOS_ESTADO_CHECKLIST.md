@@ -15,7 +15,7 @@
 
 | Prioridad | Módulo | % operativo* | Por qué |
 |-----------|--------|--------------|---------|
-| **1 (tramo 2026-10-20)** | **Cotizaciones CRM + proveedor** | falta smoke | OC/recepción de Compras ya está en ~100 % (28-sep). Lo que falta validar: convertir/reenviar cotización de venta (A6) y el módulo `/compras/Cotizaciones` (sin smoke fechado). |
+| **1 (tramo 2026-10-20)** | **Cotizaciones CRM + proveedor** | smoke 2026-10-21 | A6 y `/compras/Cotizaciones` validados por HTTP (folios TEST-QA cancelados). El reenvío por correo sigue ⚠️: no hay SMTP y no se llamó `send()`. |
 | 2 | **Almacén** | ~92 % | 28-sep-2026: guardas de entrega (stock, pendiente, partida, idempotencia) + smoke A1–A3 en transacción revertida. Faltan QR y Tres Guerras (⏸ diseño). |
 | 3 | **Administración usuarios** | ~92 % | Casi completo; 2FA listo pero ⏸ hasta `ENVIRONMENT=production`. |
 | 4 | **CRM Ventas** (sin contrato) | ~80 % | POS/cotizaciones fuertes; 28-sep: **B6 + B10 re-smoke ✅** (stock PT, insumos intactos, tx revertida) + guardas de idempotencia y consolidación de líneas. ⏸ pasarela, autofactura, calendario CRM. |
@@ -85,7 +85,7 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Insumos CRUD + stock | ✅ | |
 | Proveedores CRUD, documentos | ✅ | |
 | OC crear, PDF, estatus | ✅ | |
-| Cotizaciones proveedor + comparar + tipo cambio | ⚠️ | Código existe (`compras/Cotizaciones`, `aprobar()` → OC Borrador). **Sin smoke fechado.** Validar en el tramo 2026-10-20 (`TODO.md` handoff §B). No confundir con `presupuestos_obra` |
+| Cotizaciones proveedor + comparar + tipo cambio | ✅ | Smoke HTTP 2026-10-21 (`TODO.md` handoff §B): grupo `GRP-COT-2026-0001`, `COT-2026-0001` aprobada → `OC-2026-0001` Borrador `origen_tipo=cotizacion` (luego cancelada), hermana `COT-2026-0002` rechazada, segunda aprobación bloqueada, `COT-2026-0003` rechazada aparte. No es `presupuestos_obra` |
 | Preorden → autorizar → OC | ✅ | E5 ✅; sin proveedor → mensaje claro (T5); cantidad convertida a unidad del insumo |
 | Recepción OC → stock insumo | ✅ | Smoke E6 OC-2026-0001 (entrada real 24-sep: BLANCO 0→1 Kg) + smoke CLI 2026-09-28 en **transacción revertida** con las guardas nuevas |
 | Comprobantes pago email/WhatsApp | ✅ | Preview en TEST |
@@ -124,9 +124,9 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Seguimientos (lista) | ✅ | |
 | Descuentos por cliente | ✅ | |
 | Historial ventas/cotizaciones | ✅ | |
-| Convertir cotización → OV | ⚠️ | Código: `Clientes::convertir_cotizacion_ajax`. Fila **A6** del checklist vacía. Validar en tramo 2026-10-20 |
+| Convertir cotización → OV | ✅ | 2026-10-21: `OV-2026-0006` (`TEST-QA-CLI`) → `Confirmada`. Rechaza si ya no es `Cotización`. Cancelada al cerrar. Fila **A6** marcada |
 | Órdenes listado, pagos, PDF cotización | ✅ | |
-| Reenvío cotización email | ⚠️ | `Ordenes::reenviar_cotizacion_ajax` llama `email->send()`. Validar sin SMTP a cliente real |
+| Reenvío cotización email | ⚠️ | Guardas OK (no cotización / sin email) sin llamar `send()`. No hay `config/email.php` (protocolo `mail`). El envío real sigue sin SMTP; el link es `Pos/imprimir_recibo_template/{id}/1` |
 | POS sucursales, guard $0, recibo | ✅ | |
 | Cotización sin preorden / confirmar con preorden | ✅ | Smoke B4–B5 |
 | Cobro mostrador sin PT negativo | ✅ | Fix 2026-09-24; **re-smoke B6 ✅ 2026-09-28** (CLI+BD, transacción revertida). Guardas nuevas: idempotencia de entrega + líneas consolidadas por producto |

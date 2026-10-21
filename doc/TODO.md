@@ -34,24 +34,28 @@ Solo validar. Sin features nuevas. Prefijo `TEST-QA-`. Cancelar lo creado al ter
 
 **A. CRM Ventas** (`/ventas/Clientes`, `/ventas/Ordenes`, `/ventas/Pos`)
 
-- [ ] **A6** del checklist (fila vacía): convertir cotización → venta solo TEST. Camino: `Clientes::convertir_cotizacion_ajax` → `VentasModel::confirmar_orden`. Debe rechazar si el estatus no es `Cotización`.
-- [ ] Pestaña Cotizaciones del cliente: `Clientes::get_historial_cotizaciones_ajax` lista y pagina.
-- [ ] Reenvío `Ordenes::reenviar_cotizacion_ajax`: solo si `estatus = Cotización`; sin email del cliente debe fallar. El método llama `$this->email->send()` — **no** dispararlo contra un cliente real. Anotar si SMTP está configurado o solo queda el link (`Pos/imprimir_recibo_template/{id}/1`). Gap ya marcado ⚠️ en la auditoría.
-- [ ] Anotar folios TEST y cancelarlos (motivo ≥ 10 caracteres).
+- [X] **A6** del checklist: convertir cotización → venta solo TEST. Camino: `Clientes::convertir_cotizacion_ajax` → `VentasModel::confirmar_orden`. **2026-10-21** `OV-2026-0006` pasó a `Confirmada`. Una segunda conversión de la misma OV fue rechazada («La orden no está en estatus Cotización»).
+- [X] Pestaña Cotizaciones del cliente: `Clientes::get_historial_cotizaciones_ajax` lista y pagina. Cliente `TEST-QA-CLI` (id 10): total 2, `limit=1` devolvió `OV-2026-0006` en offset 0 y `OV-2026-0007` en offset 1.
+- [X] Reenvío `Ordenes::reenviar_cotizacion_ajax`: `OV-2026-0006` ya convertida fue rechazada. `OV-2026-0007` (cliente sin email) falló con «El cliente no tiene email registrado» **antes** de `$this->email->send()`. SMTP: no existe `application/config/email.php`; la librería queda en protocolo `mail` y `smtp_host` vacío. **No se invocó `send()`.** El link de consulta sigue siendo `ventas/Pos/imprimir_recibo_template/{id}/1`.
+- [X] Folios TEST cancelados (motivo 34 caracteres, «TEST-QA- cancelacion de validacion»): `OV-2026-0006` y `OV-2026-0007` en `Cancelada`. Cliente `TEST-QA-CLI` quedó `Inactivo`.
 
 **B. Proveedores** (`/compras/Cotizaciones`)
 
 El ✅ histórico de “cotizaciones y comparación” **no** tiene smoke fechado: el bloque E del checklist no cubre este módulo.
 
-- [ ] Listado: `Cotizaciones::index` / `lista_ajax`.
-- [ ] `crear_solicitud_ajax`: al menos un proveedor y un insumo con cantidad → grupo (`CotizacionesModel::crear_solicitud`).
-- [ ] `comparar` / `comparar_ajax` de ese grupo.
-- [ ] `marcar_recibida_ajax` con precio de prueba.
-- [ ] `aprobar_ajax`: una sola OC en **Borrador** (`origen_tipo = cotizacion`), la cotización pasa a `Aprobada` y las hermanas del mismo `grupo_folio` en `Pendiente`/`Recibida` pasan a `Rechazada`. Aprobar otra vez la misma debe fallar (“ya fue aprobada”).
-- [ ] `rechazar_ajax` sobre una TEST distinta (no la ya aprobada).
-- [ ] Cancelar la OC TEST generada. No autorizar `PRE-2026-0001`.
+- [X] Listado: `Cotizaciones::index` HTTP 200 con título «Cotizaciones de Compra»; `lista_ajax` `draw=1` (0 filas antes de sembrar y 2 tras el grupo).
+- [X] `crear_solicitud_ajax`: proveedores 1 y 2, insumo 1, cantidad 2 → grupo `GRP-COT-2026-0001`, folios `COT-2026-0001` y `COT-2026-0002`.
+- [X] `comparar` HTTP 200 (el HTML contiene el grupo) y `comparar_ajax` con 2 proveedores.
+- [X] `marcar_recibida_ajax` con precio 12.50 → línea subtotal 25.00 y estatus `Recibida` en `COT-2026-0001`.
+- [X] `aprobar_ajax`: `OC-2026-0001` en **Borrador**, `origen_tipo=cotizacion`. `COT-2026-0001` quedó `Aprobada` y la hermana `COT-2026-0002` (`Pendiente`) pasó a `Rechazada`. Aprobar otra vez `COT-2026-0001` falló: «La cotización ya fue aprobada».
+- [X] `rechazar_ajax` sobre otra TEST: grupo `GRP-COT-2026-0002`, folio `COT-2026-0003` → `Rechazada`.
+- [X] `OC-2026-0001` cancelada. `PRE-2026-0001` sigue `Pendiente` (no autorizada). `OV-2026-0009` no está en esta base local; ninguna sentencia la tocó.
 
 **Al cerrar:** marcar estas casillas, la fila A6 del checklist y una nota corta en `MODULOS_ESTADO_CHECKLIST.md` §4 y §6. No crear `.md` nuevos.
+
+**Hecho 2026-10-21** en base local (no es producción). Folios de venta `OV-2026-0006` y `OV-2026-0007` cancelados. Compras: `COT-2026-0001` aprobada, `COT-2026-0002` y `COT-2026-0003` rechazadas, `OC-2026-0001` cancelada. `PRE-2026-0001` sigue `Pendiente`.
+
+**Después del smoke (pedido del usuario, no reabre PRES-):** cotización comercial de obra en CRM (`ventas/CotizacionesObra`, folio `CCO-`) y papelería de sucursal (`ventas/Sucursales`: logo, icono, marca de agua, contacto). Catálogo sembrado desde los 5 xlsx más ligeros de `doc/entrenamiento_5/COTIZACIONES 2026`.
 
 ### Fuera de este tramo
 
