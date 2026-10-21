@@ -19,7 +19,7 @@ if (!$cabecera) {
 
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0"><?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?></h1>
-    <a href="<?= base_url('produccion/HistorialFormulaciones?solo_activas=1') ?>" class="btn btn-outline-secondary btn-sm">
+    <a href="<?= base_url('produccion/HistorialFormulaciones') ?>" class="btn btn-outline-secondary btn-sm">
       <i class="fas fa-arrow-left"></i> Volver al historial
     </a>
   </div>

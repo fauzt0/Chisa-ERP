@@ -703,9 +703,9 @@ class ProductosModel extends MY_Model {
         $this->db->select(
             'formulaciones.id, formulaciones.producto_id, formulaciones.cliente_id, '
             . 'formulaciones.version, formulaciones.es_activa, formulaciones.rendimiento_m2_por_kg, '
-            . 'formulaciones.comentarios, formulaciones.nombre_version, formulaciones.fecha_creacion, '
+            .             'formulaciones.comentarios, formulaciones.nombre_version, formulaciones.fecha_creacion, '
             . 'productos.nombre AS producto_nombre, productos.codigo AS producto_codigo, '
-            . 'clientes.razon_social AS cliente_nombre'
+            . 'clientes.razon_social AS cliente_nombre, clientes.nombre_comercial AS cliente_nombre_comercial'
         );
         $this->db->from('formulaciones');
         $this->db->join('productos', 'productos.id = formulaciones.producto_id', 'left');

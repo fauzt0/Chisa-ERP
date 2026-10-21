@@ -445,6 +445,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
     }, function (res) {
       btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar datos generales');
       alerta(res.message, res.success ? 'success' : 'danger');
+      if (res.success) setTimeout(function () { window.location.reload(); }, 700);
     });
   });
 
@@ -487,6 +488,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
     }, function (res) {
       btn.prop('disabled', false);
       alerta(res.message, res.success ? 'success' : 'danger');
+      if (res.success) setTimeout(function () { window.location.reload(); }, 700);
     });
   });
 
@@ -504,6 +506,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
     }, function (res) {
       btn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
       alerta(res.message, res.success ? 'success' : 'danger');
+      if (res.success) setTimeout(function () { window.location.reload(); }, 700);
     });
   });
 
@@ -521,6 +524,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
     }, function (res) {
       btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar producto');
       alerta(res.message, res.success ? 'success' : 'danger');
+      if (res.success) setTimeout(function () { window.location.reload(); }, 700);
     });
   });
 

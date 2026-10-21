@@ -7,8 +7,8 @@
  *     distinguir materia prima de insumo genérico en el entrenamiento.
  *   - Se añade `insumos.clase_uso` ENUM('materia_prima','insumo') como
  *     clasificación propia de esta pantalla, independiente de categoria_id.
- *   - categoria_id = 1 (Resinas) se sugiere como materia_prima, pero el
- *     operador puede sobreescribir libremente.
+ *   - categoria_id = 1 (Materias Primas Químicas) se sugiere como materia_prima;
+ *     Resinas es categoria_id = 4. El operador puede sobreescribir libremente.
  *   - La columna `insumos.tipo` (comprado/fabricado/semielaborado) NO se
  *     modifica desde esta pantalla; es responsabilidad del CRUD de Insumos.
  *
@@ -99,8 +99,9 @@ class EntrenamientoMateriales extends MY_Controller {
         }
 
         $clase_uso_raw = $this->input->post('clase_uso');
+        $tiene_clase_uso = $clase_uso_raw !== null;
         $clase_uso = null;
-        if ($clase_uso_raw !== null && $clase_uso_raw !== '') {
+        if ($tiene_clase_uso && $clase_uso_raw !== '') {
             if (!in_array($clase_uso_raw, ['materia_prima', 'insumo'], true)) {
                 echo json_encode(['success' => false, 'message' => 'clase_uso inválido']); return;
             }
@@ -111,7 +112,7 @@ class EntrenamientoMateriales extends MY_Controller {
 
         $data = ['actualizado_por' => (int) $this->session->userdata('id')];
         if ($estatus    !== null) $data['estatus']    = $estatus;
-        if ($clase_uso  !== null) $data['clase_uso']  = $clase_uso;
+        if ($tiene_clase_uso) $data['clase_uso'] = $clase_uso;
         if ($alias_interno !== null) $data['alias'] = trim($alias_interno);
 
         $ok = $this->InsumosModel->guardar_entrenamiento($id, $data);

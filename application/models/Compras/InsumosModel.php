@@ -425,9 +425,18 @@ class InsumosModel extends MY_Model {
     public function guardar_entrenamiento($id, array $data) {
         $allowed = ['estatus', 'alias', 'clase_uso', 'actualizado_por'];
         $update  = array_intersect_key($data, array_flip($allowed));
-        if (empty($update)) return false;
+        if (empty($update)) {
+            return false;
+        }
         $this->db->where('id', (int) $id);
-        return $this->db->update($this->tableName, $update);
+        if (array_key_exists('clase_uso', $update) && $update['clase_uso'] === null) {
+            $this->db->set('clase_uso', null);
+            unset($update['clase_uso']);
+        }
+        if (!empty($update)) {
+            $this->db->set($update);
+        }
+        return $this->db->update($this->tableName);
     }
 
     /**

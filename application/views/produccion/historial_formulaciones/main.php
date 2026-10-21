@@ -14,7 +14,8 @@ $nombre_cliente = $cliente_sel
     ? ($cliente_sel->razon_social ?: $cliente_sel->nombre_comercial)
     : '';
 
-function em_extraer_archivo($comentarios) {
+if (!function_exists('hf_extraer_archivo')) {
+function hf_extraer_archivo($comentarios) {
     $comentarios = (string) $comentarios;
     if ($comentarios === '') {
         return null;
@@ -24,6 +25,7 @@ function em_extraer_archivo($comentarios) {
         return null;
     }
     return trim(substr($comentarios, $pos));
+}
 }
 ?>
 <div class="container-fluid p-0">
@@ -94,6 +96,7 @@ function em_extraer_archivo($comentarios) {
           <tr>
             <th>Producto</th>
             <th>Versión</th>
+            <th>Cliente</th>
             <th>Activa</th>
             <th>Rendimiento m²/kg</th>
             <th>Comentarios</th>
@@ -103,11 +106,16 @@ function em_extraer_archivo($comentarios) {
         </thead>
         <tbody>
         <?php if (empty($filas)): ?>
-          <tr><td colspan="7" class="text-muted py-3">No hay formulaciones con los filtros actuales.</td></tr>
+          <tr><td colspan="8" class="text-muted py-3">No hay formulaciones con los filtros actuales.</td></tr>
         <?php else: ?>
           <?php foreach ($filas as $row):
-            $archivo = em_extraer_archivo($row->comentarios ?? '');
+            $archivo = hf_extraer_archivo($row->comentarios ?? '');
             $prod = trim(($row->producto_codigo ?? '') . ' ' . ($row->producto_nombre ?? ''));
+            $cliente = trim((string) ($row->cliente_nombre ?: ($row->cliente_nombre_comercial ?? '')));
+            $comentarios_txt = trim((string) ($row->comentarios ?? ''));
+            if (mb_strlen($comentarios_txt) > 140) {
+                $comentarios_txt = mb_substr($comentarios_txt, 0, 140) . '…';
+            }
           ?>
           <tr>
             <td><?= htmlspecialchars($prod, ENT_QUOTES, 'UTF-8') ?></td>
@@ -117,6 +125,7 @@ function em_extraer_archivo($comentarios) {
                 <br><small class="text-muted"><?= htmlspecialchars($row->nombre_version, ENT_QUOTES, 'UTF-8') ?></small>
               <?php endif; ?>
             </td>
+            <td><?= $cliente !== '' ? htmlspecialchars($cliente, ENT_QUOTES, 'UTF-8') : '<span class="text-muted">—</span>' ?></td>
             <td>
               <?php if (!empty($row->es_activa)): ?>
                 <span class="badge bg-success">Sí</span>
@@ -130,8 +139,8 @@ function em_extraer_archivo($comentarios) {
                 : '—' ?>
             </td>
             <td class="small" style="max-width:280px">
-              <?= $row->comentarios
-                ? nl2br(htmlspecialchars($row->comentarios, ENT_QUOTES, 'UTF-8'))
+              <?= $comentarios_txt !== ''
+                ? htmlspecialchars($comentarios_txt, ENT_QUOTES, 'UTF-8')
                 : '<span class="text-muted">—</span>' ?>
             </td>
             <td class="small">
