@@ -19,7 +19,7 @@ if (empty($cartera) && (int) ($cartera_resumen['documentos'] ?? 0) === 0) {
         </span>
       </div>
       <div class="card-body p-0">
-        <div class="table-responsive">
+        <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
           <table class="table table-sm table-hover mb-0">
             <thead class="table-light">
               <tr>

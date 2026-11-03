@@ -35,113 +35,26 @@ $stats = $response['stats'] ?? [];
 
 <?php $this->load->view('ventas/cartera/_panel', ['response' => $response]); ?>
 
-<!-- Estadísticas -->
-<!-- Estadísticas -->
-<div class="row mb-4">
-  <!-- Ventas Hoy -->
-  <div class="col-lg-6 col-xl-3 d-flex">
-    <div class="card flex-fill">
-      <div class="card-header">
-        <h5 class="card-title mb-0 mt-2">Ventas Hoy</h5>
+<div class="card mb-2">
+  <div class="card-body py-2">
+    <div class="row g-2 text-center align-items-center">
+      <div class="col-6 col-md-3 border-end">
+        <div class="small text-muted">Ventas hoy</div>
+        <strong><?=number_format($stats['ventas_hoy'] ?? 0)?></strong>
+        <span class="text-muted small">· $<?=number_format($stats['monto_hoy'] ?? 0, 2)?></span>
       </div>
-      <div class="card-body my-0 pt-0">
-        <div class="row d-flex align-items-center mb-3">
-          <div class="col-8">
-            <h3 class="d-flex align-items-center mb-0 fw-light">
-              <?php echo number_format($stats['ventas_hoy'] ?? 0); ?>
-            </h3>
-          </div>
-          <div class="col-4 text-end">
-             <i class="fas fa-shopping-cart text-success" style="font-size: 1.5rem;"></i>
-          </div>
-        </div>
-        
-        <div class="progress progress-sm shadow-sm mb-1">
-          <div class="progress-bar bg-success" role="progressbar" style="width: <?php echo $stats['porcentaje_hoy'] ?? 0; ?>%"></div>
-        </div>
-        
-        <small class="text-muted">Monto: $<?=number_format($stats['monto_hoy'] ?? 0, 2)?> | vs Ayer: <?php echo $stats['porcentaje_hoy'] ?? 0; ?>%</small>
+      <div class="col-6 col-md-3 border-end">
+        <div class="small text-muted">Ventas del mes</div>
+        <strong><?=number_format($stats['ventas_mes'] ?? 0)?></strong>
+        <span class="text-muted small">· $<?=number_format($stats['monto_mes'] ?? 0, 2)?></span>
       </div>
-    </div>
-  </div>
-
-  <!-- Ventas del Mes -->
-  <div class="col-lg-6 col-xl-3 d-flex">
-    <div class="card flex-fill">
-      <div class="card-header">
-        <h5 class="card-title mb-0 mt-2">Ventas del Mes</h5>
+      <div class="col-6 col-md-3 border-end">
+        <div class="small text-muted">Cotizaciones</div>
+        <strong><?=number_format($stats['cotizaciones_pendientes'] ?? 0)?></strong>
       </div>
-      <div class="card-body my-0 pt-0">
-        <div class="row d-flex align-items-center mb-3">
-          <div class="col-8">
-            <h3 class="d-flex align-items-center mb-0 fw-light">
-              <?php echo number_format($stats['ventas_mes'] ?? 0); ?>
-            </h3>
-          </div>
-          <div class="col-4 text-end">
-             <span class="badge bg-primary"><?php echo $stats['porcentaje_mes'] ?? 0; ?>%</span>
-          </div>
-        </div>
-        
-        <div class="progress progress-sm shadow-sm mb-1">
-          <div class="progress-bar bg-primary" role="progressbar" style="width: <?php echo $stats['porcentaje_mes'] ?? 0; ?>%"></div>
-        </div>
-        
-        <small class="text-muted">Monto: $<?=number_format($stats['monto_mes'] ?? 0, 2)?> | vs Mes Ant.</small>
-      </div>
-    </div>
-  </div>
-
-  <!-- Cotizaciones -->
-  <div class="col-lg-6 col-xl-3 d-flex">
-    <div class="card flex-fill">
-      <div class="card-header">
-        <h5 class="card-title mb-0 mt-2">Cotizaciones</h5>
-      </div>
-      <div class="card-body my-0 pt-0">
-        <div class="row d-flex align-items-center mb-3">
-          <div class="col-8">
-            <h3 class="d-flex align-items-center mb-0 fw-light">
-              <?php echo number_format($stats['cotizaciones_pendientes'] ?? 0); ?>
-            </h3>
-          </div>
-          <div class="col-4 text-end">
-            <i class="fas fa-file-invoice text-warning" style="font-size: 1.5rem;"></i>
-          </div>
-        </div>
-        
-        <div class="progress progress-sm shadow-sm mb-1">
-          <div class="progress-bar bg-warning" role="progressbar" style="width: <?php echo $stats['porcentaje_cotizaciones'] ?? 0; ?>%"></div>
-        </div>
-
-        <small class="text-muted"><?php echo $stats['porcentaje_cotizaciones'] ?? 0; ?>% del total de activas</small>
-      </div>
-    </div>
-  </div>
-
-  <!-- En Preparación -->
-  <div class="col-lg-6 col-xl-3 d-flex">
-    <div class="card flex-fill">
-      <div class="card-header">
-        <h5 class="card-title mb-0 mt-2">En Preparación</h5>
-      </div>
-      <div class="card-body my-0 pt-0">
-        <div class="row d-flex align-items-center mb-3">
-          <div class="col-8">
-            <h3 class="d-flex align-items-center mb-0 fw-light">
-              <?php echo number_format($stats['ordenes_preparacion'] ?? 0); ?>
-            </h3>
-          </div>
-          <div class="col-4 text-end">
-            <i class="fas fa-boxes text-info" style="font-size: 1.5rem;"></i>
-          </div>
-        </div>
-        
-        <div class="progress progress-sm shadow-sm mb-1">
-          <div class="progress-bar bg-info" role="progressbar" style="width: <?php echo $stats['porcentaje_preparacion'] ?? 0; ?>%"></div>
-        </div>
-        
-        <small class="text-muted">Listas para envío (<?php echo $stats['porcentaje_preparacion'] ?? 0; ?>%)</small>
+      <div class="col-6 col-md-3">
+        <div class="small text-muted">En preparación</div>
+        <strong><?=number_format($stats['ordenes_preparacion'] ?? 0)?></strong>
       </div>
     </div>
   </div>

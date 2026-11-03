@@ -42,113 +42,31 @@ $stats = $response['stats'] ?? [];
   </div>
 </div>
 
-<!-- Estadísticas -->
-<!-- Estadísticas -->
-<div class="row mb-4">
-  <!-- Total Clientes -->
-  <div class="col-lg-6 col-xl-3 d-flex">
-    <div class="card flex-fill">
-      <div class="card-header">
-        <h5 class="card-title mb-0 mt-2">Total Clientes</h5>
+<div class="card mb-2">
+  <div class="card-body py-2">
+    <div class="row g-2 text-center align-items-center">
+      <div class="col-6 col-md-3 border-end">
+        <div class="small text-muted">Total clientes</div>
+        <strong><?=number_format($stats['total_clientes'] ?? 0)?></strong>
+        <span class="text-muted small">· nuevos 30d: <?=$stats['nuevos_30_dias'] ?? 0?></span>
       </div>
-      <div class="card-body my-0 pt-0">
-        <div class="row d-flex align-items-center mb-3">
-          <div class="col-8">
-            <h3 class="d-flex align-items-center mb-0 fw-light">
-              <?=number_format($stats['total_clientes'] ?? 0)?>
-            </h3>
-          </div>
-          <div class="col-4 text-end">
-             <i class="fas fa-users text-primary" style="font-size: 1.5rem;"></i>
-          </div>
-        </div>
-        
-        <div class="progress progress-sm shadow-sm mb-1">
-          <div class="progress-bar bg-primary" role="progressbar" style="width: 100%"></div>
-        </div>
-        
-        <small class="text-muted">Nuevos (30d): <?=$stats['nuevos_30_dias'] ?? 0?></small>
+      <div class="col-6 col-md-3 border-end">
+        <div class="small text-muted">Activos</div>
+        <strong><?=number_format($stats['clientes_activos'] ?? 0)?></strong>
+        <span class="badge bg-success"><?=$stats['porcentaje_activos'] ?? 0?>%</span>
       </div>
-    </div>
-  </div>
-
-  <!-- Clientes Activos -->
-  <div class="col-lg-6 col-xl-3 d-flex">
-    <div class="card flex-fill">
-      <div class="card-header">
-        <h5 class="card-title mb-0 mt-2">Clientes Activos</h5>
+      <div class="col-6 col-md-3 border-end">
+        <div class="small text-muted">Regulares</div>
+        <strong><?=number_format($stats['clientes_regulares'] ?? 0)?></strong>
+        <span class="badge bg-info"><?=$stats['porcentaje_regulares'] ?? 0?>%</span>
       </div>
-      <div class="card-body my-0 pt-0">
-        <div class="row d-flex align-items-center mb-3">
-          <div class="col-8">
-            <h3 class="d-flex align-items-center mb-0 fw-light">
-              <?=number_format($stats['clientes_activos'] ?? 0)?>
-            </h3>
-          </div>
-          <div class="col-4 text-end">
-             <span class="badge bg-success"><?=$stats['porcentaje_activos'] ?? 0?>%</span>
-          </div>
-        </div>
-        
-        <div class="progress progress-sm shadow-sm mb-1">
-          <div class="progress-bar bg-success" role="progressbar" style="width: <?=$stats['porcentaje_activos'] ?? 0?>%"></div>
-        </div>
-        
-        <small class="text-muted">Del total de clientes</small>
-      </div>
-    </div>
-  </div>
-
-  <!-- Clientes Regulares -->
-  <div class="col-lg-6 col-xl-3 d-flex">
-    <div class="card flex-fill">
-      <div class="card-header">
-        <h5 class="card-title mb-0 mt-2">Clientes Regulares</h5>
-      </div>
-      <div class="card-body my-0 pt-0">
-        <div class="row d-flex align-items-center mb-3">
-          <div class="col-8">
-            <h3 class="d-flex align-items-center mb-0 fw-light">
-              <?=number_format($stats['clientes_regulares'] ?? 0)?>
-            </h3>
-          </div>
-          <div class="col-4 text-end">
-            <span class="badge bg-info"><?=$stats['porcentaje_regulares'] ?? 0?>%</span>
-          </div>
-        </div>
-        
-        <div class="progress progress-sm shadow-sm mb-1">
-          <div class="progress-bar bg-info" role="progressbar" style="width: <?=$stats['porcentaje_regulares'] ?? 0?>%"></div>
-        </div>
-
-        <small class="text-muted">Tipo regular</small>
-      </div>
-    </div>
-  </div>
-
-  <!-- Con Saldo Pendiente -->
-  <div class="col-lg-6 col-xl-3 d-flex">
-    <div class="card flex-fill">
-      <div class="card-header">
-        <h5 class="card-title mb-0 mt-2">Con Saldo</h5>
-      </div>
-      <div class="card-body my-0 pt-0">
-        <div class="row d-flex align-items-center mb-3">
-          <div class="col-8">
-            <h3 class="d-flex align-items-center mb-0 fw-light">
-              <?=number_format($stats['clientes_con_saldo'] ?? 0)?>
-            </h3>
-          </div>
-          <div class="col-4 text-end">
-            <span class="badge bg-warning"><?=$stats['porcentaje_con_saldo'] ?? 0?>%</span>
-          </div>
-        </div>
-        
-        <div class="progress progress-sm shadow-sm mb-1">
-          <div class="progress-bar bg-warning" role="progressbar" style="width: <?=$stats['porcentaje_con_saldo'] ?? 0?>%"></div>
-        </div>
-        
-        <small class="text-muted">Clientes con deuda<?= isset($stats['monto_cartera']) ? ' · $'.number_format((float)$stats['monto_cartera'], 2) : '' ?></small>
+      <div class="col-6 col-md-3">
+        <div class="small text-muted">Con saldo</div>
+        <strong><?=number_format($stats['clientes_con_saldo'] ?? 0)?></strong>
+        <span class="badge bg-warning"><?=$stats['porcentaje_con_saldo'] ?? 0?>%</span>
+        <?php if (isset($stats['monto_cartera'])): ?>
+          <span class="text-muted small">· $<?=number_format((float)$stats['monto_cartera'], 2)?></span>
+        <?php endif; ?>
       </div>
     </div>
   </div>
