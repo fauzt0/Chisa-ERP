@@ -1,7 +1,7 @@
 <div class="container-fluid p-0">
     <div class="row mb-2 mb-xl-3">
         <div class="col-auto d-none d-sm-block">
-            <h3><strong>Control de Lotes</strong> Historial de Fabricación</h3>
+            <h3><strong>Control de Lotes</strong> · Historial de Fabricación</h3>
         </div>
 
         <div class="col-auto ms-auto text-end mt-n1">
@@ -69,37 +69,58 @@
     </div>
 </div>
 
-<!-- Scripts -->
+<!-- Scripts: la vista se pinta en <main> ANTES de app.js; diferir jQuery/DataTables al load. -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script>
     let tabla;
     let currentLoteId = null;
 
-    $(document).ready(function() {
+    function bootLotesTabla() {
+        if (typeof jQuery === 'undefined' || typeof $.fn.DataTable === 'undefined') {
+            console.error('Lotes: jQuery/DataTables no disponible');
+            return;
+        }
+        if ($.fn.DataTable.isDataTable('#tabla_lotes')) {
+            $('#tabla_lotes').DataTable().destroy();
+        }
         tabla = $('#tabla_lotes').DataTable({
-            "processing": true,
-            "serverSide": true,
-            "order": [[5, "desc"]], // Ajustado por nueva columna Origen
-            "ajax": {
-                "url": "<?=base_url()?>produccion/Lotes/lista_ajax",
-                "type": "POST"
+            processing: true,
+            serverSide: true,
+            order: [[5, "desc"]],
+            ajax: {
+                url: "<?=base_url()?>produccion/Lotes/lista_ajax",
+                type: "POST",
+                error: function(xhr) {
+                    console.error('Lotes lista_ajax', xhr && xhr.responseText);
+                }
             },
-            "language": {
-                "url": "/assets/dist/js/i18n/datatables-es.json"
+            language: {
+                url: "/assets/dist/js/i18n/datatables-es.json"
             },
-            "columns": [
-                { "width": "5%" },
-                { "width": "15%" },
-                { "width": "25%" },
-                { "width": "10%" },
-                { "width": "15%" },
-                { "width": "10%" },
-                { "width": "10%" },
-                { "width": "10%", "orderable": false }
-            ],
-            "responsive": true
+            columns: [
+                { data: 0, width: "5%" },
+                { data: 1, width: "15%" },
+                { data: 2, width: "25%" },
+                { data: 3, width: "10%" },
+                { data: 4, width: "15%" },
+                { data: 5, width: "10%" },
+                { data: 6, width: "10%" },
+                { data: 7, width: "10%", orderable: false }
+            ]
         });
-    });
+    }
+
+    if (typeof jQuery !== 'undefined') {
+        $(document).ready(bootLotesTabla);
+    } else {
+        window.addEventListener('load', function() {
+            if (typeof jQuery !== 'undefined') {
+                $(document).ready(bootLotesTabla);
+            } else {
+                console.error('Lotes: jQuery no cargó');
+            }
+        });
+    }
 
     function verEtiqueta(id, codigo) {
         currentLoteId = id;

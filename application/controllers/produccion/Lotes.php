@@ -54,13 +54,14 @@ class Lotes extends MY_Controller {
      * AJAX para DataTables de lotes
      */
     public function lista_ajax() {
+        $search = $this->input->post('search');
         $filtros = [
-            'search' => $this->input->post('search')['value']
+            'search' => is_array($search) ? trim((string) ($search['value'] ?? '')) : '',
         ];
-        
+
         $list = $this->ProduccionModel->get_lotes_global_datatables($filtros);
         $data = array();
-        $no = $this->input->post('start');
+        $no = (int) $this->input->post('start');
 
         foreach ($list as $lote) {
             $no++;
@@ -102,7 +103,7 @@ class Lotes extends MY_Controller {
         }
 
         $output = array(
-            "draw" => $this->input->post('draw'),
+            "draw" => (int) $this->input->post('draw'),
             "recordsTotal" => $this->ProduccionModel->count_all_lotes(),
             "recordsFiltered" => $this->ProduccionModel->count_filtered_lotes($filtros),
             "data" => $data,

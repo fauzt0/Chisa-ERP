@@ -131,19 +131,30 @@
         });
     }
 
-    $('#btn_consultar').on('click', consultar);
-    $('#input_codigo_barras').on('keypress', function(e) {
-        if (e.which === 13) {
-            e.preventDefault();
+    function bindConsulta() {
+        if (typeof jQuery === 'undefined') {
+            console.error('Consultar lote: jQuery no disponible');
+            return;
+        }
+        $('#btn_consultar').on('click', consultar);
+        $('#input_codigo_barras').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                consultar();
+            }
+        });
+
+        const urlCodigo = new URLSearchParams(window.location.search).get('codigo');
+        if (urlCodigo) {
+            $('#input_codigo_barras').val(urlCodigo);
             consultar();
         }
-    });
+    }
 
-    // Auto-consulta si viene ?codigo= en URL (deep link desde escáner externo)
-    const urlCodigo = new URLSearchParams(window.location.search).get('codigo');
-    if (urlCodigo) {
-        $('#input_codigo_barras').val(urlCodigo);
-        consultar();
+    if (typeof jQuery !== 'undefined') {
+        $(document).ready(bindConsulta);
+    } else {
+        window.addEventListener('load', bindConsulta);
     }
 })();
 </script>

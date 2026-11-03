@@ -706,8 +706,10 @@ class ProduccionModel extends CI_Model {
         }
 
         if (!empty($_POST['order'])) {
-            $columns = ['lp.id', 'lp.codigo_barras', 'p.nombre', 'lp.cantidad', 'lp.fecha_produccion', 'lp.estatus'];
-            $this->db->order_by($columns[(int)$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
+            $columns = ['lp.id', 'lp.codigo_barras', 'p.nombre', 'lp.cantidad', 'lp.fecha_produccion', 'lp.fecha_produccion', 'lp.estatus'];
+            $col = (int) ($_POST['order']['0']['column'] ?? 5);
+            $dir = strtolower((string) ($_POST['order']['0']['dir'] ?? 'desc')) === 'asc' ? 'ASC' : 'DESC';
+            $this->db->order_by($columns[$col] ?? 'lp.fecha_produccion', $dir);
         } else {
             $this->db->order_by('lp.fecha_produccion', 'DESC');
         }
