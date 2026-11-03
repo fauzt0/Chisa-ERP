@@ -194,6 +194,9 @@
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Nomina">
                     Nómina
                 </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/ExpedienteRaya">
+                    Expediente lista de raya
+                </a></li>
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Reportes">
                     Reportes Financieros
                 </a></li>
