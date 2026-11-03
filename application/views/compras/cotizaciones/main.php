@@ -260,7 +260,7 @@ function initTablaCotizaciones() {
     },
     order: [[3, 'desc']],
     pageLength: 25,
-    language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+    language: { url: '/assets/dist/js/i18n/datatables-es.json' },
     columns: [
       { data: 0 }, { data: 1 }, { data: 2 }, { data: 3 }, { data: 4 },
       { data: 5 }, { data: 6 }, { data: 7, orderable: false }

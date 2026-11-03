@@ -555,7 +555,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
         pageLength: 25,
         order: [[1, 'asc']],
         columnDefs: [{ orderable: false, targets: -1 }],
-        language: { url: 'https://cdn.datatables.net/plug-ins/1.10.24/i18n/Spanish.json' }
+        language: { url: '/assets/dist/js/i18n/datatables-es.json' }
       });
     }
   });

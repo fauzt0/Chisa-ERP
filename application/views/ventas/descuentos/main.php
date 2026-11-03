@@ -135,7 +135,7 @@ function inicializarDataTable() {
       { data: 4, orderable: false }
     ],
     language: {
-      url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+      url: '/assets/dist/js/i18n/datatables-es.json'
     },
     order: [[0, 'asc']]
   });

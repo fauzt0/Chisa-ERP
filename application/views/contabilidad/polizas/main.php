@@ -312,7 +312,7 @@ function initPolizas() {
     ],
     order: [[2, 'desc']],
     language: {
-      url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+      url: '/assets/dist/js/i18n/datatables-es.json'
     },
     pageLength: 25
   });

@@ -85,7 +85,7 @@
                 "type": "POST"
             },
             "language": {
-                "url": "https://cdn.datatables.net/plug-ins/1.10.24/i18n/Spanish.json"
+                "url": "/assets/dist/js/i18n/datatables-es.json"
             },
             "columns": [
                 { "width": "5%" },

@@ -147,7 +147,7 @@
                 { data: 4 }, { data: 5 }, { data: 6 }, { data: 7 },
                 { data: 8 }, { data: 9 }, { data: 10, visible: false }
             ],
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
+            language: { url: '/assets/dist/js/i18n/datatables-es.json' },
             dom: 'Bfrtip',
             buttons: [
                 { extend: 'excelHtml5', text: '<i class="fas fa-file-excel"></i> Excel', className: 'btn btn-success btn-sm' },

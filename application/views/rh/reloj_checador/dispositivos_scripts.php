@@ -65,7 +65,7 @@
                 { data: 5, orderable: false }
             ],
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                url: '/assets/dist/js/i18n/datatables-es.json'
             },
             dom: 'Bfrtip',
             buttons: [

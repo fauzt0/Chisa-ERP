@@ -218,7 +218,7 @@ function initInventario() {
   if($('#tabla-insumos').length) {
     $('#tabla-insumos').DataTable({
       language: {
-        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+        url: '/assets/dist/js/i18n/datatables-es.json'
       },
       order: [[5, 'desc']], // Ordenar por nivel de stock
       pageLength: 25
@@ -228,7 +228,7 @@ function initInventario() {
   if($('#tabla-productos').length) {
     $('#tabla-productos').DataTable({
       language: {
-        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+        url: '/assets/dist/js/i18n/datatables-es.json'
       },
       order: [[5, 'desc']], // Ordenar por nivel de stock
       pageLength: 25

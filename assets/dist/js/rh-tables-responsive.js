@@ -5,7 +5,7 @@
 (function (window) {
   'use strict';
 
-  var LANG = { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json' };
+  var LANG = { url: '/assets/dist/js/i18n/datatables-es.json' };
   var SKIP = '.cal-month-table, table.conceptos, .rh-skip-responsive';
 
   function applyDtDefaults() {
