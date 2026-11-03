@@ -30,7 +30,7 @@ $etiquetas = [
       </div>
     <?php endforeach; ?>
     <div class="col-auto">
-      <a class="btn btn-sm btn-outline-dark" href="<?= base_url('contabilidad/ExpedienteRaya') ?>">Todos</a>
+      <a class="btn btn-sm btn-outline-light" href="<?= base_url('contabilidad/ExpedienteRaya') ?>">Todos</a>
     </div>
   </div>
 

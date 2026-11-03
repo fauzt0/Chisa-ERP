@@ -1078,7 +1078,7 @@
             <button type="button" class="btn btn-sm btn-outline-danger active filter-chip" data-status="Cancelada" onclick="toggleFiltroStatus(this)" title="Mostrar/ocultar Canceladas">
               <span class="chip-dot bg-danger"></span> Cancelada
             </button>
-            <button type="button" class="btn btn-sm btn-outline-dark active filter-chip" data-status="_sin_nomina" onclick="toggleFiltroStatus(this)" title="Mostrar/ocultar periodos sin nómina">
+            <button type="button" class="btn btn-sm btn-outline-light active filter-chip" data-status="_sin_nomina" onclick="toggleFiltroStatus(this)" title="Mostrar/ocultar periodos sin nómina">
               <span class="chip-dot bg-dark"></span> Sin nómina
             </button>
             <button type="button" class="btn btn-sm btn-link text-decoration-none ms-2" onclick="resetFiltrosStatus()" title="Mostrar todos">
