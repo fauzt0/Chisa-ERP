@@ -1883,4 +1883,96 @@ class ProductosModel extends MY_Model {
 
         return implode(' ', $partes);
     }
+
+    public function asegurar_entrenamiento_producto() {
+        if (!$this->db->field_exists('entrenamiento_revisado', 'productos')) {
+            $this->db->query("ALTER TABLE productos ADD COLUMN entrenamiento_revisado TINYINT(1) NOT NULL DEFAULT 0");
+        }
+        if (!$this->db->field_exists('entrenamiento_principal_ok', 'productos')) {
+            $this->db->query("ALTER TABLE productos ADD COLUMN entrenamiento_principal_ok TINYINT(1) NOT NULL DEFAULT 0");
+        }
+    }
+
+    public function listar_entrenamiento($filtros = []) {
+        $this->asegurar_entrenamiento_producto();
+        $this->db->select('productos.id, productos.codigo, productos.nombre, productos.estatus, productos.tipo_producto, productos.precio_venta, productos.entrenamiento_revisado, productos.entrenamiento_principal_ok, productos.unidad_venta');
+        $this->db->from('productos');
+        if (!empty($filtros['busqueda'])) {
+            $q = $filtros['busqueda'];
+            $this->db->group_start();
+            $this->db->like('productos.codigo', $q);
+            $this->db->or_like('productos.nombre', $q);
+            $this->db->or_like('productos.alias', $q);
+            $this->db->group_end();
+        }
+        if (isset($filtros['entrenamiento_revisado']) && $filtros['entrenamiento_revisado'] !== '') {
+            $this->db->where('productos.entrenamiento_revisado', (int) $filtros['entrenamiento_revisado']);
+        }
+        $this->db->order_by('productos.nombre', 'ASC');
+        $this->db->limit(400);
+        return $this->db->get()->result();
+    }
+
+    public function guardar_entrenamiento_producto($id, array $data) {
+        $this->asegurar_entrenamiento_producto();
+        $allowed = ['estatus', 'precio_venta', 'entrenamiento_revisado', 'entrenamiento_principal_ok', 'unidad_venta'];
+        $update = array_intersect_key($data, array_flip($allowed));
+        if (empty($update)) {
+            return false;
+        }
+        $this->db->where('id', (int) $id);
+        return $this->db->update('productos', $update);
+    }
+
+    public function pasar_a_materia_prima($producto_id, $usuario_id) {
+        $p = $this->db->where('id', (int) $producto_id)->get('productos')->row();
+        if (!$p) {
+            return ['success' => false, 'message' => 'Producto no encontrado'];
+        }
+        if ($p->tipo_producto === 'Fabricado') {
+            return ['success' => false, 'message' => 'Es fabricado: no se convierte a materia prima para no romper el BOM'];
+        }
+        $ins = $this->db->where('producto_id', (int) $producto_id)->get('insumos')->row();
+        if ($ins) {
+            $this->db->where('id', $ins->id)->update('insumos', ['clase_uso' => 'materia_prima', 'actualizado_por' => (int) $usuario_id ?: null]);
+            return ['success' => true, 'message' => 'Insumo enlazado marcado como materia prima', 'insumo_id' => (int) $ins->id];
+        }
+        $codigo = 'MP-' . $p->codigo;
+        if ($this->db->where('codigo', $codigo)->count_all_results('insumos') > 0) {
+            $codigo = 'MP-' . $p->id;
+        }
+        $cat = (int) ($this->db->select_min('id')->get('categorias_insumos')->row('id') ?: 1);
+        $this->db->insert('insumos', [
+            'codigo' => $codigo,
+            'nombre_tecnico' => $p->nombre,
+            'categoria_id' => $cat,
+            'unidad_medida' => 'Kg',
+            'tipo' => 'comprado',
+            'producto_id' => (int) $producto_id,
+            'clase_uso' => 'materia_prima',
+            'estatus' => 'Activo',
+            'actualizado_por' => (int) $usuario_id ?: null,
+        ]);
+        return ['success' => true, 'message' => 'Se creó insumo materia prima enlazado', 'insumo_id' => (int) $this->db->insert_id()];
+    }
+
+    public function actualizar_cantidad_componente($detalle_id, $cantidad, $solo_si_permitido, $producto_id) {
+        $det = $this->db->where('id', (int) $detalle_id)->get('detalle_formulacion')->row();
+        if (!$det) {
+            return ['success' => false, 'message' => 'Componente no encontrado'];
+        }
+        $form = $this->db->where('id', (int) $det->formulacion_id)->get('formulaciones')->row();
+        if (!$form || (int) $form->producto_id !== (int) $producto_id) {
+            return ['success' => false, 'message' => 'No coincide el producto'];
+        }
+        $prod = $this->db->where('id', (int) $producto_id)->get('productos')->row();
+        $es_activa = (int) $form->es_activa === 1;
+        if (!$es_activa && empty($prod->entrenamiento_principal_ok)) {
+            return ['success' => false, 'message' => 'Primero verifica y guarda la formulación principal'];
+        }
+        $this->db->where('id', (int) $detalle_id)->update('detalle_formulacion', [
+            'cantidad' => (float) $cantidad,
+        ]);
+        return ['success' => true, 'message' => 'Cantidad actualizada (sin recálculo de costos)'];
+    }
 }
