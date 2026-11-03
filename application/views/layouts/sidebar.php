@@ -111,7 +111,9 @@
         <ul id="proveedores" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Categorias">Categorías</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Insumos">Insumos</a></li>
+          <?php if (tiene_permiso('entrenamiento_materiales')): ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/EntrenamientoMateriales">Entrenamiento de materiales</a></li>
+          <?php endif; ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Proveedores">Proveedores</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/OrdenesCompra">Órdenes de Compra</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Cotizaciones">Cotizaciones</a></li>
@@ -127,7 +129,9 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Dashboard">Fabricación Dashboard</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Productos">Productos y Fórmulas</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/HistorialFormulaciones">Historial de formulaciones</a></li>
+          <?php if (tiene_permiso('entrenamiento_productos')): ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/EntrenamientoProductos">Entrenamiento de productos</a></li>
+          <?php endif; ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Lotes">Control de Lotes</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Lotes/consultar">Consultar Lote</a></li>
         </ul>
@@ -143,8 +147,12 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Ordenes">Órdenes de Venta</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/ObrasVentas">Obras (CRM)</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>obras/Obras">Alta y detalle de obras</a></li>
+          <?php if (tiene_permiso('ventas_cotizaciones_obra') || tiene_permiso('ventas_cotizaciones')): ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/CotizacionesObra">Cotizaciones de obra</a></li>
+          <?php endif; ?>
+          <?php if (tiene_permiso('ventas_cotizaciones_obra') || tiene_permiso('ventas_pie_cotizacion') || tiene_permiso('ventas_cotizaciones')): ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Sucursales">Sucursales</a></li>
+          <?php endif; ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Clientes">Clientes</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>ventas/Descuentos">Descuentos</a></li>
         </ul>
@@ -196,9 +204,11 @@
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Nomina">
                     Nómina
                 </a></li>
+            <?php if (tiene_permiso('contabilidad_expediente_raya')): ?>
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/ExpedienteRaya">
                     Expediente lista de raya
                 </a></li>
+            <?php endif; ?>
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>contabilidad/Reportes">
                     Reportes Financieros
                 </a></li>

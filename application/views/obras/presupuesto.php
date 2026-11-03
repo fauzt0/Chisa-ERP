@@ -1,42 +1,35 @@
 <?php
-$titulo = 'Presupuesto de Obra';
 $presupuesto = $presupuesto ?? null;
 $cliente = $cliente ?? null;
-$this->load->view('obras/partials/print_head', ['titulo' => $titulo]);
-?>
-    <div style="font-size:9px; margin-bottom:10px;">
-        <div>CIUDAD DE MEXICO A <?=strtoupper(date('d'))?> DE <?=strtoupper(date('F'))?> DEL <?=date('Y')?></div>
-        <div>CONSTRUCTORA: <?=htmlspecialchars($cliente->razon_social ?? '-')?></div>
-        <div>AT´N: <?=htmlspecialchars($presupuesto->atencion ?? '-')?></div>
-        <div>OBRA: <?=htmlspecialchars($presupuesto->obra_nombre ?? $presupuesto->pres_ref ?? '-')?></div>
-        <div>PRES. REF. <?=htmlspecialchars($presupuesto->pres_ref ?? '-')?></div>
-    </div>
-    <table class="tabla-datos">
-        <thead><tr><th>COLOR</th><th>CONCEPTO</th><th>UNIDAD</th><th>CANT.</th><th>PRECIO U.</th><th>IMPORTE</th></tr></thead>
-        <tbody>
-        <?php foreach (($presupuesto->conceptos ?? []) as $c): ?>
-            <tr>
-                <td class="text-center"><?=htmlspecialchars($c->codigo ?? '')?></td>
-                <td><?=htmlspecialchars($c->descripcion ?? '')?></td>
-                <td class="text-center"><?=htmlspecialchars($c->unidad ?? '')?></td>
-                <td class="text-right"><?=number_format((float)$c->cantidad, 2)?></td>
-                <td class="text-right"><?=number_format((float)$c->precio_unitario, 2)?></td>
-                <td class="text-right"><?=number_format((float)$c->importe, 2)?></td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-        <tfoot class="bg-total">
-            <tr><td colspan="5" class="text-right">IMPORTE</td><td class="text-right"><?=number_format((float)$presupuesto->subtotal, 2)?></td></tr>
-            <tr><td colspan="5" class="text-right">(<?=number_format((float)$presupuesto->iva_porcentaje, 2)?>%) I.V.A.</td><td class="text-right"><?=number_format((float)$presupuesto->iva_monto, 2)?></td></tr>
-            <tr><td colspan="5" class="text-right">TOTAL</td><td class="text-right"><?=number_format((float)$presupuesto->total, 2)?></td></tr>
-        </tfoot>
-    </table>
-    <?php if (!empty($presupuesto->notas_legales)): ?>
-    <div style="margin-top:10px; font-size:8px;"><strong>NOTAS LEGALES:</strong> <?=nl2br(htmlspecialchars($presupuesto->notas_legales))?></div>
-    <?php endif; ?>
-    <div class="firmas">
-        <div class="firma-block"><div class="titulo">CLIENTE — <?=htmlspecialchars(strtoupper($cliente->razon_social ?? 'CONSTRUCTORA'))?></div><div class="firma-line">FIRMA / NOMBRE</div></div>
-        <div class="firma-block"><div class="titulo"><?=htmlspecialchars(strtoupper($empresa->razon_social ?? 'CHISA'))?></div><div class="firma-line">FIRMA / NOMBRE</div></div>
-    </div>
-<?php $this->load->view('obras/partials/print_foot'); ?>
-
+$marca = $marca_agua ?? [];
+$lineas = [];
+foreach (($presupuesto->conceptos ?? []) as $c) {
+    $lineas[] = [
+        'grupo' => $c->seccion ?? '',
+        'concepto' => $c->descripcion ?? '',
+        'unidad' => $c->unidad ?? '',
+        'cantidad' => $c->cantidad ?? 0,
+        'precio_unitario' => $c->precio_unitario ?? 0,
+        'importe' => $c->importe ?? 0,
+    ];
+}
+$this->load->view('papeleria/carta_hapa', [
+    'marca' => $marca,
+    'empresa' => $empresa ?? null,
+    'para_pdf' => false,
+    'fecha' => $presupuesto->fecha ?? date('Y-m-d'),
+    'constructora' => $cliente->razon_social ?? ($presupuesto->constructora ?? ''),
+    'atencion' => $presupuesto->atencion ?? '',
+    'obra_nombre' => $presupuesto->obra_nombre ?? ($obra->nombre ?? ''),
+    'ubicacion' => '',
+    'pres_ref' => $presupuesto->pres_ref ?? ($presupuesto->folio ?? ''),
+    'folio' => $presupuesto->folio ?? '',
+    'introduccion' => $presupuesto->introduccion ?? '',
+    'lineas' => $lineas,
+    'total' => $presupuesto->subtotal ?? 0,
+    'iva' => isset($presupuesto->iva_monto) ? (float) $presupuesto->iva_monto : null,
+    'iva_pct' => isset($presupuesto->iva_porcentaje) ? (float) $presupuesto->iva_porcentaje : null,
+    'pie_texto' => $presupuesto->notas_legales ?? ($marca['pie_cotizacion'] ?? ''),
+    'notas_legales' => $marca['notas_cotizacion'] ?? '',
+    'forma_pago' => $marca['forma_pago'] ?? '',
+]);

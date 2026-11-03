@@ -16,7 +16,9 @@ $badge = ['Borrador'=>'secondary','Enviada'=>'info','Aceptada'=>'success','Recha
     <?php if ($puede): ?>
     <div class="d-flex gap-2 flex-wrap">
       <button type="button" class="btn btn-outline-secondary" id="btnConsulta">Incorporar archivos para consulta</button>
+      <?php if (!empty($response['puede_sembrar'])): ?>
       <button type="button" class="btn btn-outline-secondary" id="btnPdfsI6">Cargar PDFs entrenamiento 6</button>
+      <?php endif; ?>
       <a class="btn btn-primary" href="<?=base_url('ventas/CotizacionesObra/editar')?>">Nueva cotización</a>
     </div>
     <?php endif; ?>

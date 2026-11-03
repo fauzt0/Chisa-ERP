@@ -13,6 +13,7 @@ class EntrenamientoProductos extends MY_Controller {
     }
 
     public function index() {
+        $this->requiere_permiso('entrenamiento_productos', 'Sin permiso de entrenamiento de productos');
         $busqueda = trim((string) $this->input->get('busqueda'));
         $revisado = trim((string) $this->input->get('revisado'));
         $filtros = [];
@@ -35,6 +36,7 @@ class EntrenamientoProductos extends MY_Controller {
     }
 
     public function ver($id = 0) {
+        $this->requiere_permiso('entrenamiento_productos', 'Sin permiso de entrenamiento de productos');
         $id = (int) $id;
         $p = $id ? $this->db->where('id', $id)->get('productos')->row() : null;
         if (!$p) {
@@ -63,6 +65,7 @@ class EntrenamientoProductos extends MY_Controller {
     }
 
     public function guardar_ajax() {
+        $this->requiere_permiso('entrenamiento_productos', 'Sin permiso de entrenamiento de productos');
         $id = (int) $this->input->post('id');
         $data = [];
         $est = $this->input->post('estatus');
@@ -89,6 +92,7 @@ class EntrenamientoProductos extends MY_Controller {
     }
 
     public function materia_prima_ajax() {
+        $this->requiere_permiso('entrenamiento_productos', 'Sin permiso de entrenamiento de productos');
         $id = (int) $this->input->post('id');
         $res = $this->ProductosModel->pasar_a_materia_prima($id, (int) $this->session->userdata('id'));
         $this->session->set_flashdata('ep_msg', $res['message'] ?? '');
@@ -97,6 +101,7 @@ class EntrenamientoProductos extends MY_Controller {
     }
 
     public function componente_ajax() {
+        $this->requiere_permiso('entrenamiento_productos', 'Sin permiso de entrenamiento de productos');
         $pid = (int) $this->input->post('producto_id');
         $res = $this->ProductosModel->actualizar_cantidad_componente(
             (int) $this->input->post('detalle_id'),
@@ -110,6 +115,7 @@ class EntrenamientoProductos extends MY_Controller {
     }
 
     public function historial_componente_ajax() {
+        $this->requiere_permiso('entrenamiento_productos', 'Sin permiso de entrenamiento de productos');
         $pid = (int) $this->input->post('producto_id');
         $res = $this->ProductosModel->actualizar_cantidad_componente(
             (int) $this->input->post('detalle_id'),

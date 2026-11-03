@@ -13,6 +13,8 @@ class ExpedienteRaya extends MY_Controller {
     }
 
     public function index() {
+        $this->load->helper('permissions');
+        $this->requiere_permiso('contabilidad_expediente_raya', 'Sin permiso de expediente de raya');
         $tipo = trim((string) $this->input->get('tipo'));
         $this->viewData['pageTitle'] = 'Expediente de lista de raya';
         $this->viewData['headTitle'] = 'Expediente RH / Contabilidad';

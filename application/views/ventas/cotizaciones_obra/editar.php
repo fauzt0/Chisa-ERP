@@ -126,7 +126,7 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
         </div>
         <div class="col-md-4">
           <label class="form-label">Pie de esta cotización</label>
-          <input class="form-control" id="pie_texto" value="<?=htmlspecialchars($c->pie_texto ?? '')?>" <?= $bloqueada ? 'disabled' : '' ?>>
+          <input class="form-control" id="pie_texto" value="<?=htmlspecialchars($c->pie_texto ?? '')?>" <?= ($bloqueada || empty($response['puede_pie'])) ? 'disabled' : '' ?>>
         </div>
       </div>
     </div>

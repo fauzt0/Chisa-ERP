@@ -42,7 +42,7 @@
                                     <?php foreach($perms as $key => $label): ?>
                                     <div class="form-check">
                                         <input class="form-check-input perm-check" type="checkbox" name="<?=$key?>" value="1" id="<?=$key?>"
-                                            <?= ($is_edit && isset($selected_permissions[$key])) ? 'checked' : '' ?>>
+                                            <?= ($is_edit && !empty($selected_permissions[$key])) ? 'checked' : '' ?>>
                                         <label class="form-check-label" for="<?=$key?>">
                                             <?=$label?>
                                         </label>

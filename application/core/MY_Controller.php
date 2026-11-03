@@ -23,6 +23,9 @@ class MY_Controller extends CI_Controller {
         $this->load->library('Init_controller');
         $this->load->model('Users/UserModel');
 
+        $this->load->model('Users/PrivilegeModel');
+        $this->PrivilegeModel->asegurar_claves_i6();
+
         // 1. Verificar Sesión (omitir en CLI — importaciones/cron desde terminal)
         if (!is_cli()) {
             $this->init_controller->check_session();

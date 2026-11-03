@@ -38,6 +38,12 @@ class Roles extends MY_Controller {
             'reloj_ver_dashboard',
             'produccion_preordenes',
             'rh_empleados_consult',
+            'entrenamiento_materiales',
+            'entrenamiento_productos',
+            'entrenamiento_sembrar',
+            'ventas_cotizaciones_obra',
+            'ventas_pie_cotizacion',
+            'contabilidad_expediente_raya',
         ];
         $data['pageView'] = 'usuarios/roles/main';
         

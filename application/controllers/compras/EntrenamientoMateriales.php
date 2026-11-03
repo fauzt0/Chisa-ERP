@@ -12,7 +12,7 @@
  *   - La columna `insumos.tipo` (comprado/fabricado/semielaborado) NO se
  *     modifica desde esta pantalla; es responsabilidad del CRUD de Insumos.
  *
- * Permiso requerido: almacen_insumos
+ * Permiso requerido: entrenamiento_materiales (activable en Roles)
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
@@ -49,7 +49,7 @@ class EntrenamientoMateriales extends MY_Controller {
     // -----------------------------------------------------------------------
 
     public function index() {
-        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $this->requiere_permiso('entrenamiento_materiales', 'Sin permiso de entrenamiento de materiales');
 
         $busqueda = trim((string) $this->input->get('busqueda'));
         $revisado = trim((string) $this->input->get('revisado'));
@@ -86,7 +86,7 @@ class EntrenamientoMateriales extends MY_Controller {
     // -----------------------------------------------------------------------
 
     public function guardar_insumo_ajax() {
-        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $this->requiere_permiso('entrenamiento_materiales', 'Sin permiso de entrenamiento de materiales');
 
         $id = (int) $this->input->post('id');
         if ($id <= 0) {
@@ -152,7 +152,7 @@ class EntrenamientoMateriales extends MY_Controller {
     }
 
     public function editar($id = null) {
-        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $this->requiere_permiso('entrenamiento_materiales', 'Sin permiso de entrenamiento de materiales');
         $id = (int) $id;
         $insumo = $id > 0 ? $this->InsumosModel->get_insumo($id) : null;
         if (!$insumo) {
@@ -178,7 +178,7 @@ class EntrenamientoMateriales extends MY_Controller {
     // -----------------------------------------------------------------------
 
     public function guardar_alias_ajax() {
-        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $this->requiere_permiso('entrenamiento_materiales', 'Sin permiso de entrenamiento de materiales');
 
         $insumo_id = (int) $this->input->post('insumo_id');
         $alias     = trim((string) $this->input->post('alias'));
@@ -220,7 +220,7 @@ class EntrenamientoMateriales extends MY_Controller {
     // -----------------------------------------------------------------------
 
     public function guardar_proveedor_precio_ajax() {
-        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $this->requiere_permiso('entrenamiento_materiales', 'Sin permiso de entrenamiento de materiales');
 
         $insumo_id    = (int) $this->input->post('insumo_id');
         $proveedor_id = (int) $this->input->post('proveedor_id');
@@ -245,7 +245,7 @@ class EntrenamientoMateriales extends MY_Controller {
     // -----------------------------------------------------------------------
 
     public function guardar_producto_ajax() {
-        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $this->requiere_permiso('entrenamiento_materiales', 'Sin permiso de entrenamiento de materiales');
 
         $insumo_id = (int) $this->input->post('insumo_id');
         if ($insumo_id <= 0) {
@@ -280,7 +280,7 @@ class EntrenamientoMateriales extends MY_Controller {
     }
 
     public function marcar_producto_ajax() {
-        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $this->requiere_permiso('entrenamiento_materiales', 'Sin permiso de entrenamiento de materiales');
         $id = (int) $this->input->post('insumo_id');
         $insumo = $id > 0 ? $this->InsumosModel->get_insumo($id) : null;
         if (!$insumo) {
@@ -303,7 +303,7 @@ class EntrenamientoMateriales extends MY_Controller {
     }
 
     public function get_fila_ajax() {
-        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $this->requiere_permiso('entrenamiento_materiales', 'Sin permiso de entrenamiento de materiales');
         $id = (int) ($this->input->get('id') ?: $this->input->post('id'));
         if ($id <= 0) {
             echo json_encode(['success' => false, 'message' => 'ID inválido']);

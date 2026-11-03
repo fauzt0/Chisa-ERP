@@ -50,7 +50,9 @@ $config['permissions'] = array(
     'ventas_ordenes_edit'    => 'Editar órdenes de venta',
     'ventas_ordenes_consult' => 'Consultar órdenes de venta',
     'ventas_ordenes_delete'  => 'Cancelar órdenes de venta',
-    'ventas_cotizaciones'    => 'Gestionar cotizaciones',
+    'ventas_cotizaciones'      => 'Gestionar cotizaciones (OV / PRES-)',
+    'ventas_cotizaciones_obra' => 'Cotizaciones comerciales de obra (CCO / HAPA)',
+    'ventas_pie_cotizacion'    => 'Editar pie y notas legales de cotización de obra',
   ),
   
   'Compras' => array(
@@ -78,7 +80,8 @@ $config['permissions'] = array(
     'produccion_formulaciones'     => 'Gestionar formulaciones',
     'produccion_ordenes'           => 'Gestionar órdenes de producción',
     'produccion_ver_costos'        => 'Ver costos y precios',
-    'produccion_preordenes'        => 'Generar pre-órdenes de compra desde producción',
+    'produccion_preordenes'            => 'Generar pre-órdenes de compra desde producción',
+    'entrenamiento_productos'          => 'Entrenamiento temporal de productos (superadmin)',
   ),
   
   'Almacén' => array(
@@ -86,7 +89,9 @@ $config['permissions'] = array(
     'almacen_ajustes'            => 'Realizar ajustes de inventario',
     'almacen_entregas'           => 'Gestionar entregas',
     'almacen_movimientos'        => 'Ver movimientos',
-    'almacen_insumos'            => 'Gestionar insumos',
+    'almacen_insumos'              => 'Gestionar insumos',
+    'entrenamiento_materiales'     => 'Entrenamiento de materiales / materia prima (superadmin)',
+    'entrenamiento_sembrar'        => 'Cargar PDFs y Excel de entrenamiento a CCO',
   ),
   
   'Obras' => array(
@@ -103,7 +108,8 @@ $config['permissions'] = array(
     'contabilidad_nomina'      => 'Gestionar nómina',
     'contabilidad_reportes'    => 'Ver reportes financieros',
     'contabilidad_gastos'      => 'Registrar gastos',
-    'contabilidad_ingresos'    => 'Registrar ingresos',
+    'contabilidad_ingresos'         => 'Registrar ingresos',
+    'contabilidad_expediente_raya'  => 'Expediente de lista de raya (adjuntos)',
   ),
   
   'Reportes' => array(

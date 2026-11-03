@@ -45,6 +45,8 @@ class SucursalesModel extends CI_Model {
                 'logo' => "ALTER TABLE sucursales ADD COLUMN logo VARCHAR(255) NULL",
                 'icono' => "ALTER TABLE sucursales ADD COLUMN icono VARCHAR(255) NULL",
                 'pie_cotizacion' => "ALTER TABLE sucursales ADD COLUMN pie_cotizacion TEXT NULL",
+                'notas_cotizacion' => "ALTER TABLE sucursales ADD COLUMN notas_cotizacion TEXT NULL",
+                'forma_pago' => "ALTER TABLE sucursales ADD COLUMN forma_pago TEXT NULL",
             ];
             foreach ($columnas as $campo => $sql) {
                 if (!$this->db->field_exists($campo, 'sucursales')) {
@@ -63,16 +65,38 @@ class SucursalesModel extends CI_Model {
                 'estatus' => 'Activa',
             ]);
         }
+        $this->load->helper('papeleria_hapa');
         $this->db->where('codigo', 'SUC-HAPA');
         if ($this->db->count_all_results('sucursales') === 0) {
             $this->db->insert('sucursales', [
                 'codigo' => 'SUC-HAPA',
                 'nombre' => 'HAPA Soluciones Integrales en Recubrimientos',
-                'direccion' => 'HAPA — papelería de cotizaciones de obra',
+                'direccion' => 'Calle Moras 506 Int. 10, Col. Del Valle, Benito Juárez',
+                'ciudad' => 'Ciudad de México',
+                'sitio_web' => 'www.hapasoluciones.com',
                 'estatus' => 'Activa',
                 'texto_marca_agua' => 'HAPA',
-                'pie_cotizacion' => 'HAPA Soluciones Integrales en Recubrimientos. Cotización de obra sin compromiso de ejecución.',
+                'pie_cotizacion' => 'HAPA Soluciones Integrales en Recubrimientos.',
+                'notas_cotizacion' => papeleria_hapa_notas(),
+                'forma_pago' => papeleria_hapa_forma_pago(),
             ]);
+        } else {
+            $hapa = $this->db->where('codigo', 'SUC-HAPA')->get('sucursales')->row();
+            if ($hapa && $this->db->field_exists('notas_cotizacion', 'sucursales')) {
+                $upd = [];
+                if (empty($hapa->notas_cotizacion)) {
+                    $upd['notas_cotizacion'] = papeleria_hapa_notas();
+                    $upd['forma_pago'] = papeleria_hapa_forma_pago();
+                }
+                if ($hapa->direccion && strpos($hapa->direccion, 'papelería') !== false) {
+                    $upd['direccion'] = 'Calle Moras 506 Int. 10, Col. Del Valle, Benito Juárez';
+                    $upd['ciudad'] = 'Ciudad de México';
+                    $upd['sitio_web'] = 'www.hapasoluciones.com';
+                }
+                if ($upd) {
+                    $this->db->where('id', (int) $hapa->id)->update('sucursales', $upd);
+                }
+            }
         }
     }
 
@@ -134,6 +158,7 @@ class SucursalesModel extends CI_Model {
         $permitidas = [
             'nombre', 'direccion', 'telefono', 'estatus', 'texto_marca_agua', 'logo_marca_agua',
             'email', 'sitio_web', 'contacto', 'ciudad', 'logo', 'icono', 'pie_cotizacion',
+            'notas_cotizacion', 'forma_pago',
         ];
         $update = [];
         foreach ($permitidas as $campo) {
@@ -217,6 +242,8 @@ class SucursalesModel extends CI_Model {
             'ciudad' => $sucursal->ciudad ?? '',
             'contacto' => $sucursal->contacto ?? '',
             'pie_cotizacion' => $sucursal->pie_cotizacion ?? '',
+            'notas_cotizacion' => $sucursal->notas_cotizacion ?? '',
+            'forma_pago' => $sucursal->forma_pago ?? '',
         ];
     }
 

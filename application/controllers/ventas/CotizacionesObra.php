@@ -23,9 +23,8 @@ class CotizacionesObra extends MY_Controller {
     }
 
     private function puede_editar() {
-        return tiene_permiso('ventas_cotizaciones')
-            || tiene_permiso('ventas_ordenes_edit')
-            || tiene_permiso('ventas_ordenes_add');
+        return tiene_permiso('ventas_cotizaciones_obra')
+            || tiene_permiso('ventas_cotizaciones');
     }
 
     public function index() {
@@ -40,6 +39,7 @@ class CotizacionesObra extends MY_Controller {
             'q' => $q,
             'consulta' => $consulta,
             'total_consulta' => $this->CotizacionesObraModel->contar_consulta(),
+            'puede_sembrar' => tiene_permiso('entrenamiento_sembrar'),
         ];
         $this->viewData['pageView'] = 'ventas/cotizaciones_obra/main';
         $this->load->view('layouts/general_template', $this->viewData);
@@ -81,6 +81,7 @@ class CotizacionesObra extends MY_Controller {
             'conceptos' => $this->CotizacionesObraModel->buscar_conceptos('', 120),
             'obras' => $obras,
             'puede_editar' => $this->puede_editar(),
+            'puede_pie' => tiene_permiso('ventas_pie_cotizacion') || $this->puede_editar(),
             'seguimiento' => $seguimiento,
             'versiones' => $versiones,
         ];
@@ -222,8 +223,8 @@ class CotizacionesObra extends MY_Controller {
     }
 
     public function sembrar_ejemplos_ajax() {
-        if (!$this->puede_editar() && !is_cli()) {
-            echo json_encode(['success' => false, 'message' => 'No tienes permiso']);
+        if (!tiene_permiso('entrenamiento_sembrar') && !is_cli()) {
+            echo json_encode(['success' => false, 'message' => 'Sin permiso para cargar archivos de entrenamiento']);
             return;
         }
         $dir = FCPATH . 'doc/entrenamiento_5/COTIZACIONES 2026';
@@ -338,12 +339,29 @@ class CotizacionesObra extends MY_Controller {
             $sh->setCellValue('E' . $fila, $sub);
             $fila++;
         }
+        $sh->setCellValue('D' . $fila, 'SUBTOTAL');
+        $sh->setCellValue('E' . $fila, (float) $cot->total);
+        $fila++;
         $sh->setCellValue('D' . $fila, 'TOTAL');
         $sh->setCellValue('E' . $fila, (float) $cot->total);
         $sh->getStyle('A15:E15')->getFont()->setBold(true);
         foreach (range('A', 'E') as $col) {
             $sh->getColumnDimension($col)->setWidth($col === 'A' ? 70 : 16);
         }
+        $this->load->helper('papeleria_hapa');
+        $legal = $ss->createSheet();
+        $legal->setTitle('Forma de pago');
+        $legal->setCellValue('A1', 'FORMA DE PAGO Y CONSIDERACIONES GENERALES');
+        $legal->setCellValue('A2', 'PRES. REF. ' . ($cot->pres_ref ?: $cot->folio));
+        $legal->setCellValue('A3', 'OBRA: ' . $cot->obra_nombre);
+        $legal->setCellValue('A5', 'FORMA DE PAGO');
+        $legal->setCellValue('A6', papeleria_hapa_forma_pago());
+        $legal->setCellValue('A8', 'NOTAS');
+        $legal->setCellValue('A9', papeleria_hapa_notas());
+        $legal->getColumnDimension('A')->setWidth(110);
+        $legal->getStyle('A6')->getAlignment()->setWrapText(true);
+        $legal->getStyle('A9')->getAlignment()->setWrapText(true);
+        $ss->setActiveSheetIndex(0);
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $cot->folio . '.xlsx"');
         (new Xlsx($ss))->save('php://output');
@@ -361,9 +379,42 @@ class CotizacionesObra extends MY_Controller {
         echo json_encode($this->CotizacionesObraModel->sembrar_pdfs_entrenamiento6(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . PHP_EOL;
     }
 
+    /**
+     * CLI: php index.php ventas/CotizacionesObra/cli_html_muestra CCO-2026-0418 /tmp/out.html
+     */
+    public function cli_html_muestra($folio = 'CCO-2026-0418', $salida = '') {
+        if (!is_cli()) {
+            show_error('Solo CLI', 403);
+            return;
+        }
+        $cot = $this->db->where('folio', $folio)->get('cotizaciones_comerciales')->row();
+        if (!$cot) {
+            echo "no folio\n";
+            return;
+        }
+        $cot = $this->CotizacionesObraModel->get($cot->id);
+        $html = $this->load->view('ventas/cotizaciones_obra/imprimir', [
+            'cotizacion' => $cot,
+            'marca' => $this->SucursalesModel->get_marca_agua($cot->sucursal_id),
+            'empresa' => $this->EmpresaModel->get_config(),
+            'para_pdf' => true,
+        ], true);
+        if ($salida === '') {
+            $salida = '/opt/cursor/artifacts/cco_muestra.html';
+        }
+        $dir = dirname($salida);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        file_put_contents($salida, $html);
+        echo $salida . ' ' . strlen($html) . " bytes\n";
+        echo (strpos($html, 'FORMA DE PAGO') !== false ? 'ok_forma_pago' : 'falta_forma_pago') . "\n";
+        echo (strpos($html, '3 Guerras') !== false ? 'interno_presente' : 'interno_oculto_en_pdf') . "\n";
+    }
+
     public function sembrar_pdfs_ajax() {
-        if (!$this->puede_editar() && !is_cli()) {
-            echo json_encode(['success' => false, 'message' => 'No tienes permiso']);
+        if (!tiene_permiso('entrenamiento_sembrar') && !is_cli()) {
+            echo json_encode(['success' => false, 'message' => 'Sin permiso para cargar PDFs de entrenamiento']);
             return;
         }
         echo json_encode($this->CotizacionesObraModel->sembrar_pdfs_entrenamiento6());

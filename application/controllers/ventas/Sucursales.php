@@ -15,9 +15,9 @@ class Sucursales extends MY_Controller {
     }
 
     private function puede_editar() {
-        return tiene_permiso('ventas_cotizaciones')
-            || tiene_permiso('ventas_ordenes_edit')
-            || tiene_permiso('ventas_ordenes_add');
+        return tiene_permiso('ventas_cotizaciones_obra')
+            || tiene_permiso('ventas_pie_cotizacion')
+            || tiene_permiso('ventas_cotizaciones');
     }
 
     public function index() {
@@ -48,6 +48,8 @@ class Sucursales extends MY_Controller {
             'contacto' => $this->input->post('contacto'),
             'texto_marca_agua' => $this->input->post('texto_marca_agua'),
             'pie_cotizacion' => $this->input->post('pie_cotizacion'),
+            'notas_cotizacion' => $this->input->post('notas_cotizacion'),
+            'forma_pago' => $this->input->post('forma_pago'),
             'estatus' => $this->input->post('estatus'),
         ]);
         echo json_encode($result);
