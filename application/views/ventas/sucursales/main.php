@@ -27,6 +27,9 @@ function img_suc($ruta) {
           <div class="col-md-4"><label class="form-label">Correo</label><input class="form-control" name="email" value="<?=htmlspecialchars($s->email ?? '')?>" <?= $puede?'':'disabled'?>></div>
           <div class="col-md-4"><label class="form-label">Sitio web</label><input class="form-control" name="sitio_web" value="<?=htmlspecialchars($s->sitio_web ?? '')?>" <?= $puede?'':'disabled'?>></div>
           <div class="col-md-4"><label class="form-label">Texto de marca de agua</label><input class="form-control" name="texto_marca_agua" value="<?=htmlspecialchars($s->texto_marca_agua ?? '')?>" <?= $puede?'':'disabled'?>></div>
+          <div class="col-md-12"><label class="form-label">Pie de cotización (editable por ventas/obras)</label>
+            <textarea class="form-control" name="pie_cotizacion" rows="2" <?= $puede?'':'disabled'?>><?=htmlspecialchars($s->pie_cotizacion ?? '')?></textarea>
+          </div>
         </div>
         <?php if ($puede): ?><button class="btn btn-primary mt-3" type="submit">Guardar datos</button><?php endif; ?>
       </form>

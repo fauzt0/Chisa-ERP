@@ -175,11 +175,36 @@ class Obras extends MY_Controller {
         if($obra_id) {
             // Calcular totales iniciales (aunque no haya productos aún)
             $this->ObrasModel->calcular_totales_obra($obra_id);
-            
+            $alertas_rh = [];
+            $emp_ids = array_filter([
+                (int) ($data['responsable_tecnico_id'] ?? 0),
+                (int) ($data['responsable_ventas_id'] ?? 0),
+            ]);
+            foreach ($emp_ids as $eid) {
+                $emp = $this->db->where('id', $eid)->get('empleados')->row();
+                if (!$emp) {
+                    continue;
+                }
+                $faltan = [];
+                if (empty($emp->curp)) {
+                    $faltan[] = 'CURP';
+                }
+                if (empty($emp->nss)) {
+                    $faltan[] = 'NSS';
+                }
+                $tiene_ine = $this->db->where('empleado_id', $eid)->where('tipo_documento', 'ine')->count_all_results('empleados_documentos') > 0;
+                if (!$tiene_ine) {
+                    $faltan[] = 'INE';
+                }
+                if ($faltan) {
+                    $alertas_rh[] = trim($emp->nombre . ' ' . $emp->apellido_paterno) . ' falta ' . implode(', ', $faltan);
+                }
+            }
             echo json_encode([
                 'success' => true,
-                'message' => 'Obra creada correctamente',
-                'obra_id' => $obra_id
+                'message' => 'Obra creada correctamente' . ($alertas_rh ? '. Alerta RH: ' . implode('; ', $alertas_rh) : ''),
+                'obra_id' => $obra_id,
+                'alertas_rh' => $alertas_rh,
             ]);
         } else {
             echo json_encode([

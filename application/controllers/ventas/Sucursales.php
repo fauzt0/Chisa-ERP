@@ -47,6 +47,7 @@ class Sucursales extends MY_Controller {
             'sitio_web' => $this->input->post('sitio_web'),
             'contacto' => $this->input->post('contacto'),
             'texto_marca_agua' => $this->input->post('texto_marca_agua'),
+            'pie_cotizacion' => $this->input->post('pie_cotizacion'),
             'estatus' => $this->input->post('estatus'),
         ]);
         echo json_encode($result);

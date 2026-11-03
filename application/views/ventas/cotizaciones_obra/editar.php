@@ -14,6 +14,9 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
     <h1 class="h3 mb-0"><?=htmlspecialchars($headTitle)?></h1>
     <div class="d-flex gap-2">
       <?php if ($c): ?>
+      <?php if ($c->estatus === 'Aceptada' && $puede): ?>
+      <button type="button" class="btn btn-outline-danger" id="btnAutorizarEdicion">Autorizar edición (admin)</button>
+      <?php endif; ?>
       <a class="btn btn-outline-secondary" target="_blank" href="<?=base_url('ventas/CotizacionesObra/imprimir/'.$c->id)?>">Vista / PDF</a>
       <a class="btn btn-outline-secondary" href="<?=base_url('ventas/CotizacionesObra/excel/'.$c->id)?>">Excel</a>
       <a class="btn btn-outline-secondary" href="<?=base_url('ventas/CotizacionesObra/pdf/'.$c->id)?>">Descargar PDF</a>
@@ -112,6 +115,18 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
         <div class="col-12">
           <label class="form-label">Texto de presentación</label>
           <input class="form-control" id="introduccion" value="<?=htmlspecialchars($c->introduccion ?? 'PRESENTAMOS A SU AMABLE CONSIDERACIÓN EL PRESUPUESTO DE SUMINISTRO Y APLICACIÓN DE LOS SIGUIENTES CONCEPTOS.')?>" <?= $bloqueada ? 'disabled' : '' ?>>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Costo envío 3 Guerras (interno)</label>
+          <input class="form-control" id="costo_envio" type="number" step="0.01" value="<?=htmlspecialchars((string)($c->costo_envio ?? 0))?>" <?= $bloqueada ? 'disabled' : '' ?>>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Notas de envío / adjunto paquetería</label>
+          <input class="form-control" id="envio_notas" value="<?=htmlspecialchars($c->envio_notas ?? '')?>" <?= $bloqueada ? 'disabled' : '' ?>>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Pie de esta cotización</label>
+          <input class="form-control" id="pie_texto" value="<?=htmlspecialchars($c->pie_texto ?? '')?>" <?= $bloqueada ? 'disabled' : '' ?>>
         </div>
       </div>
     </div>
@@ -331,6 +346,9 @@ document.getElementById('btnGuardar')?.addEventListener('click', function () {
     pres_ref: document.getElementById('pres_ref').value,
     fecha: document.getElementById('fecha').value,
     introduccion: document.getElementById('introduccion').value,
+    costo_envio: document.getElementById('costo_envio') ? document.getElementById('costo_envio').value : 0,
+    envio_notas: document.getElementById('envio_notas') ? document.getElementById('envio_notas').value : '',
+    pie_texto: document.getElementById('pie_texto') ? document.getElementById('pie_texto').value : '',
     lineas: JSON.stringify(lineas())
   }, function (res) {
     res = typeof res === 'string' ? JSON.parse(res) : res;
@@ -350,6 +368,16 @@ document.querySelectorAll('.btn-estatus').forEach(function (b) {
       alert(res.message || 'Listo');
       if (res.success) location.reload();
     });
+  });
+});
+document.getElementById('btnAutorizarEdicion')?.addEventListener('click', function () {
+  if (!confirm('Reabrir esta cotización aceptada para edición?')) return;
+  $.post('<?=base_url('ventas/CotizacionesObra/autorizar_edicion_ajax')?>', {
+    id: document.getElementById('cot_id').value
+  }, function (res) {
+    res = typeof res === 'string' ? JSON.parse(res) : res;
+    alert(res.message || 'Listo');
+    if (res.success) location.reload();
   });
 });
 pintar();

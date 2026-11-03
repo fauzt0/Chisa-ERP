@@ -319,17 +319,17 @@ $stats = $response['stats'] ?? [];
         
         <!-- Tipo de Venta -->
         <div class="mb-3">
-          <label class="form-label">Obra (opcional)</label>
+          <label class="form-label">Canal</label>
           <select class="form-select" id="ticket_obra">
-            <option value="">Sin obra</option>
+            <option value="">Venta de mostrador (caja)</option>
           </select>
-          <small class="text-muted">Si eliges obra, puedes pasar estos productos a su cotización.</small>
+          <small class="text-muted">Mostrador = ticket de caja. Si eliges una obra, es venta de obra (productos + aplicaciones) y puedes pasar el ticket a su cotización CCO-.</small>
         </div>
         <div class="mb-3">
-          <label class="form-label">Tipo de Venta</label>
+          <label class="form-label">Entrega</label>
           <select class="form-select" id="ticket_tipo_venta" onchange="toggleDireccionEnvio()">
-            <option value="Mostrador">Mostrador</option>
-            <option value="Pedido">Pedido (Envío)</option>
+            <option value="Mostrador">Mostrador (se lleva el cliente)</option>
+            <option value="Pedido">Pedido (envío / 3 Guerras)</option>
           </select>
         </div>
         

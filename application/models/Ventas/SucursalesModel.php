@@ -44,6 +44,7 @@ class SucursalesModel extends CI_Model {
                 'ciudad' => "ALTER TABLE sucursales ADD COLUMN ciudad VARCHAR(120) NULL",
                 'logo' => "ALTER TABLE sucursales ADD COLUMN logo VARCHAR(255) NULL",
                 'icono' => "ALTER TABLE sucursales ADD COLUMN icono VARCHAR(255) NULL",
+                'pie_cotizacion' => "ALTER TABLE sucursales ADD COLUMN pie_cotizacion TEXT NULL",
             ];
             foreach ($columnas as $campo => $sql) {
                 if (!$this->db->field_exists($campo, 'sucursales')) {
@@ -60,6 +61,17 @@ class SucursalesModel extends CI_Model {
                 'direccion' => 'Andrés Molina Enríquez #156, Col. San Pedro Iztacalco, C.P. 08220, CDMX',
                 'telefono' => '55-5579-9434',
                 'estatus' => 'Activa',
+            ]);
+        }
+        $this->db->where('codigo', 'SUC-HAPA');
+        if ($this->db->count_all_results('sucursales') === 0) {
+            $this->db->insert('sucursales', [
+                'codigo' => 'SUC-HAPA',
+                'nombre' => 'HAPA Soluciones Integrales en Recubrimientos',
+                'direccion' => 'HAPA — papelería de cotizaciones de obra',
+                'estatus' => 'Activa',
+                'texto_marca_agua' => 'HAPA',
+                'pie_cotizacion' => 'HAPA Soluciones Integrales en Recubrimientos. Cotización de obra sin compromiso de ejecución.',
             ]);
         }
     }
@@ -121,7 +133,7 @@ class SucursalesModel extends CI_Model {
 
         $permitidas = [
             'nombre', 'direccion', 'telefono', 'estatus', 'texto_marca_agua', 'logo_marca_agua',
-            'email', 'sitio_web', 'contacto', 'ciudad', 'logo', 'icono',
+            'email', 'sitio_web', 'contacto', 'ciudad', 'logo', 'icono', 'pie_cotizacion',
         ];
         $update = [];
         foreach ($permitidas as $campo) {
@@ -204,6 +216,7 @@ class SucursalesModel extends CI_Model {
             'sitio_web' => $sucursal->sitio_web ?? '',
             'ciudad' => $sucursal->ciudad ?? '',
             'contacto' => $sucursal->contacto ?? '',
+            'pie_cotizacion' => $sucursal->pie_cotizacion ?? '',
         ];
     }
 

@@ -18,6 +18,8 @@ class CotizacionesObra extends MY_Controller {
         $this->load->model('Ventas/CotizacionesObraModel');
         $this->load->model('Ventas/SucursalesModel');
         $this->load->model('Config/EmpresaModel');
+        $this->SucursalesModel->asegurar_infraestructura();
+        $this->CotizacionesObraModel->indexar_pdfs_entrenamiento();
     }
 
     private function puede_editar() {
@@ -108,6 +110,25 @@ class CotizacionesObra extends MY_Controller {
             $this->SeguimientoModel->sincronizar_fases_desde_grupos($result['id'], $grupos);
         }
         echo json_encode($result);
+    }
+
+    public function autorizar_edicion_ajax() {
+        if (!tiene_permiso('ventas_ordenes_edit')) {
+            echo json_encode(['success' => false, 'message' => 'Solo un administrador con permiso de órdenes puede reabrir una cotización aceptada']);
+            return;
+        }
+        $id = (int) $this->input->post('id');
+        $cot = $this->db->where('id', $id)->get('cotizaciones_comerciales')->row();
+        if (!$cot) {
+            echo json_encode(['success' => false, 'message' => 'No encontrada']);
+            return;
+        }
+        if ($cot->estatus !== 'Aceptada') {
+            echo json_encode(['success' => false, 'message' => 'Solo aplica a cotizaciones aceptadas / procesadas']);
+            return;
+        }
+        $this->db->where('id', $id)->update('cotizaciones_comerciales', ['estatus' => 'Borrador']);
+        echo json_encode(['success' => true, 'message' => 'Autorizada para edición. Quedó en Borrador.']);
     }
 
     public function estatus_ajax() {

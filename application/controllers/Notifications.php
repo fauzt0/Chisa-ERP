@@ -125,7 +125,9 @@ class Notifications extends MY_Controller {
         $campos_faltantes = [];
         if(empty($empleado->nss)) $campos_faltantes[] = 'NSS';
         if(empty($empleado->rfc)) $campos_faltantes[] = 'RFC';
-        if(empty($empleado->curp)) $campos_faltantes[] = 'CURP';
+                if(empty($empleado->curp)) $campos_faltantes[] = 'CURP';
+                $tiene_ine = $this->db->where('empleado_id', $empleado->id)->where('tipo_documento', 'ine')->count_all_results('empleados_documentos') > 0;
+                if (!$tiene_ine) $campos_faltantes[] = 'INE';
         
         if(!empty($campos_faltantes)) {
           $nombre_completo = trim($empleado->nombre . ' ' . $empleado->apellido_paterno . ' ' . ($empleado->apellido_materno ?? ''));

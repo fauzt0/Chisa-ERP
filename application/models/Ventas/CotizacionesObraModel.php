@@ -95,6 +95,11 @@ class CotizacionesObraModel extends CI_Model {
         if ($pref && stripos($pref->Type, 'varchar(80)') !== false) {
             $this->db->query("ALTER TABLE cotizaciones_comerciales MODIFY pres_ref VARCHAR(180) NULL");
         }
+        if ($this->db->table_exists('cotizaciones_comerciales') && !$this->db->field_exists('costo_envio', 'cotizaciones_comerciales')) {
+            $this->db->query("ALTER TABLE cotizaciones_comerciales ADD COLUMN costo_envio DECIMAL(12,2) NOT NULL DEFAULT 0");
+            $this->db->query("ALTER TABLE cotizaciones_comerciales ADD COLUMN envio_notas VARCHAR(255) NULL");
+            $this->db->query("ALTER TABLE cotizaciones_comerciales ADD COLUMN pie_texto TEXT NULL");
+        }
     }
 
     public function generar_folio() {
@@ -176,6 +181,9 @@ class CotizacionesObraModel extends CI_Model {
             'fecha' => $this->fecha($data['fecha'] ?? ''),
             'introduccion' => $this->texto($data['introduccion'] ?? '', 500),
             'observaciones' => $this->texto($data['observaciones'] ?? '', 2000),
+            'costo_envio' => is_numeric($data['costo_envio'] ?? null) ? (float) $data['costo_envio'] : 0,
+            'envio_notas' => $this->texto($data['envio_notas'] ?? '', 255),
+            'pie_texto' => $this->texto($data['pie_texto'] ?? '', 2000),
         ];
         if ($cab['obra_nombre'] === null && $cab['constructora'] === null) {
             return ['success' => false, 'message' => 'Indica la obra o la constructora'];
@@ -798,5 +806,50 @@ class CotizacionesObraModel extends CI_Model {
         $resto = trim(substr($texto, $pos + strlen($etiqueta)));
         $resto = ltrim($resto, " :.-");
         return $resto !== '' ? $resto : null;
+    }
+
+    public function indexar_pdfs_entrenamiento() {
+        $this->asegurar_infraestructura();
+        $this->load->model('Ventas/SeguimientoModel');
+        $this->SeguimientoModel->asegurar();
+        $dir = FCPATH . 'doc/entrenamiento_6/COTIZACIONES 2026 PDF';
+        if (!is_dir($dir)) {
+            return 0;
+        }
+        $n = 0;
+        foreach (scandir($dir) as $file) {
+            if ($file === '.' || $file === '..' || strtolower(pathinfo($file, PATHINFO_EXTENSION)) !== 'pdf') {
+                continue;
+            }
+            if (!preg_match('/(\d{4,6})/', $file, $m)) {
+                continue;
+            }
+            $num = $m[1];
+            $this->db->group_start();
+            $this->db->like('obra_nombre', $num);
+            $this->db->or_like('pres_ref', $num);
+            $this->db->or_like('folio', $num);
+            $this->db->group_end();
+            $cot = $this->db->get('cotizaciones_comerciales')->row();
+            if (!$cot) {
+                continue;
+            }
+            $ruta = 'doc/entrenamiento_6/COTIZACIONES 2026 PDF/' . $file;
+            $ya = $this->db->where('origen_tipo', 'cotizacion')->where('origen_id', (int) $cot->id)->where('ruta', $ruta)->count_all_results('expediente_archivos');
+            if ($ya) {
+                continue;
+            }
+            $this->db->insert('expediente_archivos', [
+                'origen_tipo' => 'cotizacion',
+                'origen_id' => (int) $cot->id,
+                'nombre' => $file,
+                'ruta' => $ruta,
+                'extension' => 'pdf',
+                'tamano' => (int) filesize($dir . '/' . $file),
+                'fecha' => date('Y-m-d H:i:s'),
+            ]);
+            $n++;
+        }
+        return $n;
     }
 }

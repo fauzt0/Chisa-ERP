@@ -143,7 +143,13 @@ $presente = implode('&nbsp;&nbsp;', str_split('PRESENTE'));
         </tr>
       </tbody>
     </table>
-    <p class="pie">Folio <?=htmlspecialchars($c->folio)?> · <?=htmlspecialchars($c->estatus)?></p>
+    <?php if (!empty($c->costo_envio) && (float)$c->costo_envio > 0): ?>
+    <p><strong>Envío 3 Guerras (interno):</strong> $ <?=number_format((float)$c->costo_envio, 2)?> <?= !empty($c->envio_notas) ? ' · '.htmlspecialchars($c->envio_notas) : '' ?></p>
+    <?php endif; ?>
+    <p class="pie">
+      <?= htmlspecialchars($c->pie_texto ?: ($marca['pie_cotizacion'] ?? '')) ?>
+      <br>Folio <?=htmlspecialchars($c->folio)?> · <?=htmlspecialchars($c->estatus)?>
+    </p>
   </div>
 </div>
 </body>
