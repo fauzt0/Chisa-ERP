@@ -80,7 +80,7 @@ $csrf_hash = $this->security->get_csrf_hash();
     <input type="hidden" name="<?= htmlspecialchars($csrf_name, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($csrf_hash, ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="insumo_id" value="<?= (int) $f['id'] ?>">
     <input type="hidden" name="volver" value="1">
-    <button class="btn btn-outline-dark btn-sm" type="submit">Marcar como producto fabricado (enlaza, no borra el insumo)</button>
+    <button class="btn btn-outline-info btn-sm" type="submit">Marcar como producto fabricado (enlaza, no borra el insumo)</button>
     <span class="small text-muted">No cambia el tipo comprado/fabricado del insumo.</span>
   </form>
   <?php if (!empty($f['proveedores'])): ?>
