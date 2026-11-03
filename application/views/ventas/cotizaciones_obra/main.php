@@ -16,6 +16,7 @@ $badge = ['Borrador'=>'secondary','Enviada'=>'info','Aceptada'=>'success','Recha
     <?php if ($puede): ?>
     <div class="d-flex gap-2 flex-wrap">
       <button type="button" class="btn btn-outline-secondary" id="btnConsulta">Incorporar archivos para consulta</button>
+      <button type="button" class="btn btn-outline-secondary" id="btnPdfsI6">Cargar PDFs entrenamiento 6</button>
       <a class="btn btn-primary" href="<?=base_url('ventas/CotizacionesObra/editar')?>">Nueva cotización</a>
     </div>
     <?php endif; ?>
@@ -84,5 +85,16 @@ document.getElementById('btnConsulta')?.addEventListener('click', function () {
     if (res.success) location.href = '<?=base_url('ventas/CotizacionesObra?consulta=1')?>';
     else btn.disabled = false;
   });
+});
+document.getElementById('btnPdfsI6')?.addEventListener('click', function () {
+  var btn = this;
+  if (!confirm('Se leen los PDF de entrenamiento 6. Crea CCO en Borrador o adjunta el PDF a la cotización existente. No activa obras.')) return;
+  btn.disabled = true;
+  $.post('<?=base_url('ventas/CotizacionesObra/sembrar_pdfs_ajax')?>', {}, function (res) {
+    res = typeof res === 'string' ? JSON.parse(res) : res;
+    alert(res.message || 'Listo');
+    btn.disabled = false;
+    if (res.success) location.reload();
+  }).fail(function () { btn.disabled = false; alert('No se pudo cargar'); });
 });
 </script>

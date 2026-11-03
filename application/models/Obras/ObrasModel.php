@@ -212,6 +212,7 @@ class ObrasModel extends CI_Model {
         
         // Calcular totales iniciales
         if($obra_id) {
+            $this->adjuntar_documentos_rh_responsables($obra_id, $data);
             $this->calcular_totales_obra($obra_id);
             
             // Asegurar que saldo_pendiente se inicialice correctamente
@@ -228,6 +229,53 @@ class ObrasModel extends CI_Model {
         }
         
         return $obra_id;
+    }
+
+    /**
+     * Copia INE/CURP/NSS del expediente RH al de la obra si ya existen.
+     * No inventa documentos. Usa categoria Documento.
+     */
+    public function adjuntar_documentos_rh_responsables($obra_id, array $data) {
+        $obra_id = (int) $obra_id;
+        if ($obra_id <= 0 || !$this->db->table_exists('empleados_documentos') || !$this->db->table_exists('obras_archivos')) {
+            return 0;
+        }
+        $ids = array_filter([
+            (int) ($data['responsable_tecnico_id'] ?? 0),
+            (int) ($data['responsable_ventas_id'] ?? 0),
+        ]);
+        if (!$ids) {
+            return 0;
+        }
+        $n = 0;
+        foreach ($ids as $eid) {
+            $docs = $this->db->where('empleado_id', $eid)->get('empleados_documentos')->result();
+            foreach ($docs as $doc) {
+                $ruta = (string) ($doc->ruta_archivo ?? '');
+                if ($ruta === '') {
+                    continue;
+                }
+                $ya = $this->db->where('obra_id', $obra_id)->where('ruta_archivo', $ruta)->count_all_results('obras_archivos');
+                if ($ya) {
+                    continue;
+                }
+                $this->db->insert('obras_archivos', [
+                    'obra_id' => $obra_id,
+                    'nombre_original' => mb_substr((string) ($doc->nombre_archivo ?: $doc->tipo_documento), 0, 255),
+                    'nombre_archivo' => mb_substr(basename($ruta), 0, 255),
+                    'ruta_archivo' => mb_substr($ruta, 0, 500),
+                    'tipo_archivo' => (string) ($doc->mime_type ?: 'application/octet-stream'),
+                    'extension' => mb_substr((string) pathinfo($ruta, PATHINFO_EXTENSION), 0, 10),
+                    'tamano' => (int) ($doc->tamano_bytes ?? 0),
+                    'categoria' => 'Documento',
+                    'descripcion' => 'Adjunto automático desde RH (' . ($doc->tipo_documento ?? 'doc') . ')',
+                    'etiquetas' => 'RH,' . ($doc->tipo_documento ?? ''),
+                    'subido_por' => (int) ($data['creado_por'] ?? 1) ?: 1,
+                ]);
+                $n++;
+            }
+        }
+        return $n;
     }
     
     /**

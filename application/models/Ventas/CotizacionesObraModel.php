@@ -100,6 +100,9 @@ class CotizacionesObraModel extends CI_Model {
             $this->db->query("ALTER TABLE cotizaciones_comerciales ADD COLUMN envio_notas VARCHAR(255) NULL");
             $this->db->query("ALTER TABLE cotizaciones_comerciales ADD COLUMN pie_texto TEXT NULL");
         }
+        if ($this->db->table_exists('cotizaciones_comerciales') && !$this->db->field_exists('archivo_origen', 'cotizaciones_comerciales')) {
+            $this->db->query("ALTER TABLE cotizaciones_comerciales ADD COLUMN archivo_origen VARCHAR(255) NULL");
+        }
     }
 
     public function generar_folio() {
@@ -177,7 +180,7 @@ class CotizacionesObraModel extends CI_Model {
             'atencion' => $this->texto($data['atencion'] ?? '', 150),
             'obra_nombre' => $this->texto($data['obra_nombre'] ?? '', 200),
             'ubicacion' => $this->texto($data['ubicacion'] ?? '', 255),
-            'pres_ref' => $this->texto($data['pres_ref'] ?? '', 80),
+            'pres_ref' => $this->texto($data['pres_ref'] ?? '', 180),
             'fecha' => $this->fecha($data['fecha'] ?? ''),
             'introduccion' => $this->texto($data['introduccion'] ?? '', 500),
             'observaciones' => $this->texto($data['observaciones'] ?? '', 2000),
@@ -681,7 +684,7 @@ class CotizacionesObraModel extends CI_Model {
     }
 
     private function cliente_desde_nombre($nombre) {
-        $base = preg_replace('/\.(xlsx|xls)$/i', '', $nombre);
+        $base = preg_replace('/\.(xlsx|xls|pdf)$/i', '', $nombre);
         $base = preg_replace('/^\d+(?:-[A-Z])?\s+/', '', $base);
         $base = trim(str_replace(['-', '_'], ' ', $base));
         return $base !== '' ? $base : $nombre;
@@ -866,5 +869,216 @@ class CotizacionesObraModel extends CI_Model {
             $n++;
         }
         return $n;
+    }
+
+    /**
+     * Carga los PDF de entrenamiento 6 como CCO Borrador.
+     * No crea obras. No pisa CCO-2026-0003 ni cotizaciones con el mismo archivo_origen.
+     */
+    public function sembrar_pdfs_entrenamiento6() {
+        $this->asegurar_infraestructura();
+        $this->load->helper('cotizacion_pdf');
+        $this->load->model('Ventas/SucursalesModel');
+        $this->load->model('Ventas/SeguimientoModel');
+        $this->SucursalesModel->asegurar_infraestructura();
+        $this->SeguimientoModel->asegurar();
+        $hapa = $this->db->where('codigo', 'SUC-HAPA')->get('sucursales')->row();
+        $sucursal_id = $hapa ? (int) $hapa->id : null;
+        $dir = FCPATH . 'doc/entrenamiento_6/COTIZACIONES 2026 PDF';
+        $resumen = [
+            'success' => false,
+            'archivos' => 0,
+            'nuevas' => 0,
+            'vinculadas' => 0,
+            'omitidas' => 0,
+            'sin_partidas' => 0,
+            'pdfs_adjuntos' => 0,
+            'clientes_nuevos' => 0,
+            'conceptos' => 0,
+            'folios' => [],
+            'vacios' => [],
+        ];
+        if (!is_dir($dir)) {
+            $resumen['message'] = 'No está la carpeta de PDFs de entrenamiento 6';
+            return $resumen;
+        }
+        $protegido = $this->db->where('folio', 'CCO-2026-0003')->get('cotizaciones_comerciales')->row();
+        $protegido_id = $protegido ? (int) $protegido->id : 0;
+        foreach (scandir($dir) as $file) {
+            if ($file === '.' || $file === '..' || strtolower(pathinfo($file, PATHINFO_EXTENSION)) !== 'pdf') {
+                continue;
+            }
+            $resumen['archivos']++;
+            $path = $dir . DIRECTORY_SEPARATOR . $file;
+            $texto = cotizacion_pdf_texto($path);
+            $leido = cotizacion_pdf_parsear($texto, $file);
+            foreach ($leido['lineas'] as $linea) {
+                $antes = $this->db->where('huella', $this->huella($linea['concepto']))->count_all_results('conceptos_comerciales');
+                $this->upsert_concepto($linea['concepto'], $linea['unidad'], $linea['precio_unitario']);
+                if ($antes === 0) {
+                    $resumen['conceptos']++;
+                }
+            }
+            $existe = $this->buscar_cotizacion_pdf($file, $leido['pres_ref']);
+            if ($existe && (int) $existe->id === $protegido_id) {
+                $this->adjuntar_pdf_cotizacion($existe->id, $file, $path);
+                $resumen['omitidas']++;
+                continue;
+            }
+            $cliente_id = null;
+            $nombre_cliente = $leido['constructora'] ?: $this->cliente_desde_nombre($file);
+            if ($nombre_cliente) {
+                $alta = $this->asegurar_cliente($nombre_cliente);
+                if ($alta['nuevo']) {
+                    $resumen['clientes_nuevos']++;
+                }
+                $cliente_id = $alta['id'];
+            }
+            if ($existe) {
+                $upd = [];
+                if (empty($existe->cliente_id) && $cliente_id) {
+                    $upd['cliente_id'] = $cliente_id;
+                }
+                if (empty($existe->constructora) && $leido['constructora']) {
+                    $upd['constructora'] = $this->texto($leido['constructora'], 200);
+                }
+                if (empty($existe->archivo_origen)) {
+                    $upd['archivo_origen'] = $this->texto($file, 255);
+                }
+                if ((float) ($existe->costo_envio ?? 0) <= 0 && $leido['flete'] > 0) {
+                    $upd['costo_envio'] = $leido['flete'];
+                    $upd['envio_notas'] = 'Flete leído del PDF de entrenamiento';
+                }
+                if ($upd) {
+                    $this->db->where('id', (int) $existe->id)->update('cotizaciones_comerciales', $upd);
+                }
+                if ($this->adjuntar_pdf_cotizacion((int) $existe->id, $file, $path)) {
+                    $resumen['pdfs_adjuntos']++;
+                }
+                $this->asegurar_carpeta_envio((int) $existe->id);
+                $resumen['vinculadas']++;
+                continue;
+            }
+            if (count($leido['lineas']) < 1) {
+                $resumen['sin_partidas']++;
+                $resumen['vacios'][] = $file;
+                $guardado = $this->guardar([
+                    'sucursal_id' => $sucursal_id,
+                    'cliente_id' => $cliente_id,
+                    'constructora' => $leido['constructora'] ?: $nombre_cliente,
+                    'atencion' => $leido['atencion'],
+                    'obra_nombre' => $leido['obra'] ?: $this->cliente_desde_nombre($file),
+                    'pres_ref' => $leido['pres_ref'] ?: $file,
+                    'fecha' => $leido['fecha'],
+                    'introduccion' => $leido['introduccion'],
+                    'observaciones' => 'PDF entrenamiento 6 sin partidas detectadas. Revisar captura.',
+                    'costo_envio' => $leido['flete'],
+                    'envio_notas' => $leido['flete'] > 0 ? 'Flete leído del PDF de entrenamiento' : '',
+                    'pie_texto' => $hapa && !empty($hapa->pie_cotizacion) ? $hapa->pie_cotizacion : '',
+                ], [], 1);
+                if (!empty($guardado['success'])) {
+                    $this->db->where('id', (int) $guardado['id'])->update('cotizaciones_comerciales', [
+                        'archivo_origen' => $this->texto($file, 255),
+                    ]);
+                    $this->adjuntar_pdf_cotizacion((int) $guardado['id'], $file, $path);
+                    $this->asegurar_carpeta_envio((int) $guardado['id']);
+                    $resumen['nuevas']++;
+                    $resumen['folios'][] = $guardado['folio'];
+                }
+                continue;
+            }
+            $guardado = $this->guardar([
+                'sucursal_id' => $sucursal_id,
+                'cliente_id' => $cliente_id,
+                'constructora' => $leido['constructora'] ?: $nombre_cliente,
+                'atencion' => $leido['atencion'],
+                'obra_nombre' => $leido['obra'] ?: $this->cliente_desde_nombre($file),
+                'pres_ref' => $leido['pres_ref'] ?: $file,
+                'fecha' => $leido['fecha'],
+                'introduccion' => $leido['introduccion'],
+                'observaciones' => 'Cargada desde PDF de entrenamiento 6. Borrador, sin obra activa.',
+                'costo_envio' => $leido['flete'],
+                'envio_notas' => $leido['flete'] > 0 ? 'Flete leído del PDF de entrenamiento' : '',
+                'pie_texto' => $hapa && !empty($hapa->pie_cotizacion) ? $hapa->pie_cotizacion : '',
+            ], $leido['lineas'], 1);
+            if (!empty($guardado['success'])) {
+                $this->db->where('id', (int) $guardado['id'])->update('cotizaciones_comerciales', [
+                    'archivo_origen' => $this->texto($file, 255),
+                    'estatus' => 'Borrador',
+                ]);
+                $this->adjuntar_pdf_cotizacion((int) $guardado['id'], $file, $path);
+                $this->asegurar_carpeta_envio((int) $guardado['id']);
+                $resumen['nuevas']++;
+                $resumen['folios'][] = $guardado['folio'];
+            }
+        }
+        $this->clasificar_y_vincular_obras();
+        $resumen['success'] = true;
+        $resumen['message'] = 'PDFs: ' . $resumen['archivos']
+            . ', nuevas ' . $resumen['nuevas']
+            . ', vinculadas ' . $resumen['vinculadas']
+            . ', sin partidas ' . $resumen['sin_partidas'];
+        return $resumen;
+    }
+
+    private function buscar_cotizacion_pdf($archivo, $pres_ref) {
+        $row = $this->db->where('archivo_origen', $archivo)->get('cotizaciones_comerciales')->row();
+        if ($row) {
+            return $row;
+        }
+        if ($pres_ref) {
+            $row = $this->db->where('pres_ref', $pres_ref)->get('cotizaciones_comerciales')->row();
+            if ($row) {
+                return $row;
+            }
+        }
+        if (preg_match('/(\d{4,6})/', $archivo, $m)) {
+            $num = $m[1];
+            $this->db->group_start();
+            $this->db->like('pres_ref', $num);
+            $this->db->or_like('obra_nombre', $num);
+            $this->db->group_end();
+            $this->db->order_by('id', 'DESC');
+            $this->db->limit(1);
+            return $this->db->get('cotizaciones_comerciales')->row();
+        }
+        return null;
+    }
+
+    private function adjuntar_pdf_cotizacion($cot_id, $file, $path) {
+        $ruta = 'doc/entrenamiento_6/COTIZACIONES 2026 PDF/' . $file;
+        $ya = $this->db->where('origen_tipo', 'cotizacion')
+            ->where('origen_id', (int) $cot_id)
+            ->where('ruta', $ruta)
+            ->count_all_results('expediente_archivos');
+        if ($ya) {
+            return false;
+        }
+        $this->db->insert('expediente_archivos', [
+            'origen_tipo' => 'cotizacion',
+            'origen_id' => (int) $cot_id,
+            'nombre' => $file,
+            'ruta' => $ruta,
+            'extension' => 'pdf',
+            'tamano' => is_file($path) ? (int) filesize($path) : 0,
+            'fecha' => date('Y-m-d H:i:s'),
+        ]);
+        return true;
+    }
+
+    private function asegurar_carpeta_envio($cot_id) {
+        $ya = $this->db->where('origen_tipo', 'cotizacion')
+            ->where('origen_id', (int) $cot_id)
+            ->where('nombre', '3 Guerras / envío')
+            ->count_all_results('expediente_carpetas');
+        if ($ya) {
+            return;
+        }
+        $this->db->insert('expediente_carpetas', [
+            'origen_tipo' => 'cotizacion',
+            'origen_id' => (int) $cot_id,
+            'parent_id' => null,
+            'nombre' => '3 Guerras / envío',
+        ]);
     }
 }

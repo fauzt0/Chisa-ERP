@@ -10,5 +10,7 @@
 -- nominas, nominas_detalle (comidas/viaticos), asistencias, ordenes_venta.
 -- Huecos i6: semáforo entrenamiento_revisado; producto fabricado desde materiales;
 -- pantalla temporal producción; expediente lista de raya (adjuntos, no nueva nómina);
--- pie sucursal/envío 3 Guerras en cotización; alerta RH INE/CURP/NSS al crear obra.
+-- pie sucursal/envío 3 Guerras en cotización; alerta RH INE/CURP/NSS al crear obra;
+-- PDF i6 → CCO Borrador (archivo_origen, sin obra activa). LASTAS DE PRECIOS es matriz
+-- proveedor/insumo (X), no lista de precios; queda en expediente tipo precios.
 SELECT 1;

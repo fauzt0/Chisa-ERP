@@ -349,4 +349,23 @@ class CotizacionesObra extends MY_Controller {
         (new Xlsx($ss))->save('php://output');
         exit;
     }
+
+    /**
+     * CLI: php index.php ventas/CotizacionesObra/sembrar_pdfs_cli
+     */
+    public function sembrar_pdfs_cli() {
+        if (!is_cli()) {
+            show_error('Solo CLI', 403);
+            return;
+        }
+        echo json_encode($this->CotizacionesObraModel->sembrar_pdfs_entrenamiento6(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . PHP_EOL;
+    }
+
+    public function sembrar_pdfs_ajax() {
+        if (!$this->puede_editar() && !is_cli()) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso']);
+            return;
+        }
+        echo json_encode($this->CotizacionesObraModel->sembrar_pdfs_entrenamiento6());
+    }
 }

@@ -117,6 +117,10 @@ $pintar_arbol = function ($parent, $nivel) use (&$pintar_arbol, $hijos, $por_car
     </div>
 
     <?php if ($tipo === 'cotizacion'): ?>
+    <div class="alert alert-light border small mb-3">
+      Costo de envío 3 Guerras se captura en el encabezado (interno). Sube guía, factura o cotización de paquetería a la carpeta
+      <strong>3 Guerras / envío</strong> del expediente.
+    </div>
     <div class="d-flex justify-content-between align-items-center mb-2">
       <h6 class="mb-0">Adiciones</h6>
       <button type="button" class="btn btn-sm btn-outline-primary" id="segAdicion">Nueva subcotización</button>
