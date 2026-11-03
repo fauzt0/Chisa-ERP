@@ -148,6 +148,7 @@ class Pos extends MY_Controller {
             'tipo_venta' => $tipo_venta,
             'direccion_envio' => $this->input->post('direccion_envio'),
             'costo_envio' => $this->input->post('costo_envio') ?: 0,
+            'obra_id' => (int) $this->input->post('obra_id') ?: null,
             'observaciones' => $observaciones,
             'descuento_id' => $descuento_id ?: null,
             'descuento_nombre' => $descuento_nombre ?: null,

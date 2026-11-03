@@ -1061,7 +1061,8 @@ function confirmarPreOrden() {
 // ETIQUETA / CÓDIGO DE BARRAS
 // =====================================================
 
-function verEtiquetaLote(loteId, codigoBarras, productoNombre, cantidad, unidad, fecha) {
+function verEtiquetaLote(loteId, codigoBarras, productoNombre, cantidad, unidad, fecha, origen) {
+    origen = origen || '';
     const html = `
         <div style="font-family: monospace; border: 2px solid #333; border-radius: 8px; padding: 20px; max-width: 400px; margin: 0 auto;">
             <div style="font-size:0.85rem; font-weight:bold; text-align:center; margin-bottom:8px;">CHISA RECUBRIMIENTOS</div>
@@ -1070,7 +1071,8 @@ function verEtiquetaLote(loteId, codigoBarras, productoNombre, cantidad, unidad,
                 <strong>Producto:</strong> ${productoNombre}<br>
                 <strong>Cantidad:</strong> ${cantidad} ${unidad}<br>
                 <strong>Fecha:</strong> ${fecha}<br>
-                <strong>Código:</strong> ${codigoBarras}
+                <strong>Código:</strong> ${codigoBarras}<br>
+                ${origen ? '<strong>Origen:</strong> ' + origen + '<br>' : ''}
             </div>
         </div>
     `;
@@ -1155,6 +1157,7 @@ function cargarLotesOrden() {
                 ? new Date(lote.fecha_produccion).toLocaleDateString('es-MX', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})
                 : '—';
 
+            const origenLbl = lote.obra_folio ? ('Obra ' + lote.obra_folio) : (lote.orden_venta_folio ? ('OV ' + lote.orden_venta_folio) : '');
             html += `
                 <tr>
                     <td>
@@ -1164,6 +1167,7 @@ function cargarLotesOrden() {
                     <td>
                         <strong>${lote.producto_nombre || '—'}</strong>
                         <br><small class="text-muted">${lote.producto_codigo || ''}</small>
+                        ${origenLbl ? '<br><small class="text-primary">' + origenLbl + '</small>' : ''}
                     </td>
                     <td class="text-center">${parseFloat(lote.cantidad || lote.cantidad_producida || 0).toFixed(2)} ${lote.unidad || ''}</td>
                     <td class="text-center"><small>${fechaDisplay}</small></td>
@@ -1172,7 +1176,7 @@ function cargarLotesOrden() {
                     </td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-primary"
-                            onclick="verEtiquetaLote(${lote.id}, '${lote.codigo_barras}', '${(lote.producto_nombre||'').replace(/'/g,"\\'")}', '${lote.cantidad || lote.cantidad_producida || 0}', '${lote.unidad||''}', '${fechaDisplay}')"
+                            onclick="verEtiquetaLote(${lote.id}, '${lote.codigo_barras}', '${(lote.producto_nombre||'').replace(/'/g,"\\'")}', '${lote.cantidad || lote.cantidad_producida || 0}', '${lote.unidad||''}', '${fechaDisplay}', '${origenLbl.replace(/'/g, "\\'")}')"
                             title="Ver etiqueta">
                             <i class="fas fa-eye"></i>
                         </button>

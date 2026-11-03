@@ -196,7 +196,22 @@ class CotizacionesObraModel extends CI_Model {
                 return ['success' => false, 'message' => 'Cotización no encontrada'];
             }
             if (in_array($actual->estatus, ['Cancelada', 'Aceptada'], true)) {
-                return ['success' => false, 'message' => 'Esta cotización ya no se puede editar'];
+                return ['success' => false, 'message' => 'Esta cotización ya no se puede editar. Un administrador debe autorizar el cambio.'];
+            }
+            if ($actual->estatus === 'Enviada') {
+                $this->db->trans_complete();
+                $this->load->model('Ventas/CapturaPosModel');
+                $lineas_out = [];
+                foreach ((array) $lineas as $linea) {
+                    $lineas_out[] = $linea;
+                }
+                $nuevo = $this->guardar(array_merge($data, ['id' => 0, 'observaciones' => 'Versión de ' . $actual->folio]), $lineas_out, $user_id);
+                if (!empty($nuevo['success'])) {
+                    $this->CapturaPosModel->asegurar_raiz('cotizacion', $actual->id, $actual->folio);
+                    $num = $this->CapturaPosModel->registrar_version('cotizacion', $nuevo['id'], $actual->id, $nuevo['folio'], 'Edición de cotización enviada');
+                    $nuevo['message'] = 'Se creó la versión ' . $num . ': ' . $nuevo['folio'] . ' (la enviada no se sobreescribe)';
+                }
+                return $nuevo;
             }
             $this->db->where('id', $id)->update('cotizaciones_comerciales', $cab);
             $folio = $actual->folio;

@@ -35,6 +35,12 @@
                                 <div class="text-muted mt-2">Sucursal</div>
                                 <strong><?=htmlspecialchars($orden->sucursal_nombre, ENT_QUOTES, 'UTF-8')?></strong>
                                 <?php endif; ?>
+                                <div class="text-muted mt-2">Canal</div>
+                                <strong><?= !empty($orden->obra_id) ? 'Venta de obra' : 'Venta de mostrador' ?></strong>
+                                <?php if (!empty($orden->obra_id)): ?>
+                                <div><a href="<?= base_url('obras/Obras/detalle/' . (int) $orden->obra_id) ?>">Ver obra</a>
+                                · <a href="<?= base_url('ventas/CotizacionesObra') ?>">Cotizaciones de obra</a></div>
+                                <?php endif; ?>
                             </div>
                         </div>
 

@@ -516,9 +516,11 @@ class Dashboard extends MY_Controller {
         }
 
         // Buscar lotes de producción asociados a esta orden
-        $this->db->select('lp.*, p.nombre as producto_nombre, p.codigo as producto_codigo');
+        $this->db->select('lp.*, p.nombre as producto_nombre, p.codigo as producto_codigo, o.folio as obra_folio, o.nombre as obra_nombre, ov.folio as orden_venta_folio');
         $this->db->from('lotes_produccion lp');
         $this->db->join('productos p', 'p.id = lp.producto_id', 'left'); // LEFT para no omitir si producto fue eliminado
+        $this->db->join('obras o', 'o.id = lp.obra_id', 'left');
+        $this->db->join('ordenes_venta ov', 'ov.id = lp.orden_venta_id', 'left');
 
         if ($tipo === 'obra') {
             $this->db->where('lp.obra_id', $orden_id);

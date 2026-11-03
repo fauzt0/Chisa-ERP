@@ -22,6 +22,11 @@ $stats = $response['stats'] ?? [];
 <div class="row mb-3">
   <div class="col-md-6">
     <h2><i class="fas fa-cash-register"></i> Punto de Venta (POS) <button type="button" class="erp-btn-ayuda" data-erp-ayuda="pos" title="Funciones del POS">?</button></h2>
+    <p class="small mb-0">
+      <a href="<?= base_url('ventas/CotizacionesObra') ?>">Cotizaciones de obra</a> ·
+      <a href="<?= base_url('obras/Obras') ?>">Módulo de obras</a> ·
+      <a href="<?= base_url('ventas/ObrasVentas') ?>">Obras en CRM</a>
+    </p>
   </div>
   <div class="col-md-6">
     <label class="form-label mb-1">Sucursal / caja</label>
@@ -1564,6 +1569,7 @@ function procesarVenta(estatus) {
     forma_pago: $('#ticket_forma_pago').val(),
     estatus: estatus,
     observaciones: $('#ticket_observaciones').val(),
+    obra_id: $('#ticket_obra').val() || '',
     detalles: JSON.stringify(detalles),
     'peticion': 'ajax',
     '<?php echo $this->security->get_csrf_token_name();?>': '<?php echo $this->security->get_csrf_hash();?>'

@@ -16,7 +16,11 @@ $estatus_validos = $estatus_validos ?? [];
 </div>
 
 <div class="row mb-3">
-    <div class="col-12"><h2><i class="fas fa-hard-hat"></i> Nueva Obra</h2></div>
+    <div class="col-12"><h2><i class="fas fa-hard-hat"></i> Nueva Obra</h2>
+      <p class="small text-muted mb-0">Alta de obra (id, estatus, cliente). El resumen comercial y las partidas se siguen en
+        <a href="<?= base_url('ventas/CotizacionesObra') ?>">Cotizaciones de obra</a>. El detalle operativo abre
+        <a href="<?= base_url('obras/Obras') ?>">Obras</a>.</p>
+    </div>
 </div>
 
 <div class="card">
