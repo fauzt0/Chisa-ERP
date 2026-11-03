@@ -119,6 +119,9 @@ class InsumosModel extends MY_Model {
         if(isset($filtros['stock_bajo']) && $filtros['stock_bajo'] == '1') {
             $this->db->where('insumos.stock_actual <=', 'insumos.stock_minimo', FALSE);
         }
+        if (isset($filtros['entrenamiento_revisado']) && $filtros['entrenamiento_revisado'] !== '') {
+            $this->db->where('insumos.entrenamiento_revisado', (int) $filtros['entrenamiento_revisado']);
+        }
         if(!empty($filtros['busqueda'])) {
             $busqueda = $filtros['busqueda'];
             $alias_sub = "EXISTS (SELECT 1 FROM insumos_alias ia WHERE ia.insumo_id = insumos.id AND ia.alias LIKE '%" . $this->db->escape_like_str($busqueda) . "%')";
@@ -423,7 +426,7 @@ class InsumosModel extends MY_Model {
      * @return bool
      */
     public function guardar_entrenamiento($id, array $data) {
-        $allowed = ['estatus', 'alias', 'clase_uso', 'actualizado_por'];
+        $allowed = ['estatus', 'alias', 'clase_uso', 'actualizado_por', 'unidad_medida', 'entrenamiento_revisado'];
         $update  = array_intersect_key($data, array_flip($allowed));
         if (empty($update)) {
             return false;
@@ -453,6 +456,47 @@ class InsumosModel extends MY_Model {
         if (empty($update)) return false;
         $this->db->where('id', (int) $producto_id);
         return $this->db->update('productos', $update);
+    }
+
+    /**
+     * Crea o reutiliza un producto Fabricado y lo enlaza. No borra el insumo
+     * ni cambia insumos.tipo (comprado/fabricado/semielaborado).
+     */
+    public function enlazar_producto_entrenamiento($insumo_id, $usuario_id) {
+        $insumo = $this->get_insumo((int) $insumo_id);
+        if (!$insumo) {
+            return ['success' => false, 'message' => 'Insumo no encontrado'];
+        }
+        if (!empty($insumo->producto_id)) {
+            return ['success' => true, 'message' => 'Ya tenía producto enlazado', 'producto_id' => (int) $insumo->producto_id];
+        }
+        $codigo = 'ENT-' . preg_replace('/[^A-Z0-9\-]/i', '', (string) $insumo->codigo);
+        if ($codigo === 'ENT-') {
+            $codigo = 'ENT-I' . (int) $insumo_id;
+        }
+        $existente = $this->db->where('codigo', $codigo)->get('productos')->row();
+        if ($existente) {
+            $producto_id = (int) $existente->id;
+        } else {
+            $cat = (int) ($this->db->select_min('id')->get('categorias_productos')->row('id') ?: 1);
+            $this->db->insert('productos', [
+                'codigo' => $codigo,
+                'nombre' => $insumo->nombre_tecnico,
+                'alias' => $insumo->alias,
+                'categoria_id' => $cat,
+                'tipo_producto' => 'Fabricado',
+                'unidad_venta' => 'Kg',
+                'estatus' => 'Activo',
+                'usuario_creacion' => (int) $usuario_id ?: null,
+                'fecha_creacion' => date('Y-m-d H:i:s'),
+            ]);
+            $producto_id = (int) $this->db->insert_id();
+        }
+        $this->db->where('id', (int) $insumo_id)->update($this->tableName, [
+            'producto_id' => $producto_id,
+            'actualizado_por' => (int) $usuario_id ?: null,
+        ]);
+        return ['success' => true, 'message' => 'Producto enlazado (el insumo no se borra)', 'producto_id' => $producto_id];
     }
 
     // =============================================

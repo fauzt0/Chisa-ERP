@@ -56,9 +56,32 @@ $csrf_hash = $this->security->get_csrf_hash();
           <label class="form-label">Alias interno</label>
           <input class="form-control" name="alias_interno" value="<?= htmlspecialchars($f['alias_interno'], ENT_QUOTES, 'UTF-8') ?>">
         </div>
+        <div class="col-md-4">
+          <label class="form-label">Unidad</label>
+          <?php $ums = ['Kg','g','L','mL','Pza','Cubeta','Tambo','Galón','m²','Ton','Servicio','Otro']; ?>
+          <select class="form-select" name="unidad_medida">
+            <?php foreach ($ums as $u): ?>
+              <option value="<?= $u ?>" <?= ($f['unidad_medida'] ?? '') === $u ? 'selected' : '' ?>><?= $u ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Revisado</label>
+          <select class="form-select" name="entrenamiento_revisado">
+            <option value="0" <?= empty($f['entrenamiento_revisado']) ? 'selected' : '' ?>>No revisado</option>
+            <option value="1" <?= !empty($f['entrenamiento_revisado']) ? 'selected' : '' ?>>Revisado</option>
+          </select>
+        </div>
       </div>
       <button class="btn btn-primary" type="submit">Guardar datos generales</button>
     </div>
+  </form>
+  <form class="mt-2" method="post" action="<?= base_url('compras/EntrenamientoMateriales/marcar_producto_ajax') ?>">
+    <input type="hidden" name="<?= htmlspecialchars($csrf_name, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($csrf_hash, ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" name="insumo_id" value="<?= (int) $f['id'] ?>">
+    <input type="hidden" name="volver" value="1">
+    <button class="btn btn-outline-dark btn-sm" type="submit">Marcar como producto fabricado (enlaza, no borra el insumo)</button>
+    <span class="small text-muted">No cambia el tipo comprado/fabricado del insumo.</span>
   </form>
   <?php if (!empty($f['proveedores'])): ?>
   <div class="card mt-3">

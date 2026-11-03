@@ -37,6 +37,11 @@ class EntrenamientoMateriales extends MY_Controller {
                 "ALTER TABLE insumos ADD COLUMN actualizado_por INT NULL DEFAULT NULL"
             );
         }
+        if (!$this->db->field_exists('entrenamiento_revisado', 'insumos')) {
+            $this->db->query(
+                "ALTER TABLE insumos ADD COLUMN entrenamiento_revisado TINYINT(1) NOT NULL DEFAULT 0"
+            );
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -47,7 +52,14 @@ class EntrenamientoMateriales extends MY_Controller {
         $this->requiere_permiso('almacen_insumos', 'Sin permiso');
 
         $busqueda = trim((string) $this->input->get('busqueda'));
-        $filtros  = $busqueda !== '' ? ['busqueda' => $busqueda] : [];
+        $revisado = trim((string) $this->input->get('revisado'));
+        $filtros  = [];
+        if ($busqueda !== '') {
+            $filtros['busqueda'] = $busqueda;
+        }
+        if ($revisado === '0' || $revisado === '1') {
+            $filtros['entrenamiento_revisado'] = (int) $revisado;
+        }
 
         $insumos  = $this->InsumosModel->get_all_insumos($filtros);
         $filas    = $this->_armar_filas($insumos);
@@ -60,6 +72,7 @@ class EntrenamientoMateriales extends MY_Controller {
         $this->viewData['breadcrumb'] = 'Inicio > Compras > Entrenamiento de materiales';
         $this->viewData['response']   = [
             'busqueda'            => $busqueda,
+            'revisado'            => $revisado,
             'filas'               => $filas,
             'total'               => count($filas),
             'proveedores_activos' => $proveedores_activos,
@@ -114,6 +127,15 @@ class EntrenamientoMateriales extends MY_Controller {
         if ($estatus    !== null) $data['estatus']    = $estatus;
         if ($tiene_clase_uso) $data['clase_uso'] = $clase_uso;
         if ($alias_interno !== null) $data['alias'] = trim($alias_interno);
+        $um = $this->input->post('unidad_medida');
+        $unidades = ['Kg','g','mg','L','mL','Pza','Cubeta','Tambo','Galón','m²','m³','Ton','Servicio','Otro'];
+        if ($um !== null && $um !== '' && in_array($um, $unidades, true)) {
+            $data['unidad_medida'] = $um;
+        }
+        $rev = $this->input->post('entrenamiento_revisado');
+        if ($rev !== null && $rev !== '') {
+            $data['entrenamiento_revisado'] = ((int) $rev === 1) ? 1 : 0;
+        }
 
         $ok = $this->InsumosModel->guardar_entrenamiento($id, $data);
         if ($ok) {
@@ -257,6 +279,29 @@ class EntrenamientoMateriales extends MY_Controller {
         echo json_encode(['success' => (bool) $ok, 'message' => $ok ? 'Producto actualizado' : 'Sin cambios o error']);
     }
 
+    public function marcar_producto_ajax() {
+        $this->requiere_permiso('almacen_insumos', 'Sin permiso');
+        $id = (int) $this->input->post('insumo_id');
+        $insumo = $id > 0 ? $this->InsumosModel->get_insumo($id) : null;
+        if (!$insumo) {
+            echo json_encode(['success' => false, 'message' => 'Insumo no encontrado']);
+            return;
+        }
+        $en_bom = (int) $this->db->where('insumo_id', $id)->count_all_results('detalle_formulacion');
+        $res = $this->InsumosModel->enlazar_producto_entrenamiento($id, (int) $this->session->userdata('id'));
+        if (!empty($res['success'])) {
+            $this->registrar_bitacora("Entrenamiento: insumo #{$id} enlazado a producto (BOM={$en_bom})", 'Compras');
+        }
+        $res['en_formulacion'] = $en_bom;
+        if ($this->input->post('volver') === '1') {
+            $this->session->set_flashdata('em_msg', $res['message'] ?? 'Listo');
+            $this->session->set_flashdata('em_ok', !empty($res['success']) ? '1' : '0');
+            redirect('compras/EntrenamientoMateriales/editar/' . $id);
+            return;
+        }
+        echo json_encode($res);
+    }
+
     public function get_fila_ajax() {
         $this->requiere_permiso('almacen_insumos', 'Sin permiso');
         $id = (int) ($this->input->get('id') ?: $this->input->post('id'));
@@ -343,6 +388,8 @@ class EntrenamientoMateriales extends MY_Controller {
                 'nombre_tecnico' => $ins->nombre_tecnico ?? '',
                 'alias_interno'  => $ins->alias          ?? '',
                 'clase_uso'      => $ins->clase_uso      ?? '',
+                'unidad_medida'  => $ins->unidad_medida  ?? '',
+                'entrenamiento_revisado' => (int) ($ins->entrenamiento_revisado ?? 0),
                 'estatus'        => $ins->estatus        ?? '',
                 'categoria'      => $ins->categoria_nombre ?? '',
                 'tipo'           => $ins->tipo            ?? '',

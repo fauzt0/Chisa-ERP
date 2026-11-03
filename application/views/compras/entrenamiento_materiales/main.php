@@ -20,13 +20,22 @@ $csrf_hash         = $this->security->get_csrf_hash();
   </div>
 
   <!-- Búsqueda -->
+  <?php $revisado = $response['revisado'] ?? ''; ?>
   <form class="card mb-3" method="get" action="<?= base_url('compras/EntrenamientoMateriales') ?>">
     <div class="card-body row g-2 align-items-end">
-      <div class="col-md-8">
+      <div class="col-md-5">
         <label class="form-label" for="busqueda">Buscar por nombre técnico, alias o código</label>
         <input type="search" class="form-control" id="busqueda" name="busqueda"
                value="<?= htmlspecialchars($busqueda, ENT_QUOTES, 'UTF-8') ?>"
                placeholder="BERMOCOLL, Agua desmineralizada, INS-001…">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="revisado">Semáforo</label>
+        <select class="form-select" id="revisado" name="revisado">
+          <option value="">Todos</option>
+          <option value="0" <?= $revisado === '0' ? 'selected' : '' ?>>No revisado (rojo)</option>
+          <option value="1" <?= $revisado === '1' ? 'selected' : '' ?>>Revisado (verde)</option>
+        </select>
       </div>
       <div class="col-md-2">
         <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Buscar</button>
@@ -47,6 +56,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
       <table class="table table-striped table-sm mb-0" id="tablaEM">
         <thead class="table-light">
           <tr>
+            <th>Rev.</th>
             <th>Código</th>
             <th>Nombre técnico</th>
             <th>Alias interno</th>
@@ -63,10 +73,17 @@ $csrf_hash         = $this->security->get_csrf_hash();
         </thead>
         <tbody>
         <?php if (empty($filas)): ?>
-          <tr><td colspan="12" class="text-muted py-3">Sin resultados.</td></tr>
+          <tr><td colspan="13" class="text-muted py-3">Sin resultados.</td></tr>
         <?php else: ?>
           <?php foreach ($filas as $f): ?>
           <tr>
+            <td class="text-center">
+              <?php if (!empty($f['entrenamiento_revisado'])): ?>
+                <span class="badge rounded-pill bg-success" title="Revisado">●</span>
+              <?php else: ?>
+                <span class="badge rounded-pill bg-danger" title="No revisado">●</span>
+              <?php endif; ?>
+            </td>
             <td><?= htmlspecialchars($f['codigo'], ENT_QUOTES, 'UTF-8') ?></td>
             <td><?= htmlspecialchars($f['nombre_tecnico'], ENT_QUOTES, 'UTF-8') ?></td>
             <td><?= $f['alias_interno'] !== '' ? htmlspecialchars($f['alias_interno'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
