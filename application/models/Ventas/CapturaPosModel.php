@@ -259,6 +259,7 @@ class CapturaPosModel extends CI_Model {
             return [];
         }
         $this->db->select('c.id, c.folio, c.fecha, c.estatus, c.constructora, c.obra_nombre, c.ubicacion, c.es_consulta, clientes.razon_social');
+        $this->db->select('(SELECT ROUND(SUM(importe),2) FROM cotizaciones_comerciales_detalle d2 WHERE d2.cotizacion_id = c.id) AS total', false);
         $this->db->from('cotizaciones_comerciales c');
         $this->db->join('clientes', 'clientes.id = c.cliente_id', 'left');
         if ($q !== '') {
@@ -302,7 +303,7 @@ class CapturaPosModel extends CI_Model {
                 'fecha' => $r->fecha,
                 'quien' => $r->razon_social ?: $r->constructora,
                 'detalle' => trim($r->obra_nombre . ' ' . $r->ubicacion . ' · ' . $r->estatus),
-                'monto' => null,
+                'monto' => $r->total,
                 'url' => base_url('ventas/CotizacionesObra/editar/' . $r->id),
             ];
         }
