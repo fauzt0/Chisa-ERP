@@ -294,10 +294,16 @@ class PresupuestosObraModel extends CI_Model {
             $sucursal_id = $this->session->userdata('sucursal_id');
         }
         if (!$sucursal_id) {
-            $this->db->where('estatus', 'Activa');
-            $this->db->order_by('id', 'ASC');
-            $suc = $this->db->get('sucursales')->row();
-            $sucursal_id = $suc ? (int) $suc->id : null;
+            $this->load->model('Ventas/SucursalesModel');
+            $matriz = $this->SucursalesModel->get_por_codigo('SUC-MATRIZ');
+            if ($matriz) {
+                $sucursal_id = (int) $matriz->id;
+            } else {
+                $this->db->where('estatus', 'Activa');
+                $this->db->order_by('id', 'ASC');
+                $suc = $this->db->get('sucursales')->row();
+                $sucursal_id = $suc ? (int) $suc->id : null;
+            }
         }
         return $sucursal_id;
     }

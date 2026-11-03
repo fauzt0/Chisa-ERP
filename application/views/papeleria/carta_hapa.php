@@ -8,10 +8,17 @@ $fecha = $fecha ?? date('Y-m-d');
 $ts = strtotime($fecha);
 $ciudad = $marca['ciudad'] ?: 'CIUDAD DE MÉXICO';
 $fechaTxt = mb_strtoupper($ciudad) . ' A ' . date('j', $ts) . ' DE ' . $meses[(int) date('n', $ts)] . ' DEL ' . date('Y', $ts);
-$logo = $marca['logo_documento'] ?? ($empresa->logo ?? '');
+$logo = $marca['logo_documento'] ?? '';
 $icono = $marca['icono'] ?? '';
 $agua = $marca['logo'] ?? '';
-$nombreDoc = $marca['nombre'] ?: ($empresa->nombre_comercial ?? $empresa->razon_social ?? 'HAPA');
+$nombreDoc = $marca['nombre'] ?: ($empresa->nombre_comercial ?? $empresa->razon_social ?? 'CHISA');
+$lema = papeleria_lema($marca);
+if ($logo === '' && !papeleria_es_hapa($marca)) {
+    $logo = $empresa->logo ?? '';
+}
+if ($agua === '' && !papeleria_es_hapa($marca)) {
+    $agua = $logo;
+}
 $src = function ($ruta) use ($paraPdf) {
     if (!$ruta) {
         return '';
@@ -31,7 +38,7 @@ $folio = $folio ?? '';
 $pres_ref = $pres_ref ?? $folio;
 $notas = trim((string) ($notas_legales ?? ''));
 if ($notas === '') {
-    $notas = papeleria_hapa_notas();
+    $notas = papeleria_notas_por_marca($marca);
 }
 $forma = trim((string) ($forma_pago ?? ''));
 if ($forma === '') {
@@ -97,7 +104,7 @@ $toolbar_excel = $toolbar_excel ?? '';
           <?php if ($src($icono)): ?><img src="<?=htmlspecialchars($src($icono))?>" alt="" style="max-height:64px;margin-right:8px"><?php endif; ?>
           <?php if ($src($logo)): ?><img src="<?=htmlspecialchars($src($logo))?>" alt="" style="max-height:64px"><?php endif; ?>
           <?php if (!$src($icono) && !$src($logo)): ?>
-            <div class="wordmark"><?=htmlspecialchars($nombreDoc)?><span>SOLUCIONES INTEGRALES EN RECUBRIMIENTOS</span></div>
+            <div class="wordmark"><?=htmlspecialchars($nombreDoc)?><span><?=htmlspecialchars($lema)?></span></div>
           <?php endif; ?>
         </td>
         <td class="contacto">

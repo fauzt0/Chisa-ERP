@@ -355,9 +355,9 @@ class CotizacionesObra extends MY_Controller {
         $legal->setCellValue('A2', 'PRES. REF. ' . ($cot->pres_ref ?: $cot->folio));
         $legal->setCellValue('A3', 'OBRA: ' . $cot->obra_nombre);
         $legal->setCellValue('A5', 'FORMA DE PAGO');
-        $legal->setCellValue('A6', papeleria_hapa_forma_pago());
+        $legal->setCellValue('A6', $marca['forma_pago'] ?: papeleria_hapa_forma_pago());
         $legal->setCellValue('A8', 'NOTAS');
-        $legal->setCellValue('A9', papeleria_hapa_notas());
+        $legal->setCellValue('A9', $marca['notas_cotizacion'] ?: papeleria_notas_por_marca($marca));
         $legal->getColumnDimension('A')->setWidth(110);
         $legal->getStyle('A6')->getAlignment()->setWrapText(true);
         $legal->getStyle('A9')->getAlignment()->setWrapText(true);
@@ -380,9 +380,9 @@ class CotizacionesObra extends MY_Controller {
     }
 
     /**
-     * CLI: php index.php ventas/CotizacionesObra/cli_html_muestra CCO-2026-0418 /tmp/out.html
+     * CLI: php index.php ventas/CotizacionesObra/cli_html_muestra CCO-2026-0418 /tmp/out.html [SUC-HAPA|SUC-MATRIZ]
      */
-    public function cli_html_muestra($folio = 'CCO-2026-0418', $salida = '') {
+    public function cli_html_muestra($folio = 'CCO-2026-0418', $salida = '', $codigo_sucursal = '') {
         if (!is_cli()) {
             show_error('Solo CLI', 403);
             return;
@@ -393,14 +393,27 @@ class CotizacionesObra extends MY_Controller {
             return;
         }
         $cot = $this->CotizacionesObraModel->get($cot->id);
+        if (strpos($salida, 'SUC-') === 0) {
+            $codigo_sucursal = $salida;
+            $salida = '';
+        }
+        $sucursal_id = $cot->sucursal_id;
+        if ($codigo_sucursal !== '') {
+            $forzada = $this->SucursalesModel->get_por_codigo($codigo_sucursal);
+            if ($forzada) {
+                $sucursal_id = (int) $forzada->id;
+            }
+        }
+        $marca = $this->SucursalesModel->get_marca_agua($sucursal_id);
         $html = $this->load->view('ventas/cotizaciones_obra/imprimir', [
             'cotizacion' => $cot,
-            'marca' => $this->SucursalesModel->get_marca_agua($cot->sucursal_id),
+            'marca' => $marca,
             'empresa' => $this->EmpresaModel->get_config(),
             'para_pdf' => true,
         ], true);
         if ($salida === '') {
-            $salida = '/opt/cursor/artifacts/cco_muestra.html';
+            $suf = $codigo_sucursal !== '' ? strtolower(preg_replace('/[^a-z0-9\-]+/i', '', $codigo_sucursal)) : 'actual';
+            $salida = '/opt/cursor/artifacts/cco_muestra_' . $suf . '.html';
         }
         $dir = dirname($salida);
         if (!is_dir($dir)) {
@@ -408,8 +421,12 @@ class CotizacionesObra extends MY_Controller {
         }
         file_put_contents($salida, $html);
         echo $salida . ' ' . strlen($html) . " bytes\n";
+        echo 'marca ' . ($marca['codigo'] ?: '?') . ' ' . ($marca['nombre'] ?: '') . "\n";
         echo (strpos($html, 'FORMA DE PAGO') !== false ? 'ok_forma_pago' : 'falta_forma_pago') . "\n";
         echo (strpos($html, '3 Guerras') !== false ? 'interno_presente' : 'interno_oculto_en_pdf') . "\n";
+        echo (strpos($html, 'chisa_recubrimientos_logo') !== false ? 'logo_chisa' : 'sin_logo_chisa') . "\n";
+        echo (stripos($html, 'hapasoluciones.com') !== false ? 'notas_hapa' : 'notas_sin_hapa_web') . "\n";
+        echo (stripos($html, 'chisarecubrimientos.com.mx') !== false ? 'notas_chisa' : 'notas_sin_chisa_web') . "\n";
     }
 
     public function sembrar_pdfs_ajax() {

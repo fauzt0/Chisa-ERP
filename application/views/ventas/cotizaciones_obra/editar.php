@@ -62,11 +62,16 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
       <input type="hidden" id="cot_id" value="<?= (int) ($c->id ?? 0) ?>">
       <div class="row g-3">
         <div class="col-md-4">
-          <label class="form-label">Sucursal (logo y marca de agua)</label>
+          <label class="form-label">Sucursal (papelería CHISA o HAPA)</label>
           <select class="form-select" id="sucursal_id" <?= $bloqueada ? 'disabled' : '' ?>>
-            <option value="">—</option>
             <?php foreach ($sucursales as $s): ?>
-            <option value="<?=$s->id?>" <?= $c && (int)$c->sucursal_id === (int)$s->id ? 'selected' : '' ?>><?=htmlspecialchars($s->nombre)?></option>
+            <?php
+              $sel = $c && (int) $c->sucursal_id === (int) $s->id;
+              if (!$c && ($s->codigo ?? '') === 'SUC-MATRIZ') {
+                  $sel = true;
+              }
+            ?>
+            <option value="<?=$s->id?>" <?= $sel ? 'selected' : '' ?>><?=htmlspecialchars($s->nombre)?></option>
             <?php endforeach; ?>
           </select>
         </div>

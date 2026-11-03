@@ -173,7 +173,7 @@ class CotizacionesObraModel extends CI_Model {
         $this->asegurar_infraestructura();
         $id = (int) ($data['id'] ?? 0);
         $cab = [
-            'sucursal_id' => (int) ($data['sucursal_id'] ?? 0) ?: null,
+            'sucursal_id' => $this->resolver_sucursal_id_guardar($data['sucursal_id'] ?? null),
             'cliente_id' => (int) ($data['cliente_id'] ?? 0) ?: null,
             'obra_id' => (int) ($data['obra_id'] ?? 0) ?: null,
             'constructora' => $this->texto($data['constructora'] ?? '', 200),
@@ -270,6 +270,16 @@ class CotizacionesObraModel extends CI_Model {
             return ['success' => false, 'message' => 'No se pudo guardar la cotización'];
         }
         return ['success' => true, 'message' => 'Cotización ' . $folio . ' guardada', 'id' => $id, 'folio' => $folio];
+    }
+
+    private function resolver_sucursal_id_guardar($sucursal_id) {
+        $sid = (int) $sucursal_id;
+        if ($sid > 0) {
+            return $sid;
+        }
+        $this->load->model('Ventas/SucursalesModel');
+        $matriz = $this->SucursalesModel->get_por_codigo('SUC-MATRIZ');
+        return $matriz ? (int) $matriz->id : null;
     }
 
     public function cambiar_estatus($id, $estatus) {

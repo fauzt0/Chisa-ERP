@@ -155,7 +155,7 @@ $e = $response['empresa'] ?? (object)[];
       <div class="card mt-3">
         <div class="card-body">
           <h5 class="card-title">Sucursales</h5>
-          <p class="small text-muted">Logo, icono, marca de agua, dirección y contacto de cada sucursal se usan en la cotización comercial de obra.</p>
+          <p class="small text-muted">La matriz es CHISA. Configura aquí la sucursal CHISA (Iztacalco) y la sucursal HAPA (Del Valle): cada una lleva su dirección, contacto y papelería. HAPA no usa el logotipo de CHISA.</p>
           <a class="btn btn-outline-primary btn-sm" href="<?=base_url('ventas/Sucursales')?>">Abrir sucursales</a>
         </div>
       </div>

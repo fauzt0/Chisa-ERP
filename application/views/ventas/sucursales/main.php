@@ -9,7 +9,7 @@ function img_suc($ruta) {
 <div class="container-fluid p-0">
   <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
   <h1 class="h3 mb-2"><?=htmlspecialchars($headTitle)?></h1>
-  <p class="text-muted">Logo, icono, marca de agua y datos de contacto que salen en la cotización comercial de obra.</p>
+  <p class="text-muted">La empresa matriz es CHISA Recubrimientos. Hay dos sucursales de papelería: <strong>SUC-MATRIZ</strong> (domicilio y logo CHISA, Iztacalco) y <strong>SUC-HAPA</strong> (Del Valle, sin el logo de CHISA). Cada una imprime su propio membrete en cotizaciones de obra.</p>
   <?php foreach ($sucursales as $s): ?>
   <div class="card mb-3">
     <div class="card-header"><strong><?=htmlspecialchars($s->codigo)?> · <?=htmlspecialchars($s->nombre)?></strong></div>

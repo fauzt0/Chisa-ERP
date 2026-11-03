@@ -20,3 +20,43 @@ if (!function_exists('papeleria_hapa_forma_pago')) {
         return 'EN CASO DE SER ACEPTADO EL PRESENTE PRESUPUESTO REQUERIMOS DEL PAGO TOTAL ANTICIPADO, EL CUAL SERA APLICADO A LA FABRICACIÓN, Y GASTOS DE ENVÍO DE MATERIALES AL LUGAR DE LOS TRABAJOS: AL OTORGAR EL PAGO DE ANTICIPO PARA LA EJECUCIÓN DE LOS TRABAJOS, SE CONSIDERA COMO ACEPTADO EL PRESUPUESTO EN TODOS SUS PUNTOS Y EL MISMO FUNGIRÁ COMO CONTRATO.';
     }
 }
+
+if (!function_exists('papeleria_chisa_notas')) {
+    function papeleria_chisa_notas() {
+        return str_replace(
+            [
+                'HAPA SOLUCIONES INTEGRALES EN RECUBRIMIENTOS, S.A. DE C.V. CON DOMICILIO EN CALLE MORAS 506 INT. 10 COL. DEL VALLE, ALCALDÍA BENITO JUAREZ, EN CIUDAD DE MÉXICO',
+                'EL PERSONAL APLICADOR DE HAPA SOLUCIONES INTEGRALES EN RECUBRIMIENTOS, S.A. DE C.V.',
+                'www.hapasoluciones.com',
+            ],
+            [
+                'CHISA RECUBRIMIENTOS, S.A. DE C.V. CON DOMICILIO EN ANDRÉS MOLINA ENRÍQUEZ NO. 156, COL. SAN PEDRO IZTACALCO, C.P. 08220, CIUDAD DE MÉXICO',
+                'EL PERSONAL APLICADOR DE CHISA RECUBRIMIENTOS, S.A. DE C.V.',
+                'www.chisarecubrimientos.com.mx',
+            ],
+            papeleria_hapa_notas()
+        );
+    }
+}
+
+if (!function_exists('papeleria_es_hapa')) {
+    function papeleria_es_hapa($marca) {
+        $codigo = is_array($marca) ? strtoupper((string) ($marca['codigo'] ?? '')) : '';
+        $nombre = is_array($marca) ? (string) ($marca['nombre'] ?? '') : '';
+        return $codigo === 'SUC-HAPA' || stripos($nombre, 'HAPA') !== false;
+    }
+}
+
+if (!function_exists('papeleria_lema')) {
+    function papeleria_lema($marca) {
+        return papeleria_es_hapa($marca)
+            ? 'SOLUCIONES INTEGRALES EN RECUBRIMIENTOS'
+            : 'RECUBRIMIENTOS';
+    }
+}
+
+if (!function_exists('papeleria_notas_por_marca')) {
+    function papeleria_notas_por_marca($marca) {
+        return papeleria_es_hapa($marca) ? papeleria_hapa_notas() : papeleria_chisa_notas();
+    }
+}

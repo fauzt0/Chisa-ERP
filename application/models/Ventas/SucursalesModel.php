@@ -55,61 +55,132 @@ class SucursalesModel extends CI_Model {
             }
         }
 
+        $this->load->helper('papeleria_hapa');
+        $this->asegurar_sucursal_chisa();
+        $this->asegurar_sucursal_hapa();
+        $this->asegurar_empresa_matriz_chisa();
+    }
+
+    /**
+     * Empresa matriz = CHISA. Sucursal SUC-MATRIZ lleva domicilio y papelería CHISA.
+     */
+    private function asegurar_sucursal_chisa() {
+        $logo = 'assets/dist/img/brands/chisa_recubrimientos_logo.jpg';
+        $datos = [
+            'nombre' => 'CHISA Recubrimientos (Matriz)',
+            'direccion' => 'Andrés Molina Enríquez #156, Col. San Pedro Iztacalco, C.P. 08220',
+            'ciudad' => 'Ciudad de México',
+            'telefono' => '55-5579-9434',
+            'email' => 'info@chisarecubrimientos.com.mx',
+            'sitio_web' => 'www.chisarecubrimientos.com.mx',
+            'estatus' => 'Activa',
+            'texto_marca_agua' => 'CHISA',
+            'logo' => $logo,
+            'logo_marca_agua' => $logo,
+            'pie_cotizacion' => 'CHISA Recubrimientos, S.A. de C.V.',
+            'notas_cotizacion' => papeleria_chisa_notas(),
+            'forma_pago' => papeleria_hapa_forma_pago(),
+        ];
         $this->db->where('codigo', 'SUC-MATRIZ');
         if ($this->db->count_all_results('sucursales') === 0) {
-            $this->db->insert('sucursales', [
-                'codigo' => 'SUC-MATRIZ',
-                'nombre' => 'Matriz CDMX',
-                'direccion' => 'Andrés Molina Enríquez #156, Col. San Pedro Iztacalco, C.P. 08220, CDMX',
-                'telefono' => '55-5579-9434',
-                'estatus' => 'Activa',
-            ]);
+            $datos['codigo'] = 'SUC-MATRIZ';
+            $this->db->insert('sucursales', $datos);
+            return;
         }
-        $this->load->helper('papeleria_hapa');
-        $this->db->where('codigo', 'SUC-HAPA');
-        if ($this->db->count_all_results('sucursales') === 0) {
-            $this->db->insert('sucursales', [
-                'codigo' => 'SUC-HAPA',
-                'nombre' => 'HAPA Soluciones Integrales en Recubrimientos',
-                'direccion' => 'Calle Moras 506 Int. 10, Col. Del Valle, Benito Juárez',
-                'ciudad' => 'Ciudad de México',
-                'sitio_web' => 'www.hapasoluciones.com',
-                'estatus' => 'Activa',
-                'texto_marca_agua' => 'HAPA',
-                'pie_cotizacion' => 'HAPA Soluciones Integrales en Recubrimientos.',
-                'notas_cotizacion' => papeleria_hapa_notas(),
-                'forma_pago' => papeleria_hapa_forma_pago(),
-            ]);
-        } else {
-            $hapa = $this->db->where('codigo', 'SUC-HAPA')->get('sucursales')->row();
-            if ($hapa && $this->db->field_exists('notas_cotizacion', 'sucursales')) {
-                $upd = [];
-                if (empty($hapa->notas_cotizacion)) {
-                    $upd['notas_cotizacion'] = papeleria_hapa_notas();
-                    $upd['forma_pago'] = papeleria_hapa_forma_pago();
-                }
-                if ($hapa->direccion && strpos($hapa->direccion, 'papelería') !== false) {
-                    $upd['direccion'] = 'Calle Moras 506 Int. 10, Col. Del Valle, Benito Juárez';
-                    $upd['ciudad'] = 'Ciudad de México';
-                    $upd['sitio_web'] = 'www.hapasoluciones.com';
-                }
-                if ($upd) {
-                    $this->db->where('id', (int) $hapa->id)->update('sucursales', $upd);
-                }
+        $this->db->where('codigo', 'SUC-MATRIZ')->update('sucursales', $datos);
+    }
+
+    /**
+     * HAPA es otra sucursal (papelería de obra). No usa el logo de CHISA.
+     */
+    private function asegurar_sucursal_hapa() {
+        $datos = [
+            'nombre' => 'HAPA Soluciones Integrales en Recubrimientos',
+            'direccion' => 'Calle Moras 506 Int. 10, Col. Del Valle, Benito Juárez',
+            'ciudad' => 'Ciudad de México',
+            'telefono' => '55-5909-4381 / 729-107-7726',
+            'email' => 'contacto@hapasoluciones.com',
+            'sitio_web' => 'www.hapasoluciones.com',
+            'estatus' => 'Activa',
+            'texto_marca_agua' => 'HAPA',
+            'pie_cotizacion' => 'HAPA Soluciones Integrales en Recubrimientos.',
+            'notas_cotizacion' => papeleria_hapa_notas(),
+            'forma_pago' => papeleria_hapa_forma_pago(),
+        ];
+        $actual = $this->get_por_codigo('SUC-HAPA');
+        if (!$actual) {
+            $datos['codigo'] = 'SUC-HAPA';
+            $this->db->insert('sucursales', $datos);
+            return;
+        }
+        foreach (['logo', 'logo_marca_agua'] as $campo) {
+            $ruta = (string) ($actual->$campo ?? '');
+            if ($ruta === '' || strpos($ruta, 'chisa_recubrimientos') !== false) {
+                $datos[$campo] = null;
             }
+        }
+        $this->db->where('codigo', 'SUC-HAPA')->update('sucursales', $datos);
+    }
+
+    private function asegurar_empresa_matriz_chisa() {
+        if (!$this->db->table_exists('configuracion_empresa')) {
+            return;
+        }
+        $row = $this->db->where('id', 1)->get('configuracion_empresa')->row();
+        if (!$row) {
+            return;
+        }
+        $upd = [];
+        if (empty($row->razon_social) || $row->razon_social === 'Chisa Recubrimientos') {
+            $upd['razon_social'] = 'CHISA Recubrimientos, S.A. de C.V.';
+        }
+        if (empty($row->nombre_comercial)) {
+            $upd['nombre_comercial'] = 'CHISA';
+        }
+        if (empty($row->calle)) {
+            $upd['calle'] = 'Andrés Molina Enríquez';
+            $upd['numero_exterior'] = '156';
+            $upd['colonia'] = 'San Pedro Iztacalco';
+            $upd['ciudad'] = 'Ciudad de México';
+            $upd['estado'] = 'CDMX';
+            $upd['codigo_postal'] = '08220';
+        }
+        if (empty($row->telefono)) {
+            $upd['telefono'] = '55-5579-9434';
+        }
+        if (empty($row->email)) {
+            $upd['email'] = 'info@chisarecubrimientos.com.mx';
+        }
+        if (empty($row->sitio_web)) {
+            $upd['sitio_web'] = 'www.chisarecubrimientos.com.mx';
+        }
+        if (empty($row->logo)) {
+            $upd['logo'] = 'assets/dist/img/brands/chisa_recubrimientos_logo.jpg';
+        }
+        if ($upd) {
+            $this->db->where('id', 1)->update('configuracion_empresa', $upd);
         }
     }
 
     public function listar_activas() {
         $this->asegurar_infraestructura();
-        $this->db->where('estatus', 'Activa');
-        $this->db->order_by('nombre', 'ASC');
-        return $this->db->get('sucursales')->result();
+        return $this->db->query(
+            "SELECT * FROM sucursales WHERE estatus = 'Activa'
+             ORDER BY CASE codigo WHEN 'SUC-MATRIZ' THEN 0 WHEN 'SUC-HAPA' THEN 1 ELSE 2 END, nombre ASC"
+        )->result();
     }
 
     public function get($id) {
         $this->db->where('id', (int) $id);
         return $this->db->get('sucursales')->row();
+    }
+
+    public function get_por_codigo($codigo) {
+        $codigo = strtoupper(trim((string) $codigo));
+        if ($codigo === '') {
+            return null;
+        }
+        return $this->db->where('codigo', $codigo)->get('sucursales')->row();
     }
 
     public function crear($data) {
@@ -138,16 +209,19 @@ class SucursalesModel extends CI_Model {
      */
     public function listar_todas() {
         $this->asegurar_infraestructura();
-        $this->db->order_by('estatus', 'ASC');
-        $this->db->order_by('nombre', 'ASC');
-        return $this->db->get('sucursales')->result();
+        return $this->db->query(
+            "SELECT * FROM sucursales
+             ORDER BY CASE estatus WHEN 'Activa' THEN 0 ELSE 1 END,
+                      CASE codigo WHEN 'SUC-MATRIZ' THEN 0 WHEN 'SUC-HAPA' THEN 1 ELSE 2 END,
+                      nombre ASC"
+        )->result();
     }
 
     /**
      * Actualiza campos de una sucursal, incluida su marca de agua
      * (texto_marca_agua / logo_marca_agua) usada por ExportacionObraModel.
-     * Cadena vacía = NULL, para que get_marca_agua() aplique el fallback
-     * ("Sucursal: <nombre>" + logo de configuracion_empresa).
+     * Cadena vacía = NULL. get_marca_agua() usa el logo de la empresa matriz
+     * (CHISA) solo si la sucursal no es HAPA.
      */
     public function actualizar($id, array $data) {
         $this->asegurar_infraestructura();
@@ -187,8 +261,7 @@ class SucursalesModel extends CI_Model {
 
     /**
      * Marca de agua de una sucursal para exportaciones (Excel/PDF).
-     * Devuelve {logo, texto} con fallback al logo de configuracion_empresa y
-     * al nombre de la sucursal.
+     * Sin sucursal_id usa SUC-MATRIZ (CHISA). HAPA no hereda el logo de la matriz.
      */
     public function get_marca_agua($sucursal_id = null) {
         $this->asegurar_infraestructura();
@@ -198,14 +271,14 @@ class SucursalesModel extends CI_Model {
             $sucursal = $this->get($sucursal_id);
         }
         if (!$sucursal) {
-            $this->db->where('estatus', 'Activa');
-            $this->db->order_by('id', 'ASC');
-            $sucursal = $this->db->get('sucursales')->row();
+            $sucursal = $this->get_por_codigo('SUC-MATRIZ');
         }
 
         $logo = null;
         $texto = null;
+        $es_hapa = false;
         if ($sucursal) {
+            $es_hapa = strtoupper((string) $sucursal->codigo) === 'SUC-HAPA';
             $logo = $sucursal->logo_marca_agua ?? null;
             $texto = $sucursal->texto_marca_agua ?? null;
             if (empty($texto)) {
@@ -213,7 +286,7 @@ class SucursalesModel extends CI_Model {
             }
         }
 
-        if (empty($logo)) {
+        if (empty($logo) && !$es_hapa) {
             $this->load->model('Config/EmpresaModel');
             $empresa = $this->EmpresaModel->get_config();
             $logo = $empresa->logo ?? null;
@@ -225,7 +298,7 @@ class SucursalesModel extends CI_Model {
             $logo_doc = $sucursal->logo ?? null;
             $icono = $sucursal->icono ?? null;
         }
-        if (empty($logo_doc)) {
+        if (empty($logo_doc) && !$es_hapa) {
             $logo_doc = $logo;
         }
 
@@ -234,6 +307,7 @@ class SucursalesModel extends CI_Model {
             'texto' => $texto ?: '',
             'logo_documento' => $logo_doc,
             'icono' => $icono,
+            'codigo' => $sucursal->codigo ?? '',
             'nombre' => $sucursal->nombre ?? '',
             'direccion' => $sucursal->direccion ?? '',
             'telefono' => $sucursal->telefono ?? '',
