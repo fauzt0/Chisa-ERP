@@ -242,6 +242,9 @@ class CotizacionesObraModel extends CI_Model {
             if ($tipo !== 'Producto') {
                 $producto_id = null;
             }
+            $importe = isset($linea['importe']) && is_numeric($linea['importe']) && (float) $linea['importe'] > 0
+                ? round((float) $linea['importe'], 2)
+                : round($cantidad * $precio, 2);
             $this->db->insert('cotizaciones_comerciales_detalle', [
                 'cotizacion_id' => $id,
                 'orden' => $orden++,
@@ -250,7 +253,7 @@ class CotizacionesObraModel extends CI_Model {
                 'unidad' => $this->texto($linea['unidad'] ?? '', 40),
                 'cantidad' => $cantidad,
                 'precio_unitario' => $precio,
-                'importe' => round($cantidad * $precio, 2),
+                'importe' => $importe,
                 'tipo' => $tipo,
                 'producto_id' => $producto_id,
             ]);
@@ -913,9 +916,11 @@ class CotizacionesObraModel extends CI_Model {
             $texto = cotizacion_pdf_texto($path);
             $leido = cotizacion_pdf_parsear($texto, $file);
             foreach ($leido['lineas'] as $linea) {
-                $antes = $this->db->where('huella', $this->huella($linea['concepto']))->count_all_results('conceptos_comerciales');
+                $huella = $this->huella($linea['concepto']);
+                $this->db->reset_query();
+                $ya_concepto = $this->db->where('huella', $huella)->get('conceptos_comerciales')->row();
                 $this->upsert_concepto($linea['concepto'], $linea['unidad'], $linea['precio_unitario']);
-                if ($antes === 0) {
+                if (!$ya_concepto) {
                     $resumen['conceptos']++;
                 }
             }
@@ -935,6 +940,34 @@ class CotizacionesObraModel extends CI_Model {
                 $cliente_id = $alta['id'];
             }
             if ($existe) {
+                $propia = ((string) ($existe->archivo_origen ?? '') === $file)
+                    && $existe->estatus === 'Borrador'
+                    && strpos((string) $existe->observaciones, 'entrenamiento 6') !== false
+                    && (int) $existe->id !== $protegido_id;
+                if ($propia && count($leido['lineas']) >= 1) {
+                    $this->guardar([
+                        'id' => (int) $existe->id,
+                        'sucursal_id' => $sucursal_id ?: $existe->sucursal_id,
+                        'cliente_id' => $cliente_id ?: $existe->cliente_id,
+                        'constructora' => $leido['constructora'] ?: $existe->constructora,
+                        'atencion' => $leido['atencion'] ?: $existe->atencion,
+                        'obra_nombre' => $leido['obra'] ?: $existe->obra_nombre,
+                        'pres_ref' => $leido['pres_ref'] ?: $existe->pres_ref,
+                        'fecha' => $leido['fecha'] ?: $existe->fecha,
+                        'introduccion' => $leido['introduccion'] ?: $existe->introduccion,
+                        'observaciones' => $existe->observaciones,
+                        'costo_envio' => $leido['flete'] ?: $existe->costo_envio,
+                        'envio_notas' => $existe->envio_notas,
+                        'pie_texto' => $existe->pie_texto,
+                    ], $leido['lineas'], 1);
+                    $this->db->where('id', (int) $existe->id)->update('cotizaciones_comerciales', [
+                        'archivo_origen' => $this->texto($file, 255),
+                        'estatus' => 'Borrador',
+                    ]);
+                    $resumen['vinculadas']++;
+                    $this->asegurar_carpeta_envio((int) $existe->id);
+                    continue;
+                }
                 $upd = [];
                 if (empty($existe->cliente_id) && $cliente_id) {
                     $upd['cliente_id'] = $cliente_id;

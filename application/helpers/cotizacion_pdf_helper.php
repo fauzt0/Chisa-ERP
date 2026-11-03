@@ -131,6 +131,18 @@ if (!function_exists('cotizacion_pdf_partida_desde_bloque')) {
                 $importe = round($cant * $precio, 2);
             }
             $concepto = str_replace($ultima, ' ', $concepto);
+        } elseif (preg_match('/HASTA\s+([\d,.]+)\s*(M2|M3|ML)\b/iu', $bloque, $hasta)) {
+            $cant = (float) str_replace(',', '', $hasta[1]);
+            $unidad = strtoupper($hasta[2]);
+            if (preg_match('/IMPORTE[^\d$]*\$?\s*([\d,]+\.\d{2})/iu', $bloque, $imp)) {
+                $importe = (float) str_replace(',', '', $imp[1]);
+                $precio = $cant > 0 ? round($importe / $cant, 2) : $importe;
+            }
+        } elseif (preg_match('/IMPORTE[^\d$]*\$?\s*([\d,]+\.\d{2})/iu', $bloque, $imp)) {
+            $unidad = 'LOTE';
+            $cant = 1;
+            $importe = (float) str_replace(',', '', $imp[1]);
+            $precio = $importe;
         }
         $concepto = trim(preg_replace('/\s+/u', ' ', $concepto), " .-");
         $concepto = trim(preg_replace('/\b(?:' . $unidad_re . ')\b.*$/iu', '', $concepto), " .-");
@@ -177,7 +189,7 @@ if (!function_exists('cotizacion_pdf_partidas_libres')) {
         $out = [];
         foreach ($lineas as $ln) {
             if (!$en) {
-                if (preg_match('/CONCEPTO/i', $ln) && preg_match('/(UNIDAD|VOLUMEN|CANTIDAD)/i', $ln)) {
+                if (preg_match('/CONCEPTO/i', $ln) && preg_match('/(UNIDAD|VOLUMEN|CANTIDAD|P\.?U\.?|IMPORTE)/i', $ln)) {
                     $en = true;
                 }
                 continue;
@@ -211,6 +223,12 @@ if (!function_exists('cotizacion_pdf_partidas_libres')) {
 if (!function_exists('cotizacion_pdf_parsear')) {
     function cotizacion_pdf_parsear($texto, $nombre_archivo = '') {
         $constructora = cotizacion_pdf_campo($texto, ['CONSTRUCTORA', 'CONTRUCTORA']);
+        if ($constructora === '' && preg_match('/^\s*([A-ZÁÉÍÓÚÑ0-9][^\n]{6,160})\s*\n+\s*P\s+R\s+E\s+S\s+E\s+N\s+T\s+E/mu', $texto, $mc)) {
+            $cand = trim(preg_replace('/\s+/u', ' ', $mc[1]));
+            if (stripos($cand, 'CIUDAD DE') === false && stripos($cand, 'PRESENTAMOS') === false) {
+                $constructora = mb_substr($cand, 0, 200);
+            }
+        }
         $atencion = cotizacion_pdf_campo($texto, ["AT['´`’]?N"]);
         $obra = cotizacion_pdf_campo($texto, ['OBRA']);
         $pres = cotizacion_pdf_campo($texto, ['PRES\.?\s*REF\.?']);
