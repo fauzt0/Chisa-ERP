@@ -1,0 +1,14 @@
+-- BLOQUE 0 inventario (sin DROP/TRUNCATE). Reutilizar, no duplicar.
+-- Pantallas: compras/EntrenamientoMateriales, produccion/HistorialFormulaciones,
+-- ventas/CotizacionesObra (CCO-), ventas/Sucursales, ventas/ObrasVentas, ventas/Pos,
+-- ventas/Consulta, ventas/Seguimiento, obras/Obras, rh/RecursosHumanos, rh/Nomina,
+-- contabilidad/Nomina, contabilidad/Polizas, contabilidad/Bancos.
+-- Tablas: insumos, insumos.clase_uso, proveedor_insumo, insumos_alias, productos,
+-- formulaciones, detalle_formulacion, cotizaciones_comerciales,
+-- cotizaciones_comerciales_detalle, conceptos_comerciales, documento_versiones,
+-- expediente_archivos, sucursales, obras, empleados, empleados_documentos,
+-- nominas, nominas_detalle (comidas/viaticos), asistencias, ordenes_venta.
+-- Huecos i6: semáforo entrenamiento_revisado; producto fabricado desde materiales;
+-- pantalla temporal producción; expediente lista de raya (adjuntos, no nueva nómina);
+-- pie sucursal/envío 3 Guerras en cotización; alerta RH INE/CURP/NSS al crear obra.
+SELECT 1;
