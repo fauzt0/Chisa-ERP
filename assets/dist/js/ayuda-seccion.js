@@ -51,9 +51,10 @@
     pos: {
       titulo: 'Punto de venta',
       bullets: [
-        'Elige el cliente primero: se muestran RFC, régimen, uso de CFDI, CP y saldo pendiente.',
-        'Busca productos por palabras (tokens), no hace falta el nombre exacto.',
-        'Al confirmar se genera una orden de venta. En demo evita timbrar CFDI o enviar correo si no está pactado.'
+        'Elige sucursal (CHISA o HAPA) y cliente. Se muestran RFC, régimen, uso de CFDI y saldo.',
+        'Busca por palabras. Variantes solo en CHISA GLASS MICRO y MICRO COLOR 2. El matraz abre la fórmula y no agrega el ticket.',
+        'Canal mostrador es venta de caja. Si eliges una obra, es venta de obra y puedes pasar el ticket a su cotización CCO.',
+        'Cobrar genera la orden. En la presentación no cobres ni timbres si no está acordado. El ticket de prueba debe quedar en $0.00.'
       ]
     },
     ordenes: {
@@ -76,6 +77,7 @@
       titulo: 'Detalle de obra',
       bullets: [
         'Pestaña Pagos: recibos y calendario de parcialidades con fecha y monto.',
+        'Viáticos y gastos de obra lista los archivos de lista de raya (gasolina, comidas, pasajes).',
         'Un pago se aplica a la parcialidad más antigua pendiente.',
         'Materiales y producción se calculan con el BOM real (sin rendimiento 1.0 inventado).',
         'Completar un lote de producción exige pesaje previo; no lo hagas en demo.'
@@ -93,10 +95,10 @@
     fabricacion: {
       titulo: 'Fabricación',
       bullets: [
-        'Pedidos y solicitudes de producción (incluye las que vienen de obras).',
-        'La campana avisa solicitudes pendientes y preórdenes de compra por autorizar.',
-        'No muestres Control de Lotes si el inventario de lotes está vacío.',
-        'No pases un lote a Completada sin pesaje: descuenta insumos en el pesaje, no al completar.'
+        'Pedidos y solicitudes de producción, incluidas las que vienen de obras.',
+        'Ver abre el detalle del pedido: fórmula, faltantes y preorden de compra si aplica.',
+        'La campana avisa solicitudes pendientes y preórdenes por autorizar.',
+        'No pases un lote a Completada sin pesaje: el pesaje descuenta insumos y completar solo entra el producto terminado.'
       ]
     },
     proveedores: {
@@ -204,7 +206,177 @@
         'Cuentas, pólizas, bancos, nómina y reportes financieros.',
         'El expediente de lista de raya muestra comidas, bancos, asistencia y viáticos del entrenamiento.',
         'Las pólizas del mes en curso pueden verse vacías si el periodo por defecto no tiene movimientos.',
-        'En demo no registres pólizas ni pagos reales.'
+        'En la presentación no registres pólizas ni pagos reales.'
+      ]
+    },
+    usuarios: {
+      titulo: 'Administradores',
+      bullets: [
+        'Alta y búsqueda de usuarios. La búsqueda filtra con Enter.',
+        'La carga masiva acepta Excel. La bitácora guarda quién entró y qué cambió.',
+        'Roles define qué menús ve cada persona. Nuevo Rol abre el formulario de permisos.',
+        'Datos de la empresa alimentan recibos y papelería cuando la sucursal no trae los suyos.'
+      ]
+    },
+    roles: {
+      titulo: 'Roles y permisos',
+      bullets: [
+        'Cada rol es una lista de permisos. Editar abre los módulos marcados.',
+        'Nuevo Rol crea uno vacío. Guardar no borra usuarios que ya lo usan.',
+        'Entrenamiento de materiales, entrenamiento de productos, cotizaciones de obra y expediente de raya tienen permiso propio.',
+        'Si desmarcas un permiso, el menú deja de mostrar esa pantalla.'
+      ]
+    },
+    empresa: {
+      titulo: 'Datos de la empresa',
+      bullets: [
+        'Razón social, RFC y régimen se usan en recibos y facturas.',
+        'Si el RFC se ve vacío aquí pero el recibo del POS ya trae uno, conviene capturarlo antes de timbrar.',
+        'El logo de la empresa es el respaldo cuando la sucursal no tiene el suyo.'
+      ]
+    },
+    bitacora: {
+      titulo: 'Bitácora',
+      bullets: [
+        'Registro de accesos y de acciones (guardar, entrenar, asociar cliente).',
+        'Sirve para saber quién tocó un insumo o una cotización.',
+        'No borra movimientos. Es solo consulta.'
+      ]
+    },
+    departamentos: {
+      titulo: 'Departamentos',
+      bullets: [
+        'Agrupan a los empleados (producción, obras, administración).',
+        'Al dar de alta un trabajador se elige su departamento.',
+        'No elimines un departamento que ya tenga gente asignada.'
+      ]
+    },
+    comunicacion: {
+      titulo: 'Comunicación interna',
+      bullets: [
+        'Mensajes y tareas entre el personal. El icono de sobre, junto a la campana, muestra lo pendiente.',
+        'No sustituye las alertas de cobro ni de stock: esas viven en la campana.',
+        'En la presentación se puede mostrar vacía: “estás al día” es un estado válido.'
+      ]
+    },
+    reloj: {
+      titulo: 'Reloj checador',
+      bullets: [
+        'Consulta dispositivos, cola de comandos y reportes de asistencia.',
+        'Sincronizar o mandar comandos habla con el reloj físico. En la presentación no lo ejecutes.',
+        'La última sincronización puede ser de días atrás; eso no bloquea el resto del ERP.'
+      ]
+    },
+    insumos: {
+      titulo: 'Insumos',
+      bullets: [
+        'Catálogo maestro de materia prima: código, nombre técnico, alias, unidad y stock.',
+        'El stock no se edita a mano en el día a día: lo mueven el pesaje y las entradas de compra.',
+        'El entrenamiento de materiales clasifica y revisa; este catálogo es el alta completa.'
+      ]
+    },
+    categorias: {
+      titulo: 'Categorías de insumos',
+      bullets: [
+        'Agrupan el catálogo (resinas, pigmentos, envases, servicios).',
+        'No distinguen materia prima de insumo de uso: eso va en clase de uso del entrenamiento.',
+        'Una categoría se puede dejar inactiva sin borrar los insumos.'
+      ]
+    },
+    ordenes_compra: {
+      titulo: 'Órdenes de compra',
+      bullets: [
+        'Documento de compra al proveedor: partidas, precio y estatus.',
+        'Las preórdenes nacen de faltantes de producción y aquí se autorizan.',
+        'Recibir mercancía entra el stock. En la presentación no recibas ni canceles una OC real.'
+      ]
+    },
+    cotizaciones_compra: {
+      titulo: 'Cotizaciones de compra',
+      bullets: [
+        'Comparan precios de proveedores antes de emitir la orden de compra.',
+        'Si el listado está vacío, el flujo sigue existiendo: se crea la solicitud y se capturan precios.',
+        'No es la cotización comercial de obra (esa es CCO, en CRM).'
+      ]
+    },
+    servicios: {
+      titulo: 'Servicios recurrentes',
+      bullets: [
+        'Internet, renta, soporte y otros pagos que se repiten.',
+        'El calendario muestra el próximo vencimiento.',
+        'No genera solo la póliza: contabilidad la registra cuando se paga.'
+      ]
+    },
+    lotes: {
+      titulo: 'Control de lotes',
+      bullets: [
+        'Cada lote tiene código de barras, producto, cantidad, origen (orden de venta u obra) y fecha.',
+        'Consultar lote lee el código y muestra obra, lote y producto.',
+        'Completar exige pesaje previo. El pesaje descuenta insumos; completar entra el producto terminado.'
+      ]
+    },
+    consulta: {
+      titulo: 'Consulta de ventas',
+      bullets: [
+        'Busca por cliente, folio o producto sin abrir cada documento.',
+        'Escribe al menos un dato. Si solo dejas el campo vacío, pide un criterio.',
+        'Las cotizaciones de obra CCO aparecen con su importe. Desde aquí no se cobra.'
+      ]
+    },
+    descuentos: {
+      titulo: 'Descuentos',
+      bullets: [
+        'Catálogo de descuentos por porcentaje o monto fijo.',
+        'El POS los ofrece al armar el ticket, después de elegir cliente.',
+        'Cambiar uno aquí afecta las ventas nuevas, no reescribe órdenes ya cobradas.'
+      ]
+    },
+    cuentas: {
+      titulo: 'Catálogo de cuentas',
+      bullets: [
+        'Plan contable. Cada cuenta se puede consultar con sus movimientos.',
+        'No borres cuentas que ya tengan pólizas.',
+        'El saldo en cero puede ser real si el periodo no tiene movimientos.'
+      ]
+    },
+    polizas: {
+      titulo: 'Pólizas',
+      bullets: [
+        'El filtro abre en el mes actual. Si se ve vacío, cambia el periodo.',
+        'Una póliza cuadra cargos y abonos antes de guardarse.',
+        'En la presentación no crees ni canceles pólizas.'
+      ]
+    },
+    bancos: {
+      titulo: 'Bancos',
+      bullets: [
+        'Cuentas bancarias y sus movimientos.',
+        'Conciliar marca el movimiento contra el estado de cuenta.',
+        'No registres transferencias reales durante la presentación.'
+      ]
+    },
+    reportes: {
+      titulo: 'Reportes financieros',
+      bullets: [
+        'Balance, resultados y auxiliares del periodo elegido.',
+        'Un balance en $0 significa que el periodo no tiene saldos cargados, no que el reporte falle.',
+        'Es el módulo de reportes del ERP. No hay otro menú aparte.'
+      ]
+    },
+    expediente: {
+      titulo: 'Expediente de lista de raya',
+      bullets: [
+        'Clasifica los archivos de nómina: comidas, bancos, asistencia, IMSS y viáticos.',
+        'No calcula la nómina ni inventa CURP o NSS. La nómina sigue en su módulo.',
+        'Las obras enlazan estos viáticos en su detalle para consultarlos.'
+      ]
+    },
+    origenes: {
+      titulo: 'Orígenes operativos',
+      bullets: [
+        'Liga pólizas con el documento que las originó: venta, compra, obra o nómina.',
+        'Sirve para rastrear de dónde salió un cargo o un abono.',
+        'Es consulta. No modifica la orden ni la obra.'
       ]
     }
   };
@@ -218,22 +390,44 @@
     if (p.indexOf('/ventas/clientes') !== -1) return 'clientes';
     if (p.indexOf('/ventas/pos') !== -1) return 'pos';
     if (p.indexOf('/ventas/ordenes') !== -1) return 'ordenes';
+    if (p.indexOf('/ventas/consulta') !== -1) return 'consulta';
+    if (p.indexOf('/ventas/descuentos') !== -1) return 'descuentos';
+    if (p.indexOf('/ventas/cotizacionesobra') !== -1) return 'cotizaciones_obra';
+    if (p.indexOf('/ventas/sucursales') !== -1) return 'sucursales';
     if (p.indexOf('/ventas/obrasventas') !== -1) return 'obras_lista';
     if (p.indexOf('/obras/obras/detalle') !== -1) return 'obras_detalle';
     if (p.indexOf('/obras/obras') !== -1) return 'obras_lista';
-    if (p.indexOf('/produccion/productos') !== -1) return 'productos';
-    if (p.indexOf('/produccion/dashboard') !== -1 || p.indexOf('/produccion/lotes') !== -1) return 'fabricacion';
-    if (p.indexOf('/compras/proveedores') !== -1) return 'proveedores';
-    if (p.indexOf('/compras/entrenamientomateriales') !== -1) return 'entrenamiento_materiales';
-    if (p.indexOf('/compras/') !== -1) return 'compras';
     if (p.indexOf('/produccion/entrenamientoproductos') !== -1) return 'entrenamiento_productos';
     if (p.indexOf('/produccion/historialformulaciones') !== -1) return 'historial_formulaciones';
-    if (p.indexOf('/ventas/cotizacionesobra') !== -1) return 'cotizaciones_obra';
-    if (p.indexOf('/ventas/sucursales') !== -1) return 'sucursales';
+    if (p.indexOf('/produccion/lotes') !== -1) return 'lotes';
+    if (p.indexOf('/produccion/productos') !== -1) return 'productos';
+    if (p.indexOf('/produccion/dashboard') !== -1) return 'fabricacion';
+    if (p.indexOf('/compras/entrenamientomateriales') !== -1) return 'entrenamiento_materiales';
+    if (p.indexOf('/compras/proveedores') !== -1) return 'proveedores';
+    if (p.indexOf('/compras/insumos') !== -1) return 'insumos';
+    if (p.indexOf('/compras/categorias') !== -1) return 'categorias';
+    if (p.indexOf('/compras/ordenescompra') !== -1) return 'ordenes_compra';
+    if (p.indexOf('/compras/cotizaciones') !== -1) return 'cotizaciones_compra';
+    if (p.indexOf('/compras/serviciosrecurrentes') !== -1) return 'servicios';
+    if (p.indexOf('/compras/') !== -1) return 'compras';
+    if (p.indexOf('/contabilidad/expedienteraya') !== -1) return 'expediente';
+    if (p.indexOf('/contabilidad/cuentas') !== -1) return 'cuentas';
+    if (p.indexOf('/contabilidad/polizas') !== -1) return 'polizas';
+    if (p.indexOf('/contabilidad/bancos') !== -1) return 'bancos';
+    if (p.indexOf('/contabilidad/reportes') !== -1) return 'reportes';
+    if (p.indexOf('/contabilidad/origenes') !== -1) return 'origenes';
+    if (p.indexOf('/contabilidad/nomina') !== -1) return 'nomina';
     if (p.indexOf('/contabilidad/') !== -1) return 'contabilidad';
     if (p.indexOf('/almacen/') !== -1) return 'almacen';
+    if (p.indexOf('/rh/relojchecador') !== -1) return 'reloj';
     if (p.indexOf('/rh/nomina') !== -1) return 'nomina';
+    if (p.indexOf('/rh/departamentos') !== -1) return 'departamentos';
+    if (p.indexOf('/rh/comunicacion') !== -1) return 'comunicacion';
     if (p.indexOf('/rh/') !== -1) return 'rh';
+    if (p.indexOf('/usuarios/roles') !== -1) return 'roles';
+    if (p.indexOf('/usuarios/gestionusuarios/empresa') !== -1) return 'empresa';
+    if (p.indexOf('/usuarios/gestionusuarios/bitacora') !== -1) return 'bitacora';
+    if (p.indexOf('/usuarios/gestionusuarios') !== -1) return 'usuarios';
     if (p.indexOf('/usuarios/perfil') !== -1) return 'perfil';
     if (p.indexOf('/facturacion/') !== -1) return 'facturacion';
     if (p.indexOf('/dashboard') !== -1 || p.indexOf('/dashboards/') !== -1) return 'dashboard';
