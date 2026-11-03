@@ -145,7 +145,8 @@ if (!function_exists('cotizacion_pdf_partida_desde_bloque')) {
             $precio = $importe;
         }
         $concepto = trim(preg_replace('/\s+/u', ' ', $concepto), " .-");
-        $concepto = trim(preg_replace('/\b(?:' . $unidad_re . ')\b.*$/iu', '', $concepto), " .-");
+        // Solo quita la unidad si quedó al final (la columna M2). No corte "2.70 MTS. Y DEMÁS...".
+        $concepto = trim(preg_replace('/(?:^|\s)(?:' . $unidad_re . ')\s*$/iu', '', $concepto), " .-");
         if (mb_strlen($concepto) < 8) {
             return null;
         }

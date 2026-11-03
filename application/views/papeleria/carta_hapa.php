@@ -56,7 +56,7 @@ $toolbar_excel = $toolbar_excel ?? '';
 <style>
   body { font-family: Arial, Helvetica, sans-serif; color: #163a63; margin: <?= $paraPdf ? '0' : '24px 32px' ?>; font-size: 11px; }
   .hoja { position: relative; }
-  .agua { position: fixed; top: 34%; left: 18%; width: 64%; opacity: .10; }
+  .agua { position: fixed; top: 38%; left: 22%; width: 56%; opacity: .06; }
   .agua-texto { position: fixed; top: 40%; left: 0; right: 0; text-align: center; font-size: 64px; letter-spacing: .2em; color: rgba(22,58,99,.08); transform: rotate(-18deg); }
   .contenido { position: relative; }
   table.carta { width: 100%; border-collapse: collapse; }
