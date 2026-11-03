@@ -123,6 +123,31 @@
   font-weight: 600 !important;
 }
 
+/* El título no debe quedar debajo del botón cerrar */
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.modal-header .modal-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.modal-header .btn-close {
+  flex: 0 0 auto;
+  margin: 0.15rem 0 0 0;
+  position: static;
+}
+.modal-header.bg-primary .modal-title,
+.modal-header .modal-title.text-white {
+  color: #fff !important;
+}
+
 #modalHistorialFormulaciones .text-muted {
   font-size: 0.85rem !important;
 }

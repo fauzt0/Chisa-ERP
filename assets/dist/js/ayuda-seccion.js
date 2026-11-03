@@ -118,7 +118,7 @@
     almacen: {
       titulo: 'Almacén',
       bullets: [
-        'Inventario de insumos y entregas.',
+        'Inventario, movimientos (kardex) y entregas. La campana de stock bajo abre el inventario filtrado.',
         'El stock mínimo dispara la alerta de la campana y la tarjeta del Inicio.',
         'El pesaje de producción descuenta insumos con movimiento PESAJE-*.'
       ]
@@ -153,6 +153,59 @@
         'CFDI sobre documentos de venta.',
         'En demo no timbres ni envíes correo si el PAC no está validado en vivo.'
       ]
+    },
+    entrenamiento_materiales: {
+      titulo: 'Entrenamiento de materiales',
+      bullets: [
+        'El semáforo verde es revisado y el rojo es pendiente. Filtra “No revisado” para seguir el entrenamiento.',
+        'El lápiz abre la ficha: estatus Activo/Inactivo, clase de uso, alias y proveedor con precio de compra.',
+        'El tipo comprado/fabricado no se cambia aquí. Si el insumo es producto vendible, unidad y precio de venta se editan abajo y no son el costo de compra.',
+        'No borra el insumo. Si ya está en una fórmula, sigue en el listado.'
+      ]
+    },
+    entrenamiento_productos: {
+      titulo: 'Entrenamiento de productos',
+      bullets: [
+        'Pantalla temporal del superadmin. Abre el producto, corrige unidad y precio, y marca la formulación principal como verificada.',
+        'El historial de versiones viejas se habilita solo después de verificar la principal.',
+        'Consultar el historial no activa otra fórmula ni recalcula costos.',
+        'Completar un lote sigue pidiendo pesaje en Control de Lotes.'
+      ]
+    },
+    cotizaciones_obra: {
+      titulo: 'Cotizaciones de obra',
+      bullets: [
+        'Cada folio CCO se puede ver, editar y exportar a PDF y Excel con la papelería de la sucursal (CHISA o HAPA).',
+        'El archivo de entrenamiento está en “Archivo”. Las de trabajo actual son las que se pueden editar.',
+        'El costo de envío 3 Guerras es interno: no sale en la hoja del cliente.',
+        'No pases una cotización a obra activa durante la demo si no está acordado.'
+      ]
+    },
+    sucursales: {
+      titulo: 'Sucursales',
+      bullets: [
+        'SUC-MATRIZ usa papelería CHISA. SUC-HAPA usa la suya, sin logo CHISA.',
+        'Aquí se cargan logo, icono y marca de agua que salen en el PDF de la cotización.',
+        'El pie y las notas legales se pueden ajustar; ventas y obras también pueden editarlos al armar la carta.'
+      ]
+    },
+    historial_formulaciones: {
+      titulo: 'Historial de formulaciones',
+      bullets: [
+        'Consulta de versiones: producto, versión, activa, rendimiento y archivo de origen.',
+        'Abrir una versión muestra los componentes en solo lectura.',
+        'Asociar un cliente no copia la fórmula ni cambia cuál está activa.',
+        'Si la fórmula activa no cuadra con el costo del producto, el sistema no guarda la asociación.'
+      ]
+    },
+    contabilidad: {
+      titulo: 'Contabilidad',
+      bullets: [
+        'Cuentas, pólizas, bancos, nómina y reportes financieros.',
+        'El expediente de lista de raya muestra comidas, bancos, asistencia y viáticos del entrenamiento.',
+        'Las pólizas del mes en curso pueden verse vacías si el periodo por defecto no tiene movimientos.',
+        'En demo no registres pólizas ni pagos reales.'
+      ]
     }
   };
 
@@ -171,7 +224,13 @@
     if (p.indexOf('/produccion/productos') !== -1) return 'productos';
     if (p.indexOf('/produccion/dashboard') !== -1 || p.indexOf('/produccion/lotes') !== -1) return 'fabricacion';
     if (p.indexOf('/compras/proveedores') !== -1) return 'proveedores';
+    if (p.indexOf('/compras/entrenamientomateriales') !== -1) return 'entrenamiento_materiales';
     if (p.indexOf('/compras/') !== -1) return 'compras';
+    if (p.indexOf('/produccion/entrenamientoproductos') !== -1) return 'entrenamiento_productos';
+    if (p.indexOf('/produccion/historialformulaciones') !== -1) return 'historial_formulaciones';
+    if (p.indexOf('/ventas/cotizacionesobra') !== -1) return 'cotizaciones_obra';
+    if (p.indexOf('/ventas/sucursales') !== -1) return 'sucursales';
+    if (p.indexOf('/contabilidad/') !== -1) return 'contabilidad';
     if (p.indexOf('/almacen/') !== -1) return 'almacen';
     if (p.indexOf('/rh/nomina') !== -1) return 'nomina';
     if (p.indexOf('/rh/') !== -1) return 'rh';

@@ -40,7 +40,7 @@ class Notifications extends MY_Controller {
           'module' => 'Almacén',
           'title' => 'Stock bajo',
           'message' => $item->nombre . ' tiene solo ' . $item->stock_actual . ' ' . $item->unidad,
-          'link' => base_url('almacen/Inventario'),
+          'link' => base_url('almacen/Inventario?stock_bajo=1'),
           'time' => 'Ahora'
         ];
         $total_count++;
