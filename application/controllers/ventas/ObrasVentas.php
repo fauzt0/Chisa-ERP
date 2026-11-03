@@ -164,10 +164,12 @@ class ObrasVentas extends MY_Controller {
         $this->load->model('Ventas/SeguimientoModel');
         $seguimiento = $this->SeguimientoModel->paquete('obra', $obra_id);
         $seguimiento['estatus_obra'] = $obra->estatus;
+        $this->load->model('RH/ExpedienteRayaModel');
         $data['response'] = [
             'obra' => $obra,
             'servicios_obra' => $this->CotizacionesObraModel->listar_servicios_obra(12),
             'seguimiento' => $seguimiento,
+            'viaticos' => $this->ExpedienteRayaModel->listar_tipo('viaticos'),
         ];
         $data['validate'] = '';
         $data['pageView'] = 'ventas/obras/detalle';

@@ -227,6 +227,9 @@
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>almacen/Inventario">
                     Inventario
                 </a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>almacen/Movimientos">
+                    Movimientos
+                </a></li>
             <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>almacen/Entregas">
                     Entregas
                 </a></li>

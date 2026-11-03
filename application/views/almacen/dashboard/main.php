@@ -196,7 +196,7 @@
               </a>
             </div>
             <div class="col-md-3">
-              <a href="<?= base_url('almacen/Inventario') ?>" class="btn btn-warning w-100 mb-2">
+              <a href="<?= base_url('almacen/Inventario?stock_bajo=1') ?>" class="btn btn-warning w-100 mb-2">
                 <i class="fas fa-exclamation-triangle"></i> Alertas de Stock
               </a>
             </div>

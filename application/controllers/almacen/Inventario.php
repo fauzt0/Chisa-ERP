@@ -27,8 +27,12 @@ class Inventario extends MY_Controller {
         $this->viewData['breadcrumb'] = 'Almacén > Inventario';
         
         // Obtener datos
-        $insumos = $this->AlmacenModel->get_insumos();
-        $productos = $this->AlmacenModel->get_productos();
+        $filtros = [];
+        if ($this->input->get('stock_bajo') === '1') {
+            $filtros['stock_bajo'] = 1;
+        }
+        $insumos = $this->AlmacenModel->get_insumos($filtros);
+        $productos = $this->AlmacenModel->get_productos($filtros);
         
         $this->viewData['response'] = [
             'insumos' => $insumos,

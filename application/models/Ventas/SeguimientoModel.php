@@ -487,6 +487,10 @@ class SeguimientoModel extends CI_Model {
     private function avance($tipo, $id) {
         $fases = $this->fases($tipo, $id);
         if (!$fases) {
+            if ($tipo === 'obra' && $this->db->table_exists('obras') && $this->db->field_exists('porcentaje_avance', 'obras')) {
+                $obra = $this->db->select('porcentaje_avance')->where('id', (int) $id)->get('obras')->row();
+                return $obra ? round((float) $obra->porcentaje_avance, 1) : 0;
+            }
             return 0;
         }
         $suma = 0;

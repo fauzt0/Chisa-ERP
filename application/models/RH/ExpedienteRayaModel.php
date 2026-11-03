@@ -160,4 +160,12 @@ class ExpedienteRayaModel extends CI_Model {
         $this->asegurar();
         return $this->db->order_by('estatus', 'DESC')->get('rh_alta_pendiente')->result();
     }
+
+    public function listar_tipo($tipo, $limite = 20) {
+        $this->asegurar();
+        $this->db->where('tipo', $tipo);
+        $this->db->order_by('nombre', 'ASC');
+        $this->db->limit((int) $limite);
+        return $this->db->get('rh_expediente_raya')->result();
+    }
 }

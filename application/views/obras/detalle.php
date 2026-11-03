@@ -112,6 +112,8 @@ $this->load->view('obras/partials/vinculo_venta', [
     </div>
 </div>
 
+<?php $this->load->view('obras/partials/viaticos', ['viaticos' => $response['viaticos'] ?? []]); ?>
+
 <!-- Información Financiera -->
 <div class="row mb-4">
     <div class="col-md-6">

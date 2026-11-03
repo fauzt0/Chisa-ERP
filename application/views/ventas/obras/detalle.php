@@ -90,6 +90,8 @@ $this->load->view('obras/partials/vinculo_venta', [
 $this->load->view('obras/partials/presupuestos_tabs', ['obra' => $obra]);
 ?>
 
+<?php $this->load->view('obras/partials/viaticos', ['viaticos' => $response['viaticos'] ?? []]); ?>
+
 <!-- Información General -->
 <div class="row mb-4">
     <div class="col-md-6">
@@ -106,6 +108,7 @@ $this->load->view('obras/partials/presupuestos_tabs', ['obra' => $obra]);
                 <p class="mb-2"><strong>Estatus:</strong> 
                     <span class="badge bg-<?=$badgeColor?>"><?=$obra->estatus?></span>
                 </p>
+                <p class="mb-2"><strong>Avance de obra:</strong> <?=number_format((float) ($obra->porcentaje_avance ?? 0), 1)?>%</p>
                 <p class="mb-2"><strong>Fecha de Creación:</strong> <?=date('d/m/Y H:i', strtotime($obra->fecha_creacion))?></p>
                 <hr>
                 <p class="mb-2"><strong>Subtotal:</strong> $<?=number_format($obra->subtotal ?? 0, 2)?></p>

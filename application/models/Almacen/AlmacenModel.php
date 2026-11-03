@@ -583,4 +583,43 @@ class AlmacenModel extends CI_Model {
         
         return $this->db->get()->result();
     }
+
+    /**
+     * Kardex de insumos y de producto terminado, solo lectura.
+     */
+    public function listar_movimientos($limite = 200) {
+        $filas = [];
+        $limite = max(1, (int) $limite);
+
+        if ($this->db->table_exists('movimientos_inventario')) {
+            $this->db->select('mi.fecha_movimiento, mi.tipo_movimiento, mi.cantidad, mi.stock_anterior, mi.stock_nuevo, mi.motivo, mi.referencia, i.codigo, i.nombre_tecnico AS nombre');
+            $this->db->from('movimientos_inventario mi');
+            $this->db->join('insumos i', 'i.id = mi.insumo_id', 'left');
+            $this->db->order_by('mi.fecha_movimiento', 'DESC');
+            $this->db->limit($limite);
+            foreach ($this->db->get()->result() as $row) {
+                $row->origen = 'Insumo';
+                $filas[] = $row;
+            }
+        }
+
+        if ($this->db->table_exists('movimientos_productos')) {
+            $this->db->select('mp.fecha_movimiento, mp.tipo_movimiento, mp.cantidad, mp.stock_anterior, mp.stock_nuevo, mp.motivo, p.codigo, p.nombre');
+            $this->db->from('movimientos_productos mp');
+            $this->db->join('productos p', 'p.id = mp.producto_id', 'left');
+            $this->db->order_by('mp.fecha_movimiento', 'DESC');
+            $this->db->limit($limite);
+            foreach ($this->db->get()->result() as $row) {
+                $row->origen = 'Producto';
+                $row->referencia = '';
+                $filas[] = $row;
+            }
+        }
+
+        usort($filas, function ($a, $b) {
+            return strcmp((string) $b->fecha_movimiento, (string) $a->fecha_movimiento);
+        });
+
+        return array_slice($filas, 0, $limite);
+    }
 }
