@@ -1,5 +1,7 @@
 # Workflow de producción. Crítico.
 
+> Overhaul P1–P9 **cerrado**. Este archivo describe el flujo de negocio; no es una orden de reimplementar. Estándares: `../DOCUMENTACION_TECNICA.md`. Pendientes: `TODO.md`.
+
 1.- Se realiza una venta desde "POS" o una nueva obra desde el "módulo de obras". En ambos casos se genera una orden de venta y un pedido del sistema con los productos(la cual es la que lleva el estatus, por lo que es necesario verificar que estas ordenes ya tengan un estatus en la base de datos).
 
 2.- Se verifica si tenemos los productos(stock suficiente) para surtir la orden de venta o de la obra.

@@ -1,3 +1,7 @@
+# Reporte QA — ERP CHISA Recubrimientos (HISTÓRICO 21/10/2026)
+
+> **No es el estado actual.** Varios bloqueantes de esta corrida ya se corrigieron en `iteracion-5` (lápiz de materiales, CCO sembradas, POS, DataTables, papelería HAPA). Seguimiento vigente: `TODO.md` y `PRUEBAS_GROKBOT_I6.md`.
+
 # Reporte QA — ERP CHISA Recubrimientos (actualizado 21/10/2026 07:20 CDMX)
 Fecha: 21/10/2026 (hora CDMX). Entorno: https://erp.chisarecubrimientos.com.mx/ — usuario soporte2@especialistasweb.com.mx.
 

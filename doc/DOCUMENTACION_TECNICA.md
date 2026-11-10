@@ -1,14 +1,13 @@
 # DOCUMENTACIÓN TÉCNICA (puntero)
 
-> **Fuente canónica:** [`../DOCUMENTACION_TECNICA.md`](../DOCUMENTACION_TECNICA.md)
-
-Este archivo estaba **duplicado** y había divergido del canónico (perdía el patrón obligatorio
-`$this->viewData` del apartado 2.1). Se conserva únicamente como puntero para no romper enlaces
-existentes.
+> **Fuente canónica:** [`../DOCUMENTACION_TECNICA.md`](../DOCUMENTACION_TECNICA.md)  
+> Actualizada 2026-11-10. Este archivo no duplica el contenido.
 
 | Tema | Documento |
 |------|-----------|
-| Arquitectura, clases base, patrones y estándares | `../DOCUMENTACION_TECNICA.md` |
-| Reglas estrictas para agentes IA | `REGLAS_TECNICAS.md` |
-| Estado, pendientes y auditoría por módulo | `TODO.md` (handoff 2026-10-20: validar cotizaciones), `MODULOS_ESTADO_CHECKLIST.md` |
-| Requerimientos originales | `cotizacion.md` |
+| Arquitectura, clases base, patrones | `../DOCUMENTACION_TECNICA.md` |
+| Reglas para agentes IA | `REGLAS_TECNICAS.md` |
+| Seguimiento actual | `TODO.md` |
+| Estado por módulo | `MODULOS_ESTADO_CHECKLIST.md` |
+| Contrato | `cotizacion.md` + PDF v1.1 |
+| Checklist Grokbot vigente | `PRUEBAS_GROKBOT_I6.md` |

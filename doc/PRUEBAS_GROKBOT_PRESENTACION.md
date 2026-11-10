@@ -1,4 +1,6 @@
-# Pruebas de presentación — ERP CHISA
+# Pruebas de presentación — ERP CHISA (HISTÓRICO)
+
+> Plan de navegador del 21-oct. El checklist vigente es `PRUEBAS_GROKBOT_I6.md`.
 
 Trabajas solo en el navegador, como un administrador. No tienes código ni base de datos. No envíes correo, WhatsApp ni facturas. No cobres. No confirmes ni canceles ventas. No edites recetas ni kilos. No pulses Guardar producto. No asignes personal a una obra solo para quitar una alerta.
 

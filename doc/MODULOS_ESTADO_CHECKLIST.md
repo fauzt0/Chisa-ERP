@@ -1,13 +1,13 @@
 # Checklist de módulos ERP CHISA — estado y cierre
 
-**Fecha:** 2026-10-20 · **Rama:** `iteracion-5`  
+**Fecha:** 2026-11-10 · **Rama:** `iteracion-5`  
 **Leyenda:** ✅ Operativo / verificado · ⚠️ Parcial o falta smoke · ❌ No implementado · ⏸ Fuera de alcance operativo (contrato o posterior) · 🔒 Bloqueado por negocio/datos
 
-**Fuentes:** menú `sidebar.php`, auditoría diagrama 2026-09-24, smoke P0, `doc/TODO.md`.  
+**Fuentes:** menú `sidebar.php`, cotización v1.1, diagrama general, código I5/I6, `doc/TODO.md`.  
 **Smoke detallado:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (histórico; no re-ejecutar bloques ✅).  
-**Última validación técnica de Compras:** 2026-09-28. Evidencia en §4 y en la tasklist (cerrada).
+**Grokbot vigente:** `PRUEBAS_GROKBOT_I6.md`.
 
-**Estado de iteración:** Iteración 4 **cerrada** el 2026-10-06. **Tramo vivo:** validar cotizaciones de CRM Ventas y de proveedores (`doc/TODO.md` § Handoff 2026-10-20). Re-smoke UI de Producción (D5–D6) queda heredado y fuera de este tramo. La tasklist de Compras de abajo está **cerrada**; no copiarla a un agente nuevo.
+**Estado de iteración:** I3 e I4 cerradas. **Tramo vivo:** afinar entrenamiento I6 y pendientes de negocio (`TODO.md`). Re-smoke UI D5–D6 heredado. Tasklist Compras **cerrada**.
 
 ---
 
@@ -29,7 +29,7 @@ Las filas **⚠️** que siguen en §4 Compras (**enlace OC ↔ factura de compr
 diferidos de alcance, no bloqueos del flujo diario: por eso la fila se cuenta como ~100 % y el criterio del cierre
 es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 
-**Decisión (2026-10-20):** el próximo agente valida cotizaciones (CRM + proveedores), no reabre esta tasklist. Ver `doc/TODO.md` § Handoff 2026-10-20.
+**Decisión (2026-11-10):** no reabrir tasklists cerradas. Ver `doc/TODO.md` (cumplimiento contractual y entrenamiento 6).
 
 ---
 
@@ -63,7 +63,8 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Export NOI / Aspel | ⚠️ | Excel; compatibilidad Aspel no confirmada |
 | Calculadora finiquito “oficial” | ⏸ | Cotización: no calcula finiquito; solo datos apoyo |
 | Viáticos obra ↔ RH | ⚠️ | Campo nómina; sin flujo obra dedicado |
-| Reloj en menú RH | ✅ | ZKTeco; ≠ Bixpe contrato (I5) |
+| Reloj en menú RH | ✅ | ZKTeco; ≠ Bixpe contrato |
+| Expediente lista de raya (contabilidad) | ✅ | I6: comidas/bancos/asistencia; no sustituye nómina |
 
 ---
 
@@ -85,7 +86,8 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Insumos CRUD + stock | ✅ | |
 | Proveedores CRUD, documentos | ✅ | |
 | OC crear, PDF, estatus | ✅ | |
-| Cotizaciones proveedor + comparar + tipo cambio | ✅ | Smoke HTTP 2026-10-21 (`TODO.md` handoff §B): grupo `GRP-COT-2026-0001`, `COT-2026-0001` aprobada → `OC-2026-0001` Borrador `origen_tipo=cotizacion` (luego cancelada), hermana `COT-2026-0002` rechazada, segunda aprobación bloqueada, `COT-2026-0003` rechazada aparte. No es `presupuestos_obra` |
+| Cotizaciones proveedor + comparar + tipo cambio | ✅ | Smoke HTTP 2026-10-21. No es `presupuestos_obra` ni CCO- |
+| Entrenamiento de materiales | ✅ | I6 semáforo revisado; enlace a producto fabricado **sin** borrar insumo |
 | Preorden → autorizar → OC | ✅ | E5 ✅; sin proveedor → mensaje claro (T5); cantidad convertida a unidad del insumo |
 | Recepción OC → stock insumo | ✅ | Smoke E6 OC-2026-0001 (entrada real 24-sep: BLANCO 0→1 Kg) + smoke CLI 2026-09-28 en **transacción revertida** con las guardas nuevas |
 | Comprobantes pago email/WhatsApp | ✅ | Preview en TEST |
@@ -111,6 +113,7 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Lote, etiqueta, consultar lote | ✅ | |
 | Preorden compra desde faltantes | ✅ | |
 | Touchscreen / catálogo planta | ✅ | |
+| Entrenamiento temporal de productos | ✅ | I6 semáforo + historial tras fórmula principal |
 | Control calidad viscosidad | ❌ | Cotización §8 |
 | Notificaciones áreas al completar | ⚠️ | Solo cambio estatus BD |
 
@@ -127,7 +130,9 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Convertir cotización → OV | ✅ | 2026-10-21: `OV-2026-0006` (`TEST-QA-CLI`) → `Confirmada`. Rechaza si ya no es `Cotización`. Cancelada al cerrar. Fila **A6** marcada |
 | Órdenes listado, pagos, PDF cotización | ✅ | |
 | Reenvío cotización email | ⚠️ | Guardas OK (no cotización / sin email) sin llamar `send()`. No hay `config/email.php` (protocolo `mail`). El envío real sigue sin SMTP; el link es `Pos/imprimir_recibo_template/{id}/1` |
-| POS sucursales, guard $0, recibo | ✅ | |
+| POS sucursales, guard $0, recibo | ✅ | Canal mostrador vs obra (I6) |
+| Cotización comercial de obra (CCO-) | ✅ | Distinta de PRES- y de cotización a proveedor. Papelería CHISA/HAPA |
+| Sucursales papelería (logo, pie, marca de agua) | ✅ | `ventas/Sucursales` |
 | Cotización sin preorden / confirmar con preorden | ✅ | Smoke B4–B5 |
 | Cobro mostrador sin PT negativo | ✅ | Fix 2026-09-24; **re-smoke B6 ✅ 2026-09-28** (CLI+BD, transacción revertida). Guardas nuevas: idempotencia de entrega + líneas consolidadas por producto |
 | Pedido → En Preparación → almacén entrega | ✅ | Regla en §9.6 `REGLAS_TECNICAS`; guardas + smoke **J1–J5** 2026-09-28 en transacción revertida (los pendientes reales no tienen PT libre fuera de OVs intocables) |

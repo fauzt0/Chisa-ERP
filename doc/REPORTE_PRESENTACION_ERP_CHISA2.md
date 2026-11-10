@@ -1,3 +1,7 @@
+# Reporte de pruebas de presentación (ERP CHISA) — HISTÓRICO 21/10/2026
+
+> No es el estado actual. Ver `TODO.md` y `PRUEBAS_GROKBOT_I6.md`.
+
 # Reporte de pruebas de presentación (ERP CHISA)
 Fecha: 21/10/2026 (hora CDMX). Las pruebas se hicieron solo en el navegador, como administrador (soporte2@especialistasweb.com.mx). Se siguió PRUEBAS_GROKBOT_PRESENTACION.md.
 

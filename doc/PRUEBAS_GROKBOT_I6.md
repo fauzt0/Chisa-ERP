@@ -1,4 +1,4 @@
-# Pruebas Grokbot — entrenamiento 6
+# Pruebas Grokbot — entrenamiento 6 (vigente 2026-11-10)
 
 Solo navegador. No cobres, no timbres, no canceles `OV-2026-0009`, no autorices `PRE-2026-0001`.
 

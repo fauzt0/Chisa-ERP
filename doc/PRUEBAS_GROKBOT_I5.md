@@ -1,3 +1,7 @@
+# Pruebas Grokbot I5 (HISTÓRICO)
+
+> Sustituido por `PRUEBAS_GROKBOT_I6.md`. Conservar como evidencia de entrenamiento 5; no usarlo como plan vigente.
+
 # Pruebas de presentación — ERP CHISA (Grokbot)
 
 Este archivo es **todo lo que necesitas**. No tienes acceso al código, a la base de datos ni a la terminal. Trabajas **solo en el navegador**, como un administrador: menús, búsquedas, formularios y botones Guardar.

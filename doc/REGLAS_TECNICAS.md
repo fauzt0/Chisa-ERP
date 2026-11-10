@@ -2,8 +2,8 @@
 
 > **Propósito:** Guía de reglas estrictas y estándares técnicos que todo agente de IA debe seguir al desarrollar, modificar o extender este sistema ERP.
 >
-> **Versión:** 1.1 | **Última actualización:** 2026-10-06  
-> **Tramo vivo (2026-10-20):** no está en este archivo. Léelo en `TODO.md` § Handoff (validar cotizaciones CRM + proveedores). Estas reglas siguen vigentes; no reimplementar Producción ni Obras.
+> **Versión:** 1.2 | **Última actualización:** 2026-11-10  
+> **Tramo vivo:** `TODO.md` (afinar entrenamiento I6 y go-live de negocio). Estas reglas siguen vigentes. No reimplementar Producción ni Obras (P1–P9 y Fase 5 cerrados). Arquitectura: `../DOCUMENTACION_TECNICA.md`.
 
 ---
 
@@ -31,7 +31,7 @@
 | Componente | Tecnología | Versión |
 |-----------|-----------|---------|
 | Framework | CodeIgniter 3 | 3.x |
-| PHP | PHP-FPM | 7.4+ |
+| PHP | PHP-FPM | 8.3 (código CI3 compatible 7.4+) |
 | Base de datos | MySQL / MariaDB | 5.7+ |
 | Frontend CSS | Bootstrap 4 + AdminLTE 3 | 4.x / 3.x |
 | Frontend JS | jQuery + DataTables + SweetAlert2 | 1.10+ |
