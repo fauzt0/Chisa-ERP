@@ -8,8 +8,10 @@ $csrf_hash = $this->security->get_csrf_hash();
 ?>
 <div class="container-fluid p-0">
   <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
-  <a href="<?= base_url('produccion/EntrenamientoProductos') ?>" class="btn btn-sm btn-outline-secondary mb-2">Volver</a>
-  <h1 class="h3"><?= htmlspecialchars($p->nombre, ENT_QUOTES, 'UTF-8') ?> <small class="text-muted"><?= htmlspecialchars($p->codigo, ENT_QUOTES, 'UTF-8') ?></small></h1>
+  <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-2">
+    <a href="<?= base_url('produccion/EntrenamientoProductos') ?>" class="btn btn-sm btn-outline-secondary">Volver</a>
+  </div>
+  <h1 class="h3"><?= htmlspecialchars($p->nombre, ENT_QUOTES, 'UTF-8') ?> <small class="text-muted d-block d-md-inline"><?= htmlspecialchars($p->codigo, ENT_QUOTES, 'UTF-8') ?></small></h1>
   <?php if (!empty($response['aviso'])): ?>
     <div class="alert alert-<?= !empty($response['aviso_ok']) ? 'success' : 'danger' ?> py-2"><?= htmlspecialchars($response['aviso'], ENT_QUOTES, 'UTF-8') ?></div>
   <?php endif; ?>
@@ -52,7 +54,7 @@ $csrf_hash = $this->security->get_csrf_hash();
           <option value="1" <?= !empty($p->entrenamiento_principal_ok) ? 'selected' : '' ?>>Verificada</option>
         </select>
       </div>
-      <div class="col-md-1 d-flex align-items-end"><button class="btn btn-primary w-100">Guardar</button></div>
+      <div class="col-12 col-md-1 d-flex align-items-end"><button class="btn btn-primary w-100">Guardar</button></div>
     </div>
   </form>
 

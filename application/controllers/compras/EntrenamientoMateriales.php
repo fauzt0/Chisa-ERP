@@ -212,7 +212,7 @@ class EntrenamientoMateriales extends MY_Controller {
         if (!empty($res['success'])) {
             $this->registrar_bitacora("Entrenamiento: alias '{$alias}' agregado a insumo #{$insumo_id}", 'Compras');
         }
-        echo json_encode($res);
+        $this->_responder_entrenamiento($res, $insumo_id);
     }
 
     // -----------------------------------------------------------------------
@@ -237,7 +237,7 @@ class EntrenamientoMateriales extends MY_Controller {
         if (!empty($res['success'])) {
             $this->registrar_bitacora("Entrenamiento: precio proveedor #{$proveedor_id} insumo #{$insumo_id} = \${$precio_raw}", 'Compras');
         }
-        echo json_encode($res);
+        $this->_responder_entrenamiento($res, $insumo_id);
     }
 
     // -----------------------------------------------------------------------
@@ -276,7 +276,10 @@ class EntrenamientoMateriales extends MY_Controller {
         if ($ok) {
             $this->registrar_bitacora("Entrenamiento: producto #{$insumo->producto_id} actualizado (insumo #{$insumo_id})", 'Compras');
         }
-        echo json_encode(['success' => (bool) $ok, 'message' => $ok ? 'Producto actualizado' : 'Sin cambios o error']);
+        $this->_responder_entrenamiento(
+            ['success' => (bool) $ok, 'message' => $ok ? 'Producto actualizado' : 'Sin cambios o error'],
+            $insumo_id
+        );
     }
 
     public function marcar_producto_ajax() {
@@ -401,5 +404,15 @@ class EntrenamientoMateriales extends MY_Controller {
             ];
         }
         return $filas;
+    }
+
+    private function _responder_entrenamiento(array $payload, $insumo_id) {
+        if ($this->input->post('volver') === '1') {
+            $this->session->set_flashdata('em_msg', $payload['message'] ?? '');
+            $this->session->set_flashdata('em_ok', !empty($payload['success']) ? '1' : '0');
+            redirect('compras/EntrenamientoMateriales/editar/' . (int) $insumo_id);
+            return;
+        }
+        echo json_encode($payload);
     }
 }

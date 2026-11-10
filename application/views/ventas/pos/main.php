@@ -161,7 +161,7 @@ $stats = $response['stats'] ?? [];
 <!-- POS Interface -->
 <div class="row">
   <!-- Columna Izquierda: Catálogo de Productos -->
-  <div class="col-md-7">
+  <div class="col-12 col-lg-7 order-2 order-lg-1">
     <div class="card">
       <div class="card-header">
         <h5 class="card-title mb-0"><i class="fas fa-box"></i> Catálogo de Productos</h5>
@@ -199,7 +199,7 @@ $stats = $response['stats'] ?? [];
   </div>
   
   <!-- Columna Derecha: Ticket de Venta -->
-  <div class="col-md-5">
+  <div class="col-12 col-lg-5 order-1 order-lg-2 mb-3 mb-lg-0">
     <div class="card">
       <div class="card-header bg-primary text-white">
         <h5 class="card-title mb-0"><i class="fas fa-receipt"></i> Ticket de Venta</h5>

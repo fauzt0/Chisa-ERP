@@ -286,3 +286,43 @@ h5 .erp-btn-ayuda {
   color: #84aef2;
   border-color: #84aef2;
 }
+
+/* Responsive: contenido, tablas y POS (no altera sidebar de AppStack) */
+@media (max-width: 991.98px) {
+  #erp-main-content.erp-font-scalable {
+    zoom: 1;
+  }
+  #erp-main-content.demo-presentacion {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  #erp-main-content .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+  #erp-main-content .btn-group {
+    flex-wrap: wrap;
+  }
+  #erp-main-content .card-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  #erp-main-content .navbar-collapse,
+  .navbar .navbar-align {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 575.98px) {
+  #erp-main-content.demo-presentacion > h1.h3,
+  #erp-main-content.demo-presentacion h1.h3 {
+    font-size: 1.15rem !important;
+  }
+  #erp-main-content .form-control,
+  #erp-main-content .form-select,
+  #erp-main-content .btn {
+    min-height: 44px;
+  }
+  #erp-main-content .btn-sm {
+    min-height: 40px;
+  }
+}

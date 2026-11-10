@@ -24,7 +24,7 @@ $revisado = $response['revisado'] ?? '';
   </form>
   <div class="card">
     <div class="table-responsive">
-      <table class="table table-sm table-striped mb-0">
+      <table class="table table-sm table-striped mb-0" id="tablaEP">
         <thead><tr><th>Rev.</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Estatus</th><th>Principal OK</th><th></th></tr></thead>
         <tbody>
         <?php foreach ($filas as $f): ?>
@@ -43,3 +43,15 @@ $revisado = $response['revisado'] ?? '';
     </div>
   </div>
 </div>
+<script>
+$(function () {
+  if ($.fn.DataTable && $('#tablaEP tbody tr').length) {
+    $('#tablaEP').DataTable({
+      pageLength: 25,
+      order: [[2, 'asc']],
+      columnDefs: [{ orderable: false, targets: -1 }],
+      language: { url: '/assets/dist/js/i18n/datatables-es.json' }
+    });
+  }
+});
+</script>

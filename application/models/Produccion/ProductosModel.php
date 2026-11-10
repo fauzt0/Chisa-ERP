@@ -1909,7 +1909,7 @@ class ProductosModel extends MY_Model {
             $this->db->where('productos.entrenamiento_revisado', (int) $filtros['entrenamiento_revisado']);
         }
         $this->db->order_by('productos.nombre', 'ASC');
-        $this->db->limit(400);
+        $this->db->limit(3000);
         return $this->db->get()->result();
     }
 

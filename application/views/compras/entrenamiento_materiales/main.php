@@ -126,10 +126,9 @@ $csrf_hash         = $this->security->get_csrf_hash();
               <?php else: ?>—<?php endif; ?>
             </td>
             <td>
-              <a class="btn btn-sm btn-outline-primary btn-editar"
+              <a class="btn btn-sm btn-outline-primary"
                  href="<?= base_url('compras/EntrenamientoMateriales/editar/' . (int)$f['id']) ?>"
-                 data-id="<?= (int)$f['id'] ?>"
-                 title="Editar">
+                 title="Abrir ficha">
                 <i class="fas fa-pencil-alt"></i>
               </a>
             </td>
@@ -384,24 +383,7 @@ $csrf_hash         = $this->security->get_csrf_hash();
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  /* ---- abrir modal ---- */
-  $(document).on('click', 'a.btn-editar', function (e) {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.which === 2) return;
-    e.preventDefault();
-    var id = $(this).data('id');
-    if (!id) return;
-    var btn = $(this);
-    $.getJSON(BASE + 'compras/EntrenamientoMateriales/get_fila_ajax', { id: id }, function (res) {
-      btn.prop('disabled', false);
-      if (!res || !res.success || !res.fila) {
-        window.alert(res && res.message ? res.message : 'No se pudo abrir el material');
-        return;
-      }
-      abrirModalFila(res.fila);
-    }).fail(function () {
-      window.location = btn.attr('href');
-    });
-  });
+  /* El lápiz navega a la ficha /editar/{id} (unidad, revisado y producto fabricado). */}
 
   function abrirModalFila(f) {
     filaActual = f;
