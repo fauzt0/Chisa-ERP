@@ -76,6 +76,7 @@ class EntrenamientoMateriales extends MY_Controller {
             'filas'               => $filas,
             'total'               => count($filas),
             'proveedores_activos' => $proveedores_activos,
+            'fotos_mp'            => $this->_listar_fotos_mp(),
         ];
         $this->viewData['pageView'] = 'compras/entrenamiento_materiales/main';
         $this->load->view('layouts/general_template', $this->viewData);
@@ -404,6 +405,40 @@ class EntrenamientoMateriales extends MY_Controller {
             ];
         }
         return $filas;
+    }
+
+    public function foto_mp() {
+        $this->requiere_permiso('entrenamiento_materiales', 'Sin permiso de entrenamiento de materiales');
+        $base = basename((string) $this->input->get('f'));
+        if ($base === '') {
+            show_404();
+            return;
+        }
+        $dir = FCPATH . 'doc/entrenamiento_6/entrenamiento6-imagenes-materia-prima/';
+        $path = $dir . $base;
+        $real_dir = realpath($dir);
+        $real_file = realpath($path);
+        if (!$real_dir || !$real_file || strpos($real_file, $real_dir) !== 0 || !is_file($real_file)) {
+            show_404();
+            return;
+        }
+        $mime = 'image/jpeg';
+        $this->output->set_content_type($mime)->set_output(file_get_contents($real_file));
+    }
+
+    private function _listar_fotos_mp() {
+        $dir = FCPATH . 'doc/entrenamiento_6/entrenamiento6-imagenes-materia-prima/';
+        if (!is_dir($dir)) {
+            return [];
+        }
+        $out = [];
+        foreach (scandir($dir) as $f) {
+            if (!preg_match('/\.(jpe?g|png|webp)$/i', $f)) {
+                continue;
+            }
+            $out[] = $f;
+        }
+        return $out;
     }
 
     private function _responder_entrenamiento(array $payload, $insumo_id) {

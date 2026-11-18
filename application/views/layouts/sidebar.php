@@ -112,7 +112,7 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Categorias">Categorías</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Insumos">Insumos</a></li>
           <?php if (tiene_permiso('entrenamiento_materiales')): ?>
-          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/EntrenamientoMateriales">Entrenamiento de materiales</a></li>
+          <li class="sidebar-item"><a class="sidebar-link sidebar-entrenamiento" href="<?=base_url();?>compras/EntrenamientoMateriales">Entrenamiento de materiales</a></li>
           <?php endif; ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/Proveedores">Proveedores</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>compras/OrdenesCompra">Órdenes de Compra</a></li>
@@ -130,7 +130,7 @@
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Productos">Productos y Fórmulas</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/HistorialFormulaciones">Historial de formulaciones</a></li>
           <?php if (tiene_permiso('entrenamiento_productos')): ?>
-          <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/EntrenamientoProductos">Entrenamiento de productos</a></li>
+          <li class="sidebar-item"><a class="sidebar-link sidebar-entrenamiento" href="<?=base_url();?>produccion/EntrenamientoProductos">Entrenamiento de productos</a></li>
           <?php endif; ?>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Lotes">Control de Lotes</a></li>
           <li class="sidebar-item"><a class="sidebar-link" href="<?=base_url();?>produccion/Lotes/consultar">Consultar Lote</a></li>

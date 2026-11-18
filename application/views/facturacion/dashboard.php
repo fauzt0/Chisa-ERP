@@ -5,6 +5,14 @@
    
     <!-- Titulo de la pagina -->
     <h1 class="h3 mb-3"><?php echo $headTitle;?></h1>
+    <?php $amb = $facture_ambiente ?? 'sandbox'; ?>
+    <p class="small mb-3">
+      Ambiente Facture:
+      <span class="badge bg-<?= $amb === 'sandbox' ? 'info' : 'warning' ?>"><?= htmlspecialchars($amb, ENT_QUOTES, 'UTF-8') ?></span>
+      <?php if ($amb === 'sandbox'): ?>
+        <span class="text-muted">Pruebas en app.facture.com.mx — no es micontador producción. No timbrar RFC real.</span>
+      <?php endif; ?>
+    </p>
 
     <?php if($this->session->flashdata('success')): ?>
     <div class="alert alert-success alert-dismissible" role="alert">

@@ -5,7 +5,7 @@ Guía arquitectónica y estándar de desarrollo para retomar el proyecto sin rea
 **Fuente canónica:** este archivo (`public_html/DOCUMENTACION_TECNICA.md`).  
 `doc/DOCUMENTACION_TECNICA.md` es solo un **puntero** (no duplicar contenido aquí).
 
-**Estado (2026-11-10, rama `iteracion-5`):** overhaul Producción/Obras P1–P9 **cerrado** (2026-08-20). Iteraciones 3 y 4 cerradas. El trabajo vivo es **afinar operación y datos de entrenamiento** (I5/I6), no reimplementar formulación, pesaje ni presupuestos. Pendientes y contrato: `doc/TODO.md`.
+**Estado (2026-11-18, rama `iteracion-6`):** overhaul Producción/Obras P1–P9 **cerrado** (2026-08-20). Iteraciones 3, 4 y 5 cerradas (`iteracion-5` mergeada a `main`). El trabajo vivo es **afinar datos de entrenamiento I6** (0 insumos y 0 productos marcados revisados), no reimplementar formulación, pesaje ni presupuestos. Pendientes: `doc/TODO.md`.
 
 ---
 

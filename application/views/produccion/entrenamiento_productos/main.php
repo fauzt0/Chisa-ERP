@@ -6,7 +6,7 @@ $revisado = $response['revisado'] ?? '';
 <div class="container-fluid p-0">
   <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
   <h1 class="h3 mb-2"><?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?></h1>
-  <p class="small text-muted">Pantalla temporal de superadmin. Completar lote sigue exigiendo pesaje en Lotes. No activa otra fórmula al consultar.</p>
+  <p class="small text-muted">Pantalla temporal de superadmin. Flujo: revisar fórmula principal → marcar verificada → historial. Completar lote sigue exigiendo pesaje en Lotes. No activa otra fórmula al consultar.</p>
   <form class="card mb-3" method="get">
     <div class="card-body row g-2 align-items-end">
       <div class="col-md-6">

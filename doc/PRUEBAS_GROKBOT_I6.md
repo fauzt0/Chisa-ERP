@@ -1,4 +1,6 @@
-# Pruebas Grokbot — entrenamiento 6 (vigente 2026-11-10)
+# Pruebas Grokbot — entrenamiento 6 (vigente 2026-11-18)
+
+Verificación de agente 2026-11-18 (sin Guardar, sin cobro, sin timbrar): PHP lint OK en ambos controladores de entrenamiento y Facturas. BD: 150 insumos (0 revisados), 497 productos (0 revisados, 0 principal OK), 314 fórmulas activas, 1 preorden pendiente, 27 OV, 7 obras, 9 facturas. Facture `cli_probe` sandbox OK. Galería 23 JPEG en `entrenamiento_6/entrenamiento6-imagenes-materia-prima/`. El login web de este día llegó a la pantalla de acceso (sesión previa expirada); C2/C3/P1/P2 de UI siguen para Grokbot con la cuenta de abajo.
 
 Solo navegador. No cobres, no timbres, no canceles `OV-2026-0009`, no autorices `PRE-2026-0001`.
 

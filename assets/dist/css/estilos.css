@@ -87,8 +87,20 @@
 /* Dropdown items - Submenús */
 .sidebar-dropdown .sidebar-link {
     color: #d1e3f0 !important;
-    padding-left: 3rem !important;
-    font-size: 0.9rem;
+    padding-left: 2.15rem !important;
+    font-size: 0.88rem;
+    line-height: 1.35;
+}
+.sidebar-dropdown .sidebar-link::before {
+    content: "– ";
+    color: #ffc107;
+    font-weight: 700;
+    margin-right: 0.2rem;
+}
+.sidebar-dropdown .sidebar-link.sidebar-entrenamiento {
+    font-weight: 600;
+    background: rgba(255, 193, 7, 0.14) !important;
+    color: #fff !important;
 }
 
 /* Dropdown items - Hover */

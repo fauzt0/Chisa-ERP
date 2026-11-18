@@ -1,7 +1,7 @@
 # TODO — Sistema ERP CHISA
 
-**Última actualización:** 2026-11-10  
-**Rama activa:** `iteracion-5` (local 6 commits por delante de `origin/iteracion-5` al 10-nov).  
+**Última actualización:** 2026-11-18  
+**Rama activa:** `iteracion-6` (I5 mergeada a `main`; `iteracion-5` retirada).  
 **Entorno:** `ENVIRONMENT=development` · `https://erp.chisarecubrimientos.com.mx`
 
 **Handoff:** el sistema **ya cubre el núcleo operativo** de la cotización (usuarios, RH, compras, CRM, POS, obras, producción, almacén, facturación sandbox, contabilidad de lectura). El tramo vivo es **afinar datos de entrenamiento y go-live de negocio**, no reimplementar P1–P9 ni Fase 5.
@@ -29,7 +29,8 @@ No timbrar/cobrar real. No autorizar `PRE-2026-0001`. No tocar `OV-2026-0009`. N
 | Iteración | Código | Material en `doc/` | ¿Sigue haciendo falta? |
 |-----------|--------|--------------------|------------------------|
 | I1–I3 | Mergeado a `main` / ancestro de I5 | Dossiers retirados 2026-10-06; tags git `entrenamiento-3-hist`, `facturacion-contabilidad-i4` | Histórico. No recrear |
-| I4 | Cerrada 2026-10-06; contenido en `iteracion-5` | — | Cerrada |
+| I4 | Cerrada 2026-10-06; contenido en `main` | — | Cerrada |
+| I5 | Mergeada a `main` el 2026-11-18 | Handoff `HANDOFF_ENTRENAMIENTO_SANDBOX_2026-11-10.md` | Cerrada. Rama `iteracion-5` eliminada tras el merge |
 | Entrenamiento 4 | Fase 5 APU/PRES | `entrenamiento_4/` (Excel/PDF de generadores, ZOCLOS, químicos) | **Sí.** Fuente de APU y proveedores químicos. No borrar |
 | Entrenamiento 5 | CCO, POS, papelería | `entrenamiento_5/` (cotizaciones 2026 Word/PDF) | **Sí.** Semilla y contraste de cartas. No borrar |
 | Entrenamiento 6 | Raya, CCO PDF, HAPA, semáforos | `entrenamiento_6/` + `entrenamiento.md` | **Sí, activo.** Lista de raya, PDFs 2026, formatos contables. No borrar |
@@ -54,7 +55,7 @@ Leyenda: **OK** flujo diario interno · **Parc.** falta smoke/SMTP/datos · **Co
 | 7 | Obras / cálculo | OK | Fase 5 PRES- + CCO- comercial. Crear obra alerta INE/RH |
 | 8 | Producción | OK | Falta QC **viscosidad**. Touch/etiquetas lote sí. Notificación al completar = cambio de estatus/campana, no push |
 | 9 | Almacén | OK | Falta salida por **lector QR**. Tres Guerras = costo interno en CCO, no API |
-| 10 | Facturación | Parc. | Facture **sandbox** + `cli_probe`. Sin email PDF+XML, sin liga autofactura, sin go-live micontador |
+| 10 | Facturación | Parc. | Sandbox OK 2026-11-18 (`cli_probe` ok, token 2026-02-04). Badge sandbox en dashboard. 9 facturas locales. Sin email PDF+XML, sin go-live micontador |
 | 11 | Contabilidad | OK | Pólizas desde orígenes. DIOT/conciliación auto/Aspel pleno = fuera |
 | 12 | Reportes | Parc. | Por módulo (Excel/PDF). No hay hub único “Reportes” del diagrama |
 
@@ -67,9 +68,9 @@ Detalle de filas: `MODULOS_ESTADO_CHECKLIST.md`.
 | Pedido del brief | Dónde | Cumple |
 |------------------|-------|--------|
 | Expediente lista de raya (comidas, bancos, asistencia) | `contabilidad/ExpedienteRaya` | Sí (no sustituye nómina) |
-| Semáforo materiales, no revisado, unidad, no borrar insumo | `compras/EntrenamientoMateriales` | Sí |
+| Semáforo materiales, no revisado, unidad, no borrar insumo | `compras/EntrenamientoMateriales` | Sí. 2026-11-18: 150 insumos, 0 revisados. Galería 23 fotos MP sin ligar a BD. Modal viejo eliminado |
 | Marcar producto fabricado → enlaza SKU, insumo **sigue** | `InsumosModel::enlazar_producto_entrenamiento` | Sí (decisión: no borrar, BOM lo necesita) |
-| Entrenamiento productos + historial bloqueado hasta principal | `produccion/EntrenamientoProductos` | Sí |
+| Entrenamiento productos + historial bloqueado hasta principal | `produccion/EntrenamientoProductos` | Sí. 2026-11-18: 497 productos, 0 revisados, 0 con principal verificada, 314 fórmulas activas |
 | Completar lote sigue exigiendo pesaje | Producción (regla P1–P9) | Sí |
 | CCO, sucursales CHISA/HAPA, PDF/Excel, pie, 3 Guerras interno | `ventas/CotizacionesObra`, `ventas/Sucursales` | Sí |
 | Sembrar CCO desde PDF entrenamiento 6 | `entrenamiento_sembrar` + `indexar_pdfs_entrenamiento` | Sí |
@@ -114,6 +115,7 @@ Fuera de alcance hasta que negocio lo pida: DIOT, conciliación bancaria automá
 | `API_RELOJ_CHECADOR.md` + `iclock/` | ZKTeco |
 | `PLAN_ENVIOS_TRES_GUERRAS.md` | Diseño API (no código) |
 | `PRUEBAS_GROKBOT_I6.md` | Checklist navegador vigente |
+| `HANDOFF_ENTRENAMIENTO_SANDBOX_2026-11-10.md` | Cierre I5 (galería, menú, sandbox). Histórico de esa pasada |
 | `entrenamiento_4/` `entrenamiento_5/` `entrenamiento_6/` | Dossiers |
 
 ### Históricos (no ejecutar, no borrar evidencia)

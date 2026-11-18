@@ -19,6 +19,8 @@ class Facturas extends MY_Controller {
         // Verificar token
         $token = $this->token_model->get_token();
         $this->viewData['conectado'] = ($token && $token->access_token);
+        $this->config->load('factureapp', true);
+        $this->viewData['facture_ambiente'] = $this->config->item('factureapp_ambiente', 'factureapp') ?: 'sandbox';
         
         // Filtros
         $fecha_inicio = $this->input->get('fecha_inicio');

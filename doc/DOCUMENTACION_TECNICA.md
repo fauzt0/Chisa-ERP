@@ -1,7 +1,7 @@
 # DOCUMENTACIÓN TÉCNICA (puntero)
 
 > **Fuente canónica:** [`../DOCUMENTACION_TECNICA.md`](../DOCUMENTACION_TECNICA.md)  
-> Actualizada 2026-11-10. Este archivo no duplica el contenido.
+> Actualizada 2026-11-18. Este archivo no duplica el contenido.
 
 | Tema | Documento |
 |------|-----------|

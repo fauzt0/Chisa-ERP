@@ -1,13 +1,13 @@
 # Checklist de módulos ERP CHISA — estado y cierre
 
-**Fecha:** 2026-11-10 · **Rama:** `iteracion-5`  
+**Fecha:** 2026-11-18 · **Rama:** `iteracion-6` (`iteracion-5` mergeada a `main`)  
 **Leyenda:** ✅ Operativo / verificado · ⚠️ Parcial o falta smoke · ❌ No implementado · ⏸ Fuera de alcance operativo (contrato o posterior) · 🔒 Bloqueado por negocio/datos
 
 **Fuentes:** menú `sidebar.php`, cotización v1.1, diagrama general, código I5/I6, `doc/TODO.md`.  
 **Smoke detallado:** `CHECKLIST_MANUAL_MODULOS_ITERACION_2026-08-25.md` (histórico; no re-ejecutar bloques ✅).  
 **Grokbot vigente:** `PRUEBAS_GROKBOT_I6.md`.
 
-**Estado de iteración:** I3 e I4 cerradas. **Tramo vivo:** afinar entrenamiento I6 y pendientes de negocio (`TODO.md`). Re-smoke UI D5–D6 heredado. Tasklist Compras **cerrada**.
+**Estado de iteración:** I3, I4 e I5 cerradas (I5 en `main` el 2026-11-18). **Tramo vivo:** `iteracion-6`, afinar datos de entrenamiento y pendientes de negocio (`TODO.md`). Re-smoke UI D5–D6 heredado. Tasklist Compras **cerrada**.
 
 ---
 
@@ -87,7 +87,7 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Proveedores CRUD, documentos | ✅ | |
 | OC crear, PDF, estatus | ✅ | |
 | Cotizaciones proveedor + comparar + tipo cambio | ✅ | Smoke HTTP 2026-10-21. No es `presupuestos_obra` ni CCO- |
-| Entrenamiento de materiales | ✅ | I6 semáforo revisado; enlace a producto fabricado **sin** borrar insumo |
+| Entrenamiento de materiales | ✅ | Código OK. BD 2026-11-18: 150 insumos, **0 revisados**. Galería 23 fotos MP (sin FK). Ficha `/editar/{id}`. Modal viejo eliminado. Login web no revalidado este día (sesión expirada) |
 | Preorden → autorizar → OC | ✅ | E5 ✅; sin proveedor → mensaje claro (T5); cantidad convertida a unidad del insumo |
 | Recepción OC → stock insumo | ✅ | Smoke E6 OC-2026-0001 (entrada real 24-sep: BLANCO 0→1 Kg) + smoke CLI 2026-09-28 en **transacción revertida** con las guardas nuevas |
 | Comprobantes pago email/WhatsApp | ✅ | Preview en TEST |
@@ -113,7 +113,7 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 | Lote, etiqueta, consultar lote | ✅ | |
 | Preorden compra desde faltantes | ✅ | |
 | Touchscreen / catálogo planta | ✅ | |
-| Entrenamiento temporal de productos | ✅ | I6 semáforo + historial tras fórmula principal |
+| Entrenamiento temporal de productos | ✅ | Código OK. BD 2026-11-18: 497 productos, **0 revisados**, **0** `entrenamiento_principal_ok`, 314 fórmulas activas. Historial sigue bloqueado hasta marcar principal |
 | Control calidad viscosidad | ❌ | Cotización §8 |
 | Notificaciones áreas al completar | ⚠️ | Solo cambio estatus BD |
 
@@ -171,7 +171,7 @@ es la tasklist (**T1–T5 ✅ + bloque E en ✅**), verificado el 2026-09-28.
 |---------|--------|-------|
 | OAuth Facture, sandbox, emitir, sync, PDF/XML | ✅ | |
 | `config/factureapp.php`, `cli_probe` | ✅ | |
-| Dashboard “conectado” visible | ⚠️ | Token vía CLI |
+| Dashboard “conectado” visible | ✅ | Badge **sandbox** en dashboard (2026-11-18). `cli_probe` ok; token `api_tokens` 2026-02-04. 9 facturas locales. No timbrar RFC real |
 | Email PDF+XML | ❌ | UI pendiente |
 | Go-live micontador | ⏸ | Decisión negocio |
 | Alertas facturas faltantes OV/OC | ❌ | |
