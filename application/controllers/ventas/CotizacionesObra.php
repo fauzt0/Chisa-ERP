@@ -487,6 +487,22 @@ class CotizacionesObra extends MY_Controller {
         ], JSON_UNESCAPED_UNICODE);
     }
 
+    public function sembrar_xlsx61_cli() {
+        if (!is_cli()) {
+            show_error('Solo CLI', 403);
+            return;
+        }
+        echo json_encode($this->CotizacionesObraModel->sembrar_xlsx_entrenamiento61(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . PHP_EOL;
+    }
+
+    public function sembrar_xlsx61_ajax() {
+        if (!tiene_permiso('entrenamiento_sembrar') && !is_cli()) {
+            echo json_encode(['success' => false, 'message' => 'Sin permiso para cargar xlsx de entrenamiento']);
+            return;
+        }
+        echo json_encode($this->CotizacionesObraModel->sembrar_xlsx_entrenamiento61(), JSON_UNESCAPED_UNICODE);
+    }
+
     public function sembrar_pdfs_ajax() {
         if (!tiene_permiso('entrenamiento_sembrar') && !is_cli()) {
             echo json_encode(['success' => false, 'message' => 'Sin permiso para cargar PDFs de entrenamiento']);

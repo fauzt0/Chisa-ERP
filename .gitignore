@@ -44,6 +44,9 @@ database/datos_*.sql
 database/*_backup*.sql
 database/*_dump*.sql
 
+# Respaldo local MySQL (carpeta hermana de public_html: ../bd_backups)
+bd_backups/
+
 # IDE Files
 #-------------------------
 /nbproject/

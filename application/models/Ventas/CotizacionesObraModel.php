@@ -1088,6 +1088,400 @@ class CotizacionesObraModel extends CI_Model {
         return null;
     }
 
+    /**
+     * Carga los xlsx HAPA de entrenamiento_6_1 como CCO Borrador + clientes + catálogo.
+     * No crea obras. No pisa CCO-2026-0003 / OV-2026-0009.
+     */
+    public function sembrar_xlsx_entrenamiento61() {
+        $this->asegurar_infraestructura();
+        $this->load->model('Ventas/SucursalesModel');
+        $this->SucursalesModel->asegurar_infraestructura();
+        $hapa = $this->db->where('codigo', 'SUC-HAPA')->get('sucursales')->row();
+        $sucursal_id = $hapa ? (int) $hapa->id : null;
+        $dir = FCPATH . 'doc/entrenamiento_6_1/cotizaciones_2026';
+        $resumen = [
+            'success' => false,
+            'archivos' => 0,
+            'nuevas' => 0,
+            'actualizadas' => 0,
+            'omitidas' => 0,
+            'sin_partidas' => 0,
+            'clientes_nuevos' => 0,
+            'conceptos' => 0,
+            'folios' => [],
+            'comparacion' => [],
+            'vacios' => [],
+        ];
+        if (!is_dir($dir)) {
+            $resumen['message'] = 'No está doc/entrenamiento_6_1/cotizaciones_2026';
+            return $resumen;
+        }
+        $protegido = $this->db->where('folio', 'CCO-2026-0003')->get('cotizaciones_comerciales')->row();
+        $protegido_id = $protegido ? (int) $protegido->id : 0;
+        foreach (scandir($dir) as $file) {
+            if ($file === '.' || $file === '..' || strtolower(pathinfo($file, PATHINFO_EXTENSION)) !== 'xlsx') {
+                continue;
+            }
+            $resumen['archivos']++;
+            $path = $dir . DIRECTORY_SEPARATOR . $file;
+            $leido = $this->leer_xlsx_hapa_61($path);
+            $conceptos_antes = 0;
+            foreach ($leido['lineas'] as $linea) {
+                $huella = $this->huella($linea['concepto']);
+                $this->db->reset_query();
+                $ya = $this->db->where('huella', $huella)->count_all_results('conceptos_comerciales') > 0;
+                $this->upsert_concepto($linea['concepto'], $linea['unidad'], $linea['precio_unitario']);
+                if (!$ya) {
+                    $conceptos_antes++;
+                }
+            }
+            $resumen['conceptos'] += $conceptos_antes;
+            $existe = $this->buscar_cotizacion_pdf($file, $leido['pres_ref']);
+            if ($existe && (int) $existe->id === $protegido_id) {
+                $resumen['omitidas']++;
+                continue;
+            }
+            $nombre_cliente = $leido['constructora'] ?: $this->cliente_desde_nombre($file);
+            $cliente_id = null;
+            if ($nombre_cliente) {
+                $alta = $this->asegurar_cliente($nombre_cliente);
+                if ($alta['nuevo']) {
+                    $resumen['clientes_nuevos']++;
+                }
+                $cliente_id = $alta['id'];
+            }
+            $cab = [
+                'sucursal_id' => $sucursal_id,
+                'cliente_id' => $cliente_id,
+                'constructora' => $leido['constructora'] ?: $nombre_cliente,
+                'atencion' => $leido['atencion'],
+                'obra_nombre' => $leido['obra'] ?: $this->cliente_desde_nombre($file),
+                'ubicacion' => $leido['ubicacion'],
+                'pres_ref' => $leido['pres_ref'] ?: $file,
+                'fecha' => $leido['fecha'],
+                'introduccion' => $leido['introduccion'],
+                'observaciones' => 'Cargada desde xlsx entrenamiento 6.1. Borrador, sin obra activa.',
+                'costo_envio' => 0,
+                'pie_texto' => $hapa && !empty($hapa->pie_cotizacion) ? $hapa->pie_cotizacion : '',
+            ];
+            $id_guardar = 0;
+            $es_update = false;
+            if ($existe && $existe->estatus === 'Borrador' && (int) $existe->id !== $protegido_id
+                && (strpos((string) $existe->observaciones, 'entrenamiento 6.1') !== false
+                    || (string) ($existe->archivo_origen ?? '') === $file)) {
+                $cab['id'] = (int) $existe->id;
+                $id_guardar = (int) $existe->id;
+                $es_update = true;
+            }
+            $guardado = $this->guardar($cab, $leido['lineas'], 1);
+            if (empty($guardado['success'])) {
+                $resumen['vacios'][] = $file . ': ' . ($guardado['message'] ?? 'error');
+                continue;
+            }
+            $cid = (int) $guardado['id'];
+            $this->db->where('id', $cid)->update('cotizaciones_comerciales', [
+                'archivo_origen' => $this->texto($file, 255),
+                'estatus' => 'Borrador',
+            ]);
+            $this->adjuntar_archivo_cotizacion($cid, $file, $path, 'doc/entrenamiento_6_1/cotizaciones_2026/' . $file);
+            $this->asegurar_carpeta_envio($cid);
+            if ($es_update) {
+                $resumen['actualizadas']++;
+            } else {
+                $resumen['nuevas']++;
+            }
+            $resumen['folios'][] = $guardado['folio'];
+            $resumen['comparacion'][] = $this->comparar_xlsx_vs_cco($leido, $cid, $file, $guardado['folio']);
+        }
+        $resumen['success'] = true;
+        $resumen['message'] = 'xlsx 6.1: ' . $resumen['archivos']
+            . ', nuevas ' . $resumen['nuevas']
+            . ', actualizadas ' . $resumen['actualizadas']
+            . ', clientes nuevos ' . $resumen['clientes_nuevos']
+            . ', conceptos ' . $resumen['conceptos'];
+        return $resumen;
+    }
+
+    public function leer_xlsx_hapa_61($path) {
+        require_once APPPATH . '../vendor/autoload.php';
+        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+        $reader->setReadDataOnly(true);
+        $reader->setReadEmptyCells(false);
+        if (class_exists('CcoHapaReadFilter')) {
+            $reader->setReadFilter(new CcoHapaReadFilter());
+        }
+        $wb = $reader->load($path);
+        $ws = $wb->getSheetByName('PRESUPUESTO HAPA') ?: $wb->getSheet(0);
+        $max = min(90, (int) $ws->getHighestRow());
+        $out = [
+            'constructora' => null,
+            'atencion' => null,
+            'obra' => null,
+            'ubicacion' => null,
+            'pres_ref' => null,
+            'fecha' => null,
+            'introduccion' => null,
+            'lineas' => [],
+            'subtotal' => 0,
+        ];
+        $layout = null;
+        $previo = '';
+        $pendiente = null;
+        for ($r = 1; $r <= $max; $r++) {
+            $vals = $this->fila_xlsx_hapa($ws, $r);
+            $a = trim((string) ($vals['A'] ?? ''));
+            $texto = trim(implode(' ', $vals));
+            if ($texto === '') {
+                continue;
+            }
+            $up = mb_strtoupper($texto);
+            if (strpos($up, 'FORMA DE PAGO Y CONSIDERACIONES') !== false) {
+                break;
+            }
+            if ($layout === null) {
+                if (preg_match('/CIUDAD DE M[EÉ]XICO/iu', $a)) {
+                    $out['fecha'] = $this->fecha_desde_encabezado($a);
+                }
+                if (stripos($a, 'CONSTRUCTORA') === 0) {
+                    $out['constructora'] = $this->despues_de($a, 'CONSTRUCTORA');
+                } elseif (preg_match('/P\s*R\s*E\s*S\s*E\s*N\s*T\s*E/i', $a) && $previo !== ''
+                    && empty($out['constructora']) && !$this->es_fecha_lugar($previo)
+                    && stripos($previo, 'AT') !== 0) {
+                    $out['constructora'] = $previo;
+                }
+                if (preg_match('/AT[´\'’N]?N?\s*:/iu', $a) || preg_match('/^ATN\s*:/iu', $a)) {
+                    $out['atencion'] = trim(preg_replace('/^.*AT[´\'’]?N?\s*:?\s*/iu', '', $a));
+                    $out['atencion'] = trim(preg_replace('/^ATN\s*:?\s*/iu', '', $out['atencion']));
+                }
+                if (stripos($a, 'OBRA:') === 0 || stripos($a, 'OBRA :') === 0) {
+                    $out['obra'] = $this->despues_de($a, 'OBRA');
+                } elseif ($out['obra'] && stripos($a, 'PRES') !== 0 && stripos($a, 'PRESENTAMOS') === false
+                    && stripos($a, 'CONCEPTO') !== 0 && mb_strlen($a) < 180) {
+                    $out['ubicacion'] = $a;
+                }
+                if (stripos($a, 'PRES. REF') !== false || stripos($a, 'PRES REF') !== false) {
+                    $out['pres_ref'] = trim(preg_replace('/^.*PRES\.?\s*REF\.?\s*/iu', '', $a));
+                }
+                if (stripos($a, 'PRESENTAMOS') !== false) {
+                    $out['introduccion'] = $a;
+                }
+                $b = mb_strtoupper(trim((string) ($vals['B'] ?? '')));
+                $c = mb_strtoupper(trim((string) ($vals['C'] ?? '')));
+                $d = mb_strtoupper(trim((string) ($vals['D'] ?? '')));
+                if (strpos(mb_strtoupper($a), 'CONCEPTO') === 0) {
+                    if (strpos($b, 'VOLUMEN') !== false || (strpos($c, 'CANTIDAD') !== false && strpos($d, 'PRECIO') !== false)) {
+                        $layout = 'm2';
+                    } elseif (strpos($b, 'CANTIDAD') !== false) {
+                        $layout = 'lote';
+                    } elseif (strpos($c, 'PRECIO') !== false) {
+                        $layout = 'precio';
+                    } else {
+                        $layout = 'm2';
+                    }
+                    $previo = $a;
+                    continue;
+                }
+                $previo = $a;
+                continue;
+            }
+            if (preg_match('/IMPORTE\s*:/i', $texto)
+                || (preg_match('/I\.?\s*V\.?\s*A/i', $up) && strpos($up, 'SUMINISTRO') === false && strpos($up, 'T O T A L') === false)) {
+                if (preg_match('/IMPORTE\s*:/i', $texto)) {
+                    foreach (['E', 'D', 'C'] as $col) {
+                        $n = $this->numero($vals[$col] ?? 0);
+                        if ($n > 0) {
+                            $out['subtotal'] = $n;
+                            if ($pendiente) {
+                                $pendiente['importe'] = $n;
+                                if ((float) $pendiente['cantidad'] > 0) {
+                                    $pendiente['precio_unitario'] = round($n / (float) $pendiente['cantidad'], 2);
+                                } else {
+                                    $pendiente['cantidad'] = 1;
+                                    $pendiente['precio_unitario'] = $n;
+                                }
+                                $out['lineas'][] = $pendiente;
+                                $pendiente = null;
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (strpos($up, 'T O T A L') !== false || strpos($up, 'TOTAL') === 0) {
+                    break;
+                }
+                if (preg_match('/I\.?\s*V\.?\s*A/i', $up) && strpos($up, 'SUMINISTRO') === false) {
+                    continue;
+                }
+            }
+            if (strpos($up, 'T O T A L') !== false) {
+                break;
+            }
+            if ($a === '' || $this->es_texto_legal($a) || stripos($a, 'FORMA DE PAGO') === 0) {
+                continue;
+            }
+            $linea = $this->partida_xlsx_hapa($layout, $vals);
+            if ($linea) {
+                if ($layout === 'lote' && (float) $linea['importe'] <= 0) {
+                    $pendiente = $linea;
+                } else {
+                    $out['lineas'][] = $linea;
+                }
+            }
+        }
+        $wb->disconnectWorksheets();
+        if ($out['subtotal'] <= 0) {
+            foreach ($out['lineas'] as $ln) {
+                $out['subtotal'] += (float) $ln['importe'];
+            }
+        }
+        return $out;
+    }
+
+    private function fila_xlsx_hapa($ws, $r) {
+        $vals = [];
+        foreach (range('A', 'E') as $col) {
+            try {
+                $v = $ws->getCell($col . $r)->getCalculatedValue();
+            } catch (\Throwable $e) {
+                $v = $ws->getCell($col . $r)->getValue();
+            }
+            if ($v === null || $v === '') {
+                continue;
+            }
+            if (is_numeric($v)) {
+                $vals[$col] = (string) $v;
+            } else {
+                $vals[$col] = trim(preg_replace('/\s+/', ' ', (string) $v));
+            }
+        }
+        return $vals;
+    }
+
+    private function partida_xlsx_hapa($layout, array $vals) {
+        $concepto = trim((string) ($vals['A'] ?? ''));
+        if ($concepto === '' || mb_strlen($concepto) < 8) {
+            return null;
+        }
+        $unidad = '';
+        $cantidad = 0;
+        $precio = 0;
+        $importe = 0;
+        if ($layout === 'lote') {
+            $unidad = 'LOTE';
+            $desc = trim((string) ($vals['B'] ?? ''));
+            if (preg_match('/([\d.,]+)\s*M2/i', $desc, $m)) {
+                $cantidad = $this->numero($m[1]);
+                $unidad = 'M2';
+            } else {
+                $cantidad = 1;
+            }
+            $importe = $this->numero($vals['D'] ?? ($vals['C'] ?? 0));
+            $precio = ($importe > 0 && $cantidad > 0) ? round($importe / $cantidad, 2) : 0;
+            if ($desc !== '' && stripos($concepto, $desc) === false) {
+                $concepto .= ' (' . $desc . ')';
+            }
+        } elseif ($layout === 'precio') {
+            $unidad = 'PZA';
+            $cantidad = 1;
+            $precio = $this->numero($vals['C'] ?? ($vals['B'] ?? 0));
+            $importe = $precio;
+            if ($precio <= 0) {
+                return null;
+            }
+        } else {
+            $unidad = trim((string) ($vals['B'] ?? ''));
+            $cantidad = $this->numero($vals['C'] ?? 0);
+            $precio = $this->numero($vals['D'] ?? 0);
+            $importe = $this->numero($vals['E'] ?? 0);
+            if ($this->es_unidad($unidad) && $cantidad <= 0 && $precio <= 0) {
+                return null;
+            }
+            if (!$this->es_unidad($unidad) && $cantidad <= 0 && is_numeric($vals['B'] ?? null)) {
+                $cantidad = $this->numero($vals['B']);
+                $precio = $this->numero($vals['C'] ?? 0);
+                $importe = $this->numero($vals['D'] ?? 0);
+                $unidad = 'PZA';
+            }
+            if ($importe <= 0 && $cantidad > 0 && $precio > 0) {
+                $importe = round($cantidad * $precio, 2);
+            }
+            if ($cantidad <= 0 && $precio > 0 && $importe > 0) {
+                $cantidad = 1;
+            }
+            if ($importe <= 0 && $precio <= 0) {
+                return null;
+            }
+        }
+        return [
+            'concepto' => mb_substr($concepto, 0, 4000),
+            'unidad' => mb_substr($unidad, 0, 40),
+            'cantidad' => $cantidad,
+            'precio_unitario' => $precio,
+            'importe' => $importe,
+            'tipo' => $this->tipo_por_texto($concepto),
+            'grupo' => '',
+        ];
+    }
+
+    private function fecha_desde_encabezado($texto) {
+        $meses = [
+            'ENERO' => '01', 'FEBRERO' => '02', 'MARZO' => '03', 'ABRIL' => '04',
+            'MAYO' => '05', 'JUNIO' => '06', 'JULIO' => '07', 'AGOSTO' => '08',
+            'SEPTIEMBRE' => '09', 'OCTUBRE' => '10', 'NOVIEMBRE' => '11', 'DICIEMBRE' => '12',
+        ];
+        if (preg_match('/(\d{1,2})\s*DE\s+([A-ZÁÉÍÓÚ]+)\s+DEL?\s+(\d{4})/iu', mb_strtoupper($texto), $m)) {
+            $mes = $meses[$m[2]] ?? null;
+            if ($mes) {
+                return $m[3] . '-' . $mes . '-' . str_pad($m[1], 2, '0', STR_PAD_LEFT);
+            }
+        }
+        return date('Y-m-d');
+    }
+
+    private function comparar_xlsx_vs_cco(array $leido, $cot_id, $archivo, $folio) {
+        $cot = $this->get($cot_id);
+        $n_xls = count($leido['lineas']);
+        $n_cco = count($cot->detalles ?? []);
+        $sum_xls = round((float) $leido['subtotal'], 2);
+        $sum_cco = 0;
+        foreach ($cot->detalles ?? [] as $d) {
+            $sum_cco += (float) $d->importe;
+        }
+        $sum_cco = round($sum_cco, 2);
+        $ok_lineas = $n_xls === $n_cco;
+        $ok_total = abs($sum_xls - $sum_cco) < 0.05;
+        return [
+            'archivo' => $archivo,
+            'folio' => $folio,
+            'pres_ref' => $leido['pres_ref'],
+            'lineas_xlsx' => $n_xls,
+            'lineas_cco' => $n_cco,
+            'subtotal_xlsx' => $sum_xls,
+            'subtotal_cco' => $sum_cco,
+            'ok' => $ok_lineas && $ok_total,
+        ];
+    }
+
+    private function adjuntar_archivo_cotizacion($cot_id, $file, $path, $ruta) {
+        $ya = $this->db->where('origen_tipo', 'cotizacion')
+            ->where('origen_id', (int) $cot_id)
+            ->where('ruta', $ruta)
+            ->count_all_results('expediente_archivos');
+        if ($ya) {
+            return false;
+        }
+        $this->db->insert('expediente_archivos', [
+            'origen_tipo' => 'cotizacion',
+            'origen_id' => (int) $cot_id,
+            'nombre' => $file,
+            'ruta' => $ruta,
+            'extension' => strtolower(pathinfo($file, PATHINFO_EXTENSION)),
+            'tamano' => is_file($path) ? (int) filesize($path) : 0,
+            'fecha' => date('Y-m-d H:i:s'),
+        ]);
+        return true;
+    }
+
     private function adjuntar_pdf_cotizacion($cot_id, $file, $path) {
         $ruta = 'doc/entrenamiento_6/COTIZACIONES 2026 PDF/' . $file;
         $ya = $this->db->where('origen_tipo', 'cotizacion')
@@ -1123,5 +1517,11 @@ class CotizacionesObraModel extends CI_Model {
             'parent_id' => null,
             'nombre' => '3 Guerras / envío',
         ]);
+    }
+}
+
+class CcoHapaReadFilter implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+    public function readCell($columnAddress, $row, $worksheetName = '') {
+        return $row <= 90 && in_array($columnAddress, ['A', 'B', 'C', 'D', 'E'], true);
     }
 }

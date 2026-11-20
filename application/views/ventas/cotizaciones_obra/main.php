@@ -18,6 +18,7 @@ $badge = ['Borrador'=>'secondary','Enviada'=>'info','Aceptada'=>'success','Recha
       <button type="button" class="btn btn-outline-secondary" id="btnConsulta">Incorporar archivos para consulta</button>
       <?php if (!empty($response['puede_sembrar'])): ?>
       <button type="button" class="btn btn-outline-secondary" id="btnPdfsI6">Cargar PDFs entrenamiento 6</button>
+      <button type="button" class="btn btn-outline-secondary" id="btnXlsx61">Cargar xlsx HAPA 6.1</button>
       <?php endif; ?>
       <a class="btn btn-primary" href="<?=base_url('ventas/CotizacionesObra/editar')?>">Nueva cotización</a>
     </div>
@@ -87,6 +88,17 @@ document.getElementById('btnConsulta')?.addEventListener('click', function () {
     if (res.success) location.href = '<?=base_url('ventas/CotizacionesObra?consulta=1')?>';
     else btn.disabled = false;
   });
+});
+document.getElementById('btnXlsx61')?.addEventListener('click', function () {
+  var btn = this;
+  if (!confirm('Se leen los Excel HAPA de entrenamiento 6.1. Crea CCO en Borrador, clientes y conceptos. No activa obras.')) return;
+  btn.disabled = true;
+  $.post('<?=base_url('ventas/CotizacionesObra/sembrar_xlsx61_ajax')?>', {}, function (res) {
+    res = typeof res === 'string' ? JSON.parse(res) : res;
+    alert(res.message || 'Listo');
+    btn.disabled = false;
+    if (res.success) location.reload();
+  }).fail(function () { btn.disabled = false; alert('No se pudo cargar'); });
 });
 document.getElementById('btnPdfsI6')?.addEventListener('click', function () {
   var btn = this;
