@@ -429,6 +429,64 @@ class CotizacionesObra extends MY_Controller {
         echo (stripos($html, 'chisarecubrimientos.com.mx') !== false ? 'notas_chisa' : 'notas_sin_chisa_web') . "\n";
     }
 
+    /**
+     * Consulta de materia prima para partidas de producto (no crea preorden).
+     */
+    public function consultar_mp_ajax() {
+        $id = (int) $this->input->post('id');
+        $cot = $id ? $this->CotizacionesObraModel->get($id) : null;
+        if (!$cot) {
+            echo json_encode(['success' => false, 'message' => 'Cotización no encontrada']);
+            return;
+        }
+        $this->load->model('Produccion/ProductosModel');
+        $faltantes = 0;
+        $lineas = 0;
+        $sin_formula = 0;
+        $detalle = [];
+        foreach ($cot->detalles as $d) {
+            $pid = (int) ($d->producto_id ?? 0);
+            if ($pid <= 0) {
+                continue;
+            }
+            $lineas++;
+            $form = $this->db->where('producto_id', $pid)->where('es_activa', 1)->get('formulaciones')->row();
+            if (!$form) {
+                $sin_formula++;
+                $detalle[] = [
+                    'concepto' => $d->concepto,
+                    'ok' => false,
+                    'mensaje' => 'Sin formulación activa',
+                ];
+                continue;
+            }
+            $ver = $this->ProductosModel->verificar_insumos_linea_produccion(
+                $form->id,
+                (float) $d->cantidad,
+                $d->unidad ?? null,
+                $pid
+            );
+            $n = count($ver['faltantes'] ?? []);
+            $faltantes += $n;
+            $detalle[] = [
+                'concepto' => $d->concepto,
+                'ok' => !empty($ver['ok']) && $n === 0,
+                'mensaje' => $n > 0 ? ($n . ' insumo(s) faltante(s)') : 'Stock suficiente (consulta)',
+            ];
+        }
+        echo json_encode([
+            'success' => true,
+            'solo_consulta' => true,
+            'lineas_producto' => $lineas,
+            'faltantes' => $faltantes,
+            'sin_formula' => $sin_formula,
+            'detalle' => $detalle,
+            'message' => $lineas === 0
+                ? 'Esta cotización no tiene partidas ligadas a un SKU de catálogo.'
+                : ('Consulta: ' . $faltantes . ' faltante(s) de MP. No se crea preorden hasta confirmar la obra/venta.'),
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
     public function sembrar_pdfs_ajax() {
         if (!tiene_permiso('entrenamiento_sembrar') && !is_cli()) {
             echo json_encode(['success' => false, 'message' => 'Sin permiso para cargar PDFs de entrenamiento']);

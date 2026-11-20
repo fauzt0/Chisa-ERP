@@ -715,15 +715,33 @@ class ProductosModel extends MY_Model {
             $this->db->where('formulaciones.producto_id', (int) $filtros['producto_id']);
         }
         if (!empty($filtros['cliente_id'])) {
-            $this->db->where('formulaciones.cliente_id', (int) $filtros['cliente_id']);
+            $cid = (int) $filtros['cliente_id'];
+            if (!empty($filtros['producto_id'])) {
+                $this->db->group_start();
+                $this->db->where('formulaciones.cliente_id', $cid);
+                $this->db->or_where('formulaciones.cliente_id IS NULL', null, false);
+                $this->db->group_end();
+            } else {
+                $this->db->where('formulaciones.cliente_id', $cid);
+            }
         }
         if (!empty($filtros['texto_comentarios'])) {
-            $this->db->like('formulaciones.comentarios', $filtros['texto_comentarios']);
+            $q = $filtros['texto_comentarios'];
+            $this->db->group_start();
+            $this->db->like('formulaciones.comentarios', $q);
+            $this->db->or_like('formulaciones.nombre_version', $q);
+            $this->db->or_like('formulaciones.referencia_cliente', $q);
+            $this->db->or_like('productos.codigo', $q);
+            $this->db->or_like('productos.nombre', $q);
+            $this->db->or_like('clientes.razon_social', $q);
+            $this->db->or_like('clientes.nombre_comercial', $q);
+            $this->db->group_end();
         }
         if (!empty($filtros['solo_activas'])) {
             $this->db->where('formulaciones.es_activa', 1);
         }
 
+        $this->db->order_by('formulaciones.es_activa', 'DESC');
         $this->db->order_by('productos.nombre', 'ASC');
         $this->db->order_by('formulaciones.version', 'DESC');
         return $this->db->get()->result();
@@ -1895,7 +1913,9 @@ class ProductosModel extends MY_Model {
 
     public function listar_entrenamiento($filtros = []) {
         $this->asegurar_entrenamiento_producto();
-        $this->db->select('productos.id, productos.codigo, productos.nombre, productos.estatus, productos.tipo_producto, productos.precio_venta, productos.entrenamiento_revisado, productos.entrenamiento_principal_ok, productos.unidad_venta');
+        $this->db->select('productos.id, productos.codigo, productos.nombre, productos.estatus, productos.tipo_producto, productos.precio_venta, productos.entrenamiento_revisado, productos.entrenamiento_principal_ok, productos.unidad_venta,
+            (SELECT COUNT(*) FROM formulaciones f WHERE f.producto_id = productos.id) AS n_formulaciones,
+            (SELECT COUNT(*) FROM formulaciones f2 WHERE f2.producto_id = productos.id AND f2.es_activa = 1) AS n_activas');
         $this->db->from('productos');
         if (!empty($filtros['busqueda'])) {
             $q = $filtros['busqueda'];
@@ -1908,9 +1928,35 @@ class ProductosModel extends MY_Model {
         if (isset($filtros['entrenamiento_revisado']) && $filtros['entrenamiento_revisado'] !== '') {
             $this->db->where('productos.entrenamiento_revisado', (int) $filtros['entrenamiento_revisado']);
         }
+        $hueco = $filtros['hueco_formula'] ?? '';
+        if ($hueco === 'sin_formula') {
+            $this->db->where('(SELECT COUNT(*) FROM formulaciones f WHERE f.producto_id = productos.id) = 0', null, false);
+        } elseif ($hueco === 'sin_activa') {
+            $this->db->where('(SELECT COUNT(*) FROM formulaciones f WHERE f.producto_id = productos.id) > 0', null, false);
+            $this->db->where('(SELECT COUNT(*) FROM formulaciones f2 WHERE f2.producto_id = productos.id AND f2.es_activa = 1) = 0', null, false);
+        }
         $this->db->order_by('productos.nombre', 'ASC');
         $this->db->limit(3000);
         return $this->db->get()->result();
+    }
+
+    public function contar_entrenamiento_huecos_formula() {
+        $fabricados = (int) $this->db->where('tipo_producto', 'Fabricado')->count_all_results('productos');
+        $con = (int) $this->db->query('SELECT COUNT(DISTINCT producto_id) c FROM formulaciones')->row()->c;
+        $sin_activa = (int) $this->db->query(
+            'SELECT COUNT(*) c FROM productos p WHERE p.tipo_producto = \'Fabricado\'
+             AND EXISTS (SELECT 1 FROM formulaciones f WHERE f.producto_id = p.id)
+             AND NOT EXISTS (SELECT 1 FROM formulaciones f2 WHERE f2.producto_id = p.id AND f2.es_activa = 1)'
+        )->row()->c;
+        $con_cliente = (int) $this->db->where('cliente_id IS NOT NULL', null, false)->where('cliente_id >', 0)->count_all_results('formulaciones');
+        $total_f = (int) $this->db->count_all('formulaciones');
+        return [
+            'fabricados' => $fabricados,
+            'sin_formula' => max(0, $fabricados - $con),
+            'sin_activa' => $sin_activa,
+            'form_con_cliente' => $con_cliente,
+            'form_total' => $total_f,
+        ];
     }
 
     public function guardar_entrenamiento_producto($id, array $data) {

@@ -210,9 +210,10 @@ $icono = $es_obra ? 'hard-hat' : 'file-invoice';
                                 </td>
                                 <td style="font-size: 0.9rem;">
                                     <?php if($producto->formulacion_id): ?>
-                                        <span class="badge bg-info">
+                                        <a class="badge bg-info text-decoration-none"
+                                           href="<?=base_url('produccion/HistorialFormulaciones/ver/'.(int)$producto->formulacion_id)?>">
                                             <i class="fas fa-flask"></i> V<?=$producto->formulacion_version?>
-                                        </span>
+                                        </a>
                                         <?php if($producto->formulacion_nombre): ?>
                                             <br><small class="text-muted"><?=$producto->formulacion_nombre?></small>
                                         <?php endif; ?>
@@ -576,6 +577,7 @@ function cargarHistorialDashboard() {
                             <div>
                             <strong class="fs-5"><i class="fas fa-flask text-primary"></i> Versión ${f.version}: ${f.nombre_version || 'Sin nombre'}</strong>
                             ${badgeActiva}
+                            <a class="ms-2 small" href="<?=base_url('produccion/HistorialFormulaciones/ver/')?>${f.id}">Abrir ficha</a>
                             </div>
                             <small class="text-muted me-3">Creada: ${fecha}</small>
                         </div>

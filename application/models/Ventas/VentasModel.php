@@ -111,6 +111,15 @@ class VentasModel extends MY_Model {
      */
     public function get_orden_completa($id) {
         $sel = 'ordenes_venta.*, clientes.razon_social, clientes.rfc';
+        if ($this->db->field_exists('codigo_postal', 'clientes')) {
+            $sel .= ', clientes.codigo_postal';
+        }
+        if ($this->db->field_exists('regimen_fiscal', 'clientes')) {
+            $sel .= ', clientes.regimen_fiscal';
+        }
+        if ($this->db->field_exists('uso_cfdi', 'clientes')) {
+            $sel .= ', clientes.uso_cfdi';
+        }
         $this->db->from('ordenes_venta');
         $this->db->join('clientes', 'clientes.id = ordenes_venta.cliente_id');
         if ($this->db->table_exists('sucursales') && $this->db->field_exists('sucursal_id', 'ordenes_venta')) {

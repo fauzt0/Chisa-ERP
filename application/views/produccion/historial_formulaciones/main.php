@@ -32,7 +32,10 @@ function hf_extraer_archivo($comentarios) {
   <?php $this->load->view('components/breadcrumb', ['breadcrumb' => $breadcrumb]); ?>
 
   <h1 class="h3 mb-2"><?= htmlspecialchars($headTitle, ENT_QUOTES, 'UTF-8') ?></h1>
-  <p class="text-muted small mb-3">Consulta de versiones de formulación. No se editan cantidades ni se activan versiones desde aquí.</p>
+  <p class="text-muted small mb-3">
+    Busque por producto, cliente o texto (año, archivo, REF). La versión <strong>activa</strong> aparece primero;
+    el resto es historial. Asociar cliente se hace al abrir la versión. No se editan cantidades ni se activan fórmulas aquí.
+  </p>
 
   <form class="card mb-3" method="get" action="<?= base_url('produccion/HistorialFormulaciones') ?>">
     <input type="hidden" name="filtrar" value="1">
@@ -65,7 +68,7 @@ function hf_extraer_archivo($comentarios) {
         <label class="form-label" for="texto_comentarios">Texto en comentarios</label>
         <input type="search" class="form-control" name="texto_comentarios" id="texto_comentarios"
                value="<?= htmlspecialchars($filtros['texto_comentarios'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-               placeholder="Ej. Archivo:, Importado…">
+               placeholder="Producto, cliente, archivo, REF…">
       </div>
       <div class="col-md-2">
         <div class="form-check mb-2">
@@ -117,7 +120,7 @@ function hf_extraer_archivo($comentarios) {
                 $comentarios_txt = mb_substr($comentarios_txt, 0, 140) . '…';
             }
           ?>
-          <tr>
+          <tr<?= !empty($row->es_activa) ? ' class="table-success"' : '' ?>>
             <td><?= htmlspecialchars($prod, ENT_QUOTES, 'UTF-8') ?></td>
             <td>
               <strong>v<?= (int) $row->version ?></strong>

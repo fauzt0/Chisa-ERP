@@ -634,9 +634,10 @@ function verHistorialFormulaciones() {
             if(res.success && res.historial) {
                 let html = '';
                 res.historial.forEach(h => {
+                    const cli = h.cliente_nombre || h.nombre_comercial || '';
                     html += `
                         <tr>
-                            <td>V${h.version} ${h.nombre_version ? '- ' + h.nombre_version : ''}</td>
+                            <td>V${h.version} ${h.nombre_version ? '- ' + h.nombre_version : ''}${cli ? '<br><small>' + cli + '</small>' : ''}</td>
                             <td>${h.fecha_creacion.split(' ')[0]}</td>
                             <td>
                                 ${h.es_activa == 1 ? '<span class="badge bg-success">Activa</span>' : '<span class="badge bg-secondary">Inactiva</span>'}
@@ -645,6 +646,7 @@ function verHistorialFormulaciones() {
                                 <button class="btn btn-sm btn-primary" onclick="seleccionarFormulacion(${h.id}, ${h.version})">
                                     <i class="fas fa-check"></i> Usar esta
                                 </button>
+                                <a class="btn btn-sm btn-outline-secondary" target="_blank" href="<?=base_url('produccion/HistorialFormulaciones/ver/')?>${h.id}">Ver</a>
                             </td>
                         </tr>
                     `;
@@ -1594,7 +1596,11 @@ function procesarVenta(estatus) {
       let insumosHtml = '';
       if (result.insumos && result.insumos.mensaje_resumen) {
         const insIcon = result.insumos.ok ? 'check-circle text-success' : 'exclamation-triangle text-warning';
-        insumosHtml = `<p class="mb-2 small"><i class="fas fa-${insIcon} me-1"></i>${escHtml(result.insumos.mensaje_resumen)}</p>`;
+        const cons = result.insumos.solo_consulta ? ' (consulta, no se creó preorden)' : '';
+        insumosHtml = `<p class="mb-2 small"><i class="fas fa-${insIcon} me-1"></i>${escHtml(result.insumos.mensaje_resumen)}${cons}</p>`;
+        if (result.insumos.faltantes > 0) {
+          insumosHtml += `<p class="mb-2 small text-warning">Faltantes de materia prima: ${result.insumos.faltantes}. ${result.insumos.solo_consulta ? 'Se notificará a compras al confirmar la venta.' : 'Se generó preorden a compras.'}</p>`;
+        }
       }
       
       const esCotiz = estatus === 'Cotización';

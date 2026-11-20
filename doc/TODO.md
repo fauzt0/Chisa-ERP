@@ -1,6 +1,6 @@
 # TODO — Sistema ERP CHISA
 
-**Última actualización:** 2026-11-18  
+**Última actualización:** 2026-11-19  
 **Rama activa:** `iteracion-6` (I5 mergeada a `main`; `iteracion-5` retirada).  
 **Entorno:** `ENVIRONMENT=development` · `https://erp.chisarecubrimientos.com.mx`
 
@@ -55,7 +55,7 @@ Leyenda: **OK** flujo diario interno · **Parc.** falta smoke/SMTP/datos · **Co
 | 7 | Obras / cálculo | OK | Fase 5 PRES- + CCO- comercial. Crear obra alerta INE/RH |
 | 8 | Producción | OK | Falta QC **viscosidad**. Touch/etiquetas lote sí. Notificación al completar = cambio de estatus/campana, no push |
 | 9 | Almacén | OK | Falta salida por **lector QR**. Tres Guerras = costo interno en CCO, no API |
-| 10 | Facturación | Parc. | Sandbox OK 2026-11-18 (`cli_probe` ok, token 2026-02-04). Badge sandbox en dashboard. 9 facturas locales. Sin email PDF+XML, sin go-live micontador |
+| 10 | Facturación | Parc. | Sandbox OK 2026-11-18 (`cli_probe` ok, token 2026-02-04). Tras pago de OV: botón Facturar (sandbox) abre `Facturas/crear?orden_id=` (prefill). Timbrado real y SMTP siguen bloqueados (`emitir` sigue en debug). |
 | 11 | Contabilidad | OK | Pólizas desde orígenes. DIOT/conciliación auto/Aspel pleno = fuera |
 | 12 | Reportes | Parc. | Por módulo (Excel/PDF). No hay hub único “Reportes” del diagrama |
 
@@ -70,13 +70,26 @@ Detalle de filas: `MODULOS_ESTADO_CHECKLIST.md`.
 | Expediente lista de raya (comidas, bancos, asistencia) | `contabilidad/ExpedienteRaya` | Sí (no sustituye nómina) |
 | Semáforo materiales, no revisado, unidad, no borrar insumo | `compras/EntrenamientoMateriales` | Sí. 2026-11-18: 150 insumos, 0 revisados. Galería 23 fotos MP sin ligar a BD. Modal viejo eliminado |
 | Marcar producto fabricado → enlaza SKU, insumo **sigue** | `InsumosModel::enlazar_producto_entrenamiento` | Sí (decisión: no borrar, BOM lo necesita) |
-| Entrenamiento productos + historial bloqueado hasta principal | `produccion/EntrenamientoProductos` | Sí. 2026-11-18: 497 productos, 0 revisados, 0 con principal verificada, 314 fórmulas activas |
+| Entrenamiento productos + historial bloqueado hasta principal | `produccion/EntrenamientoProductos` | Sí. El candado de historial queda **solo** en entrenamiento. La pantalla operativa `HistorialFormulaciones` lista activa + versiones. Huecos: sin fórmula / sin activa; métrica fórmulas con `cliente_id` |
 | Completar lote sigue exigiendo pesaje | Producción (regla P1–P9) | Sí |
 | CCO, sucursales CHISA/HAPA, PDF/Excel, pie, 3 Guerras interno | `ventas/CotizacionesObra`, `ventas/Sucursales` | Sí |
 | Sembrar CCO desde PDF entrenamiento 6 | `entrenamiento_sembrar` + `indexar_pdfs_entrenamiento` | Sí |
 | Alerta RH al crear obra sin INE | Obras / Ventas | Sí |
 | POS mostrador vs obra, matraz, variantes MICRO/COLOR 2 | `ventas/Pos` | Sí (corregido post-QA 21-oct) |
 | Permisos I6 en Roles | `permissions.php` | Sí |
+
+---
+
+## 4.1 I6 código (2026-11-19) — formulaciones y ciclo
+
+Hecho en código (sin nuevas tablas, sin importar el xls de fichas):
+
+- Historial: búsqueda producto + cliente + texto; por defecto activa e historial; asociar cliente (CEO) sin cambios.
+- Cotización POS: consulta de MP (`solo_consulta`). Confirmar OV: preorden + alerta. CCO: botón Consultar materia prima (no crea `PRE-`).
+- Dashboard producción: % entrega OV/obra y enlace a ficha de fórmula.
+- Tras pago OV: enlace a factura sandbox. No SMTP. No timbrar RFC real.
+
+Pendiente de **dato** (no de pantalla): asociar `cliente_id` a versiones (0/956 al inicio de I6).
 
 ---
 

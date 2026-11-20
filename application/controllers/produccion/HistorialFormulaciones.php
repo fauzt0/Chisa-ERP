@@ -18,13 +18,10 @@ class HistorialFormulaciones extends MY_Controller {
      * Listado con filtros GET (sin escritura).
      */
     public function index() {
-        // Primera carga: solo activas por defecto. Tras enviar el formulario (filtrar=1),
-        // la casilla desmarcada no envía solo_activas → se listan todas.
-        if ($this->input->get('filtrar') !== '1') {
-            $solo_activas = true;
-        } else {
-            $solo_activas = $this->input->get('solo_activas') === '1';
-        }
+        // Operación: se listan todas las versiones (activa + historial).
+        // Solo activas si el usuario marca la casilla (filtrar=1).
+        $solo_activas = $this->input->get('filtrar') === '1'
+            && $this->input->get('solo_activas') === '1';
 
         $filtros = [
             'producto_id'        => (int) $this->input->get('producto_id') ?: null,

@@ -16,6 +16,7 @@ class EntrenamientoProductos extends MY_Controller {
         $this->requiere_permiso('entrenamiento_productos', 'Sin permiso de entrenamiento de productos');
         $busqueda = trim((string) $this->input->get('busqueda'));
         $revisado = trim((string) $this->input->get('revisado'));
+        $hueco = trim((string) $this->input->get('hueco'));
         $filtros = [];
         if ($busqueda !== '') {
             $filtros['busqueda'] = $busqueda;
@@ -23,13 +24,18 @@ class EntrenamientoProductos extends MY_Controller {
         if ($revisado === '0' || $revisado === '1') {
             $filtros['entrenamiento_revisado'] = (int) $revisado;
         }
+        if (in_array($hueco, ['sin_formula', 'sin_activa'], true)) {
+            $filtros['hueco_formula'] = $hueco;
+        }
         $this->viewData['pageTitle'] = 'Entrenamiento de productos';
         $this->viewData['headTitle'] = 'Entrenamiento temporal de productos';
         $this->viewData['breadcrumb'] = 'Inicio > Producción > Entrenamiento de productos';
         $this->viewData['response'] = [
             'busqueda' => $busqueda,
             'revisado' => $revisado,
+            'hueco' => $hueco,
             'filas' => $this->ProductosModel->listar_entrenamiento($filtros),
+            'huecos' => $this->ProductosModel->contar_entrenamiento_huecos_formula(),
         ];
         $this->viewData['pageView'] = 'produccion/entrenamiento_productos/main';
         $this->load->view('layouts/general_template', $this->viewData);

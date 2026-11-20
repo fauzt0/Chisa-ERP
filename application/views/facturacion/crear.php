@@ -4,6 +4,13 @@
    
     <!-- Titulo de la pagina -->
     <h1 class="h3 mb-3"><?php echo $headTitle;?></h1>
+    <?php $prefill = $prefill ?? null; ?>
+    <?php if ($prefill): ?>
+    <div class="alert alert-info py-2 small">
+      Prefactura desde <?= htmlspecialchars($prefill->folio, ENT_QUOTES, 'UTF-8') ?> (sandbox).
+      Revise receptor y conceptos. No timbrar RFC real.
+    </div>
+    <?php endif; ?>
 
     <!-- Mensajes de alerta -->
     <?php if($this->session->flashdata('success')): ?>
@@ -25,6 +32,10 @@
     <?php endif; ?>
 
     <form action="<?= base_url('facturacion/Facturas/emitir') ?>" method="post" id="form-factura" class="needs-validation" novalidate>
+        <?php if ($prefill): ?>
+        <input type="hidden" name="orden_venta_id" value="<?= (int) $prefill->id ?>">
+        <input type="hidden" name="cliente_id" value="<?= (int) ($prefill->cliente_id ?? 0) ?>">
+        <?php endif; ?>
         
         <!-- SECCIÓN 1: DATOS DE EMISIÓN -->
         <div class="card">
@@ -79,15 +90,15 @@
 
                     <div class="col-md-4 mb-3">
                         <label class="form-label">RFC *</label>
-                        <input type="text" name="rfc_receptor" id="rfc_receptor" class="form-control" required readonly>
+                        <input type="text" name="rfc_receptor" id="rfc_receptor" class="form-control" required readonly value="<?= $prefill ? htmlspecialchars((string)($prefill->rfc ?? ''), ENT_QUOTES, 'UTF-8') : '' ?>">
                     </div>
                     <div class="col-md-8 mb-3">
                         <label class="form-label">Nombre / Razón Social *</label>
-                        <input type="text" name="nombre_receptor" id="nombre_receptor" class="form-control" required readonly>
+                        <input type="text" name="nombre_receptor" id="nombre_receptor" class="form-control" required readonly value="<?= $prefill ? htmlspecialchars((string)($prefill->razon_social ?? ''), ENT_QUOTES, 'UTF-8') : '' ?>">
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label">C.P. Fiscal *</label>
-                        <input type="text" name="cp_receptor" id="cp_receptor" class="form-control" required>
+                        <input type="text" name="cp_receptor" id="cp_receptor" class="form-control" required value="<?= $prefill ? htmlspecialchars((string)($prefill->codigo_postal ?? ''), ENT_QUOTES, 'UTF-8') : '' ?>">
                     </div>
                     <div class="col-md-9 mb-3">
                         <label class="form-label">Régimen Fiscal *</label>
@@ -428,6 +439,9 @@ document.addEventListener("DOMContentLoaded", function() {
         if (producto) {
             newRow.querySelector('.input-descripcion').value = producto.nombre;
             newRow.querySelector('.input-precio').value = producto.precio;
+            if (producto.cantidad) {
+                newRow.querySelector('.input-cantidad').value = producto.cantidad;
+            }
         }
 
         tbody.appendChild(newRow);
@@ -500,8 +514,26 @@ document.addEventListener("DOMContentLoaded", function() {
         else mostrarResultadosSAT(inputBusquedaSat.value);
     });
 
-    agregarConcepto();
+    const prefillConceptos = <?= json_encode($prefill && !empty($prefill->detalles) ? array_map(function ($d) {
+        return [
+            'nombre' => trim(($d->codigo ?? '') . ' ' . ($d->nombre ?? '')),
+            'precio' => (float) ($d->precio_unitario ?? 0),
+            'cantidad' => (float) ($d->cantidad ?? 1),
+        ];
+    }, $prefill->detalles) : [], JSON_UNESCAPED_UNICODE) ?>;
+    if (prefillConceptos.length) {
+        prefillConceptos.forEach(function (p) { agregarConcepto(p); });
+    } else {
+        agregarConcepto();
+    }
     document.getElementById('btn-add-concepto').addEventListener('click', () => agregarConcepto());
+    <?php if ($prefill && !empty($prefill->regimen_fiscal)): ?>
+    (function () {
+        const sel = document.getElementById('regimen_fiscal');
+        const code = <?= json_encode(preg_split('/\s+/', (string)$prefill->regimen_fiscal)[0] ?? '') ?>;
+        if (sel && code) sel.value = code;
+    })();
+    <?php endif; ?>
 
     // ... (Mantener código de autocompletado de clientes existente) ...
     // --- AUTOCOMPLETADO CLIENTES ---

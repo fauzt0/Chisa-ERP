@@ -448,8 +448,9 @@ function renderDetalleOrden(orden) {
     console.log('Detalle producto:', d.nombre, 'formulacion_id:', d.formulacion_id, 'formulacion_version:', d.formulacion_version);
     
     let formulacionInfo = '';
-    if(d.formulacion_id && d.formulacion_version) {
-      formulacionInfo = `<br><small class="text-info"><i class="fas fa-flask"></i> Fórmula V${d.formulacion_version}</small>`;
+    if(d.formulacion_id) {
+      const verTxt = d.formulacion_version ? (' V' + d.formulacion_version) : '';
+      formulacionInfo = `<br><small class="text-info"><i class="fas fa-flask"></i> Fórmula${verTxt} <a target="_blank" href="<?=base_url('produccion/HistorialFormulaciones/ver/')?>${d.formulacion_id}">ver</a></small>`;
     }
     
     html += `
@@ -664,6 +665,9 @@ function guardarPago() {
     if(result.success) {
       $('#modalPago').modal('hide');
       tabla.ajax.reload();
+      if (result.factura_sandbox_url && confirm('Pago guardado. ¿Abrir factura sandbox? (no timbra RFC real)')) {
+        window.open(result.factura_sandbox_url, '_blank');
+      }
     }
   });
 }

@@ -311,6 +311,11 @@ $filtros      = $response['filtros_activos']  ?? [];
           <p><i class="fas fa-building text-muted me-1"></i><strong><?=$o->cliente?:'Sin cliente'?></strong></p>
           <p class="text-muted"><i class="fas fa-calendar me-1"></i><?=date('d/m/Y',strtotime($o->fecha_creacion))?></p>
           <p class="text-muted"><i class="fas fa-box me-1"></i><?=$o->total_productos?> producto(s)</p>
+          <?php $pct = (int) ($o->pct_entrega ?? 0); ?>
+          <p class="mb-1 small">Entrega <?=$pct?>%</p>
+          <div class="progress mb-2" style="height:8px;">
+            <div class="progress-bar" role="progressbar" style="width:<?=$pct?>%;" aria-valuenow="<?=$pct?>" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
           <div class="d-flex gap-2 mt-2">
             <span class="badge bg-secondary stock-badge"
                   id="stock_badge_<?=($o->tipo_registro=='obra'?'obra':'venta')?>_<?=$o->id?>"

@@ -188,6 +188,12 @@ class Ordenes extends MY_Controller {
                     <i class="fas fa-dollar-sign"></i>
                 </button>';
             }
+            if ($orden->estatus != 'Cancelada' && in_array($orden->estatus_pago, ['Parcial', 'Pagado'], true)) {
+                $acciones .= '
+                <a href="'.base_url('facturacion/Facturas/crear?orden_id='.(int)$orden->id).'" class="btn btn-sm btn-outline-primary" title="Facturar (sandbox)">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </a>';
+            }
             
             if($orden->estatus == 'Cotización') {
                 $acciones .= '
@@ -346,7 +352,8 @@ class Ordenes extends MY_Controller {
             echo json_encode([
                 'success' => true, 
                 'message' => 'Pago registrado correctamente',
-                'folio' => $result->folio
+                'folio' => $result->folio,
+                'factura_sandbox_url' => base_url('facturacion/Facturas/crear?orden_id=' . (int) $orden_id),
             ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al registrar pago']);

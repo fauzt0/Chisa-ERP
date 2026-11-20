@@ -21,6 +21,10 @@ $bloqueada = $c && in_array($c->estatus, ['Cancelada', 'Aceptada'], true);
       <a class="btn btn-outline-secondary" href="<?=base_url('ventas/CotizacionesObra/excel/'.$c->id)?>">Excel</a>
       <a class="btn btn-outline-secondary" href="<?=base_url('ventas/CotizacionesObra/pdf/'.$c->id)?>">Descargar PDF</a>
       <?php endif; ?>
+      <?php if ($c): ?>
+      <button type="button" class="btn btn-outline-warning" id="btnConsultarMp">Consultar materia prima</button>
+      <a class="btn btn-outline-secondary" target="_blank" href="<?=base_url('produccion/HistorialFormulaciones'.(!empty($c->cliente_id) ? '?cliente_id='.(int)$c->cliente_id : ''))?>">Fórmulas</a>
+      <?php endif; ?>
       <a class="btn btn-link" href="<?=base_url('ventas/CotizacionesObra')?>">Volver</a>
     </div>
   </div>
@@ -373,6 +377,17 @@ document.querySelectorAll('.btn-estatus').forEach(function (b) {
       alert(res.message || 'Listo');
       if (res.success) location.reload();
     });
+  });
+});
+document.getElementById('btnConsultarMp')?.addEventListener('click', function () {
+  const idEl = document.getElementById('cot_id');
+  if (!idEl || !idEl.value) { alert('Guarde la cotización primero'); return; }
+  $.post('<?=base_url('ventas/CotizacionesObra/consultar_mp_ajax')?>', {
+    id: idEl.value,
+    '<?=$this->security->get_csrf_token_name()?>': '<?=$this->security->get_csrf_hash()?>'
+  }, function (res) {
+    res = typeof res === 'string' ? JSON.parse(res) : res;
+    alert(res.message || 'Listo');
   });
 });
 document.getElementById('btnAutorizarEdicion')?.addEventListener('click', function () {

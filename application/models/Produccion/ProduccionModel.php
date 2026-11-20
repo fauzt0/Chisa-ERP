@@ -55,10 +55,17 @@ class ProduccionModel extends CI_Model {
         $this->db->order_by('ov.fecha_creacion', 'DESC');
         $ordenes_venta = $this->db->get()->result();
         
-        // Agregar conteo de productos a cada orden
+        // Agregar conteo de productos y % entrega a cada orden
         foreach($ordenes_venta as $orden) {
             $this->db->where('orden_venta_id', $orden->id);
             $orden->total_productos = $this->db->count_all_results('detalle_orden_venta');
+            $sum = $this->db->select('SUM(cantidad) AS ped, SUM(COALESCE(cantidad_entregada,0)) AS ent', false)
+                ->where('orden_venta_id', $orden->id)
+                ->get('detalle_orden_venta')
+                ->row();
+            $ped = (float) ($sum->ped ?? 0);
+            $ent = (float) ($sum->ent ?? 0);
+            $orden->pct_entrega = $ped > 0 ? (int) round(100 * $ent / $ped) : 0;
         }
         
         // 2. OBTENER OBRAS
@@ -96,10 +103,20 @@ class ProduccionModel extends CI_Model {
         $this->db->order_by('o.fecha_creacion', 'DESC');
         $obras = $this->db->get()->result();
         
-        // Agregar conteo de productos a cada obra
+        // Agregar conteo de productos y % entrega a cada obra
         foreach($obras as $obra) {
             $this->db->where('obra_id', $obra->id);
             $obra->total_productos = $this->db->count_all_results('obras_productos');
+            $sum = $this->db->select(
+                'SUM(COALESCE(cantidad_ajustada, cantidad_calculada, 0)) AS ped, SUM(COALESCE(cantidad_entregada,0)) AS ent',
+                false
+            )
+                ->where('obra_id', $obra->id)
+                ->get('obras_productos')
+                ->row();
+            $ped = (float) ($sum->ped ?? 0);
+            $ent = (float) ($sum->ent ?? 0);
+            $obra->pct_entrega = $ped > 0 ? (int) round(100 * $ent / $ped) : 0;
         }
         
         // 3. COMBINAR Y ORDENAR POR FECHA

@@ -88,6 +88,13 @@ class Facturas extends MY_Controller {
         $this->viewData['breadcrumb'] = 'Inicio > Facturación > Nueva';
         $this->viewData['pageView'] = 'facturacion/crear';
         $this->viewData['sucursales'] = $sucursales;
+        $orden_id = (int) $this->input->get('orden_id');
+        $prefill = null;
+        if ($orden_id > 0) {
+            $this->load->model('Ventas/VentasModel');
+            $prefill = $this->VentasModel->get_orden_completa($orden_id);
+        }
+        $this->viewData['prefill'] = $prefill;
         
         // Pasar catálogos a la vista
         $this->viewData['usos_cfdi'] = get_catalogo_uso_cfdi();
@@ -381,7 +388,7 @@ class Facturas extends MY_Controller {
                 'regimen_fiscal' => $regimen_receptor, // Agregado
                 'uso_cfdi' => $uso_cfdi, // Agregado
                 'cliente_id' => $this->input->post('cliente_id') ?: null, // Opcional
-                'orden_venta_id' => null // Por ahora null
+                'orden_venta_id' => (int) $this->input->post('orden_venta_id') ?: null
             ];
             
             // Insertar en facturas
